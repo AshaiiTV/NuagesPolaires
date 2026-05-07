@@ -1,0 +1,38 @@
+{
+  "version": "v274",
+  "runtime_scripts": [
+    "./assets/js/main.js",
+    "./assets/js/ui-patches.js",
+    "./assets/js/beast-admin.js",
+    "./assets/js/bestiary-admin-pass2.js",
+    "./assets/js/finish-audit.js",
+    "./assets/js/theme-max.js",
+    "./assets/js/home-readability-polish.js",
+    "./assets/js/api-hardening.js",
+    "./assets/js/diagnostics.js",
+    "./assets/js/site-self-test.js",
+    "./assets/js/admin-dashboard.js",
+    "./assets/js/theme-regression.js",
+    "./assets/js/staff-navigation.js",
+    "./assets/js/connected-pages-polish.js",
+    "./assets/js/mobile-polish.js",
+    "./assets/js/database-admin-polish.js"
+  ],
+  "cleanup": [
+    "removed obsolete separate Console tab leftovers",
+    "documented active patch modules",
+    "kept functional bestiary/theme modules loaded",
+    "merged staff-console.js and dashboard-admin-polish.js into admin-dashboard.js",
+    "added admin-only theme regression tests",
+    "added home readability polish and base theme readability improvements",
+    "added connected pages readability polish",
+    "renamed staff-ux-polish.js to staff-navigation.js",
+    "added mobile polish layer",
+    "added database admin polish layer",
+    "fixed api-hardening wrapper argument forwarding and pre-login passive auth check"
+  ],
+  "next_refactor_targets": [
+    "ui-patches.js",
+    "finish-audit.js"
+  ]
+}

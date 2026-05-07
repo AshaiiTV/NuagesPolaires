@@ -1,0 +1,401 @@
+(function(){
+  var _beastAdminFilters = window._beastAdminFilters || {
+    status:'active', image:'all', usage:'all', boss:'all', threat:'all', completeness:'all', sort:'updated_desc', minLvl:'', maxLvl:''
+  };
+  window._beastAdminFilters = _beastAdminFilters;
+  var _beastUsageCache = { key:'', map:{} };
+
+  function _staffCanManageBeasts(){ return !!(window.CU && can && can('manage_beasts')); }
+  function _beastNow(){ return Date.now(); }
+  function _beastAdminNormalizeMeta(b){
+    if(!b || typeof b !== 'object') return b;
+    if(b.archived == null) b.archived = !!b.isArchived;
+    else b.archived = !!b.archived;
+    b.isBoss = !!(b.isBoss || b.boss || (window.cBehaviorLabel && window.cBehaviorLabel(b.beh)==='Boss'));
+    b.adminNotes = String(b.adminNotes || b.mjNotes || b.staffNotes || '').trim();
+    var created = parseInt(b.createdAt,10); if(!created) created = parseInt(b.ts,10) || 0;
+    var updated = parseInt(b.updatedAt,10); if(!updated) updated = created || 0;
+    b.createdAt = created || 0;
+    b.updatedAt = updated || 0;
+    b.createdBy = String(b.createdBy || b.author || '').trim();
+    b.updatedBy = String(b.updatedBy || '').trim();
+    return b;
+  }
+  function _beastAdminNormalizeCollection(list){
+    return (Array.isArray(list)?list:[]).map(function(b){ return _beastAdminNormalizeMeta(b); });
+  }
+  function _beastDangerScore(b){
+    var niv=Number(b&&b.niv||0), pv=Number(b&&b.pv||0), ep=Number(b&&b.ep||0);
+    return niv*2 + pv/8 + ep/10 + ((b&&b.isBoss)?8:0);
+  }
+  function _beastThreatKey(b){
+    var band = (_beastThreatBand && _beastThreatBand(b)) || 'Menace modérée';
+    if(/majeure/i.test(band)) return 'major';
+    if(/élevée|elevee/i.test(band)) return 'high';
+    if(/sérieuse|serieuse/i.test(band)) return 'serious';
+    return 'moderate';
+  }
+  function _beastCompleteness(b){
+    var issues=[];
+    if(!String(b&&b.img||'').trim()) issues.push('image');
+    if(!String(b&&b.desc||'').trim()) issues.push('description');
+    if(!String(b&&b.frappe||'').trim()) issues.push('frappe');
+    if(!String(b&&b.comp||'').trim()) issues.push('compétence');
+    if(!String(b&&b.drops||'').trim() && !String(b&&b.gem||'').trim()) issues.push('butin');
+    return { count:issues.length, issues:issues, complete:issues.length===0 };
+  }
+  function _beastFmtDate(ts){
+    ts=parseInt(ts,10)||0; if(!ts) return 'Jamais';
+    try{ return new Date(ts).toLocaleString('fr-FR',{ day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'}); }catch(_e){ return String(ts); }
+  }
+  function _beastRelativeDate(ts){
+    ts=parseInt(ts,10)||0; if(!ts) return 'Jamais';
+    var diff=Math.max(0, _beastNow()-ts), d=Math.floor(diff/86400000), h=Math.floor(diff/3600000);
+    if(d>=30) return _beastFmtDate(ts);
+    if(d>=1) return 'Il y a '+d+' j';
+    if(h>=1) return 'Il y a '+h+' h';
+    return 'Récent';
+  }
+  function _beastUsageBuild(){
+    var arcs=[];
+    try{ arcs = (can && can('manage_mjs') && typeof getAllCombatArchives==='function') ? (getAllCombatArchives()||[]) : ((typeof getCombatArchives==='function') ? (getCombatArchives()||[]) : []); }catch(_e){ arcs=[]; }
+    var key = String(arcs.length)+'|'+String(arcs[0]&&arcs[0].savedAt||'')+'|'+String(arcs[arcs.length-1]&&arcs[arcs.length-1].savedAt||'');
+    if(_beastUsageCache.key === key) return _beastUsageCache.map;
+    var map = Object.create(null);
+    arcs.forEach(function(arc){
+      if(!arc || arc._inProgress) return;
+      var savedAt = parseInt(arc.savedAt||arc.ts||0,10)||0;
+      var label = String(arc.name||arc.label||'Combat sans nom').trim() || 'Combat sans nom';
+      ((arc.fighters)||[]).forEach(function(f){
+        if(!f || f.type!=='beast') return;
+        var bid = String(f.bid || f.id || '').trim();
+        if(!bid) return;
+        var s = map[bid] || (map[bid] = { uses:0, deaths:0, lastAt:0, combats:[] });
+        s.uses += 1;
+        if((parseInt(f.pvCur,10)||0) <= 0) s.deaths += 1;
+        if(savedAt > s.lastAt) s.lastAt = savedAt;
+        if(label && s.combats.indexOf(label) < 0) s.combats.unshift(label);
+        if(s.combats.length > 5) s.combats.length = 5;
+      });
+    });
+    _beastUsageCache = { key:key, map:map };
+    return map;
+  }
+  function _beastUsageFor(id){ return _beastUsageBuild()[String(id||'')] || { uses:0, deaths:0, lastAt:0, combats:[] }; }
+  function _beastStatusChip(b){
+    if(b.archived) return '<span class="beast-admin-chip warn">Archivée</span>';
+    if(b.hidden) return '<span class="beast-admin-chip warn">Masquée</span>';
+    return '<span class="beast-admin-chip good">Publiée</span>';
+  }
+  function _beastBossChip(b){ return b&&b.isBoss ? '<span class="beast-admin-chip danger">Boss</span>' : ''; }
+  function _beastCompletenessChip(info){
+    info = info || {count:0, complete:true};
+    return info.complete
+      ? '<span class="beast-admin-chip good">Complète</span>'
+      : '<span class="beast-admin-chip warn" title="'+esc((info.issues||[]).join(', '))+'">'+info.count+' manque'+(info.count>1?'s':'')+'</span>';
+  }
+  function _beastUsageChip(usage){
+    usage = usage || {uses:0};
+    return '<span class="beast-admin-chip">'+(usage.uses||0)+' apparition'+((usage.uses||0)>1?'s':'')+'</span>';
+  }
+  function _beastAdminSummary(beasts, filtered){
+    var all = Array.isArray(beasts)?beasts:[];
+    var visible = Array.isArray(filtered)?filtered:[];
+    var archived = all.filter(function(b){ return !!b.archived; }).length;
+    var hidden = all.filter(function(b){ return !b.archived && !!b.hidden; }).length;
+    var incomplete = all.filter(function(b){ return !_beastCompleteness(b).complete; }).length;
+    var card = ge('beast-admin-adv-stats'); if(!card) return;
+    card.innerHTML = ''
+      +'<div class="adv-stat"><strong>'+all.length+'</strong><span>Total</span></div>'
+      +'<div class="adv-stat"><strong>'+visible.length+'</strong><span>Affichées</span></div>'
+      +'<div class="adv-stat"><strong>'+hidden+'</strong><span>Masquées</span></div>'
+      +'<div class="adv-stat"><strong>'+archived+'</strong><span>Archivées</span></div>'
+      +'<div class="adv-stat"><strong>'+incomplete+'</strong><span>Incomplètes</span></div>'
+      +'<div class="adv-stat"><strong>'+all.filter(function(b){ return !!b.isBoss; }).length+'</strong><span>Boss</span></div>'
+      +'<div class="adv-stat"><strong>'+all.filter(function(b){ return _beastUsageFor(b.id).uses>0; }).length+'</strong><span>Déjà jouées</span></div>'
+      +'<div class="adv-stat"><strong>'+all.filter(function(b){ return String(b.img||'').trim(); }).length+'</strong><span>Avec image</span></div>';
+  }
+  function _beastEnsureAdminUi(){
+    var tab = ge('bestiaire'); if(!tab || !_staffCanManageBeasts()) return;
+    var filters = ge('beast-filters'); if(!filters) return;
+    if(!ge('beast-admin-adv')){
+      var wrap = document.createElement('div');
+      wrap.id = 'beast-admin-adv';
+      wrap.className = 'bestiary-admin-adv';
+      wrap.innerHTML = ''
+        +'<div class="adv-head">'
+          +'<div><div class="adv-title">Pilotage du bestiaire</div><div class="adv-sub">Filtres cumulables, archivage, duplication, notes staff, usage en combat et passerelles directes vers le simulateur.</div></div>'
+          +'<div class="adv-actions">'
+            +'<button class="btn btn-sm" onclick="beastImportJsonPrompt()"><span>Importer JSON</span></button>'
+            +'<button class="btn btn-sm" onclick="beastExportAllJson()"><span>Exporter tout</span></button>'
+            +'<button class="btn btn-sm btn-grn" onclick="openModal(\'m-addb\')"><span>+ Nouvelle créature</span></button>'
+          +'</div>'
+        +'</div>'
+        +'<div class="adv-grid">'
+          +'<div class="adv-field"><label>Statut</label><select id="beast-admin-filter-status" onchange="beastAdminSetFilter(\'status\',this.value)"><option value="active">Actives</option><option value="all">Toutes</option><option value="published">Publiées</option><option value="hidden">Masquées</option><option value="archived">Archivées</option></select></div>'
+          +'<div class="adv-field"><label>Image</label><select id="beast-admin-filter-image" onchange="beastAdminSetFilter(\'image\',this.value)"><option value="all">Toutes</option><option value="with">Avec image</option><option value="without">Sans image</option></select></div>'
+          +'<div class="adv-field"><label>Usage en combat</label><select id="beast-admin-filter-usage" onchange="beastAdminSetFilter(\'usage\',this.value)"><option value="all">Toutes</option><option value="recent">Utilisées récemment</option><option value="used">Déjà utilisées</option><option value="never">Jamais utilisées</option></select></div>'
+          +'<div class="adv-field"><label>Boss</label><select id="beast-admin-filter-boss" onchange="beastAdminSetFilter(\'boss\',this.value)"><option value="all">Tous</option><option value="boss">Boss</option><option value="normal">Normales</option></select></div>'
+          +'<div class="adv-field"><label>Menace</label><select id="beast-admin-filter-threat" onchange="beastAdminSetFilter(\'threat\',this.value)"><option value="all">Toutes</option><option value="moderate">Modérée</option><option value="serious">Sérieuse</option><option value="high">Élevée</option><option value="major">Majeure</option></select></div>'
+          +'<div class="adv-field"><label>Complétude</label><select id="beast-admin-filter-completeness" onchange="beastAdminSetFilter(\'completeness\',this.value)"><option value="all">Toutes</option><option value="complete">Complètes</option><option value="incomplete">À finir</option></select></div>'
+          +'<div class="adv-field"><label>Niveau min.</label><input id="beast-admin-filter-minlvl" type="number" min="1" placeholder="1" oninput="beastAdminSetFilter(\'minLvl\',this.value)"></div>'
+          +'<div class="adv-field"><label>Niveau max.</label><input id="beast-admin-filter-maxlvl" type="number" min="1" placeholder="30" oninput="beastAdminSetFilter(\'maxLvl\',this.value)"></div>'
+          +'<div class="adv-field"><label>Tri</label><select id="beast-admin-filter-sort" onchange="beastAdminSetFilter(\'sort\',this.value)"><option value="updated_desc">Modifiées récemment</option><option value="updated_asc">Plus anciennes</option><option value="name_asc">Nom A → Z</option><option value="name_desc">Nom Z → A</option><option value="level_desc">Niveau décroissant</option><option value="level_asc">Niveau croissant</option><option value="danger_desc">Dangerosité</option><option value="usage_desc">Usage combat</option><option value="published_first">Publiées d\'abord</option></select></div>'
+          +'<div class="adv-field"><label>Réinitialiser</label><button class="btn btn-sm" onclick="beastAdminResetFilters()"><span>Reset filtres</span></button></div>'
+        +'</div>'
+        +'<div class="adv-stats" id="beast-admin-adv-stats"></div>';
+      filters.insertAdjacentElement('afterend', wrap);
+    }
+    ['status','image','usage','boss','threat','completeness','sort'].forEach(function(k){ var el=ge('beast-admin-filter-'+k); if(el) el.value=_beastAdminFilters[k]; });
+    var minEl=ge('beast-admin-filter-minlvl'); if(minEl) minEl.value=_beastAdminFilters.minLvl;
+    var maxEl=ge('beast-admin-filter-maxlvl'); if(maxEl) maxEl.value=_beastAdminFilters.maxLvl;
+    _beastEnsureModalEnhancements();
+  }
+  function _beastEnsureModalEnhancements(){
+    var addImgRow = ge('ab-img') && ge('ab-img').closest('.frow');
+    if(addImgRow && !ge('ab-boss')){
+      var extra = document.createElement('div');
+      extra.className = 'beast-admin-edit-extra';
+      extra.innerHTML = ''
+        +'<div class="frow"><label class="flbl">Boss</label><label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border2);background:var(--bg3);border-radius:8px;"><input type="checkbox" id="ab-boss"><span style="font-size:13px;color:var(--text);">Marquer comme boss</span></label></div>'
+        +'<div class="frow"><label class="flbl">Notes admin</label><textarea id="ab-notes" style="min-height:68px;" placeholder="Notes MJ, gimmicks, IA, points faibles..."></textarea></div>';
+      addImgRow.insertAdjacentElement('afterend', extra);
+    }
+    var editImgRow = ge('eb-img') && ge('eb-img').closest('.frow');
+    if(editImgRow && !ge('eb-boss')){
+      var extra2 = document.createElement('div');
+      extra2.className = 'beast-admin-edit-extra';
+      extra2.innerHTML = ''
+        +'<div class="frow"><label class="flbl">Boss</label><label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border2);background:var(--bg3);border-radius:8px;"><input type="checkbox" id="eb-boss"><span style="font-size:13px;color:var(--text);">Marquer comme boss</span></label></div>'
+        +'<div class="frow"><label class="flbl">Notes admin</label><textarea id="eb-notes" style="min-height:72px;" placeholder="Notes MJ, gimmicks, IA, points faibles..."></textarea></div>';
+      editImgRow.insertAdjacentElement('afterend', extra2);
+    }
+    if(!ge('beast-json-import-input')){
+      var input = document.createElement('input');
+      input.type = 'file'; input.id = 'beast-json-import-input'; input.accept = '.json,application/json'; input.style.display='none';
+      input.onchange = function(){ beastImportJsonFile(this.files && this.files[0]); this.value=''; };
+      document.body.appendChild(input);
+    }
+    if(!ge('m-beast-admin-preview')){
+      var modal = document.createElement('div');
+      modal.id='m-beast-admin-preview'; modal.className='moverlay';
+      modal.innerHTML=''
+        +'<div class="modal" style="max-width:980px;">'
+        +'<button class="mclose" onclick="closeModal(\'m-beast-admin-preview\')">✕</button>'
+        +'<div class="mtit">Aperçu bestiaire</div>'
+        +'<div id="beast-admin-preview-content"></div>'
+        +'</div>';
+      document.body.appendChild(modal);
+    }
+  }
+  window.beastAdminSetFilter = function(key, value){ _beastAdminFilters[key]=value; renderBGrid('p-bgrd', !!(window.CU && window.CU.type==='staff')); };
+  window.beastAdminResetFilters = function(){
+    _beastAdminFilters.status='active'; _beastAdminFilters.image='all'; _beastAdminFilters.usage='all'; _beastAdminFilters.boss='all'; _beastAdminFilters.threat='all'; _beastAdminFilters.completeness='all'; _beastAdminFilters.sort='updated_desc'; _beastAdminFilters.minLvl=''; _beastAdminFilters.maxLvl='';
+    _beastPvSort=null; _beastNivSort=null; _beastAlpha=null;
+    var s=ge('beast-search-input'); if(s){ s.value=''; }
+    _beastSearch='';
+    document.querySelectorAll('.bfilt[data-beh]').forEach(function(b){ b.classList.remove('active'); if(b.getAttribute('data-beh')==='all') b.classList.add('active'); });
+    _beastFilter='all';
+    renderBGrid('p-bgrd', !!(window.CU && window.CU.type==='staff'));
+  };
+  window.beastSearch = function(q){ _beastSearch=(q||'').toLowerCase().trim(); renderBGrid('p-bgrd',!!(window.CU&&window.CU.type==='staff')); };
+  window.setBeastFilter = function(beh,btn){ _beastFilter=beh; document.querySelectorAll('.bfilt[data-beh]').forEach(function(b){b.classList.remove('active');}); if(btn) btn.classList.add('active'); renderBGrid('p-bgrd',!!(window.CU&&window.CU.type==='staff')); };
+  window.toggleBeastPvSort = function(btn){ _beastNivSort=null; _beastAlpha=null; _clearSortBtns && _clearSortBtns('bfilt-pv'); var n=ge('bfilt-niv'), a=ge('bfilt-az'); if(n) n.textContent='Niv ↕'; if(a) a.textContent='A→Z'; _beastPvSort=(_beastPvSort===null||_beastPvSort==='desc')?'asc':'desc'; if(btn){ btn.textContent='PV '+(_beastPvSort==='asc'?'↑':'↓'); btn.classList.add('active'); } renderBGrid('p-bgrd',!!(window.CU&&window.CU.type==='staff')); };
+  window.toggleBeastNivSort = function(btn){ _beastPvSort=null; _beastAlpha=null; _clearSortBtns && _clearSortBtns('bfilt-niv'); var p=ge('bfilt-pv'), a=ge('bfilt-az'); if(p) p.textContent='PV ↕'; if(a) a.textContent='A→Z'; _beastNivSort=(_beastNivSort===null||_beastNivSort==='desc')?'asc':'desc'; if(btn){ btn.textContent='Niv '+(_beastNivSort==='asc'?'↑':'↓'); btn.classList.add('active'); } renderBGrid('p-bgrd',!!(window.CU&&window.CU.type==='staff')); };
+  window.toggleBeastAlpha = function(btn){ _beastPvSort=null; _beastNivSort=null; _clearSortBtns && _clearSortBtns('bfilt-az'); var p=ge('bfilt-pv'), n=ge('bfilt-niv'); if(p) p.textContent='PV ↕'; if(n) n.textContent='Niv ↕'; _beastAlpha=(_beastAlpha===null||_beastAlpha==='desc')?'asc':'desc'; if(btn){ btn.textContent=_beastAlpha==='asc'?'A→Z':'Z→A'; btn.classList.add('active'); } renderBGrid('p-bgrd',!!(window.CU&&window.CU.type==='staff')); };
+
+  window.bCard = function(b,staff){
+    _beastAdminNormalizeMeta(b);
+    var usage=_beastUsageFor(b.id), completeness=_beastCompleteness(b);
+    var col=(window.cBehaviorColor?window.cBehaviorColor(b.beh||b.behavior||b.comportement):'var(--glacier)');
+    var lbl=(window.cBehaviorLabel?window.cBehaviorLabel(b.beh||b.behavior||b.comportement):String((b.beh||b.behavior||b.comportement)||'').replace(/^./,function(m){return m.toUpperCase();}));
+    var canEdit=staff&&can('manage_beasts');
+    var canDel=staff&&can('delete_beast');
+    var isPublicView=!canEdit;
+    var _imgSrc=(typeof _normalizeImageDataUrl==='function'?_normalizeImageDataUrl(b.img):String(b.img||'').trim());
+    var img=_imgSrc ? '<img src="'+esc(_imgSrc)+'" class="bimg" onerror="this.style.display=\'none\';this.nextSibling&&(this.nextSibling.style.display=\'flex\');">' : '';
+    var placeholder='<div class="bimg-ph" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;"><div style="font-family:var(--fd);font-size:28px;color:var(--faint);letter-spacing:2px;">'+esc(String((b.nom||'C').charAt(0).toUpperCase()))+'</div><div style="font-family:var(--fd);font-size:7px;letter-spacing:3px;color:var(--faint);opacity:.6;">'+esc(String((b.sub||'Créature').split(' — ')[0]).toUpperCase())+'</div></div>';
+    var media = canEdit
+      ? '<div class="bimg-wrap" onclick="openBeastImgCrop(\''+jsesc(b.id)+'\')" title="Importer / recadrer une image">'+img+placeholder+'<div class="bimg-edit-ov">✎</div></div>'
+      : img + placeholder;
+    if(isPublicView){
+      return '<div class="bcrd">'+media+'<div class="bbody"><div class="bnm">'+esc(b.nom)+'</div><div class="bsub">'+esc(b.sub||'')+'</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">'+(lbl?window.cBehaviorTag(b.beh,{fontSize:8,padding:'2px 8px',letterSpacing:'1.5px',radius:'2px'}):'')+'<span style="color:var(--faint);font-size:10px;">Niv. '+esc(String(b.niv||1))+'</span></div><div class="bdesc">'+esc(_beastExtendedDesc(b)||b.desc||'')+'</div><table class="btbl"><tbody><tr><td>PV</td><td style="color:var(--green);font-family:var(--fm)">'+esc(String(b.pv||0))+'</td><td>EP</td><td style="color:var(--gold);font-family:var(--fm)">'+esc(String(b.ep||0))+'</td></tr><tr><td colspan="2">Frappe</td><td colspan="2" style="font-family:var(--fm);font-size:13px">'+esc(String(b.frappe||''))+'</td></tr></tbody></table><div class="bcomp"><span class="bclbl">COMPÉTENCE</span>'+esc(b.comp||'')+'</div><div class="bdrop"><span>BUTIN</span>'+esc(b.drops||'')+'</div><div class="bdrop"><span>DROP GEMME (D100)</span>'+esc(b.gem||'')+'</div></div></div>';
+    }
+    var editBtn = canEdit ? '<button class="btn btn-sm" onclick="previewBeastAdmin(\''+jsesc(b.id)+'\')"><span>Aperçu</span></button><button class="btn btn-sm" onclick="openEditBeast(\''+jsesc(b.id)+'\')"><span>Éditer</span></button><button class="btn btn-sm" onclick="duplicateBeast(\''+jsesc(b.id)+'\')"><span>Dupliquer</span></button><button class="btn btn-sm" onclick="beastExportJson(\''+jsesc(b.id)+'\')"><span>JSON</span></button>' : '';
+    var archiveBtn = canEdit ? '<button class="btn btn-sm" onclick="toggleBeastArchived(\''+jsesc(b.id)+'\')"><span>'+(b.archived?'Restaurer':'Archiver')+'</span></button>' : '';
+    var purgeBtn = canDel ? '<button class="btn btn-sm btn-red" onclick="delBeast(\''+jsesc(b.id)+'\')"><span>Purger</span></button>' : '';
+    var quickBtns = canEdit ? '<button class="btn btn-sm btn-grn" onclick="bestiaryAddToCombat(\''+jsesc(b.id)+'\',1)"><span>+ Combat</span></button><button class="btn btn-sm" onclick="bestiaryAddToCombat(\''+jsesc(b.id)+'\',2)"><span>+ x2</span></button><button class="btn btn-sm" onclick="bestiaryAddToCombat(\''+jsesc(b.id)+'\',3)"><span>+ x3</span></button>' : '';
+    var noteBlock = b.adminNotes ? '<div class="beast-admin-note"><span class="ttl">Notes admin</span><div style="font-size:12px;color:var(--dim);line-height:1.55;">'+esc(b.adminNotes.length>220?b.adminNotes.slice(0,220)+'…':b.adminNotes)+'</div></div>' : '<div class="beast-admin-note"><span class="ttl">Notes admin</span><div style="font-size:12px;color:var(--faint);font-style:italic;">Aucune note staff.</div></div>';
+    var usageBlock = '<div class="beast-admin-usage"><span class="ttl">Historique d\'usage</span><div style="font-size:12px;color:var(--dim);line-height:1.55;">Apparitions : <strong style="color:var(--text);">'+(usage.uses||0)+'</strong> · Morts : <strong style="color:var(--text);">'+(usage.deaths||0)+'</strong> · Dernière sortie : <strong style="color:var(--text);">'+esc(_beastRelativeDate(usage.lastAt))+'</strong></div>'+(usage.combats&&usage.combats.length?'<div class="beast-admin-usage-list">'+usage.combats.map(function(name){ return '<span>'+esc(name)+'</span>'; }).join('')+'</div>':'')+'</div>';
+    return '<div class="bcrd beast-admin-card" style="'+(b.archived?'opacity:.86;':'')+'">'+media+'<div class="bbody"><div class="beast-admin-top"><div><div class="bnm">'+esc(b.nom)+'</div><div class="bsub">'+esc(b.sub||'')+'</div><div class="beast-admin-badges">'+(lbl?window.cBehaviorTag(b.beh,{fontSize:8,padding:'3px 9px',letterSpacing:'1.3px',radius:'999px'}):'')+_beastBossChip(b)+_beastStatusChip(b)+_beastUsageChip(usage)+_beastCompletenessChip(completeness)+'</div></div><div class="beast-admin-actions">'+editBtn+archiveBtn+purgeBtn+'</div></div><div class="bdesc">'+esc(_beastExtendedDesc(b)||b.desc||'')+'</div><div class="beast-admin-stats"><div class="beast-admin-stat"><span class="k">Niveau</span><span class="v">'+esc(String(b.niv||1))+'</span></div><div class="beast-admin-stat"><span class="k">PV</span><span class="v">'+esc(String(b.pv||0))+'</span></div><div class="beast-admin-stat"><span class="k">EP</span><span class="v">'+esc(String(b.ep||0))+'</span></div><div class="beast-admin-stat"><span class="k">Menace</span><span class="v" style="font-size:12px;">'+esc((_beastThreatBand&&_beastThreatBand(b))||'Modérée')+'</span></div></div><table class="btbl"><tbody><tr><td colspan="2">Frappe</td><td colspan="2" style="font-family:var(--fm);font-size:13px">'+esc(String(b.frappe||'—'))+'</td></tr></tbody></table><div class="bcomp"><span class="bclbl">COMPÉTENCE</span>'+esc(b.comp||'—')+'</div>'+(b.style?'<div class="bcomp" style="border-color:rgba(126,184,212,.15);"><span class="bclbl" style="color:var(--glacier);">STYLE DE COMBAT</span>'+esc(b.style)+'</div>':'')+'<div class="bdrop"><span>BUTIN</span>'+esc(b.drops||'—')+'</div><div class="bdrop"><span>DROP GEMME (D100)</span>'+esc(b.gem||'—')+'</div><div class="beast-admin-quick">'+quickBtns+'</div><div class="beast-admin-meta">'+noteBlock+usageBlock+'</div></div></div>';
+  };
+
+  window.renderBGrid = function(tid,staff){
+    _beastEnsureAdminUi();
+    var beasts=_beastAdminNormalizeCollection(gb());
+    var el=ge(tid); if(!el) return;
+    var shouldRefocus = tid==='p-bgrd' && !!(ge('bestiaire') && ge('bestiaire').classList.contains('active'));
+    var isDesigner=!!(window.CU&&(window.CU.role==='admin'||window.CU.role==='designer'||window.CU.role==='mj'));
+    var filtered=(_beastFilter==='all'?beasts.slice():beasts.filter(function(b){ return ((window.BHL&&BHL[b.beh])||String(b.beh||'').replace(/^./,function(m){return m.toUpperCase();}))===_beastFilter; }));
+    if(!isDesigner) filtered=filtered.filter(function(b){ return !b.hidden && !b.archived; });
+    if(_beastSearch){ var q=_beastSearch; filtered=filtered.filter(function(b){ return [b.nom,b.sub,b.desc,b.comp,b.frappe,b.drops,b.gem,String(b.niv||'')].join(' ').toLowerCase().indexOf(q)>-1; }); }
+    filtered=filtered.filter(function(b){
+      var usage=_beastUsageFor(b.id), comp=_beastCompleteness(b), lvl=parseInt(b.niv,10)||0;
+      if(_beastAdminFilters.status==='published' && (b.hidden||b.archived)) return false;
+      if(_beastAdminFilters.status==='hidden' && (!b.hidden || b.archived)) return false;
+      if(_beastAdminFilters.status==='archived' && !b.archived) return false;
+      if(_beastAdminFilters.status==='active' && b.archived) return false;
+      if(_beastAdminFilters.image==='with' && !String(b.img||'').trim()) return false;
+      if(_beastAdminFilters.image==='without' && String(b.img||'').trim()) return false;
+      if(_beastAdminFilters.usage==='used' && !(usage.uses>0)) return false;
+      if(_beastAdminFilters.usage==='never' && usage.uses>0) return false;
+      if(_beastAdminFilters.usage==='recent' && !(usage.lastAt && (_beastNow()-usage.lastAt)<=30*86400000)) return false;
+      if(_beastAdminFilters.boss==='boss' && !b.isBoss) return false;
+      if(_beastAdminFilters.boss==='normal' && b.isBoss) return false;
+      if(_beastAdminFilters.threat!=='all' && _beastThreatKey(b)!==_beastAdminFilters.threat) return false;
+      if(_beastAdminFilters.completeness==='complete' && !comp.complete) return false;
+      if(_beastAdminFilters.completeness==='incomplete' && comp.complete) return false;
+      if(_beastAdminFilters.minLvl!=='' && lvl < (parseInt(_beastAdminFilters.minLvl,10)||0)) return false;
+      if(_beastAdminFilters.maxLvl!=='' && lvl > (parseInt(_beastAdminFilters.maxLvl,10)||999)) return false;
+      return true;
+    });
+    switch(_beastAdminFilters.sort){
+      case 'updated_desc': filtered.sort(function(a,b){ return (b.updatedAt||b.createdAt||0) - (a.updatedAt||a.createdAt||0); }); break;
+      case 'updated_asc': filtered.sort(function(a,b){ return (a.updatedAt||a.createdAt||0) - (b.updatedAt||b.createdAt||0); }); break;
+      case 'name_asc': filtered.sort(function(a,b){ return String(a.nom||'').localeCompare(String(b.nom||''),'fr'); }); break;
+      case 'name_desc': filtered.sort(function(a,b){ return String(b.nom||'').localeCompare(String(a.nom||''),'fr'); }); break;
+      case 'level_desc': filtered.sort(function(a,b){ return (b.niv||0)-(a.niv||0); }); break;
+      case 'level_asc': filtered.sort(function(a,b){ return (a.niv||0)-(b.niv||0); }); break;
+      case 'danger_desc': filtered.sort(function(a,b){ return _beastDangerScore(b)-_beastDangerScore(a); }); break;
+      case 'usage_desc': filtered.sort(function(a,b){ return _beastUsageFor(b.id).uses - _beastUsageFor(a.id).uses; }); break;
+      case 'published_first': filtered.sort(function(a,b){ var av=(a.archived?2:(a.hidden?1:0)), bv=(b.archived?2:(b.hidden?1:0)); return av-bv || String(a.nom||'').localeCompare(String(b.nom||''),'fr'); }); break;
+    }
+    if(_beastPvSort) filtered.sort(function(a,b){ return _beastPvSort==='asc' ? ((a.pv||0)-(b.pv||0)) : ((b.pv||0)-(a.pv||0)); });
+    if(_beastNivSort) filtered.sort(function(a,b){ return _beastNivSort==='asc' ? ((a.niv||0)-(b.niv||0)) : ((b.niv||0)-(a.niv||0)); });
+    if(_beastAlpha) filtered.sort(function(a,b){ var r=String(a.nom||'').localeCompare(String(b.nom||''),'fr'); return _beastAlpha==='asc'?r:-r; });
+    _beastAdminSummary(beasts, filtered);
+    if(!filtered.length){ el.innerHTML='<p style="color:var(--faint);font-style:italic;padding:20px 0;">Aucune créature pour ces filtres.</p>'; if(shouldRefocus){ setTimeout(function(){ try{ _focusOnScreen(ge('bestiaire'),'auto'); }catch(_e){} },0);} return; }
+    el.innerHTML=filtered.map(function(b){ return window.bCard(b,staff); }).join('');
+    if(shouldRefocus){ setTimeout(function(){ try{ _focusOnScreen(ge('bestiaire'),'auto'); }catch(_e){} },0); }
+  };
+
+  window.openEditBeast = function(id){
+    if(!_staffCanManageBeasts()){ notif('Non autorisé.','err'); return; }
+    _beastEnsureModalEnhancements();
+    var b=_beastAdminNormalizeMeta((gb()||[]).find(function(x){ return x.id===id; })); if(!b) return;
+    var behMap={'Gibier':'1','Passif':'2','Neutre':'3','Agressif':'4','Très agressif':'5','Boss':'3'};
+    ge('eb-id').value=b.id; ge('eb-n').value=b.nom||''; ge('eb-sub').value=b.sub||''; ge('eb-beh').value=behMap[b.beh]||'3'; ge('eb-niv').value=b.niv||1; ge('eb-pv').value=b.pv||''; ge('eb-ep').value=b.ep||''; ge('eb-fr').value=b.frappe||''; ge('eb-co').value=b.comp||''; ge('eb-dr').value=b.drops||''; ge('eb-gm').value=b.gem||''; ge('eb-de').value=b.desc||''; ge('eb-img').value=b.img||''; if(ge('eb-notes')) ge('eb-notes').value=b.adminNotes||''; if(ge('eb-boss')) ge('eb-boss').checked=!!b.isBoss; ge('eb-err').textContent=''; var modalEl=ge('m-editb'); if(modalEl) _hoistModalToRoot(modalEl); openModal('m-editb');
+  };
+  window.addBeast = function(){
+    if(!_staffCanManageBeasts()){ notif('Permission insuffisante.','err'); return; }
+    var n=(ge('ab-n').value||'').trim(); if(!n){ notif('Nom requis.','err'); return; }
+    var behArr=['','Gibier','Passif','Neutre','Agressif','Très agressif'];
+    var now=_beastNow();
+    var b={ id:'b'+now, nom:n, sub:(ge('ab-sub')?ge('ab-sub').value.trim():'') , beh:behArr[parseInt(ge('ab-beh').value,10)]||'Neutre', niv:(parseInt(ge('ab-niv').value,10)||1), pv:(parseInt(ge('ab-pv').value,10)||20), ep:(parseInt(ge('ab-ep').value,10)||20), img:(ge('ab-img').value||'').trim(), frappe:(ge('ab-fr').value||'').trim(), comp:(ge('ab-co').value||'').trim(), drops:(ge('ab-dr').value||'').trim(), gem:(ge('ab-gm').value||'').trim(), desc:(ge('ab-de').value||'').trim(), isBoss:!!(ge('ab-boss')&&ge('ab-boss').checked), adminNotes:(ge('ab-notes')?ge('ab-notes').value.trim():'') , hidden:false, archived:false, createdAt:now, updatedAt:now, createdBy:(window.CU&&CU.name)||'', updatedBy:(window.CU&&CU.name)||'' };
+    var bs=gb(); bs.push(_beastAdminNormalizeMeta(b)); sb(bs); closeModal('m-addb'); ['ab-n','ab-sub','ab-fr','ab-co','ab-dr','ab-gm','ab-de','ab-img'].forEach(function(id){ if(ge(id)) ge(id).value=''; }); if(ge('ab-niv')) ge('ab-niv').value=1; if(ge('ab-pv')) ge('ab-pv').value=20; if(ge('ab-ep')) ge('ab-ep').value=20; if(ge('ab-notes')) ge('ab-notes').value=''; if(ge('ab-boss')) ge('ab-boss').checked=false; renderBGrid('p-bgrd',true); notif(n+' ajouté.','ok');
+  };
+  window.saveEditBeast = function(){
+    if(!_staffCanManageBeasts()) return;
+    var id=ge('eb-id').value, beasts=gb(), b=beasts.find(function(x){ return x.id===id; });
+    if(!b){ ge('eb-err').textContent='Créature introuvable.'; return; }
+    var behArr=['','Gibier','Passif','Neutre','Agressif','Très agressif'];
+    b.nom=(ge('eb-n').value||'').trim()||b.nom; b.sub=(ge('eb-sub').value||'').trim(); b.beh=behArr[parseInt(ge('eb-beh').value,10)]||b.beh; b.niv=parseInt(ge('eb-niv').value,10)||b.niv; b.pv=parseInt(ge('eb-pv').value,10)||b.pv; b.ep=parseInt(ge('eb-ep').value,10)||b.ep; b.frappe=(ge('eb-fr').value||'').trim()||b.frappe; b.comp=(ge('eb-co').value||'').trim(); b.drops=(ge('eb-dr').value||'').trim(); b.gem=(ge('eb-gm').value||'').trim(); b.desc=(ge('eb-de').value||'').trim(); b.img=(ge('eb-img').value||'').trim(); b.isBoss=!!(ge('eb-boss')&&ge('eb-boss').checked); b.adminNotes=(ge('eb-notes')?ge('eb-notes').value.trim():''); b.updatedAt=_beastNow(); b.updatedBy=(window.CU&&CU.name)||''; _beastAdminNormalizeMeta(b); sb(beasts); closeModal('m-editb'); renderBGrid('p-bgrd',true); notif(b.nom+' mis à jour.','ok');
+  };
+  window.delBeast = function(id){
+    if(!can('delete_beast')){ notif('Permission insuffisante.','err'); return; }
+    var b=(gb()||[]).find(function(x){ return x.id===id; });
+    if(!b) return;
+    if(!confirm('Purger définitivement "'+(b.nom||'cette créature')+'" ? L\'archive et l\'historique d\'usage ne seront pas supprimés des combats déjà joués.')) return;
+    sb(gb().filter(function(x){ return x.id!==id; })); renderBGrid('p-bgrd', !!(window.CU && can('manage_beasts'))); notif('Créature supprimée.','inf');
+  };
+  window.toggleBeastArchived = function(id){
+    if(!_staffCanManageBeasts()) return;
+    var beasts=gb(), b=beasts.find(function(x){ return x.id===id; }); if(!b) return;
+    b.archived=!b.archived; b.updatedAt=_beastNow(); b.updatedBy=(window.CU&&CU.name)||''; _beastAdminNormalizeMeta(b); sb(beasts); renderBGrid('p-bgrd',true); notif(b.nom+(b.archived?' archivée.':' restaurée.'),'ok');
+  };
+  window.duplicateBeast = function(id){
+    if(!_staffCanManageBeasts()) return;
+    var src=(gb()||[]).find(function(x){ return x.id===id; }); if(!src) return;
+    var copy=JSON.parse(JSON.stringify(src)); var now=_beastNow();
+    copy.id='b'+now; copy.nom=(copy.nom||'Créature')+' (copie)'; copy.createdAt=now; copy.updatedAt=now; copy.createdBy=(window.CU&&CU.name)||''; copy.updatedBy=(window.CU&&CU.name)||''; copy.archived=false; _beastAdminNormalizeMeta(copy);
+    var beasts=gb(); beasts.unshift(copy); sb(beasts); renderBGrid('p-bgrd',true); notif(copy.nom+' créée.','ok');
+  };
+  window.previewBeastAdmin = function(id){
+    _beastEnsureModalEnhancements();
+    var b=_beastAdminNormalizeMeta((gb()||[]).find(function(x){ return x.id===id; })); if(!b) return;
+    var usage=_beastUsageFor(id), comp=_beastCompleteness(b), tgt=ge('beast-admin-preview-content'); if(!tgt) return;
+    tgt.innerHTML=''
+      +'<div class="beast-preview-shell">'
+        +'<div class="beast-preview-media">'+(b.img?'<img src="'+esc(b.img)+'" alt="">':'<div style="font-family:var(--fd);font-size:30px;color:var(--faint);letter-spacing:2px;">'+esc(String((b.nom||'C').charAt(0).toUpperCase()))+'</div>')+'</div>'
+        +'<div>'
+          +'<div class="beast-admin-badges">'+(window.cBehaviorTag?window.cBehaviorTag(b.beh,{fontSize:8,padding:'3px 9px',letterSpacing:'1.3px',radius:'999px'}):'')+_beastBossChip(b)+_beastStatusChip(b)+_beastCompletenessChip(comp)+'</div>'
+          +'<div style="font-family:var(--fd);font-size:24px;letter-spacing:1.5px;color:var(--text);margin:10px 0 4px;">'+esc(b.nom||'Créature')+'</div>'
+          +'<div style="font-size:13px;color:var(--dim);margin-bottom:10px;">'+esc(b.sub||'')+'</div>'
+          +'<div style="font-size:13px;color:var(--text);line-height:1.68;">'+esc(_beastExtendedDesc(b)||b.desc||'')+'</div>'
+          +'<div class="beast-preview-grid">'
+            +'<div><span class="ttl">Niveau</span><strong>'+esc(String(b.niv||1))+'</strong></div>'
+            +'<div><span class="ttl">PV</span><strong>'+esc(String(b.pv||0))+'</strong></div>'
+            +'<div><span class="ttl">EP</span><strong>'+esc(String(b.ep||0))+'</strong></div>'
+            +'<div><span class="ttl">Menace</span><strong style="font-size:12px;">'+esc((_beastThreatBand&&_beastThreatBand(b))||'Modérée')+'</strong></div>'
+          +'</div>'
+          +'<div class="beast-admin-meta">'
+            +'<div class="beast-admin-note"><span class="ttl">Complétude</span><div style="font-size:12px;color:var(--dim);line-height:1.55;">'+(comp.complete?'Fiche complète.':'Éléments manquants : '+esc(comp.issues.join(', ')))+'</div><div style="margin-top:8px;font-size:12px;color:var(--dim);">Créée : <strong style="color:var(--text);">'+esc(_beastFmtDate(b.createdAt))+'</strong><br>Modifiée : <strong style="color:var(--text);">'+esc(_beastFmtDate(b.updatedAt))+'</strong></div></div>'
+            +'<div class="beast-admin-usage"><span class="ttl">Usage combat</span><div style="font-size:12px;color:var(--dim);line-height:1.55;">Apparitions : <strong style="color:var(--text);">'+(usage.uses||0)+'</strong><br>Morts : <strong style="color:var(--text);">'+(usage.deaths||0)+'</strong><br>Dernière apparition : <strong style="color:var(--text);">'+esc(_beastFmtDate(usage.lastAt))+'</strong></div>'+(usage.combats&&usage.combats.length?'<div class="beast-admin-usage-list">'+usage.combats.map(function(name){return '<span>'+esc(name)+'</span>';}).join('')+'</div>':'')+'</div>'
+          +'</div>'
+          +'<div class="bcomp" style="margin-top:12px;"><span class="bclbl">COMPÉTENCE</span>'+esc(b.comp||'—')+'</div>'
+          +'<div class="bcomp" style="margin-top:10px;"><span class="bclbl">FRAPPE</span>'+esc(b.frappe||'—')+'</div>'
+          +'<div class="beast-admin-meta" style="margin-top:12px;">'
+            +'<div class="bdrop"><span>BUTIN</span>'+esc(b.drops||'—')+'</div>'
+            +'<div class="bdrop"><span>DROP GEMME</span>'+esc(b.gem||'—')+'</div>'
+          +'</div>'
+          +'<div class="beast-admin-note" style="margin-top:12px;"><span class="ttl">Notes admin</span><div style="font-size:12px;color:var(--dim);line-height:1.6;">'+esc(b.adminNotes||'Aucune note staff.')+'</div></div>'
+        +'</div>'
+      +'</div>';
+    openModal('m-beast-admin-preview');
+  };
+  function _beastDownload(name, text){
+    var blob = new Blob([text], {type:'application/json'}), url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href=url; a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){ try{ URL.revokeObjectURL(url); a.remove(); }catch(_e){} }, 0);
+  }
+  window.beastExportJson = function(id){ var b=(gb()||[]).find(function(x){ return x.id===id; }); if(!b) return; _beastDownload((b.nom||'creature').replace(/[^a-z0-9-_]+/gi,'_').toLowerCase()+'.json', JSON.stringify(b,null,2)); };
+  window.beastExportAllJson = function(){ _beastDownload('bestiaire-nuages-polaires.json', JSON.stringify(gb()||[], null, 2)); };
+  window.beastImportJsonPrompt = function(){ _beastEnsureModalEnhancements(); var el=ge('beast-json-import-input'); if(el) el.click(); };
+  window.beastImportJsonFile = function(file){
+    if(!_staffCanManageBeasts() || !file) return;
+    var fr = new FileReader();
+    fr.onload = function(){
+      try{
+        var raw = JSON.parse(String(fr.result||'null'));
+        var items = Array.isArray(raw) ? raw : (Array.isArray(raw&&raw.beasts) ? raw.beasts : [raw]);
+        var beasts = gb();
+        items.forEach(function(entry, idx){
+          if(!entry || typeof entry !== 'object') return;
+          var copy = JSON.parse(JSON.stringify(entry));
+          var existing = beasts.some(function(b){ return String(b.id||'')===String(copy.id||''); });
+          if(existing || !copy.id) copy.id='b'+_beastNow().toString(36)+String(idx);
+          copy.createdAt=parseInt(copy.createdAt,10)||_beastNow(); copy.updatedAt=_beastNow(); copy.createdBy=copy.createdBy||((window.CU&&CU.name)||''); copy.updatedBy=(window.CU&&CU.name)||'';
+          beasts.unshift(_beastAdminNormalizeMeta(copy));
+        });
+        sb(beasts); renderBGrid('p-bgrd',true); notif('Import JSON terminé.','ok');
+      }catch(err){ console.error(err); notif('JSON invalide.','err'); }
+    };
+    fr.readAsText(file, 'utf-8');
+  };
+  window.bestiaryAddToCombat = function(id, count){
+    if(!_staffCanManageBeasts()) return;
+    count=Math.max(1, parseInt(count,10)||1);
+    try{ if(typeof combatBlankState==='function' && (!window._cs || typeof _cs!=='object')) window._cs = combatBlankState(); }catch(_e){}
+    for(var i=0;i<count;i++) combatAddBeast(id);
+    try{ switchTab('combat-mj', null); }catch(_e){}
+    notif('Créature ajoutée au simulateur ('+count+').','ok');
+  };
+  var _origToggleBeastHidden = window.toggleBeastHidden;
+  window.toggleBeastHidden = function(id){
+    if(typeof _origToggleBeastHidden==='function') _origToggleBeastHidden(id);
+    else {
+      var beasts=gb(), b=beasts.find(function(x){return x.id===id;}); if(!b) return; b.hidden=!b.hidden; b.updatedAt=_beastNow(); b.updatedBy=(window.CU&&CU.name)||''; sb(beasts);
+    }
+    renderBGrid('p-bgrd', !!(window.CU && window.CU.type==='staff'));
+  };
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(_beastEnsureAdminUi, 0); });
+})();

@@ -1,0 +1,5 @@
+Nuages Polaires v275
+- Préparation Git propre
+- Ajout .gitignore, .env.example, README.md, CHANGELOG.md
+- Ajout docs Git / Netlify / env vars / architecture / versioning
+- Base fonctionnelle : v274 fix connexion admin

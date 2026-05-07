@@ -1,0 +1,24 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# ── Headers de sécurité ────────────────────────────────────────
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    Cross-Origin-Opener-Policy = "same-origin"
+    Cross-Origin-Resource-Policy = "same-origin"
+    X-Permitted-Cross-Domain-Policies = "none"
+    # Content Security Policy — bloque XSS, limite les sources autorisées
+    # unsafe-inline requis pour les styles inline du frontend SPA
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://i.imgur.com blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests;"
+
+# ── Env requis (à définir dans Netlify Dashboard > Environment variables) ──
+# NP_JWT_SECRET    = "une-chaine-aleatoire-longue-et-secrete-minimum-32-chars"
+# NETLIFY_DATABASE_URL = "postgresql://..."
+# NP_SITE_URL      = "https://votre-site.netlify.app"  (pour CORS)

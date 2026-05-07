@@ -1,0 +1,12 @@
+{
+  "name": "nuages-polaires",
+  "version": "275.0.0",
+  "description": "Compagnon officiel — Nuages Polaires",
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4"
+  },
+  "private": true,
+  "scripts": {
+    "check": "node --check assets/js/main.js && node --check assets/js/ui-patches.js && node --check assets/js/beast-admin.js && node --check assets/js/bestiary-admin-pass2.js && node --check assets/js/finish-audit.js && node --check assets/js/theme-max.js && node --check assets/js/home-readability-polish.js && node --check assets/js/api-hardening.js && node --check assets/js/diagnostics.js && node --check assets/js/site-self-test.js && node --check assets/js/admin-dashboard.js && node --check assets/js/theme-regression.js && node --check assets/js/staff-navigation.js && node --check assets/js/connected-pages-polish.js && node --check assets/js/mobile-polish.js && node --check assets/js/database-admin-polish.js && node --check netlify/functions/auth.js && node --check netlify/functions/db.js && node scripts/check-api-hardening-wrapper.js"
+  }
+}
