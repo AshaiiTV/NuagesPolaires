@@ -1,5 +1,10 @@
 # Changelog
 
+## v276 — Récupération admin
+
+- Ajout d'un bootstrap admin serveur via `NP_ADMIN_PSEUDO` et `NP_ADMIN_PASSWORD` quand la base ne contient encore aucun admin.
+- Documentation Netlify mise à jour pour la récupération du premier accès admin.
+
 ## v275 — Git Ready
 
 - Ajout `.gitignore`.

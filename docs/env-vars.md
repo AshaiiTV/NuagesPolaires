@@ -24,7 +24,7 @@ Contraintes :
 - valeur privée ;
 - ne jamais commit.
 
-### `SITE_ORIGIN`
+### `NP_SITE_URL`
 
 URL publique du site.
 
@@ -33,6 +33,18 @@ Exemple :
 ```txt
 https://nuages-polaires.netlify.app
 ```
+
+## Variables de récupération admin
+
+### `NP_ADMIN_PSEUDO`
+
+Pseudo du compte admin à créer si la base ne contient encore aucun admin.
+
+### `NP_ADMIN_PASSWORD`
+
+Mot de passe temporaire de ce compte admin. Il doit faire au moins 8 caractères.
+
+Ces deux variables servent uniquement au bootstrap : si un admin existe déjà, elles ne changent pas son mot de passe. Après connexion, change le mot de passe depuis l'interface puis supprime `NP_ADMIN_PASSWORD` des variables Netlify.
 
 ## Fichier `.env.example`
 

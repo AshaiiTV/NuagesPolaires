@@ -310,6 +310,44 @@ async function loadAccounts() {
   return normalizeAccounts(accounts);
 }
 async function saveAccounts(accounts) { await writeStore("accounts", normalizeAccounts(accounts)); }
+function getBootstrapAdminConfig() {
+  const pseudo = sanitizeStr(process.env.NP_ADMIN_PSEUDO || process.env.ADMIN_PSEUDO || "", 32);
+  const password = sanitizeStr(process.env.NP_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || "", 256);
+  if (!pseudo || !password) return null;
+  if (!isValidPseudo(pseudo) || password.length < 8) return null;
+  return { pseudo, password };
+}
+function hashPlainPasswordForStorage(password) {
+  return "sha256:" + crypto.createHash("sha256").update(password).digest("hex");
+}
+async function ensureBootstrapAdmin(accounts) {
+  if (!Array.isArray(accounts)) return accounts;
+  if (accounts.some(a => normalizeRole(a && a.role) === "admin")) return accounts;
+  const cfg = getBootstrapAdminConfig();
+  if (!cfg) return accounts;
+
+  const pass = await upgradePassword(hashPlainPasswordForStorage(cfg.password));
+  const existing = accounts.find(a => String(a.pseudo || "").toLowerCase() === cfg.pseudo.toLowerCase());
+  if (existing) {
+    existing.role = "admin";
+    existing.pass = pass;
+    existing.forcePasswordReset = true;
+    existing.updatedAt = Date.now();
+  } else {
+    accounts.push({
+      id: "admin_" + Date.now() + "_" + crypto.randomBytes(4).toString("hex"),
+      pseudo: cfg.pseudo,
+      pass,
+      role: "admin",
+      pid: null,
+      createdAt: Date.now(),
+      lastSeen: Date.now(),
+      forcePasswordReset: true,
+    });
+  }
+  await saveAccounts(accounts);
+  return accounts;
+}
 async function loadPlayers() {
   const players = await readStore("players", []);
   return normalizePlayers(players);
@@ -511,14 +549,20 @@ exports.handler = async (event) => {
       const passHash = sanitizeStr(body.passHash, 200);
       if (!pseudo || !passHash) return { statusCode: 400, headers, body: JSON.stringify({ error: "Champs manquants" }) };
       if (!isValidPseudo(pseudo) || !isValidSha256ClientHash(passHash)) return { statusCode: 400, headers, body: JSON.stringify({ error: "Format invalide" }) };
-      if (!checkRateLimit(ip) || !(await checkRateLimitPersistent(`ip:${ip}`)) || !(await checkRateLimitPersistent(`login:${pseudo.toLowerCase()}`))) {
-        await audit(event, { id: null, pseudo, role: "joueur" }, "login_rate_limited", { pseudo });
-        return { statusCode: 429, headers, body: JSON.stringify({ error: "Trop de tentatives. Réessaie dans 15 minutes." }) };
-      }
-
-      const accounts = await loadAccounts();
+      const accounts = await ensureBootstrapAdmin(await loadAccounts());
       const account = accounts.find(a => String(a.pseudo || "").toLowerCase() === pseudo.toLowerCase());
       const ERR_AUTH = { error: "Identifiant ou mot de passe incorrect" };
+      if (!checkRateLimit(ip) || !(await checkRateLimitPersistent(`ip:${ip}`)) || !(await checkRateLimitPersistent(`login:${pseudo.toLowerCase()}`))) {
+        if (account && isAdmin(account) && (await verifyPassword(passHash, account.pass))) {
+          resetRateLimit(ip);
+          await resetRateLimitPersistent(`ip:${ip}`);
+          await resetRateLimitPersistent(`login:${pseudo.toLowerCase()}`);
+        } else {
+          await audit(event, { id: null, pseudo, role: "joueur" }, "login_rate_limited", { pseudo });
+          return { statusCode: 429, headers, body: JSON.stringify({ error: "Trop de tentatives. Réessaie dans 15 minutes." }) };
+        }
+      }
+
       if (!account) {
         await audit(event, { id: null, pseudo, role: "joueur" }, "login_failed", { pseudo });
         await new Promise(r => setTimeout(r, 200));

@@ -22,3 +22,5 @@
 # NP_JWT_SECRET    = "une-chaine-aleatoire-longue-et-secrete-minimum-32-chars"
 # NETLIFY_DATABASE_URL = "postgresql://..."
 # NP_SITE_URL      = "https://votre-site.netlify.app"  (pour CORS)
+# NP_ADMIN_PSEUDO  = "Admin"      (temporaire si aucun admin n'existe)
+# NP_ADMIN_PASSWORD= "..."        (temporaire, 8 caracteres minimum)

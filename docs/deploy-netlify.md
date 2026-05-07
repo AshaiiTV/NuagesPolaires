@@ -25,8 +25,17 @@ Dans Netlify → Site configuration → Environment variables :
 ```txt
 NETLIFY_DATABASE_URL
 NP_JWT_SECRET
-SITE_ORIGIN
+NP_SITE_URL
 ```
+
+Si aucun compte admin n'existe encore dans la base, ajoute aussi temporairement :
+
+```txt
+NP_ADMIN_PSEUDO
+NP_ADMIN_PASSWORD
+```
+
+Le prochain login avec ce pseudo crée/répare le premier admin. Change ensuite le mot de passe depuis le site et supprime `NP_ADMIN_PASSWORD`.
 
 ## 4. Déploiement
 
@@ -48,4 +57,5 @@ Vérifier :
 
 - `NP_JWT_SECRET` présent et >= 32 caractères.
 - `NETLIFY_DATABASE_URL` correct.
+- `NP_ADMIN_PSEUDO` et `NP_ADMIN_PASSWORD` présents si la base est neuve ou sans admin.
 - Le site utilise bien une version >= v274.
