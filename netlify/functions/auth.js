@@ -315,16 +315,18 @@ function getBootstrapAdminConfig() {
   const password = sanitizeStr(process.env.NP_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || "", 256);
   if (!pseudo || !password) return null;
   if (!isValidPseudo(pseudo) || password.length < 8) return null;
-  return { pseudo, password };
+  const recovery = String(process.env.NP_ADMIN_RECOVERY || "").toLowerCase() === "true";
+  return { pseudo, password, recovery };
 }
 function hashPlainPasswordForStorage(password) {
   return "sha256:" + crypto.createHash("sha256").update(password).digest("hex");
 }
 async function ensureBootstrapAdmin(accounts) {
   if (!Array.isArray(accounts)) return accounts;
-  if (accounts.some(a => normalizeRole(a && a.role) === "admin")) return accounts;
   const cfg = getBootstrapAdminConfig();
   if (!cfg) return accounts;
+  const hasAdmin = accounts.some(a => normalizeRole(a && a.role) === "admin");
+  if (hasAdmin && !cfg.recovery) return accounts;
 
   const pass = await upgradePassword(hashPlainPasswordForStorage(cfg.password));
   const existing = accounts.find(a => String(a.pseudo || "").toLowerCase() === cfg.pseudo.toLowerCase());

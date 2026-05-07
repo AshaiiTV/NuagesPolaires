@@ -3,6 +3,7 @@
 ## v276 — Récupération admin
 
 - Ajout d'un bootstrap admin serveur via `NP_ADMIN_PSEUDO` et `NP_ADMIN_PASSWORD` quand la base ne contient encore aucun admin.
+- Ajout du mode temporaire `NP_ADMIN_RECOVERY=true` pour réinitialiser un admin existant.
 - Documentation Netlify mise à jour pour la récupération du premier accès admin.
 
 ## v275 — Git Ready

@@ -35,7 +35,7 @@ NP_ADMIN_PSEUDO
 NP_ADMIN_PASSWORD
 ```
 
-Le prochain login avec ce pseudo crée/répare le premier admin. Change ensuite le mot de passe depuis le site et supprime `NP_ADMIN_PASSWORD`.
+Le prochain login avec ce pseudo crée/répare le premier admin. Si un admin existe déjà mais que le mot de passe est perdu, ajoute aussi `NP_ADMIN_RECOVERY=true`. Change ensuite le mot de passe depuis le site et supprime `NP_ADMIN_PASSWORD` / `NP_ADMIN_RECOVERY`.
 
 ## 4. Déploiement
 
@@ -58,4 +58,5 @@ Vérifier :
 - `NP_JWT_SECRET` présent et >= 32 caractères.
 - `NETLIFY_DATABASE_URL` correct.
 - `NP_ADMIN_PSEUDO` et `NP_ADMIN_PASSWORD` présents si la base est neuve ou sans admin.
+- `NP_ADMIN_RECOVERY=true` présent temporairement si un admin existe déjà mais que le mot de passe est perdu.
 - Le site utilise bien une version >= v274.

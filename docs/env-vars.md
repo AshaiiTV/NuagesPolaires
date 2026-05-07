@@ -46,6 +46,12 @@ Mot de passe temporaire de ce compte admin. Il doit faire au moins 8 caractères
 
 Ces deux variables servent uniquement au bootstrap : si un admin existe déjà, elles ne changent pas son mot de passe. Après connexion, change le mot de passe depuis l'interface puis supprime `NP_ADMIN_PASSWORD` des variables Netlify.
 
+### `NP_ADMIN_RECOVERY`
+
+Valeur optionnelle : `true`.
+
+À utiliser seulement si un compte admin existe déjà mais que son mot de passe est perdu. Avec `NP_ADMIN_RECOVERY=true`, le compte `NP_ADMIN_PSEUDO` est promu admin et son mot de passe devient `NP_ADMIN_PASSWORD` au prochain login. Supprime ensuite `NP_ADMIN_RECOVERY` et `NP_ADMIN_PASSWORD`.
+
 ## Fichier `.env.example`
 
 Le fichier `.env.example` est commit uniquement comme modèle.
