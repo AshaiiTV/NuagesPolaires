@@ -641,7 +641,7 @@ exports.handler = async (event) => {
         return { statusCode: 429, headers, body: JSON.stringify({ error: "Trop de tentatives. Réessaie dans 15 minutes." }) };
       }
 
-      const accounts = await loadAccounts();
+      const accounts = await ensureBootstrapAdmin(await loadAccounts());
       if (accounts.find(a => String(a.pseudo || "").toLowerCase() === pseudo.toLowerCase())) {
         return { statusCode: 409, headers, body: JSON.stringify({ error: "Ce pseudo est déjà pris." }) };
       }

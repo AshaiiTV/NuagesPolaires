@@ -1639,6 +1639,10 @@ function register(){
   var pass=ge("reg-pass").value;
   var pass2=ge("reg-pass2").value;
   var errEl=ge("err-reg");
+  function failRegister(msg){
+    errEl.textContent=msg||"Erreur lors de l'inscription.";
+    if(btn) btn.disabled=false;
+  }
   if(!pseudo||!pass){ errEl.textContent="Remplis tous les champs."; return; }
   if(pass!==pass2){ errEl.textContent="Les mots de passe ne correspondent pas."; return; }
   if(pseudo.length<2){ errEl.textContent="Pseudo trop court."; return; }
@@ -1656,8 +1660,9 @@ function register(){
   hashPass(pass).then(function(h){
     _authCall({action:"register", pseudo:pseudo, passHash:h}).then(function(r){
       if(!r||!r.ok){
-        errEl.textContent=r&&r.error?r.error:"Erreur lors de l'inscription.";
-        if(btn) btn.disabled=false;
+        var msg = r&&r.error ? r.error : "Erreur lors de l'inscription.";
+        if(r&&r.status) msg += " (HTTP "+r.status+")";
+        failRegister(msg);
         return;
       }
       // Cookie posé par le serveur — recharger les données
@@ -1678,9 +1683,10 @@ function register(){
         launchApp();
       });
     }).catch(function(e){
-      errEl.textContent="Erreur réseau. Réessaie dans un moment.";
-      if(btn) btn.disabled=false;
+      failRegister("Erreur réseau. Réessaie dans un moment.");
     });
+  }).catch(function(){
+    failRegister("Erreur interne de hachage du mot de passe.");
   });
 }
 
