@@ -50,7 +50,9 @@ Ces deux variables servent uniquement au bootstrap : si un admin existe déjà, 
 
 Valeur optionnelle : `true`.
 
-À utiliser seulement si un compte admin existe déjà mais que son mot de passe est perdu. Avec `NP_ADMIN_RECOVERY=true`, le compte `NP_ADMIN_PSEUDO` est promu admin et son mot de passe devient `NP_ADMIN_PASSWORD` au prochain login. Supprime ensuite `NP_ADMIN_RECOVERY` et `NP_ADMIN_PASSWORD`.
+À utiliser seulement si un compte admin existe déjà mais que son mot de passe est perdu. Avec `NP_ADMIN_RECOVERY=true`, le compte `NP_ADMIN_PSEUDO` est promu admin et son mot de passe devient `NP_ADMIN_PASSWORD` au prochain login.
+
+Le recovery est consommé une fois par couple pseudo/mot de passe temporaire pour éviter que le backend réinitialise le compte à chaque tentative. Supprime ensuite `NP_ADMIN_RECOVERY` et `NP_ADMIN_PASSWORD`.
 
 ## Fichier `.env.example`
 

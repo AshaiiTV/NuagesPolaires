@@ -334,12 +334,20 @@ function getBootstrapAdminConfig() {
 function hashPlainPasswordForStorage(password) {
   return "sha256:" + crypto.createHash("sha256").update(password).digest("hex");
 }
+function recoveryFingerprint(cfg) {
+  return crypto.createHash("sha256").update(String(cfg.pseudo || "").toLowerCase() + "\0" + String(cfg.password || "")).digest("hex");
+}
 async function ensureBootstrapAdmin(accounts) {
   if (!Array.isArray(accounts)) return accounts;
   const cfg = getBootstrapAdminConfig();
   if (!cfg) return accounts;
   const hasAdmin = accounts.some(a => normalizeRole(a && a.role) === "admin");
   if (hasAdmin && !cfg.recovery) return accounts;
+  const fp = recoveryFingerprint(cfg);
+  if (hasAdmin && cfg.recovery) {
+    const consumed = await readStore("np_admin_recovery_consumed", {});
+    if (consumed && consumed.fingerprint === fp) return accounts;
+  }
 
   const pass = await upgradePassword(hashPlainPasswordForStorage(cfg.password));
   const existing = accounts.find(a => String(a.pseudo || "").toLowerCase() === cfg.pseudo.toLowerCase());
@@ -359,6 +367,9 @@ async function ensureBootstrapAdmin(accounts) {
       lastSeen: Date.now(),
       forcePasswordReset: true,
     });
+  }
+  if (cfg.recovery) {
+    await writeStore("np_admin_recovery_consumed", { fingerprint: fp, pseudo: cfg.pseudo, consumedAt: Date.now() });
   }
   await saveAccounts(accounts);
   return accounts;

@@ -317,6 +317,46 @@ async function apiAuth(action, data){
   return _authCall(payload);
 }
 
+function npFriendlyApiError(resp, context){
+  var status = resp && Number(resp.status || 0);
+  var err = resp && resp.error ? String(resp.error) : "";
+  var prefix = context ? String(context) + " : " : "";
+  if(status === 0) return prefix + "serveur injoignable. Vérifie Netlify ou ta connexion.";
+  if(status === 401) return prefix + (err || "session expirée ou identifiants incorrects.");
+  if(status === 403) return prefix + (err || "accès refusé. Vérifie NP_SITE_URL ou tes permissions.");
+  if(status === 409) return prefix + (err || "ce pseudo est déjà pris.");
+  if(status === 415) return prefix + "requête refusée par le serveur.";
+  if(status === 429) return prefix + (err || "trop de tentatives. Réessaie dans 15 minutes.");
+  if(status === 503) return prefix + (err || "service indisponible. Vérifie NETLIFY_DATABASE_URL et NP_JWT_SECRET.");
+  if(status >= 500) return prefix + (err || "erreur serveur Netlify.");
+  if(err) return prefix + err;
+  return prefix + "erreur inconnue.";
+}
+
+function npSetMaintenanceBanner(message, kind){
+  var id = "np-maintenance-banner";
+  var banner = ge(id);
+  if(!message){
+    if(banner) banner.remove();
+    return;
+  }
+  if(!banner){
+    banner = document.createElement("div");
+    banner.id = id;
+    banner.style.cssText = "position:fixed;left:12px;right:12px;bottom:12px;z-index:12000;padding:12px 14px;border:1px solid rgba(242,198,109,.28);background:rgba(17,18,26,.94);color:var(--text);box-shadow:0 18px 42px rgba(0,0,0,.38);font-size:13px;line-height:1.45;display:flex;gap:10px;align-items:flex-start;justify-content:space-between;";
+    document.body.appendChild(banner);
+  }
+  var col = kind === "bad" ? "var(--red)" : "var(--gold)";
+  banner.innerHTML = '<div><strong style="color:'+col+';font-family:var(--fd);letter-spacing:1px;text-transform:uppercase;font-size:10px;">Service temporairement indisponible</strong><div style="margin-top:3px;color:var(--dim);">'+esc(message)+'</div></div><button type="button" onclick="npSetMaintenanceBanner(null)" style="background:transparent;border:0;color:var(--faint);font-size:18px;cursor:pointer;line-height:1;">×</button>';
+}
+
+function npHandleServiceIssue(resp, context){
+  var status = resp && Number(resp.status || 0);
+  if(status === 0 || status === 503 || status >= 500){
+    npSetMaintenanceBanner(npFriendlyApiError(resp, context) + " Les pages publiques restent consultables si elles sont déjà chargées.", "bad");
+  }
+}
+
 var _DATA_SCHEMA_VERSION = 2;
 var _DB_WRITE_STATUS = { pending:0, lastOkAt:0, lastErrAt:0, lastErrKey:"", lastErrToastAt:0 };
 function _npClone(v){ try{ return JSON.parse(JSON.stringify(v)); }catch(e){ return v; } }
@@ -1660,7 +1700,8 @@ function register(){
   hashPass(pass).then(function(h){
     _authCall({action:"register", pseudo:pseudo, passHash:h}).then(function(r){
       if(!r||!r.ok){
-        var msg = r&&r.error ? r.error : "Erreur lors de l'inscription.";
+        npHandleServiceIssue(r, "Inscription");
+        var msg = npFriendlyApiError(r, "Inscription");
         if(r&&r.status) msg += " (HTTP "+r.status+")";
         failRegister(msg);
         return;
@@ -1683,7 +1724,9 @@ function register(){
         launchApp();
       });
     }).catch(function(e){
-      failRegister("Erreur réseau. Réessaie dans un moment.");
+      var r = { status:0, error:e && e.message ? e.message : String(e) };
+      npHandleServiceIssue(r, "Inscription");
+      failRegister(npFriendlyApiError(r, "Inscription"));
     });
   }).catch(function(){
     failRegister("Erreur interne de hachage du mot de passe.");
@@ -1773,9 +1816,9 @@ function loginUnified(){
     _authCall({action:"login", pseudo:id, passHash:h}).then(function(serverResp){
       if(!serverResp||!serverResp.ok){
         // Utiliser le message du serveur (rate limit, compte inexistant, etc.)
-        var msg = serverResp&&serverResp.error
-          ? serverResp.error
-          : "Identifiant ou mot de passe incorrect.";
+        npHandleServiceIssue(serverResp, "Connexion");
+        var msg = npFriendlyApiError(serverResp, "Connexion");
+        if(serverResp && serverResp.status === 401) msg = "Identifiant ou mot de passe incorrect.";
         errEl.textContent=msg;
         ge("login-pass").value=""; ge("login-pass").focus();
         return;
@@ -1786,7 +1829,9 @@ function loginUnified(){
       _finishLogin(serverResp, id);
     }).catch(function(e){
       // Erreur réseau pure (serveur injoignable)
-      errEl.textContent="Impossible de contacter le serveur. Vérifie ta connexion.";
+      var r = { status:0, error:e && e.message ? e.message : String(e) };
+      npHandleServiceIssue(r, "Connexion");
+      errEl.textContent=npFriendlyApiError(r, "Connexion");
       ge("login-pass").value=""; ge("login-pass").focus();
     });
   });
@@ -4244,7 +4289,7 @@ function renderDatabase(){
             ?'<span style="font-family:var(--fd);font-size:9px;letter-spacing:1px;color:var(--gold);padding:2px 6px;border:1px solid rgba(201,160,76,.4);">⚠ RÉINITIALISÉ</span>'
             :'<span style="font-family:var(--fm);color:var(--faint);letter-spacing:2px;">••••••••</span>'
           )
-          +' <button class="btn btn-sm" style="margin-left:4px;border-color:var(--glacier-dim);color:var(--glacier-dim);" onclick="openEditPass(\''+a.id+'\',\''+esc(a.pseudo)+'\')" title="Changer le mot de passe"><span>✎</span></button>'
+          +' <button class="btn btn-sm" style="margin-left:4px;border-color:var(--glacier-dim);color:var(--glacier-dim);" onclick="openEditPassSafe(\''+a.id+'\',\''+encodeURIComponent(a.pseudo||'')+'\')" title="Changer le mot de passe"><span>✎</span></button>'
           +' <button class="btn btn-sm" style="margin-left:2px;border-color:rgba(201,160,76,.5);color:var(--gold);font-size:10px;" onclick="resetAccountPass(\''+a.id+'\')" title="Mot de passe oublié — le joueur pourra se reconnecter avec son pseudo seul et définir un nouveau mot de passe"><span>🔑 Reset</span></button>'
           +'</td>'
           +'<td>'+roleSel+'</td>'
@@ -4561,6 +4606,11 @@ function dbSetRole(accountId,role){
 
 
 var _editPassId=null;
+function openEditPassSafe(accountId, encodedPseudo){
+  var pseudo="";
+  try{ pseudo=decodeURIComponent(encodedPseudo||""); }catch(e){ pseudo=String(encodedPseudo||""); }
+  openEditPass(accountId, pseudo);
+}
 function openEditPass(accountId, pseudo){
   if(!CU||CU.role!=="admin"){ return; }
   _editPassId=accountId;
@@ -4679,13 +4729,13 @@ function saveResetPass(){
   if(pass1!==pass2){ errEl.textContent="Les mots de passe ne correspondent pas."; return; }
   hashPass(pass1).then(function(h){
     _authCall({action:"complete_forced_reset", newPassHash:h}).then(function(r){
-      if(!r||!r.ok){ errEl.textContent=(r&&r.error)||"Impossible de définir le mot de passe."; return; }
+      if(!r||!r.ok){ npHandleServiceIssue(r, "Reset mot de passe"); errEl.textContent=npFriendlyApiError(r, "Reset mot de passe"); return; }
       _resetAccountId=null;
       p1.value=""; p2.value="";
       notif("Mot de passe défini. Reconnecte-toi.","ok");
       showScreen("s-login");
       setTimeout(function(){ if(ge("login-id")) ge("login-id").focus(); },150);
-    }).catch(function(){ errEl.textContent="Erreur réseau. Réessaie."; });
+    }).catch(function(e){ var r={status:0,error:e&&e.message?e.message:String(e)}; npHandleServiceIssue(r, "Reset mot de passe"); errEl.textContent=npFriendlyApiError(r, "Reset mot de passe"); });
   });
 }
 
@@ -8146,24 +8196,68 @@ function setMJPid(accountId,pid){
 
 
 
+var _adminAccountSearch="";
+var _adminAccountRoleFilter="all";
+function setAdminAccountSearch(v){
+  _adminAccountSearch=String(v||"");
+  renderMJList();
+}
+function setAdminAccountRoleFilter(v){
+  _adminAccountRoleFilter=String(v||"all");
+  renderMJList();
+}
+
 function renderMJList(){
   if(!CU||CU.role!=="admin"){ return; }
   var el=ge("mjlist");if(!el)return;
   var accounts=getAccounts();
-  var staffAccounts=accounts.filter(function(a){return a.role!=="joueur";});
   var players=gp();
-  var roleCols={admin:"var(--red)",mj:"var(--gold)",designer:"var(--purple)"};
+  var roleCols={admin:"var(--red)",mj:"var(--gold)",designer:"var(--purple)",joueur:"var(--glacier-dim)"};
+  var q=String(_adminAccountSearch||"").trim().toLowerCase();
+  var rf=String(_adminAccountRoleFilter||"all");
+  var admins=accounts.filter(function(x){return x.role==="admin";});
+  var filtered=accounts.filter(function(a){
+    var role=a.role||"joueur";
+    if(rf!=="all"&&role!==rf) return false;
+    if(!q) return true;
+    var linked=a.pid?players.find(function(p){return p.id===a.pid;}):null;
+    return String(a.pseudo||"").toLowerCase().indexOf(q)>=0
+      || String(role||"").toLowerCase().indexOf(q)>=0
+      || String(linked&&linked.name||"").toLowerCase().indexOf(q)>=0;
+  });
+  var counts={all:accounts.length,admin:0,mj:0,designer:0,joueur:0};
+  accounts.forEach(function(a){ var r=a.role||"joueur"; if(counts[r]!=null) counts[r]++; });
 
-  el.innerHTML=staffAccounts.map(function(m){
-    var roleCol=roleCols[m.role]||"var(--dim)";
-    var roleLabel=ROLE_LABELS[m.role]||m.role;
+  var toolbar='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">'
+    +'<input type="search" value="'+esc(_adminAccountSearch)+'" oninput="setAdminAccountSearch(this.value)" placeholder="Rechercher pseudo, rôle, personnage…" style="flex:1;min-width:220px;padding:9px 11px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);">'
+    +'<select onchange="setAdminAccountRoleFilter(this.value)" style="padding:9px 11px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);">'
+      +['all','admin','mj','designer','joueur'].map(function(r){
+        var label={all:'Tous',admin:'Admins',mj:'MJ',designer:'Designers',joueur:'Joueurs'}[r];
+        var n=counts[r]||0;
+        return '<option value="'+r+'"'+(rf===r?' selected':'')+'>'+label+' ('+n+')</option>';
+      }).join('')
+    +'</select>'
+    +'<button class="btn btn-sm" onclick="_refreshPrivateCaches().then(function(){renderMJList();notif(\'Comptes rechargés.\',\'ok\');})"><span>Actualiser</span></button>'
+  +'</div>';
+
+  if(!filtered.length){
+    el.innerHTML=toolbar+'<div style="padding:18px;border:1px solid var(--border);background:var(--bg3);color:var(--dim);font-style:italic;">Aucun compte ne correspond au filtre.</div>';
+    return;
+  }
+
+  el.innerHTML=toolbar+filtered.map(function(m){
+    var role=m.role||"joueur";
+    var roleCol=roleCols[role]||"var(--dim)";
+    var roleLabel=ROLE_LABELS[role]||role;
     var linkedP=m.pid?players.find(function(p){return p.id===m.pid;}):null;
-    var isLastAdmin=m.role==="admin"&&staffAccounts.filter(function(x){return x.role==="admin";}).length<=1;
+    var isLastAdmin=role==="admin"&&admins.length<=1;
+    var pending=role==="joueur"&&!m.pid;
+    var forced=!!m.forcePasswordReset;
 
     var roleSwitches=isLastAdmin
       ?'<span style="font-size:14px;color:var(--faint);font-style:italic;">Compte Admin principal</span>'
       :['joueur','mj','designer','admin'].map(function(r){
-          var active=m.role===r;var rc=roleCols[r]||"var(--dim)";
+          var active=role===r;var rc=roleCols[r]||"var(--dim)";
           var rLabel={joueur:"Joueur",mj:"MJ",designer:"Designer",admin:"Admin"}[r];
           return'<button onclick="setMJRole(\''+m.id+'\',\''+r+'\')" style="padding:5px 10px;font-family:var(--fd);font-size:12px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:1px solid '+(active?rc:'var(--border2)')+';background:'+(active?'rgba(0,0,0,0.2)':'transparent')+';color:'+(active?rc:'var(--dim)')+';transition:all .2s;">'+rLabel+'</button>';
         }).join("");
@@ -8178,10 +8272,19 @@ function renderMJList(){
     return'<div style="padding:14px 0;border-bottom:1px solid var(--border);">'
       +'<div class="fx" style="margin-bottom:8px;">'
         +'<div style="flex:1;">'
-          +'<div style="font-family:var(--fd);font-size:13px;letter-spacing:1px;margin-bottom:3px;">'+m.pseudo+'</div>'
-          +(linkedP?'<div style="font-size:14px;color:var(--green);">⇔ '+linkedP.name+' — '+linkedP.classe+'</div>':'<div style="font-size:14px;color:var(--faint);font-style:italic;">Aucun personnage</div>')
+          +'<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:3px;">'
+            +'<span style="font-family:var(--fd);font-size:13px;letter-spacing:1px;">'+esc(m.pseudo)+'</span>'
+            +'<span style="font-family:var(--fd);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:'+roleCol+';border:1px solid '+roleCol+';padding:2px 6px;">'+esc(roleLabel)+'</span>'
+            +(pending?'<span style="font-size:10px;color:var(--gold);">En attente de liaison</span>':'')
+            +(forced?'<span style="font-size:10px;color:var(--red);">Reset requis</span>':'')
+          +'</div>'
+      +(linkedP?'<div style="font-size:14px;color:var(--green);">⇔ '+esc(linkedP.name)+' — '+esc(linkedP.classe)+'</div>':'<div style="font-size:14px;color:var(--faint);font-style:italic;">Aucun personnage</div>')
         +'</div>'
-        +(!isLastAdmin?'<button class="btn btn-sm btn-red" onclick="delMJ(\''+m.id+'\')"><span>Suppr.</span></button>':'')
+        +'<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">'
+          +'<button class="btn btn-sm" onclick="resetAccountPass(\''+m.id+'\')"><span>Reset</span></button>'
+          +'<button class="btn btn-sm" onclick="openEditPassSafe(\''+m.id+'\',\''+encodeURIComponent(m.pseudo||'')+'\')"><span>MDP</span></button>'
+          +(!isLastAdmin?'<button class="btn btn-sm btn-red" onclick="delMJ(\''+m.id+'\')"><span>Suppr.</span></button>':'')
+        +'</div>'
       +'</div>'
       +'<div class="fx" style="gap:6px;margin-bottom:8px;">'+roleSwitches+'</div>'
       +'<div class="fx" style="gap:6px;align-items:center;">'

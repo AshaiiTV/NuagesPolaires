@@ -1,5 +1,13 @@
 # Changelog
 
+## v278 — Robustesse auth & comptes admin
+
+- Messages d'erreur connexion/inscription plus explicites avec recommandations selon le code HTTP.
+- Bannière maintenance front quand Auth/DB/Netlify est indisponible.
+- Mode recovery admin consommé une fois par mot de passe temporaire pour éviter les resets répétés.
+- Interface comptes admin enrichie : recherche, filtres par rôle, statut liaison/reset, actions mot de passe.
+- Ajout `scripts/test-auth-flows.js` et `npm run test:auth` pour tester inscription, login, mauvais mot de passe et santé admin.
+
 ## v277 — Diagnostic serveur admin
 
 - Ajout d'un diagnostic serveur réservé au dashboard admin : Auth, DB, variables Netlify critiques, récupération admin et contexte de déploiement.

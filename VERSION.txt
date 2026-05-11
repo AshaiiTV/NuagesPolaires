@@ -1,5 +1,6 @@
-Nuages Polaires v275
-- Préparation Git propre
-- Ajout .gitignore, .env.example, README.md, CHANGELOG.md
-- Ajout docs Git / Netlify / env vars / architecture / versioning
-- Base fonctionnelle : v274 fix connexion admin
+Nuages Polaires v278
+- Diagnostic serveur admin : Auth, DB, variables Netlify, recovery et contexte deploy
+- Erreurs connexion/inscription plus lisibles + bannière maintenance
+- Recovery admin consommé une fois par mot de passe temporaire
+- Interface comptes admin avec recherche, filtres, statuts et actions mot de passe
+- Script de test auth : npm run test:auth
