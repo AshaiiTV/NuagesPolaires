@@ -1,5 +1,10 @@
 # Changelog
 
+## v277 — Diagnostic serveur admin
+
+- Ajout d'un diagnostic serveur réservé au dashboard admin : Auth, DB, variables Netlify critiques, récupération admin et contexte de déploiement.
+- Ajout d'une action backend `admin_health` sans exposition de secrets.
+
 ## v276 — Récupération admin
 
 - Ajout d'un bootstrap admin serveur via `NP_ADMIN_PSEUDO` et `NP_ADMIN_PASSWORD` quand la base ne contient encore aucun admin.

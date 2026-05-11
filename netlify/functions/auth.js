@@ -8,6 +8,19 @@ function _getDatabaseUrl() {
 function _isDbConfigured() {
   return !!_getDatabaseUrl();
 }
+function _safeEnvStatus() {
+  const siteUrl = process.env.NP_SITE_URL || "";
+  return {
+    databaseConfigured: _isDbConfigured(),
+    jwtConfigured: !!SECRET && SECRET.length >= 32,
+    siteUrlConfigured: !!siteUrl,
+    siteOrigin: normalizeOrigin(siteUrl) || null,
+    adminBootstrapConfigured: !!getBootstrapAdminConfig(),
+    adminRecoveryEnabled: String(process.env.NP_ADMIN_RECOVERY || "").toLowerCase() === "true",
+    netlifyContext: process.env.CONTEXT || null,
+    deployId: process.env.DEPLOY_ID || null,
+  };
+}
 function _getSqlClient() {
   const url = _getDatabaseUrl();
   if (!url) {
@@ -990,6 +1003,33 @@ if (action === "self_set_theme") {
       if (!caller || !isAdmin(caller.account)) return { statusCode: 403, headers, body: JSON.stringify({ error: "Admin uniquement" }) };
       const logs = await readStore("np_audit_log", []);
       return { statusCode: 200, headers, body: JSON.stringify({ ok: true, logs: Array.isArray(logs) ? logs : [] }) };
+    }
+
+    if (action === "admin_health") {
+      const caller = await getCallerAccount(event);
+      if (!caller || !isAdmin(caller.account)) return { statusCode: 403, headers, body: JSON.stringify({ error: "Admin uniquement" }) };
+      const accounts = await loadAccounts();
+      const admins = accounts.filter(a => normalizeRole(a && a.role) === "admin");
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          ok: true,
+          at: Date.now(),
+          env: _safeEnvStatus(),
+          db: {
+            configured: true,
+            table: "np_store",
+            reachable: true
+          },
+          auth: {
+            session: true,
+            accountId: caller.account.id || null,
+            role: normalizeRole(caller.account.role),
+            admins: admins.length
+          }
+        })
+      };
     }
 
     return { statusCode: 400, headers, body: JSON.stringify({ error: "Action inconnue" }) };

@@ -9,6 +9,7 @@
   var STYLE_ID = 'np-dashboard-console-style-v263';
   var GATE_STYLE_ID = 'np-dashboard-console-gate-v263';
   var LAST_REPORT = null;
+  var HEALTH_REPORT = null;
   var LAST_ACTIONS = [];
   var MAX_ACTIONS = 24;
   var WRAPPED = false;
@@ -33,6 +34,23 @@
 
   function safeJson(v){
     try{ return JSON.stringify(v, null, 2); }catch(e){ return String(v); }
+  }
+
+  async function safePost(url, payload){
+    var started = Date.now();
+    try{
+      var res = await fetch(url, {
+        method:'POST',
+        credentials:'same-origin',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload || {})
+      });
+      var data = {};
+      try{ data = await res.json(); }catch(e){}
+      return { ok:res.ok && data && data.ok !== false, status:res.status, data:data, timeMs:Date.now() - started };
+    }catch(e){
+      return { ok:false, status:0, error:String(e && e.message || e), timeMs:Date.now() - started };
+    }
   }
 
   function nowIso(){ try{ return new Date().toISOString(); }catch(e){ return String(Date.now()); } }
@@ -387,6 +405,38 @@
     }).join('') + '</div>';
   }
 
+  function healthAdvice(item){
+    if(!item) return '';
+    if(item.key === 'database' && item.status !== 'ok') return 'Vérifie NETLIFY_DATABASE_URL dans Netlify puis redéploie.';
+    if(item.key === 'jwt' && item.status !== 'ok') return 'Vérifie NP_JWT_SECRET : 32 caractères minimum.';
+    if(item.key === 'siteUrl' && item.status !== 'ok') return 'Vérifie NP_SITE_URL : il doit matcher exactement l’URL publique du site.';
+    if(item.key === 'auth' && item.status !== 'ok') return 'Reconnecte-toi admin après un redéploiement ou une rotation de NP_JWT_SECRET.';
+    if(item.key === 'recovery' && item.status === 'warn') return 'Supprime NP_ADMIN_PASSWORD et NP_ADMIN_RECOVERY après récupération du compte admin.';
+    return '';
+  }
+
+  function healthHtml(){
+    var report = HEALTH_REPORT;
+    if(!report){
+      return '<div class="np-dashboard-console-result-list">'
+        + '<div class="np-dashboard-console-card"><div class="np-dashboard-console-card-title">Diagnostic serveur</div><div class="np-dashboard-console-card-note">Lance “Diagnostic serveur” pour contrôler Netlify, DB, Auth et variables critiques.</div></div>'
+        + '</div>';
+    }
+    var items = report.items || [];
+    return '<div class="np-dashboard-console-result-list">'
+      + items.map(function(it){
+        var advice = healthAdvice(it);
+        return '<div class="np-dashboard-console-result">'
+          + '<span class="np-dashboard-console-dot '+ escapeHtml(it.status || 'warn') +'">' + symbol(it.status) + '</span>'
+          + '<div><div class="np-dashboard-console-result-name">'+ escapeHtml(it.name || 'Vérification') +'</div>'
+          + '<div class="np-dashboard-console-result-detail">'+ escapeHtml(it.detail || '') +'</div>'
+          + (advice ? '<div class="np-dashboard-console-result-detail" style="margin-top:5px;color:var(--gold);">'+ escapeHtml(advice) +'</div>' : '')
+          + (it.extra ? '<code class="np-dashboard-console-code">'+ escapeHtml(safeJson(it.extra).slice(0,1800)) +'</code>' : '')
+          + '</div></div>';
+      }).join('')
+      + '</div>';
+  }
+
   function renderDashboardConsole(containerId){
     injectStyle();
     syncAdminOnly();
@@ -426,12 +476,17 @@
         + '<div class="np-dashboard-console-section-title"><span>Actions sûres</span><span class="staff-console-badge">Aucune écriture DB</span></div>'
         + '<div class="np-dashboard-console-actions">'
           + '<button class="btn primary" onclick="runDashboardConsoleSelfTest()">Test complet</button>'
+          + '<button class="btn" onclick="runDashboardServerHealth()">Diagnostic serveur</button>'
           + '<button class="btn" onclick="runDashboardConsoleDiag()">Diagnostic DB/Auth</button>'
           + '<button class="btn" onclick="retryDashboardConsoleApi()">Réessayer API</button>'
           + '<button class="btn" onclick="clearDashboardConsoleErrors()">Vider erreurs front</button>'
           + '<button class="btn" onclick="copyDashboardConsoleReport()">Copier rapport</button>'
           + '<button class="btn" onclick="downloadDashboardConsoleReport()">Exporter .json</button>'
         + '</div>'
+      + '</div>'
+      + '<div class="np-dashboard-console-section" data-dashboard-server-health>'
+        + '<div class="np-dashboard-console-section-title"><span>Diagnostic serveur</span><span class="staff-console-badge">Netlify · DB · Auth</span></div>'
+        + healthHtml()
       + '</div>'
       + '<div class="np-dashboard-console-section" data-dashboard-console-results>'
         + '<div class="np-dashboard-console-section-title"><span>Résultats</span></div>'
@@ -461,6 +516,64 @@
       renderDashboardConsole('p-stats-c');
       return LAST_REPORT;
     }
+  }
+
+  async function runDashboardServerHealth(){
+    if(!isAdmin()) return null;
+    addAction('info', 'Diagnostic serveur', 'Contrôle Netlify, DB, Auth et variables critiques.');
+    var auth = await safePost('/.netlify/functions/auth', { action:'admin_health' });
+    var db = await safePost('/.netlify/functions/db', { action:'ping' });
+    var items = [];
+    var env = auth.data && auth.data.env ? auth.data.env : {};
+
+    items.push({
+      key:'auth',
+      name:'Auth admin',
+      status: auth.ok ? 'ok' : (auth.status >= 500 || auth.status === 0 ? 'bad' : 'warn'),
+      detail: auth.ok ? 'Session admin validée par le backend.' : 'Auth admin indisponible' + (auth.status ? ' — HTTP ' + auth.status : '') + '.',
+      extra: auth.ok ? { status:auth.status, role:auth.data && auth.data.auth && auth.data.auth.role, admins:auth.data && auth.data.auth && auth.data.auth.admins } : auth
+    });
+    items.push({
+      key:'database',
+      name:'Base de données',
+      status: db.ok ? 'ok' : (db.status === 503 || db.status >= 500 || db.status === 0 ? 'bad' : 'warn'),
+      detail: db.ok ? 'Ping DB OK en ' + db.timeMs + ' ms.' : 'Ping DB échoué' + (db.status ? ' — HTTP ' + db.status : '') + '.',
+      extra: db.ok ? { status:db.status, timeMs:db.timeMs } : db
+    });
+    items.push({
+      key:'jwt',
+      name:'NP_JWT_SECRET',
+      status: env.jwtConfigured ? 'ok' : 'bad',
+      detail: env.jwtConfigured ? 'Secret de session présent et assez long.' : 'Secret absent ou trop court.'
+    });
+    items.push({
+      key:'siteUrl',
+      name:'NP_SITE_URL',
+      status: env.siteUrlConfigured ? 'ok' : 'warn',
+      detail: env.siteUrlConfigured ? 'Origine configurée : ' + (env.siteOrigin || 'valeur illisible') + '.' : 'Origine non configurée : tolérant, mais moins explicite pour CORS.',
+      extra: env.siteOrigin ? { siteOrigin:env.siteOrigin } : null
+    });
+    items.push({
+      key:'recovery',
+      name:'Récupération admin',
+      status: env.adminRecoveryEnabled ? 'warn' : (env.adminBootstrapConfigured ? 'warn' : 'ok'),
+      detail: env.adminRecoveryEnabled ? 'Mode recovery actif temporairement.' : (env.adminBootstrapConfigured ? 'Bootstrap admin configuré.' : 'Aucun recovery admin actif.')
+    });
+    items.push({
+      key:'deploy',
+      name:'Contexte Netlify',
+      status: 'ok',
+      detail: 'Contexte : ' + (env.netlifyContext || 'inconnu') + '.',
+      extra: { deployId:env.deployId || null }
+    });
+
+    HEALTH_REPORT = { at:nowIso(), authStatus:auth.status, dbStatus:db.status, items:items };
+    LAST_REPORT = { items:items.map(function(it){
+      return { name:it.name, status:it.status, detail:it.detail, extra:it.extra || null };
+    }) };
+    addAction(count(LAST_REPORT.items,'bad') ? 'warn' : 'ok', 'Diagnostic serveur terminé', count(LAST_REPORT.items,'bad') + ' erreur(s), ' + count(LAST_REPORT.items,'warn') + ' warning(s).', HEALTH_REPORT);
+    renderDashboardConsole('p-stats-c');
+    return HEALTH_REPORT;
   }
 
   async function runDashboardConsoleDiag(){
@@ -554,6 +667,7 @@
       role: (window.CU && window.CU.role) || null,
       user: (window.CU && (window.CU.name || window.CU.pseudo)) || null,
       status: getStatus(),
+      health: HEALTH_REPORT,
       lastReport: LAST_REPORT,
       actions: LAST_ACTIONS.slice()
     };
@@ -591,6 +705,7 @@
     window.runDashboardConsoleSelfTest = runDashboardConsoleSelfTest;
     window.runDashboardConsoleDiag = runDashboardConsoleDiag;
     window.retryDashboardConsoleApi = retryDashboardConsoleApi;
+    window.runDashboardServerHealth = runDashboardServerHealth;
     window.clearDashboardConsoleErrors = clearDashboardConsoleErrors;
     window.copyDashboardConsoleReport = copyDashboardConsoleReport;
     window.downloadDashboardConsoleReport = downloadDashboardConsoleReport;
@@ -599,6 +714,7 @@
       render:renderDashboardConsole,
       selfTest:runDashboardConsoleSelfTest,
       diag:runDashboardConsoleDiag,
+      health:runDashboardServerHealth,
       retry:retryDashboardConsoleApi,
       clear:clearDashboardConsoleErrors,
       copy:copyDashboardConsoleReport,
