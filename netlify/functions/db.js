@@ -522,43 +522,65 @@ exports.handler = async (event) => {
       const rows = await sql`SELECT key, value FROM np_store`;
       const result = {};
       const rowMap = {};
+      const warnings = [];
       rows.forEach(r => {
-        rowMap[r.key] = r.value;
-        if (!isPublicKey(r.key)) return;
-        result[r.key] = r.value;
+        try {
+          rowMap[r.key] = r.value;
+          if (!isPublicKey(r.key)) return;
+          result[r.key] = r.value;
+        } catch (err) {
+          warnings.push({ key: String((r && r.key) || "unknown"), error: String((err && err.message) || err) });
+        }
       });
 
       const accounts = Array.isArray(rowMap.accounts) ? rowMap.accounts : [];
       const players = Array.isArray(rowMap.players) ? rowMap.players : [];
-      const linkedPlayers = accounts.filter(a => a && a.pid).length;
-      const activeWeek = accounts.filter(a => a && a.lastSeen && a.lastSeen > (Date.now() - 7 * 24 * 60 * 60 * 1000)).length;
-      const gemmesStock = players.reduce((acc, p) => {
-        const inv = Array.isArray(p && p.inventory) ? p.inventory : [];
-        return acc + inv
-          .filter(i => i && i.category === "Gemme")
-          .reduce((s, i) => s + (Number(i.qty) || 1), 0);
-      }, 0);
-      const gemmesFusionnees = players.reduce((acc, p) => {
-        const hist = Array.isArray(p && p.history) ? p.history : [];
-        return acc + hist.filter(h => h && h.type === "gemme").length;
-      }, 0);
-      const permanentOwners = new Set();
-      rows.forEach(row => {
-        const rowKey = String((row && row.key) || "");
-        if (rowKey.startsWith("combat_arc_idx_")) permanentOwners.add(rowKey.slice("combat_arc_idx_".length));
-        else if (rowKey.startsWith("combat_arc_rec_")) permanentOwners.add(rowKey.slice("combat_arc_rec_".length).split("__")[0]);
-      });
-      const creatureKills = rows.reduce((acc, row) => {
-        const rowKey = String((row && row.key) || "");
-        if (rowKey.startsWith("combat_arc_rec_")) return acc + countKilledCreaturesFromArchive(row.value);
-        if (rowKey.startsWith("combat_arc_idx_")) return acc;
-        if (rowKey.startsWith("combat_arc_")) {
-          const owner = rowKey.slice("combat_arc_".length);
-          if (permanentOwners.has(owner)) return acc;
-          return acc + countKilledCreaturesFromArchives(row.value);
-        }
-        return acc;
-      }, 0);
+      let linkedPlayers = 0;
+      let activeWeek = 0;
+      let gemmesStock = 0;
+      let gemmesFusionnees = 0;
+      let creatureKills = 0;
+      try {
+        linkedPlayers = accounts.filter(a => a && a.pid).length;
+        activeWeek = accounts.filter(a => a && a.lastSeen && a.lastSeen > (Date.now() - 7 * 24 * 60 * 60 * 1000)).length;
+        gemmesStock = players.reduce((acc, p) => {
+          const inv = Array.isArray(p && p.inventory) ? p.inventory : [];
+          return acc + inv
+            .filter(i => i && i.category === "Gemme")
+            .reduce((s, i) => s + (Number(i.qty) || 1), 0);
+        }, 0);
+        gemmesFusionnees = players.reduce((acc, p) => {
+          const hist = Array.isArray(p && p.history) ? p.history : [];
+          return acc + hist.filter(h => h && h.type === "gemme").length;
+        }, 0);
+      } catch (err) {
+        warnings.push({ key: "public_stats", error: String((err && err.message) || err) });
+      }
+      try {
+        const permanentOwners = new Set();
+        rows.forEach(row => {
+          const rowKey = String((row && row.key) || "");
+          if (rowKey.startsWith("combat_arc_idx_")) permanentOwners.add(rowKey.slice("combat_arc_idx_".length));
+          else if (rowKey.startsWith("combat_arc_rec_")) permanentOwners.add(rowKey.slice("combat_arc_rec_".length).split("__")[0]);
+        });
+        creatureKills = rows.reduce((acc, row) => {
+          try {
+            const rowKey = String((row && row.key) || "");
+            if (rowKey.startsWith("combat_arc_rec_")) return acc + countKilledCreaturesFromArchive(row.value);
+            if (rowKey.startsWith("combat_arc_idx_")) return acc;
+            if (rowKey.startsWith("combat_arc_")) {
+              const owner = rowKey.slice("combat_arc_".length);
+              if (permanentOwners.has(owner)) return acc;
+              return acc + countKilledCreaturesFromArchives(row.value);
+            }
+          } catch (err) {
+            warnings.push({ key: String((row && row.key) || "combat_archive"), error: String((err && err.message) || err) });
+          }
+          return acc;
+        }, 0);
+      } catch (err) {
+        warnings.push({ key: "combat_archives", error: String((err && err.message) || err) });
+      }
 
       result.public_stats = {
         players: players.length,
@@ -568,7 +590,7 @@ exports.handler = async (event) => {
         creatureKills: Math.max(creatureKills, 0)
       };
 
-      return { statusCode: 200, headers, body: JSON.stringify({ data: result, source: "db" }) };
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, data: result, source: "db", warnings }) };
     }
 
     if (action === "get_audit_log") {

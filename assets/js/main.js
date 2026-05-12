@@ -6643,10 +6643,14 @@ function renderAccueil(tid){
   var el=ge(tid); if(!el) return;
   var isStaff=CU&&CU.type==="staff";
   var isAdmin=can("manage_mjs");
-  var players=gp();
-  var accounts=getAccounts();
-  var events=getEvents?getEvents():[];
-  var beasts=(typeof gb==='function'?gb():[]);
+  var players=[];
+  var accounts=[];
+  var events=[];
+  var beasts=[];
+  try{ players=Array.isArray(gp())?gp():[]; }catch(e){ players=[]; }
+  try{ accounts=Array.isArray(getAccounts())?getAccounts():[]; }catch(e){ accounts=[]; }
+  try{ events=(typeof getEvents==='function'&&Array.isArray(getEvents()))?getEvents():[]; }catch(e){ events=[]; }
+  try{ beasts=(typeof gb==='function'&&Array.isArray(gb()))?gb():[]; }catch(e){ beasts=[]; }
 
   function fmtMiniDate(ts){
     ts=Number(ts)||0;
@@ -6654,9 +6658,13 @@ function renderAccueil(tid){
     try{ return new Date(ts).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }
     catch(e){ return '—'; }
   }
+  function arcFighters(arc){
+    return Array.isArray(arc&&arc.fighters) ? arc.fighters : [];
+  }
   function combatResultMeta(arc){
-    var joueurs=(arc&&arc.fighters||[]).filter(function(f){ return f&&f.type==='player'; });
-    var monstres=(arc&&arc.fighters||[]).filter(function(f){ return f&&f.type==='beast'; });
+    var fighters=arcFighters(arc);
+    var joueurs=fighters.filter(function(f){ return f&&f.type==='player'; });
+    var monstres=fighters.filter(function(f){ return f&&f.type==='beast'; });
     var allMKO=!!monstres.length && monstres.every(function(f){ return (Number(f.pvCur)||0)<=0; });
     var allJKO=!!joueurs.length && joueurs.every(function(f){ return (Number(f.pvCur)||0)<=0; });
     if(arc&&arc._draft) return {txt:'Brouillon',col:'var(--purple)'};
@@ -6668,13 +6676,16 @@ function renderAccueil(tid){
   var semaine=Date.now()-7*24*60*60*1000;
   var joueurTotal=players.length;
   var actifsS=accounts.filter(function(a){return a.lastSeen&&a.lastSeen>semaine;}).length;
-  var allArcs=isAdmin?getAllCombatArchives():(getCombatArchives?getCombatArchives():[]);
-  var cleanArcs=allArcs.filter(function(arc){ return arc && !arc._draft; });
+  var allArcs=[];
+  try{ allArcs=isAdmin?getAllCombatArchives():(getCombatArchives?getCombatArchives():[]); }catch(e){ allArcs=[]; }
+  if(!Array.isArray(allArcs)) allArcs=[];
+  var cleanArcs=allArcs.filter(function(arc){ return arc && typeof arc==='object' && !arc._draft; });
   var myPid=CU?CU.pid:null;
   var myArcs=myPid?allArcs.filter(function(arc){
-    return (arc.fighters||[]).some(function(f){return f.type==="player"&&f.pid===myPid;});
+    return arcFighters(arc).some(function(f){return f&&f.type==="player"&&f.pid===myPid;});
   }):allArcs;
   if(!myPid) myArcs=allArcs;
+  if(!Array.isArray(myArcs)) myArcs=[];
   var combatCount=myArcs.length;
 
   var gemTotal=0;
@@ -6701,7 +6712,7 @@ function renderAccueil(tid){
   var adminPendingCount=accounts.filter(function(a){return (a.role==="joueur"||!a.role)&&!a.pid;}).length;
   var combatsSemaine=cleanArcs.filter(function(arc){ return (Number(arc.savedAt)||0) > semaine; }).length;
   var creaturesTuees=cleanArcs.reduce(function(sum, arc){
-    return sum + (arc.fighters||[]).filter(function(f){ return f&&f.type==='beast'&&(Number(f.pvCur)||0)<=0; }).length;
+    return sum + arcFighters(arc).filter(function(f){ return f&&f.type==='beast'&&(Number(f.pvCur)||0)<=0; }).length;
   }, 0);
   var latestPlayers=players.slice().sort(function(a,b){ return (Number(b.createdAt)||0)-(Number(a.createdAt)||0); }).slice(0,6);
   var recentCombatsAdmin=cleanArcs.slice().sort(function(a,b){ return (Number(b.savedAt)||0)-(Number(a.savedAt)||0); }).slice(0,6);
@@ -6826,8 +6837,9 @@ function renderAccueil(tid){
       h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;">';
       recentCombatsAdmin.forEach(function(arc){
         var result=combatResultMeta(arc);
-        var playersList=(arc.fighters||[]).filter(function(f){ return f&&f.type==='player'; }).map(function(f){ return String(f.name||'').trim(); }).filter(Boolean).slice(0,4);
-        var beastsList=(arc.fighters||[]).filter(function(f){ return f&&f.type==='beast'; }).map(function(f){ return String(f.name||'').trim(); }).filter(Boolean).slice(0,3);
+        var fighters=arcFighters(arc);
+        var playersList=fighters.filter(function(f){ return f&&f.type==='player'; }).map(function(f){ return String(f.name||'').trim(); }).filter(Boolean).slice(0,4);
+        var beastsList=fighters.filter(function(f){ return f&&f.type==='beast'; }).map(function(f){ return String(f.name||'').trim(); }).filter(Boolean).slice(0,3);
         var owner=String(arc._owner||arc.owner||'système').trim()||'système';
         h+='<div style="padding:12px 12px 11px;border:1px solid var(--border2);background:var(--bg4);border-radius:2px;">';
         h+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">';
@@ -6841,7 +6853,7 @@ function renderAccueil(tid){
         h+='<div style="font-size:11px;color:var(--faint);line-height:1.5;margin-top:4px;">Adversaires : '+esc(beastsList.join(' · ')||'Aucun')+(beastsList.length>=3?'…':'')+'</div>';
         h+='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;">';
         h+='<div style="font-size:10px;color:var(--dim);">Round '+esc(String(arc.round||1))+'</div>';
-        h+='<div style="font-size:10px;color:var(--dim);">'+esc(String((arc.fighters||[]).length||0))+' entité'+(((arc.fighters||[]).length||0)>1?'s':'')+'</div>';
+        h+='<div style="font-size:10px;color:var(--dim);">'+esc(String(fighters.length||0))+' entité'+((fighters.length||0)>1?'s':'')+'</div>';
         h+='</div>';
         h+='</div>';
       });
