@@ -7417,7 +7417,7 @@ function renderCombat(tid){
   h+='<p>Les capacités se débloquent à des seuils précis — des moments où le lien entre l\'arme et son porteur franchit un nouveau palier :</p>';
   h+='<table class="rtbl"><thead><tr><th>Palier</th><th>Niveau requis</th><th>Ce qui s\'éveille</th></tr></thead><tbody>';
   h+='<tr><td><strong>I — Éveil</strong></td><td>Niveau 2</td><td>OUVERTURE — Première capacité. Le Serment s\'ouvre.</td></tr>';
-  h+='<tr><td><strong>II — Intermédiaire</strong></td><td>Niveau 5</td><td>PROGRESSION — Deuxième capacité. Le lien devient stable et exploitable.</td></tr>';
+  h+='<tr><td><strong>II — Densité</strong></td><td>Niveau 5</td><td>APPROFONDISSEMENT — Deuxième capacité. Le lien se densifie.</td></tr>';
   h+='<tr><td><strong>III — Maîtrise</strong></td><td>Niveau 7</td><td>MAÎTRISE — Troisième capacité. La maîtrise prend forme.</td></tr>';
   h+='<tr><td><strong>IV — Plénitude</strong></td><td>Niveau 10</td><td>PLÉNITUDE — Capacité ultime. Le Serment atteint sa plénitude.</td></tr>';
   h+='</tbody></table>';
@@ -7812,7 +7812,7 @@ function switchProgTab(tab){
 // ==========================================
 // LEVEL-UP
 // ==========================================
-var SERM_PALIERS=[{niv:2,nom:"Palier I — Éveil"},{niv:5,nom:"Palier II — Intermédiaire"},{niv:7,nom:"Palier III — Maîtrise"},{niv:10,nom:"Palier IV — Plénitude"}];
+var SERM_PALIERS=[{niv:2,nom:"Palier I — Éveil"},{niv:5,nom:"Palier II — Densité"},{niv:7,nom:"Palier III — Maîtrise"},{niv:10,nom:"Palier IV — Plénitude"}];
 function xpReq(l){return l*30;}
 function sxpReq(l){return l*10;}
 
@@ -13972,7 +13972,7 @@ function _palierNum(sLevel){
 function _palierLabel(sLevel){
   if(sLevel>=10) return "Plénitude";
   if(sLevel>=7)  return "Maîtrise";
-  if(sLevel>=5)  return "Intermédiaire";
+  if(sLevel>=5)  return "Densité";
   return "Éveil";
 }
 
