@@ -246,17 +246,22 @@
 }
 .app-header .hdr-profile{
   box-sizing:border-box !important;
-  height:40px !important;
+  height:44px !important;
   max-height:calc(100% - 8px) !important;
-  padding:3px 8px !important;
+  padding:3px 9px !important;
   align-self:center !important;
   overflow:hidden !important;
 }
 .app-header .hdr-av{
-  width:32px !important;
-  height:32px !important;
-  max-width:32px !important;
-  max-height:32px !important;
+  width:36px !important;
+  height:36px !important;
+  max-width:36px !important;
+  max-height:36px !important;
+}
+.app-header .hdr-av img{
+  object-fit:contain !important;
+  object-position:center !important;
+  background:var(--bg4) !important;
 }
 .app-header .hdr-profile-info{
   min-width:0 !important;
