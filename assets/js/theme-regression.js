@@ -331,12 +331,14 @@
 
       var sandbox = document.createElement('div');
       sandbox.style.cssText = 'position:absolute;left:-99999px;top:-99999px;pointer-events:none;';
-      sandbox.innerHTML = '<button class="btn primary" data-primary="true">Test primaire</button><div class="card theme-card-premium"><div class="title">Carte test</div><div class="tagline">Lecture de base</div></div>';
+      sandbox.innerHTML = '<button class="btn primary" data-primary="true">Test primaire</button><div class="card theme-card-premium"><div class="title">Carte test</div><div class="tagline">Lecture de base</div></div><span class="np-legacy-blue-probe" style="color:rgba(126,184,212,0.7);border:1px solid rgba(126,184,212,0.25);background:rgba(126,184,212,0.05);">Probe bleu legacy</span>';
       document.body.appendChild(sandbox);
       var btn = sandbox.querySelector('button');
       var card = sandbox.querySelector('.card');
+      var probe = sandbox.querySelector('.np-legacy-blue-probe');
       var btnStyle = getComputedStyle(btn);
       var cardStyle = getComputedStyle(card);
+      var probeStyle = getComputedStyle(probe);
       if(btnStyle.color && btnStyle.backgroundImage || btnStyle.backgroundColor){
         checks.push({name:'bouton primaire DOM', status:'ok', detail:'Bouton primaire stylé.'});
       }else{
@@ -346,6 +348,12 @@
         checks.push({name:'carte DOM', status:'ok', detail:'Carte stylée.'});
       }else{
         checks.push({name:'carte DOM', status:'warn', detail:'Style carte difficile à confirmer.'});
+      }
+      var legacyBlueStillVisible = id !== 'dark' && probeStyle.color.replace(/\s+/g,'') === 'rgba(126,184,212,0.7)';
+      if(!legacyBlueStillVisible){
+        checks.push({name:'bleu legacy', status:'ok', detail:'Les anciens styles bleus inline sont recolorés.'});
+      }else{
+        checks.push({name:'bleu legacy', status:'bad', detail:'Un style bleu de base reste visible.', extra:{color:probeStyle.color,borderColor:probeStyle.borderColor,backgroundColor:probeStyle.backgroundColor}});
       }
       sandbox.remove();
     }catch(e){
