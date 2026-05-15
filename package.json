@@ -2,6 +2,7 @@
   "name": "nuages-polaires",
   "version": "278.0.0",
   "description": "Compagnon officiel — Nuages Polaires",
+  "packageManager": "npm@10.9.0",
   "engines": {
     "node": ">=20"
   },
