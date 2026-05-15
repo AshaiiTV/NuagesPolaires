@@ -105,6 +105,19 @@ html,body{
   .hdr-profile-info{
     max-width:126px !important;
   }
+  .app-header .hdr-profile{
+    height:40px !important;
+    max-height:40px !important;
+    padding:3px 6px !important;
+    align-self:center !important;
+    overflow:hidden !important;
+  }
+  .app-header .hdr-av{
+    width:32px !important;
+    height:32px !important;
+    max-width:32px !important;
+    max-height:32px !important;
+  }
   .hdr-user{
     max-width:120px !important;
     overflow:hidden !important;
