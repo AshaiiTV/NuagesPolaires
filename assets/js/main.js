@@ -6765,6 +6765,7 @@ function renderAccueil(tid){
     h+='<button class="btn btn-sm" style="border-color:rgba(201,168,76,.4);color:var(--gold);" onclick="switchDropTab(\'joueurs\',null,\'dd-staff\')"><span>Joueurs</span></button>';
     h+='<button class="btn btn-sm" style="border-color:rgba(201,168,76,.4);color:var(--gold);" onclick="switchDropTab(\'combat-mj\',null,\'dd-staff\')"><span>Simulation</span></button>';
     h+='<button class="btn btn-sm" style="border-color:rgba(201,168,76,.4);color:var(--gold);" onclick="switchDropTab(\'bestiaire\',null,\'dd-staff\')"><span>Bestiaire</span></button>';
+    h+='<button class="btn btn-sm" style="border-color:rgba(201,168,76,.4);color:var(--gold);" onclick="switchDropTab(\'database\',null,\'dd-staff\')"><span>Database</span></button>';
     h+='</div></div>';
 
     var adminStats=[
@@ -6921,6 +6922,7 @@ function renderAccueil(tid){
     h+='<button class="btn btn-sm" style="border-color:rgba(201,168,76,.4);color:var(--gold);" onclick="switchDropTab(\'joueurs\',null,\'dd-staff\')"><span>Joueurs</span></button>';
   }
   if(isAdmin){
+    h+='<button class="btn btn-sm" style="border-color:rgba(201,168,76,.5);color:var(--gold);" onclick="switchDropTab(\'database\',null,\'dd-staff\')"><span>Database</span></button>';
     if(adminPendingCount>0) h+='<button class="btn btn-sm" style="border-color:rgba(201,74,74,.5);color:var(--red);" onclick="switchDropTab(\'joueurs\',null,\'dd-staff\')"><span>'+adminPendingCount+' en attente</span></button>';
   }
   h+='</div>';
