@@ -235,7 +235,8 @@
     return '';
   }
 
-  function handleFailure(service, status, message){
+  function handleFailure(service, status, message, notify){
+    notify = notify !== false;
     service = service || 'api';
     STATE.online = false;
     STATE[service] = 'bad';
@@ -248,24 +249,27 @@
       : (service === 'auth' ? 'Auth indisponible' : 'Service indisponible');
 
     var msg = human + (status ? ' — HTTP ' + status : '') + '. Le site reste ouvert, mais certaines données peuvent ne pas se sauvegarder.';
-    showBanner(msg, status >= 500 || !status ? 'bad' : 'warn');
+    if(notify) showBanner(msg, status >= 500 || !status ? 'bad' : 'warn');
 
-    if(throttle(service + ':' + status + ':' + message, 7000)){
+    if(notify && throttle(service + ':' + status + ':' + message, 7000)){
       toast(msg, status >= 500 || !status ? 'bad' : 'warn');
     }
 
     emitDiag('error', msg, { service:service, status:status, message:message });
   }
 
-  function handleRecovery(service){
+  function handleRecovery(service, notify){
+    notify = notify !== false;
     service = service || 'api';
     STATE[service] = 'ok';
     if((STATE.db === 'ok' || STATE.db === 'unknown') && (STATE.auth === 'ok' || STATE.auth === 'unknown')){
       STATE.online = true;
       STATE.failures = 0;
-      showBanner('Connexion aux services rétablie.', 'ok');
-      if(throttle('recovery', 8000)) toast('Connexion aux services rétablie.', 'ok', 3500);
-      setTimeout(hideBanner, 3800);
+      if(notify){
+        showBanner('Connexion aux services rétablie.', 'ok');
+        if(throttle('recovery', 8000)) toast('Connexion aux services rétablie.', 'ok', 3500);
+        setTimeout(hideBanner, 3800);
+      }
     }
   }
 
@@ -373,12 +377,13 @@
     // automatically because they can clear cookies or pollute the login flow.
     var privateVisible = isLoggedOrPrivateAppVisible();
 
+    var notify = !!manual;
     var db = await rawPost('/.netlify/functions/db', { action:'ping' });
     if(db.ok && db.data && db.data.ok !== false){
       STATE.db = 'ok';
     }else{
       STATE.db = 'bad';
-      handleFailure('db', db.status || 0, (db.data && db.data.error) || db.error || 'db_unavailable');
+      handleFailure('db', db.status || 0, (db.data && db.data.error) || db.error || 'db_unavailable', notify);
     }
 
     var auth = { ok:false, status:0, skipped:!privateVisible, data:null, timeMs:0 };
@@ -391,14 +396,14 @@
         // Not logged in is not a real service failure.
       }else{
         STATE.auth = 'bad';
-        handleFailure('auth', auth.status || 0, (auth.data && auth.data.error) || auth.error || 'auth_unavailable');
+        handleFailure('auth', auth.status || 0, (auth.data && auth.data.error) || auth.error || 'auth_unavailable', notify);
       }
     }else{
       STATE.auth = 'idle';
     }
 
     if(STATE.db === 'ok' && (STATE.auth === 'ok' || STATE.auth === 'warn' || STATE.auth === 'idle')){
-      handleRecovery('api');
+      handleRecovery('api', notify);
     }
 
     return Object.assign({}, STATE, { dbCheck:db, authCheck:auth });
