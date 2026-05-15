@@ -298,6 +298,9 @@
       var accent = getCssVar('--tm-accent');
       var border = getCssVar('--tm-border');
       var primaryText = getCssVar('--tm-primary-text');
+      var legacyAccent = getCssVar('--glacier');
+      var legacyBg = getCssVar('--bg');
+      var themeAccentRgb = getCssVar('--theme-accent-rgb');
 
       if(active === id || (id === 'dark' && active === 'dark')){
         checks.push({name:'classe', status:'ok', detail:'Thème détecté comme actif : ' + active});
@@ -309,6 +312,12 @@
         checks.push({name:'variables CSS', status:'ok', detail:'Variables principales présentes.'});
       }else{
         checks.push({name:'variables CSS', status:'bad', detail:'Variables manquantes.', extra:{pageBg:pageBg,text:text,accent:accent,border:border}});
+      }
+
+      if(legacyAccent === accent && legacyBg && themeAccentRgb){
+        checks.push({name:'variables héritées', status:'ok', detail:'Anciennes variables synchronisées.'});
+      }else{
+        checks.push({name:'variables héritées', status:'bad', detail:'Variables historiques non synchronisées.', extra:{legacyAccent:legacyAccent,accent:accent,legacyBg:legacyBg,themeAccentRgb:themeAccentRgb}});
       }
 
       var ratio = contrast(accent, primaryText);

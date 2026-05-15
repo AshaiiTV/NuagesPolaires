@@ -459,6 +459,14 @@ body[data-theme-engine="v257"] .np-theme-hidden{display:none !important;}
     if(!document.body) return;
     var c = cfg(id), v = c.vars || CONFIG.dark.vars;
     var root = document.body.style;
+    var textSoft = c.tone === 'light' ? 'rgba(32,50,39,.86)' : 'rgba(245,247,251,.86)';
+    var textMuted = c.tone === 'light' ? 'rgba(65,92,77,.72)' : 'rgba(199,212,223,.72)';
+    var panelBase = c.tone === 'light'
+      ? 'linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.74)),rgba(' + v.accentRgb + ',.045)'
+      : 'linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.014)),linear-gradient(180deg,' + v.bg2 + ',' + v.bg + ')';
+    var panelStrong = c.tone === 'light'
+      ? 'linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,255,255,.82)),rgba(' + v.accentRgb + ',.070)'
+      : 'linear-gradient(180deg,rgba(255,255,255,.060),rgba(255,255,255,.018)),linear-gradient(180deg,' + v.bg3 + ',' + v.bg2 + ')';
     root.setProperty('--tm-bg', v.bg);
     root.setProperty('--tm-bg2', v.bg2);
     root.setProperty('--tm-bg3', v.bg3);
@@ -472,10 +480,48 @@ body[data-theme-engine="v257"] .np-theme-hidden{display:none !important;}
     root.setProperty('--tm-accent-rgb', v.accentRgb);
     root.setProperty('--tm-accent-2-rgb', v.accent2Rgb);
     root.setProperty('--tm-page-bg', v.pageBg);
-    root.setProperty('--tm-text-soft', c.tone === 'light' ? 'rgba(32,50,39,.86)' : 'rgba(245,247,251,.86)');
-    root.setProperty('--tm-text-muted', c.tone === 'light' ? 'rgba(65,92,77,.72)' : 'rgba(199,212,223,.72)');
+    root.setProperty('--tm-text-soft', textSoft);
+    root.setProperty('--tm-text-muted', textMuted);
     root.setProperty('--tm-border', 'rgba(' + v.accentRgb + ',.18)');
     root.setProperty('--tm-border-strong', 'rgba(' + v.accent2Rgb + ',.25)');
+
+    root.setProperty('--bg', v.bg);
+    root.setProperty('--bg2', v.bg2);
+    root.setProperty('--bg3', v.bg3);
+    root.setProperty('--bg4', v.bg4);
+    root.setProperty('--border', 'rgba(' + v.accentRgb + ',.15)');
+    root.setProperty('--border2', 'rgba(' + v.accentRgb + ',.25)');
+    root.setProperty('--glacier', v.accent);
+    root.setProperty('--glacier-dim', v.accentDim);
+    root.setProperty('--glacier-bright', v.accentBright);
+    root.setProperty('--glacier-dimcss', v.accentDim);
+    root.setProperty('--glow', 'rgba(' + v.accentRgb + ',.08)');
+    root.setProperty('--glow2', 'rgba(' + v.accentRgb + ',.05)');
+    root.setProperty('--text', v.text);
+    root.setProperty('--text-soft', textSoft);
+    root.setProperty('--dim', v.dim);
+    root.setProperty('--faint', v.faint);
+    root.setProperty('--gold', v.accentBright);
+    root.setProperty('--purple', v.accentDim);
+    root.setProperty('--theme-accent', v.accent);
+    root.setProperty('--theme-accent-rgb', v.accentRgb);
+    root.setProperty('--theme-contrast', v.text);
+    root.setProperty('--theme-contrast-soft', textSoft);
+    root.setProperty('--theme-panel', 'rgba(' + v.accentRgb + ',.08)');
+    root.setProperty('--theme-panel-strong', 'rgba(' + v.accentRgb + ',.16)');
+    root.setProperty('--theme-ring', 'rgba(' + v.accentRgb + ',.35)');
+    root.setProperty('--theme-glow-strong', 'rgba(' + v.accentRgb + ',.18)');
+    root.setProperty('--theme-tint', 'rgba(' + v.accentRgb + ',.04)');
+    root.setProperty('--theme-ui-soft', 'rgba(' + v.accentRgb + ',.16)');
+    root.setProperty('--theme-ui-strong', 'rgba(' + v.accentRgb + ',.24)');
+    root.setProperty('--theme-ui-fg', c.tone === 'light' ? 'rgba(25,36,30,.94)' : 'rgba(248,252,255,.94)');
+    root.setProperty('--theme-ui-fg-soft', c.tone === 'light' ? 'rgba(54,75,64,.76)' : 'rgba(232,240,248,.76)');
+    root.setProperty('--theme-ui-panel', panelBase);
+    root.setProperty('--theme-ui-panel-strong', panelStrong);
+    root.setProperty('--theme-ui-press', 'linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02)),linear-gradient(90deg,rgba(' + v.accentRgb + ',.09),rgba(' + v.accentRgb + ',.045))');
+    root.setProperty('--theme-ui-press-active', 'linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.03)),linear-gradient(90deg,rgba(' + v.accentRgb + ',.15),rgba(' + v.accentRgb + ',.08))');
+    root.setProperty('--accent-solid-fg', c.tone === 'light' ? '#071019' : '#f8fcff');
+    root.setProperty('--accent-solid-shadow', c.tone === 'light' ? 'rgba(255,255,255,.45)' : 'rgba(0,0,0,.35)');
 
     document.body.setAttribute('data-theme-engine', ENGINE_VERSION);
     document.body.setAttribute('data-theme-active', c.id);
