@@ -160,6 +160,9 @@ html,body{
     width:min(88vw, 360px) !important;
     max-width:360px !important;
   }
+  #mobile-drawer:not([style*="left: 0px"]):not([style*="left:0px"]){
+    left:calc(-1 * min(88vw, 360px)) !important;
+  }
   #drawer-staff-section .drawer-item{
     min-height:46px !important;
     padding-top:12px !important;

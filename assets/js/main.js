@@ -3902,6 +3902,7 @@ initStorage(); }
   var drawerTpl  = document.getElementById("tpl-mobile-drawer");
   if(drawerTpl && drawerRoot && !document.getElementById("mobile-drawer")){
     drawerRoot.appendChild(document.importNode(drawerTpl.content, true));
+    closeMobileDrawer();
   }
 
   // Afficher les éléments privés du header
@@ -13489,6 +13490,14 @@ function initLoginParticles(){
 }
 
 
+function mobileDrawerClosedLeft(drawer){
+  if(!drawer) return "-280px";
+  var w=0;
+  try{ w=drawer.getBoundingClientRect().width || drawer.offsetWidth || 280; }catch(e){ w=280; }
+  w=Math.max(280, Math.ceil(Number(w)||280));
+  return "-"+w+"px";
+}
+
 function toggleMobileDrawer(){
   var drawer=ge("mobile-drawer");
   var overlay=ge("mobile-drawer-overlay");
@@ -13515,7 +13524,7 @@ function closeMobileDrawer(){
   var drawer=ge("mobile-drawer");
   var overlay=ge("mobile-drawer-overlay");
   var burger=ge("burger-btn");
-  if(drawer) drawer.style.left="-280px";
+  if(drawer) drawer.style.left=mobileDrawerClosedLeft(drawer);
   if(overlay) overlay.style.display="none";
   if(burger){
     var lines=burger.querySelectorAll(".burger-line");
@@ -13527,6 +13536,10 @@ function closeMobileDrawer(){
 
 // Fermer drawer sur Escape
 document.addEventListener("keydown",function(e){ if(e.key==="Escape") closeMobileDrawer(); });
+window.addEventListener("resize",function(){
+  var drawer=ge("mobile-drawer");
+  if(drawer && drawer.style.left!=="0px") drawer.style.left=mobileDrawerClosedLeft(drawer);
+});
 
 function _editsBackdropWarning(){
   // Flash la modale pour indiquer qu'on ne peut pas fermer comme ça
