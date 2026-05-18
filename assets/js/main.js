@@ -3372,7 +3372,26 @@ function renderThemeGrid(containerId){
   var now = Date.now();
   var cur = _currentTheme;
 
-  var h = '<div style="display:flex;flex-direction:column;gap:6px;">';
+  function themeRarity(t){
+    if(t.id === "bloodmoon") return "Mythique";
+    if(t.id === "aquaris") return "Premium";
+    if(t.event) return "Saisonnier";
+    if(t.id === "dark" || t.id === "light") return "Base";
+    return "Classique";
+  }
+
+  function themeCategory(t){
+    if(t.id === "bloodmoon" || t.id === "aquaris") return "Rares";
+    if(t.event) return "Événement";
+    if(t.id === "dark" || t.id === "light") return "Base";
+    return "Classique";
+  }
+
+  function swatch(c){
+    return '<span class="theme-swatch" style="background:'+esc(c)+';"></span>';
+  }
+
+  var h = '<div class="theme-collection-grid">';
 
   all.forEach(function(t){
     var isActive = cur === t.id;
@@ -3383,6 +3402,9 @@ function renderThemeGrid(containerId){
     var bg1 = t.preview[0] || "#0d0e18";
     var bg2 = t.preview[1] || "#7eb8d4";
     var bg3 = t.preview[2] || "#c9a84c";
+    var rarity = themeRarity(t);
+    var category = themeCategory(t);
+    var state = isActive ? "selected" : (isLocked ? (isAvail ? "available" : "locked") : "owned");
 
     var onclick;
     if(isLocked && isEvent && isAvail){
@@ -3393,53 +3415,25 @@ function renderThemeGrid(containerId){
       onclick = "applyTheme('" + t.id + "');renderAppearanceSection();";
     }
 
-    // Ligne : [palettes] Nom [badge] [action]
-    var rowStyle = "display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:3px;cursor:pointer;"
-      + "border:1px solid " + (isActive ? bg2 : "rgba(126,184,212,0.1)") + ";"
-      + "background:" + (isActive ? "rgba(126,184,212,0.06)" : "rgba(7,8,16,0.6)") + ";"
-      + "transition:border-color .15s,background .15s;"
-      + (isLocked ? "opacity:.55;" : "")
-      + (isLocked && !isAvail ? "cursor:not-allowed;" : "");
-
-    h += '<div style="' + rowStyle + '" onclick="' + onclick + '"'
-      + ' onmouseover="if(!this.classList.contains(\'th-locked\'))this.style.borderColor=\'' + bg2 + '\'"'
-      + ' onmouseout="this.style.borderColor=\'' + (isActive ? bg2 : 'rgba(126,184,212,0.1)') + '\'"'
-      + (isLocked ? ' class="th-locked"' : '') + '>';
-
-    // Palette de 3 carrés couleur
-    h += '<div style="display:flex;gap:3px;flex-shrink:0;">';
-    // Carré fond
-    h += '<div style="width:18px;height:18px;border-radius:2px;background:' + bg1 + ';border:1px solid rgba(255,255,255,0.12);"></div>';
-    // Carré accent
-    h += '<div style="width:18px;height:18px;border-radius:2px;background:' + bg2 + ';border:1px solid rgba(255,255,255,0.12);"></div>';
-    // Carré or/secondaire
-    h += '<div style="width:18px;height:18px;border-radius:2px;background:' + bg3 + ';border:1px solid rgba(255,255,255,0.12);"></div>';
+    h += '<article class="theme-card-premium collection-card np-theme-vault-card'+(isLocked?' th-locked':'')+'"'
+      + ' data-theme-id="'+esc(t.id)+'" data-theme-rarity="'+esc(rarity)+'" data-theme-category="'+esc(category)+'" data-theme-state="'+esc(state)+'"'
+      + ' style="--card-bg:'+esc(bg1)+';--card-a:'+esc(bg2)+';--card-b:'+esc(bg3)+';" onclick="' + onclick + '">';
+    h += '<div class="theme-topline" data-theme-eyebrow="'+esc(rarity)+'"><span class="theme-card-state">'+(isActive?'Équipé':(isLocked?(isAvail?'À débloquer':'Indisponible'):'Possédé'))+'</span></div>';
+    h += '<div class="theme-preview-mini '+esc(t.id)+'" data-preview-theme="'+esc(t.id)+'">';
+    h += '<div class="theme-preview-head"></div><div class="theme-preview-cards"><span></span><span></span><span></span></div><div class="theme-preview-bar"></div>';
     h += '</div>';
-
-    // Nom + infos
-    h += '<div style="flex:1;min-width:0;">';
-    h += '<div style="font-family:var(--fd);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:' + (isActive ? bg2 : 'var(--text)') + ';">' + esc(t.name) + '</div>';
-    if(t.desc){
-      h += '<div style="font-size:11px;color:var(--faint);font-style:italic;margin-top:1px;">' + esc(t.desc) + '</div>';
-    }
-    // Expiration masquée dans la collection
-    if(isEvent && !isAvail && !isLocked){
-      h += '<div style="font-size:10px;color:var(--faint);margin-top:2px;">Dans ta collection</div>';
-    }
+    h += '<div class="theme-card-body">';
+    h += '<div class="theme-title">' + esc(t.name) + '</div>';
+    if(t.desc) h += '<div class="tagline">' + esc(t.desc) + '</div>';
+    if(isEvent && !isAvail && !isLocked) h += '<div class="theme-card-note">Dans ta collection</div>';
     h += '</div>';
-
-    // Badge droite
-    if(isActive){
-      h += '<span style="font-family:var(--fd);font-size:8px;letter-spacing:2px;padding:3px 8px;border:1px solid ' + bg2 + ';color:' + bg2 + ';border-radius:2px;flex-shrink:0;">ACTIF</span>';
-    } else if(isLocked && isAvail){
-      h += '<span style="font-family:var(--fd);font-size:8px;letter-spacing:1px;color:var(--gold);flex-shrink:0;">🔓 Débloquer</span>';
-    } else if(isLocked && !isAvail){
-      h += '<span style="font-size:14px;opacity:.4;flex-shrink:0;">🔒</span>';
-    } else if(isEvent){
-      h += '<span style="font-family:var(--fd);font-size:7px;letter-spacing:1.5px;padding:2px 6px;border:0.5px solid rgba(201,168,76,.4);color:var(--gold);border-radius:2px;flex-shrink:0;">ÉVT</span>';
-    }
-
+    h += '<div class="theme-meta-row">';
+    h += '<span class="theme-meta-pill" data-kind="rarity" data-rarity="'+esc(rarity)+'">'+esc(rarity)+'</span>';
+    h += '<span class="theme-meta-pill" data-kind="category">'+esc(category)+'</span>';
+    h += '<span class="theme-palette">'+swatch(bg1)+swatch(bg2)+swatch(bg3)+'</span>';
     h += '</div>';
+    h += '<div class="theme-card-action">'+(isActive?'Thème actif':(isLocked && isAvail?'Débloquer':(isLocked?'Non disponible':'Équiper')))+'</div>';
+    h += '</article>';
   });
 
   h += '</div>';
