@@ -61,6 +61,7 @@
   color:var(--tm-text,var(--text)) !important;
 }
 body.light #app-root,
+body[data-theme-tone="light"] #app-root,
 body[data-theme-active="light"] #app-root{
   --np-readable-card:var(--tm-card-bg,linear-gradient(180deg,rgba(255,255,255,.98),rgba(246,250,255,.92))) !important;
   --np-readable-card-strong:var(--tm-card-bg-strong,linear-gradient(180deg,rgba(255,255,255,1),rgba(241,247,253,.96))) !important;
@@ -71,6 +72,7 @@ body[data-theme-active="light"] #app-root{
   --np-readable-shadow-strong:var(--tm-shadow,0 20px 42px rgba(31,57,88,.11), inset 0 1px 0 rgba(255,255,255,.78)) !important;
 }
 body.light #app-root :where(.card,.panel,.staff-panel,.modal,.db-card,.summary-card,.archive-card,.history-card,.bcrd,.prog-panel,.sim-panel,.sim-fighter-card,.sim-log,.sim-history,.sl-card,.collection-card,.theme-card-premium,.warnbox,.hlbox,.empty-state,.home-footer,.journal-entry,.activity-item),
+body[data-theme-tone="light"] #app-root :where(.card,.panel,.staff-panel,.modal,.db-card,.summary-card,.archive-card,.history-card,.bcrd,.prog-panel,.sim-panel,.sim-fighter-card,.sim-log,.sim-history,.sl-card,.collection-card,.theme-card-premium,.warnbox,.hlbox,.empty-state,.home-footer,.journal-entry,.activity-item),
 body[data-theme-active="light"] #app-root :where(.card,.panel,.staff-panel,.modal,.db-card,.summary-card,.archive-card,.history-card,.bcrd,.prog-panel,.sim-panel,.sim-fighter-card,.sim-log,.sim-history,.sl-card,.collection-card,.theme-card-premium,.warnbox,.hlbox,.empty-state,.home-footer,.journal-entry,.activity-item){
   border-color:var(--np-readable-border) !important;
   background:var(--np-readable-card) !important;
@@ -78,11 +80,13 @@ body[data-theme-active="light"] #app-root :where(.card,.panel,.staff-panel,.moda
   box-shadow:var(--np-readable-shadow) !important;
 }
 body.light #app-root :where(.card-title,.section-title,.panel-title,.modal-title,.title,.mtit,.sl-title,.arc-name,.summary-kicker,.home-footer-label,h1,h2,h3,h4,.empty-state-title),
+body[data-theme-tone="light"] #app-root :where(.card-title,.section-title,.panel-title,.modal-title,.title,.mtit,.sl-title,.arc-name,.summary-kicker,.home-footer-label,h1,h2,h3,h4,.empty-state-title),
 body[data-theme-active="light"] #app-root :where(.card-title,.section-title,.panel-title,.modal-title,.title,.mtit,.sl-title,.arc-name,.summary-kicker,.home-footer-label,h1,h2,h3,h4,.empty-state-title){
   color:var(--tm-text,var(--text)) !important;
   text-shadow:none !important;
 }
 body.light #app-root :where(.desc,.sub,.muted,.small,.help,.note,.hint,.tagline,.faint,.pcls,.siwpn,.eslv.empty,.arc-summary-label,.theme-preview-foot,.empty-state-sub),
+body[data-theme-tone="light"] #app-root :where(.desc,.sub,.muted,.small,.help,.note,.hint,.tagline,.faint,.pcls,.siwpn,.eslv.empty,.arc-summary-label,.theme-preview-foot,.empty-state-sub),
 body[data-theme-active="light"] #app-root :where(.desc,.sub,.muted,.small,.help,.note,.hint,.tagline,.faint,.pcls,.siwpn,.eslv.empty,.arc-summary-label,.theme-preview-foot,.empty-state-sub){
   color:var(--tm-text-muted,var(--dim)) !important;
   opacity:1 !important;
@@ -96,6 +100,23 @@ body.light #app-root [style*="background: rgba(5,8,14"],
 body.light #app-root [style*="background:rgba(6,8,16"],
 body.light #app-root [style*="background: rgba(6,8,16"],
 body.light #app-root [style*="linear-gradient(180deg, rgba(18,25,42"],
+body[data-theme-tone="light"] #app-root [style*="background:rgba(7,8,16"],
+body[data-theme-tone="light"] #app-root [style*="background: rgba(7,8,16"],
+body[data-theme-tone="light"] #app-root [style*="background:rgba(7,8,18"],
+body[data-theme-tone="light"] #app-root [style*="background: rgba(7,8,18"],
+body[data-theme-tone="light"] #app-root [style*="background:rgba(5,8,14"],
+body[data-theme-tone="light"] #app-root [style*="background: rgba(5,8,14"],
+body[data-theme-tone="light"] #app-root [style*="background:rgba(6,8,16"],
+body[data-theme-tone="light"] #app-root [style*="background: rgba(6,8,16"],
+body[data-theme-tone="light"] #app-root [style*="background:linear-gradient(135deg,#0d0e1c,#0f1025)"],
+body[data-theme-tone="light"] #app-root [style*="background:linear-gradient(160deg,#0c0e1c,#090a12)"],
+body[data-theme-tone="light"] #app-root [style*="background:linear-gradient(160deg,#0e1020,#0d0e18)"],
+body[data-theme-tone="light"] #app-root [style*="background:linear-gradient(160deg,#0f1022,#0d0e18)"],
+body[data-theme-tone="light"] #app-root [style*="background:linear-gradient(160deg,#120e0e,#0d0e18)"],
+body[data-theme-tone="light"] #app-root [style*="linear-gradient(180deg, rgba(18,25,42"],
+body[data-theme-tone="light"] #app-root [style*="background:linear-gradient(180deg,rgba(10,18,38"],
+body[data-theme-tone="light"] #app-root [style*="background:linear-gradient(180deg,rgba(13,18,34"],
+body[data-theme-tone="light"] #app-root [style*="background:linear-gradient(180deg,rgba(15,18,31"],
 body[data-theme-active="light"] #app-root [style*="background:rgba(7,8,16"],
 body[data-theme-active="light"] #app-root [style*="background: rgba(7,8,16"],
 body[data-theme-active="light"] #app-root [style*="background:rgba(7,8,18"],
@@ -285,8 +306,10 @@ body[data-theme-active="light"] #app-root [style*="linear-gradient(180deg, rgba(
   box-shadow:0 28px 72px rgba(0,0,0,.46), inset 0 1px 0 rgba(255,255,255,.06) !important;
 }
 body.light #app-root :where(.modal,.tab-content.tab-popup-active,.branch-modal-shell,.cmdk,.account-dd,.branch-dd,.nav-dropdown-menu,.nav-group-menu),
+body[data-theme-tone="light"] #app-root :where(.modal,.tab-content.tab-popup-active,.branch-modal-shell,.cmdk,.account-dd,.branch-dd,.nav-dropdown-menu,.nav-group-menu),
 body[data-theme-active="light"] #app-root :where(.modal,.tab-content.tab-popup-active,.branch-modal-shell,.cmdk,.account-dd,.branch-dd,.nav-dropdown-menu,.nav-group-menu),
 body.light :where(#nav-dropdown-root .nav-dropdown-menu,#nav-dropdown-root .nav-group-menu,#mobile-drawer,.nav-dropdown-menu,.nav-group-menu,.account-dd,.branch-dd,.menu),
+body[data-theme-tone="light"] :where(#nav-dropdown-root .nav-dropdown-menu,#nav-dropdown-root .nav-group-menu,#mobile-drawer,.nav-dropdown-menu,.nav-group-menu,.account-dd,.branch-dd,.menu),
 body[data-theme-active="light"] :where(#nav-dropdown-root .nav-dropdown-menu,#nav-dropdown-root .nav-group-menu,#mobile-drawer,.nav-dropdown-menu,.nav-group-menu,.account-dd,.branch-dd,.menu){
   border-color:var(--np-ui-border-soft,rgba(58,143,186,.18)) !important;
   background:var(--np-ui-dropdown-bg,linear-gradient(180deg,rgba(255,255,255,.998),rgba(241,247,253,.992))) !important;
