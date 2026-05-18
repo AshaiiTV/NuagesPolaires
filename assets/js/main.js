@@ -771,10 +771,19 @@ function getAutoGrantedThemeIds(){
     .filter(function(t){ return !!(t && !isBaseTheme(t.id) && t.autoGrantAll && !isEventThemeTemporarilyLocked(t.id)); })
     .map(function(t){ return t.id; });
 }
+function roleKey(user){
+  return String((user&&user.role)||"joueur").toLowerCase();
+}
+function isAdminRole(user){
+  return roleKey(user)==="admin";
+}
+function isStaffRole(user){
+  var role = roleKey(user);
+  return role === "admin" || role === "mj" || role === "designer";
+}
 function isAdminLike(user){
   if(!user) return false;
-  var role = String(user.role||"").toLowerCase();
-  return user.type === "staff" || role === "admin" || role === "mj" || role === "designer";
+  return user.type === "staff" || isStaffRole(user);
 }
 
 function getUnlockedThemes(){
@@ -894,7 +903,7 @@ function downloadArchive(idx){
 }
 
 function deleteArchive(idx){
-  if(!CU||CU.role!=="admin"){ return; }
+  if(!isAdminRole(CU)){ return; }
   if(!confirm("Supprimer cette archive ? Cette action est irréversible.")) return;
   var archives=getSysLogArchive();
   archives.splice(idx,1);
@@ -1469,7 +1478,7 @@ function sm(mjs){
 // Système de permissions
 function can(action){
   if(!CU) return false;
-  var role=CU.role||"joueur";
+  var role=roleKey(CU);
   if(role==="joueur") return false;
   var perms={
     admin:   ["manage_players","manage_mjs","manage_beasts","manage_items","manage_xp","manage_stats","adjust_levels","delete_player","delete_beast"],
@@ -1986,9 +1995,10 @@ function updateHdrProfile(){
   var badgeEl=ge("hdr-badge");
   if(badgeEl){
     if(CU.type==="staff"){
-      var lbl=ROLE_LABELS[CU.role]||"Staff";
+      var hdrRole=roleKey(CU);
+      var lbl=ROLE_LABELS[hdrRole]||"Staff";
       badgeEl.textContent=lbl;
-      var roleCol={admin:"var(--red)",mj:"var(--gold)",designer:"var(--purple)"}[CU.role]||"var(--dim)";
+      var roleCol={admin:"var(--red)",mj:"var(--gold)",designer:"var(--purple)"}[hdrRole]||"var(--dim)";
       badgeEl.style.borderColor=roleCol;
       badgeEl.style.color=roleCol;
     } else if(CU.pending){
@@ -2563,7 +2573,7 @@ function renderProfil(){
   var account=getAccountByPseudo(CU.pseudo||CU.name);
   var roleCols={admin:"var(--red)",mj:"var(--gold)",designer:"var(--purple)",joueur:"var(--glacier)"};
   var roleLabels={admin:"Admin",mj:"MJ",designer:"Designer",joueur:"Joueur"};
-  var role=CU.role||"joueur";
+  var role=roleKey(CU);
   var col=roleCols[role]||"var(--glacier)";
 
   var isCollectionTab = (_settingsTab === "collection");
@@ -2645,7 +2655,7 @@ function renderProfil(){
   h+='</div>';
 
   // Zone de danger — suppression de compte (masquée pour l'admin)
-  if(CU&&CU.role==="admin"){
+  if(isAdminRole(CU)){
     h+='<div style="margin-top:24px;padding:16px;border:1px solid var(--border);background:var(--bg3);">';
     h+='<div style="font-family:var(--fd);font-size:9px;letter-spacing:3px;color:var(--faint);margin-bottom:8px;">SUPPRESSION DE COMPTE</div>';
     h+='<div style="font-size:12px;color:var(--faint);font-style:italic;">Le compte administrateur ne peut pas être supprimé.</div>';
@@ -3540,7 +3550,7 @@ function isThemeAutoGranted(themeId){
   return !!(t && t.autoGrantAll);
 }
 function grantThemeToAccount(accountId, themeId){
-  if(!CU || CU.role !== "admin") return;
+  if(!isAdminRole(CU)) return;
   var t = getThemeById(themeId);
   if(!t){ notif("Thème introuvable.","err"); return; }
   var acc=getAccounts().find(function(a){ return a.id===accountId; });
@@ -3553,7 +3563,7 @@ function grantThemeToAccount(accountId, themeId){
 
 
 function grantThemeToAllPlayers(themeId){
-  if(!CU || CU.role !== "admin") return;
+  if(!isAdminRole(CU)) return;
   var t = getThemeById(themeId);
   if(!t){ notif("Thème introuvable.","err"); return; }
   _authCall({action:"admin_grant_theme_all", themeId:themeId}).then(function(r){
@@ -3696,7 +3706,7 @@ function __bindThemeVisibilityDelegation(){
 }
 try{ __bindThemeVisibilityDelegation(); }catch(e){}
 function toggleThemeAutoGrant(themeId){
-  if(!CU || CU.role !== "admin") return;
+  if(!isAdminRole(CU)) return;
   var t = getThemeById(themeId);
   if(!t){ notif("Thème introuvable.","err"); return; }
   var next = !isThemeAutoGranted(themeId);
@@ -3864,7 +3874,7 @@ initStorage(); }
     if(!el) return;
     el.className=el.className.replace(/\bis-(staff|admin|mj|designer|player|joueur)\b/g,"").trim();
   });
-  var role=CU.role||"joueur";
+  var role=roleKey(CU);
   var isStaff=role!=="joueur";
   var isPending=!!(CU.pending)&&role==="joueur"; // jamais pending pour le staff
   if(isStaff){
@@ -4016,7 +4026,7 @@ function renderPendingTab(){
 }
 
 async function loadAuditLogAdmin(force){
-  if(!CU||CU.role!=="admin") return [];
+  if(!isAdminRole(CU)) return [];
   if(_auditLoading) return _auditLog||[];
   if(!force && _auditLoadedOnce) return _auditLog||[];
   _auditLoading=true;
@@ -4177,7 +4187,7 @@ function adminRevokeThemeFromDb(accountId, themeId){
 }
 
 function adminRevokeThemeFromAccount(accountId, themeId){
-  if(!CU || CU.role !== "admin") return;
+  if(!isAdminRole(CU)) return;
   var acc = (getAccounts()||[]).find(function(a){ return a && a.id === accountId; });
   var t = getThemeById ? getThemeById(themeId) : null;
   var accountLabel = acc && acc.pseudo ? acc.pseudo : "ce joueur";
@@ -4195,7 +4205,7 @@ function adminRevokeThemeFromAccount(accountId, themeId){
 
 function renderDatabase(){
   var el=ge("t-database-c"); if(!el) return;
-  if(!CU||CU.role!=="admin"){ el.innerHTML=""; return; }
+  if(!isAdminRole(CU)){ el.innerHTML=""; return; }
   // Les comptes sont désormais rechargés via session_bundle si nécessaire.
   var accounts=getAccounts();
   var players=gp();
@@ -4595,7 +4605,7 @@ function deleteHistoryEntry(pid,idx){
 }
 
 function dbSetRole(accountId,role){
-  if(!CU||CU.role!=="admin"){ return; }
+  if(!isAdminRole(CU)){ return; }
   if(!can("manage_mjs")){notif("Admin uniquement.","err");return;}
   _authCall({action:"admin_set_role", accountId:accountId, role:role}).then(function(r){
     if(!r||!r.ok){ notif((r&&r.error)||"Impossible de changer ce rôle.","err"); return; }
@@ -4612,7 +4622,7 @@ function openEditPassSafe(accountId, encodedPseudo){
   openEditPass(accountId, pseudo);
 }
 function openEditPass(accountId, pseudo){
-  if(!CU||CU.role!=="admin"){ return; }
+  if(!isAdminRole(CU)){ return; }
   _editPassId=accountId;
   ge("ep-pseudo").textContent=pseudo;
   ge("ep-pass").value="";
@@ -4621,7 +4631,7 @@ function openEditPass(accountId, pseudo){
   setTimeout(function(){ ge("ep-pass").focus(); },100);
 }
 function saveEditPass(){
-  if(!CU||CU.role!=="admin"){ return; }
+  if(!isAdminRole(CU)){ return; }
   var newPass=ge("ep-pass").value.trim();
   if(!newPass||newPass.length<4){ ge("ep-err").textContent="4 caractères minimum."; return; }
   hashPass(newPass).then(function(h){
@@ -4641,7 +4651,7 @@ var _pollInterval=null;
 function startAdminPoll(){
   if(_pollInterval) clearInterval(_pollInterval);
   _pollInterval=setInterval(function(){
-    if(!CU||CU.type!=="staff"||CU.role!=="admin"){ clearInterval(_pollInterval); _pollInterval=null; return; }
+    if(!CU||CU.type!=="staff"||!isAdminRole(CU)){ clearInterval(_pollInterval); _pollInterval=null; return; }
     var n=getAccounts().filter(function(a){ return (a.role==="joueur"||!a.role)&&!a.pid; }).length;
     var badge=ge("pending-badge");
     if(!badge) return;
@@ -4973,10 +4983,10 @@ function switchTab(id, btn, _isBack){
     // Re-fetch depuis la DB pour avoir les dernières inscriptions
     _refreshPrivateCaches().then(function(){
       renderSPList();
-      if(CU.role==="admin"){ renderMJList(); renderPendingAccounts(); updatePendingBadge(); }
+      if(isAdminRole(CU)){ renderMJList(); renderPendingAccounts(); updatePendingBadge(); }
     }).catch(function(){
       renderSPList();
-      if(CU.role==="admin"){ renderMJList(); renderPendingAccounts(); updatePendingBadge(); }
+      if(isAdminRole(CU)){ renderMJList(); renderPendingAccounts(); updatePendingBadge(); }
     });
   }
   setTimeout(function(){ _focusOnScreen(el || ge(id), _isBack ? 'auto' : 'smooth'); }, 24);
@@ -6139,7 +6149,7 @@ function renderBGrid(tid,staff){
   var beasts=gb();
   var el=ge(tid);if(!el)return;
   var shouldRefocus = tid==="p-bgrd" && !!(ge("bestiaire") && ge("bestiaire").classList.contains("active"));
-  var isDesigner=CU&&(CU.role==="admin"||CU.role==="designer");
+  var isDesigner=CU&&(isAdminRole(CU)||roleKey(CU)==="designer");
   var isAdminBestiary=!!(CU&&can("manage_beasts"));
   var _bhl=(typeof BHL!=='undefined'&&BHL)?BHL:{};
   var filtered=_beastFilter==='all'?beasts.slice():beasts.filter(function(b){ return (_bhl[b.beh]||String(b.beh||'').replace(/^./,function(m){return m.toUpperCase();}))===_beastFilter; });
@@ -6550,7 +6560,7 @@ function bCard(b,staff){
   var lbl=cBehaviorLabel(b.beh)||String(b.beh||'').replace(/^./,function(m){return m.toUpperCase();});
   var canEdit=staff&&can("manage_beasts");
   var canDel=staff&&can("delete_beast");
-  var canToggle=CU&&(CU.role==="admin"||CU.role==="designer");
+  var canToggle=CU&&(isAdminRole(CU)||roleKey(CU)==="designer");
   var isHidden=!!b.hidden;
   var isArchived=!!b.archived;
   var usage=_beastUsageFor(b);
@@ -7489,7 +7499,7 @@ function togglePendingList(){
 }
 
 function renderPendingAccounts(){
-  if(!CU||CU.role!=="admin"){ return; }
+  if(!isAdminRole(CU)){ return; }
   var section=ge("pending-accounts-section");
   var list=ge("pending-accounts-list");
   if(!section||!list) return;
@@ -7547,7 +7557,7 @@ function goToPending(){
 }
 
 function linkAccount(accountId){
-  if(!CU||CU.role!=="admin"){ return; }
+  if(!isAdminRole(CU)){ return; }
   var account=getAccounts().find(function(a){ return a.id===accountId; });
   if(!account){ notif("Compte introuvable.","err"); return; }
   var sel=ge("link-sel-"+accountId);
@@ -7564,7 +7574,7 @@ function linkAccount(accountId){
 
 
 function unlinkAccount(accountId){
-  if(!CU||CU.role!=="admin"){ return; }
+  if(!isAdminRole(CU)){ return; }
   if(!can("manage_mjs")){notif("Admin uniquement.","err");return;}
   if(!confirm("Délier ce compte de son personnage ?")) return;
   var account=getAccounts().find(function(a){ return a.id===accountId; });
@@ -7594,7 +7604,7 @@ function setAccountPid(accountId,pid){
 
 
 function deleteAccount(accountId){
-  if(!CU||CU.role!=="admin"){ return; }
+  if(!isAdminRole(CU)){ return; }
   if(!confirm("Supprimer ce compte ?")) return;
   var acc=getAccounts().find(function(a){return a.id===accountId;});
   var pseudo=acc?acc.pseudo:"?";
@@ -8222,7 +8232,7 @@ function setAdminAccountRoleFilter(v){
 }
 
 function renderMJList(){
-  if(!CU||CU.role!=="admin"){ return; }
+  if(!isAdminRole(CU)){ return; }
   var el=ge("mjlist");if(!el)return;
   var accounts=getAccounts();
   var players=gp();
@@ -8722,7 +8732,7 @@ function saveJournal(){
 // STATS SERVEUR + EXPORT
 // ==========================================
 function renderStats(tid){
-  if(!CU||CU.role!=="admin"){ var el2=ge(tid); if(el2) el2.innerHTML=""; return; }
+  if(!isAdminRole(CU)){ var el2=ge(tid); if(el2) el2.innerHTML=""; return; }
   var el=ge(tid); if(!el) return;
   var players=gp();
   var accounts=getAccounts();
@@ -12871,7 +12881,7 @@ function saveEvents(arr){ sv("events",arr); }
 
 function renderEvents(tid){
   var el=ge(tid); if(!el) return;
-  var canEdit=CU&&(CU.role==="admin"||CU.role==="designer");
+  var canEdit=CU&&(isAdminRole(CU)||roleKey(CU)==="designer");
   var isStaff=CU&&CU.role&&CU.role!=="joueur";
   var events=getEvents().sort(function(a,b){ return (a.date||0)-(b.date||0); });
   // Les joueurs ne voient pas les événements masqués
@@ -14285,7 +14295,7 @@ function getCommandItems(){
   if(role==="admin"){
     push("stats","Tableau de bord","Vue d’ensemble admin",function(){ switchTab("stats",null); },"T");
     push("database","Database","Données et logs",function(){ switchTab("database",null); },"DB");
-    if(CU&&CU.role==="admin") push("audit","Journal sécurité","Logs d'authentification et actions sensibles",function(){ switchTab("database",null); openAuditLogAdmin(); },"SEC");
+    if(isAdminRole(CU)) push("audit","Journal sécurité","Logs d'authentification et actions sensibles",function(){ switchTab("database",null); openAuditLogAdmin(); },"SEC");
   }
   return items;
 }

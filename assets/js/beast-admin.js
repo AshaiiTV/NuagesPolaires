@@ -235,7 +235,8 @@
     var beasts=_beastAdminNormalizeCollection(gb());
     var el=ge(tid); if(!el) return;
     var shouldRefocus = tid==='p-bgrd' && !!(ge('bestiaire') && ge('bestiaire').classList.contains('active'));
-    var isDesigner=!!(window.CU&&(window.CU.role==='admin'||window.CU.role==='designer'||window.CU.role==='mj'));
+    var staffRole=String((window.CU&&window.CU.role)||'').toLowerCase();
+    var isDesigner=!!(window.CU&&(staffRole==='admin'||staffRole==='designer'||staffRole==='mj'));
     var filtered=(_beastFilter==='all'?beasts.slice():beasts.filter(function(b){ return ((window.BHL&&BHL[b.beh])||String(b.beh||'').replace(/^./,function(m){return m.toUpperCase();}))===_beastFilter; }));
     if(!isDesigner) filtered=filtered.filter(function(b){ return !b.hidden && !b.archived; });
     if(_beastSearch){ var q=_beastSearch; filtered=filtered.filter(function(b){ return [b.nom,b.sub,b.desc,b.comp,b.frappe,b.drops,b.gem,String(b.niv||'')].join(' ').toLowerCase().indexOf(q)>-1; }); }
