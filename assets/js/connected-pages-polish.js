@@ -246,6 +246,8 @@
 }
 .app-header .hdr-profile{
   box-sizing:border-box !important;
+  display:flex !important;
+  align-items:center !important;
   height:50px !important;
   max-height:50px !important;
   padding:2px 9px !important;
@@ -268,9 +270,18 @@
   background:var(--bg4) !important;
 }
 .app-header .hdr-profile-info{
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+  gap:4px !important;
+  height:44px !important;
   min-width:0 !important;
+  overflow:hidden !important;
 }
 .app-header .hdr-user{
+  display:block !important;
+  min-height:0 !important;
+  height:auto !important;
   max-width:132px !important;
   overflow:hidden !important;
   text-overflow:ellipsis !important;
@@ -280,11 +291,15 @@
 .app-header .hdr-badge{
   display:inline-flex !important;
   align-items:center !important;
+  justify-content:center !important;
+  align-self:flex-start !important;
   width:max-content !important;
   max-width:132px !important;
-  min-height:14px !important;
+  min-height:0 !important;
+  height:17px !important;
   padding:1px 6px !important;
   line-height:1 !important;
+  box-sizing:border-box !important;
 }
 .nav-dropdown-menu,
 .nav-group-menu{

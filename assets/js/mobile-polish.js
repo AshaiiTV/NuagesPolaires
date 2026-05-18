@@ -103,9 +103,18 @@ html,body{
     gap:6px !important;
   }
   .hdr-profile-info{
+    display:flex !important;
+    flex-direction:column !important;
+    justify-content:center !important;
+    gap:4px !important;
+    height:42px !important;
+    min-width:0 !important;
     max-width:126px !important;
+    overflow:hidden !important;
   }
   .app-header .hdr-profile{
+    display:flex !important;
+    align-items:center !important;
     height:48px !important;
     max-height:48px !important;
     padding:2px 7px !important;
@@ -128,10 +137,24 @@ html,body{
     background:var(--bg4) !important;
   }
   .hdr-user{
+    display:block !important;
+    min-height:0 !important;
+    height:auto !important;
     max-width:120px !important;
     overflow:hidden !important;
     text-overflow:ellipsis !important;
     white-space:nowrap !important;
+    line-height:1.05 !important;
+  }
+  .app-header .hdr-badge{
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    align-self:flex-start !important;
+    min-height:0 !important;
+    height:17px !important;
+    line-height:1 !important;
+    box-sizing:border-box !important;
   }
   #mobile-drawer{
     width:min(88vw, 360px) !important;
