@@ -3429,7 +3429,7 @@ function renderThemeGrid(containerId){
     h += '</div>';
     h += '<div class="theme-meta-row">';
     h += '<span class="theme-meta-pill" data-kind="rarity" data-rarity="'+esc(rarity)+'">'+esc(rarity)+'</span>';
-    h += '<span class="theme-meta-pill" data-kind="category">'+esc(category)+'</span>';
+    if(category !== rarity) h += '<span class="theme-meta-pill" data-kind="category">'+esc(category)+'</span>';
     h += '<span class="theme-palette">'+swatch(bg1)+swatch(bg2)+swatch(bg3)+'</span>';
     h += '</div>';
     h += '<div class="theme-card-action">'+(isActive?'Thème actif':(isLocked && isAvail?'Débloquer':(isLocked?'Non disponible':'Équiper')))+'</div>';
