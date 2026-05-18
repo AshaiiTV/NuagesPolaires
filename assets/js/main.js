@@ -8408,9 +8408,12 @@ function _positionNavDrop(ddId){
   var btn=ge(ddId+"-btn");
   if(!wrap||!menu||!btn) return;
   var rect=btn.getBoundingClientRect();
-  var gap=8;
+  var header=document.querySelector(".app-header") || document.querySelector(".hdr") || document.querySelector("header");
+  var hrect=header ? header.getBoundingClientRect() : null;
+  var gap=2;
   var vw=window.innerWidth||document.documentElement.clientWidth||0;
   var vh=window.innerHeight||document.documentElement.clientHeight||0;
+  var headerBottom=hrect ? Math.round(hrect.bottom) : Math.round(rect.bottom);
   menu.style.position='fixed';
   menu.style.right='auto';
   menu.style.bottom='auto';
@@ -8418,19 +8421,15 @@ function _positionNavDrop(ddId){
   menu.style.top='0px';
   menu.style.minWidth=Math.max(220, Math.ceil(rect.width))+'px';
   menu.style.maxWidth='min(320px, calc(100vw - 16px))';
-  menu.style.maxHeight='calc(100vh - 16px - '+Math.max(0, Math.round(rect.bottom + gap))+'px)';
+  menu.style.maxHeight='calc(100vh - 16px - '+Math.max(0, headerBottom + gap)+'px)';
   menu.style.visibility='hidden';
   void menu.offsetWidth;
   var mr=menu.getBoundingClientRect();
   var mw=Math.max(menu.offsetWidth||Math.round(mr.width)||0,220);
-  var mh=Math.max(menu.offsetHeight||Math.round(mr.height)||0,0);
   var left=Math.round(rect.left);
   if(left + mw > vw - 8) left=Math.max(8, vw - mw - 8);
   if(left < 8) left=8;
-  var top=Math.round(rect.bottom + gap);
-  if(mh && top + mh > vh - 8){
-    top=Math.max(8, Math.round(rect.top - mh - gap));
-  }
+  var top=Math.max(8, Math.min(vh - 8, headerBottom + gap));
   menu.style.left=left+'px';
   menu.style.top=top+'px';
   menu.style.setProperty('--np-nav-menu-left', left+'px');
