@@ -458,6 +458,15 @@ body[data-theme-engine="v257"].theme-easter::after{
   left:0;right:0;bottom:0;height:132px;z-index:0;
   background:linear-gradient(180deg,rgba(223,242,213,0),rgba(171,224,153,.35) 42%,rgba(112,185,93,.54) 100%);
 }
+body[data-theme-engine="v257"].theme-easter #easter-eggs-layer{
+  display:none !important;
+}
+body[data-theme-engine="v257"].theme-easter #s-app::before,
+body[data-theme-engine="v257"].theme-easter #s-app::after{
+  content:none !important;
+  display:none !important;
+  background:none !important;
+}
 body[data-theme-engine="v257"].theme-aquaris::before{
   inset:0;z-index:-1;
   background:linear-gradient(180deg,rgba(215,252,255,.10),transparent 18%,transparent 70%,rgba(0,0,0,.30) 100%);

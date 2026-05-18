@@ -3256,8 +3256,7 @@ function applyTheme(themeId, save){
   updateHeaderLogoTheme();
   updateLaunchTheme();
   setAdaptiveThemeTokens();
-  if(normalized === "easter") setTimeout(_easterEggsInit, 80);
-  else _easterEggsDestroy();
+  _easterEggsDestroy();
 }
 
 /* ====== EASTER EGG PARTICLE SYSTEM ====== */
