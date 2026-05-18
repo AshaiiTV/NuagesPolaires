@@ -8594,6 +8594,7 @@ function renderJournal(tid){
 }
 
 function escHtml(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function escAttr(s){ return escHtml(s).replace(/"/g,"&quot;").replace(/'/g,"&#x27;"); }
 function esc(s){ return escHtml(s); }
 
 function saveJournal(){
@@ -11966,13 +11967,10 @@ var _spawnLabCatchupCoef = 0.14;
 var _spawnLabSameEncounterCoef = 0.95;
 function _spawnLabDefaults(){
   return {
-    selectedIds: [],
+    zone: '',
     danger: 3,
     players: 3,
     draws: 5,
-    query: '',
-    behavior: 'all',
-    level: 'all',
     totals: {},
     lastRuns: [],
     globalVersion: 2,
@@ -11988,9 +11986,6 @@ function _spawnLabGlobalDefaults(){
     lastGeneratedAt: 0,
     lastGeneratedBy: ''
   };
-}
-function _spawnLabVisibleIds(){
-  return gb().filter(function(b){ return !b.hidden; }).map(function(b){ return b.id; });
 }
 function _spawnLabNormalizeGlobal(raw){
   var out=_spawnLabGlobalDefaults();
@@ -12029,7 +12024,7 @@ function _spawnLabLoadUi(){
     if(raw){
       var data=JSON.parse(raw);
       if(data && typeof data==='object'){
-        ['selectedIds','danger','players','draws','query','behavior','level'].forEach(function(k){ if(data[k]!==undefined) base[k]=data[k]; });
+        ['zone','danger','players','draws'].forEach(function(k){ if(data[k]!==undefined) base[k]=data[k]; });
       }
     }
   }catch(_e){}
@@ -12041,7 +12036,6 @@ function _spawnLabLoad(){
   base.totals=global.totals||{};
   base.lastRuns=Array.isArray(global.lastRuns)?global.lastRuns:[];
   base.lastGlobalAt=global.lastGeneratedAt||0;
-  if(!Array.isArray(base.selectedIds) || !base.selectedIds.length) base.selectedIds=_spawnLabVisibleIds();
   if(!Array.isArray(base.lastRuns)) base.lastRuns=[];
   if(!base.totals || typeof base.totals!=='object' || Array.isArray(base.totals)) base.totals={};
   if(Array.isArray(base.recent) && base.recent.length){
@@ -12061,26 +12055,21 @@ function _spawnLabEnsure(){
   _spawnLabState.totals=global.totals||{};
   _spawnLabState.lastRuns=Array.isArray(global.lastRuns)?global.lastRuns:[];
   _spawnLabState.lastGlobalAt=global.lastGeneratedAt||0;
-  var ids={}; gb().forEach(function(b){ ids[b.id]=1; });
-  _spawnLabState.selectedIds=(_spawnLabState.selectedIds||[]).filter(function(id){ return !!ids[id]; });
-  if(!_spawnLabState.selectedIds.length) _spawnLabState.selectedIds=_spawnLabVisibleIds();
   if(!_spawnLabState.totals || typeof _spawnLabState.totals!=='object' || Array.isArray(_spawnLabState.totals)) _spawnLabState.totals={};
   return _spawnLabState;
 }
 function _spawnLabSaveUi(){
   if(!_spawnLabState) return;
-  var ui={selectedIds:_spawnLabState.selectedIds||[],danger:_spawnLabState.danger,players:_spawnLabState.players,draws:_spawnLabState.draws,query:_spawnLabState.query||'',behavior:_spawnLabState.behavior||'all',level:_spawnLabState.level||'all'};
+  var ui={zone:_spawnLabState.zone||'',danger:_spawnLabState.danger,players:_spawnLabState.players,draws:_spawnLabState.draws};
   try{ localStorage.setItem(_spawnLabUiKey, JSON.stringify(ui)); localStorage.removeItem(_spawnLabLegacyKey); }catch(_e){}
 }
 function _spawnLabSyncInputs(){
   var s=_spawnLabEnsure();
-  var danger=ge('sl-danger'), players=ge('sl-players'), draws=ge('sl-draws'), query=ge('sl-query'), behavior=ge('sl-behavior'), level=ge('sl-level');
+  var zone=ge('sl-zone'), danger=ge('sl-danger'), players=ge('sl-players'), draws=ge('sl-draws');
+  if(zone) s.zone=String(zone.value||'');
   if(danger) s.danger=Math.max(1,Math.min(5,parseInt(danger.value,10)||s.danger||3));
   if(players) s.players=Math.max(1,Math.min(8,parseInt(players.value,10)||s.players||3));
   if(draws) s.draws=Math.max(1,Math.min(12,parseInt(draws.value,10)||s.draws||5));
-  if(query) s.query=String(query.value||'').trim();
-  if(behavior) s.behavior=String(behavior.value||'all');
-  if(level) s.level=String(level.value||'all');
   _spawnLabSaveUi();
 }
 function _spawnLabTotalCounts(s){
@@ -12166,22 +12155,51 @@ function _spawnLabThreatValue(beast){
     default: return lvl;
   }
 }
-function _spawnLabMatchesFilters(beast, s){
-  s=s||_spawnLabEnsure();
-  var q=String(s.query||'').trim().toLowerCase();
-  var behFilter=String(s.behavior||'all');
-  var levelFilter=String(s.level||'all');
-  var name=String((beast&&beast.nom)||'').toLowerCase();
-  var sub=String((beast&&beast.sub)||'').toLowerCase();
-  var beh=cBehaviorLabel(beast&&beast.beh);
-  var lvl=parseInt(beast&&beast.niv,10)||1;
-  if(q && (name+' '+sub+' '+beh.toLowerCase()).indexOf(q)<0) return false;
-  if(behFilter!=='all' && beh!==behFilter) return false;
-  if(levelFilter==='1-2' && !(lvl>=1 && lvl<=2)) return false;
-  if(levelFilter==='3-5' && !(lvl>=3 && lvl<=5)) return false;
-  if(levelFilter==='6-8' && !(lvl>=6 && lvl<=8)) return false;
-  if(levelFilter==='9+' && lvl<9) return false;
-  return true;
+function _spawnLabBeastZones(beast){
+  var zones=Array.isArray(beast&&beast.zones)?beast.zones:[];
+  zones=zones.map(function(z){ return String(z||'').trim(); }).filter(Boolean);
+  return zones.length?zones:['Sans zone'];
+}
+function _spawnLabZoneValue(label){
+  label=String(label||'').trim();
+  return label==='Sans zone'?'__none__':label;
+}
+function _spawnLabZoneLabel(value){
+  value=String(value||'').trim();
+  return value==='__none__'?'Sans zone':value;
+}
+function _spawnLabZoneOptions(beasts){
+  var seen=Object.create(null), labels=[];
+  (beasts||[]).forEach(function(b){
+    if(!b || b.hidden) return;
+    _spawnLabBeastZones(b).forEach(function(label){
+      if(!seen[label]){ seen[label]=1; labels.push(label); }
+    });
+  });
+  labels.sort(function(a,b){
+    if(a==='Sans zone') return 1;
+    if(b==='Sans zone') return -1;
+    return a.localeCompare(b,'fr',{sensitivity:'base'});
+  });
+  return labels.map(function(label){ return {value:_spawnLabZoneValue(label),label:label}; });
+}
+function _spawnLabResolveZone(s, beasts){
+  var opts=_spawnLabZoneOptions(beasts);
+  if(!opts.length){ s.zone='__all__'; return {value:'__all__',label:'Toutes zones'}; }
+  var current=String((s&&s.zone)||'').trim();
+  var found=opts.find(function(o){ return o.value===current; });
+  if(!found){ found=opts[0]; if(s) s.zone=found.value; _spawnLabSaveUi(); }
+  return found;
+}
+function _spawnLabZonePool(zone, beasts){
+  zone=String(zone||'').trim();
+  var all=(beasts||[]).filter(function(b){ return b && !b.hidden; });
+  if(zone==='__all__') return all;
+  var label=_spawnLabZoneLabel(zone);
+  return all.filter(function(b){
+    var zones=_spawnLabBeastZones(b);
+    return zones.indexOf(label)>=0;
+  });
 }
 function _spawnLabPickWeighted(list){
   var total=0;
@@ -12276,12 +12294,13 @@ function _spawnLabGenerateEncounter(pool, s, totals){
 function spawnLabGenerate(){
   var s=_spawnLabEnsure();
   _spawnLabSyncInputs();
+  var beasts=gb().slice();
+  var zoneMeta=_spawnLabResolveZone(s, beasts);
+  var pool=_spawnLabZonePool(zoneMeta.value, beasts);
   var global=_spawnLabGlobal();
   s.totals=Object.assign({}, global.totals||{});
   s.lastRuns=Array.isArray(global.lastRuns)?global.lastRuns:[];
-  var selected={}; (s.selectedIds||[]).forEach(function(id){ selected[id]=1; });
-  var pool=gb().filter(function(b){ return !!selected[b.id]; });
-  if(!pool.length){ notif('Sélectionne au moins une créature.','err'); return; }
+  if(!pool.length){ notif('Aucun mob dans cette zone.','err'); return; }
   var totals=Object.assign({}, global.totals||{});
   var runs=[];
   for(var i=0;i<s.draws;i++){
@@ -12313,56 +12332,12 @@ function spawnLabResetHistory(){
   renderSpawnLab('p-apparitions-c');
   notif('Historique global d’apparition réinitialisé.','inf');
 }
-function spawnLabToggleBeast(id){
-  var s=_spawnLabEnsure();
-  _spawnLabSyncInputs();
-  var i=s.selectedIds.indexOf(id);
-  if(i>=0) s.selectedIds.splice(i,1);
-  else s.selectedIds.push(id);
-  _spawnLabSaveUi();
-  renderSpawnLab('p-apparitions-c');
-}
-function spawnLabSelect(mode){
-  var s=_spawnLabEnsure();
-  _spawnLabSyncInputs();
-  if(mode==='all') s.selectedIds=gb().map(function(b){ return b.id; });
-  else if(mode==='visible') s.selectedIds=gb().filter(function(b){ return !b.hidden && _spawnLabMatchesFilters(b, s); }).map(function(b){ return b.id; });
-  else s.selectedIds=[];
-  _spawnLabSaveUi();
-  renderSpawnLab('p-apparitions-c');
-}
-function spawnLabClearFilters(){
-  var s=_spawnLabEnsure();
-  s.query='';
-  s.behavior='all';
-  s.level='all';
-  _spawnLabSaveUi();
-  renderSpawnLab('p-apparitions-c');
-}
-function spawnLabApplyPoolFilters(){
-  var active=document.activeElement;
-  var activeId=active&&active.id;
-  var caret=null;
-  try{ if(active&&active.setSelectionRange) caret=active.selectionStart; }catch(_e){}
-  _spawnLabSyncInputs();
-  renderSpawnLab('p-apparitions-c');
-  if(activeId){
-    setTimeout(function(){
-      var next=ge(activeId);
-      if(!next) return;
-      try{
-        next.focus();
-        if(caret!==null && next.setSelectionRange) next.setSelectionRange(caret, caret);
-      }catch(_e){}
-    },0);
-  }
-}
 function spawnLabCopyLast(){
   var s=_spawnLabEnsure();
   if(!s.lastRuns || !s.lastRuns.length){ notif('Aucun résultat à copier.','err'); return; }
   var lines=[];
   lines.push('**Générateur d’apparitions**');
-  lines.push('Danger '+s.danger+' • '+s.players+' joueur(s)');
+  lines.push('Zone '+_spawnLabZoneLabel(s.zone||'')+' • Danger '+s.danger+' • '+s.players+' joueur(s)');
   lines.push('');
   s.lastRuns.forEach(function(run){
     lines.push('**Tirage '+run.idx+'** — '+run.packs.map(function(p){ return p.qty+'x '+p.nom; }).join(' • ')+' _(pression '+run.threatLabel+')_');
@@ -12384,12 +12359,10 @@ function renderSpawnLab(tid){
     if(la!==lb) return la-lb;
     return String(a.nom||'').localeCompare(String(b.nom||''),'fr');
   });
-  var selected={}; (s.selectedIds||[]).forEach(function(id){ selected[id]=1; });
-  var selectedPool=beasts.filter(function(b){ return !!selected[b.id]; });
-  var filteredBeasts=beasts.filter(function(b){ return _spawnLabMatchesFilters(b, s); });
+  var zoneOptions=_spawnLabZoneOptions(beasts);
+  var zoneMeta=_spawnLabResolveZone(s, beasts);
+  var zonePool=_spawnLabZonePool(zoneMeta.value, beasts);
   var recentCounts=_spawnLabTotalCounts(s);
-  var selectedCount=beasts.filter(function(b){ return !!selected[b.id]; }).length;
-  var filteredSelectedCount=filteredBeasts.filter(function(b){ return !!selected[b.id]; }).length;
   var pressureColor=['#6db88a','#8ed0a8','#d5c47a','#d9995c','#c94a4a'];
   var pressureLabel=['Repos','Instable','Hostile','Lourd','Extrême'][Math.max(0,Math.min(4,(s.danger||3)-1))];
   var h='';
@@ -12404,7 +12377,7 @@ function renderSpawnLab(tid){
   h+='#p-apparitions-c .sl-card>*{position:relative;z-index:1;}';
   h+='#p-apparitions-c .sl-span-4{grid-column:span 4;} #p-apparitions-c .sl-span-8{grid-column:span 8;} #p-apparitions-c .sl-span-12{grid-column:span 12;}';
   h+='#p-apparitions-c .sl-kicker{font-family:var(--fd);font-size:8px;letter-spacing:4px;color:rgba(126,184,212,.45);margin-bottom:10px;text-transform:uppercase;}';
-  h+='#p-apparitions-c .sl-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}';
+  h+='#p-apparitions-c .sl-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}';
   h+='#p-apparitions-c .sl-field label{display:block;font-size:11px;color:var(--faint);margin-bottom:5px;}';
   h+='#p-apparitions-c .sl-field input,#p-apparitions-c .sl-field select{width:100%;padding:11px 12px;background:rgba(6,8,16,.9);border:1px solid rgba(126,184,212,.16);color:var(--text);outline:none;}';
   h+='#p-apparitions-c .sl-field input:focus,#p-apparitions-c .sl-field select:focus{border-color:rgba(126,184,212,.42);}';
@@ -12416,10 +12389,9 @@ function renderSpawnLab(tid){
   h+='#p-apparitions-c .sl-metric{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 13px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);margin-bottom:8px;}';
   h+='#p-apparitions-c .sl-metric strong{font-family:var(--fd);font-size:10px;letter-spacing:1.2px;color:var(--text);}';
   h+='#p-apparitions-c .sl-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);font-size:11px;color:var(--text);}';
-  h+='#p-apparitions-c .sl-pool-tools{display:grid;grid-template-columns:minmax(220px,1fr) 180px 160px auto;gap:10px;align-items:end;margin:0 0 14px;}';
   h+='#p-apparitions-c .sl-pool-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;}';
   h+='#p-apparitions-c .sl-pool{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;}';
-  h+='#p-apparitions-c .sl-beast{padding:12px;border:1px solid rgba(255,255,255,.07);background:linear-gradient(180deg,rgba(255,255,255,.028),rgba(255,255,255,.015));cursor:pointer;transition:border-color .15s,transform .15s, box-shadow .15s;}';
+  h+='#p-apparitions-c .sl-beast{padding:12px;border:1px solid rgba(255,255,255,.07);background:linear-gradient(180deg,rgba(255,255,255,.028),rgba(255,255,255,.015));transition:border-color .15s,transform .15s, box-shadow .15s;}';
   h+='#p-apparitions-c .sl-beast:hover{border-color:rgba(126,184,212,.28);transform:translateY(-1px);}';
   h+='#p-apparitions-c .sl-beast.is-on{border-color:rgba(126,184,212,.4);box-shadow:0 0 0 1px rgba(126,184,212,.18), inset 0 1px 0 rgba(255,255,255,.04);}';
   h+='#p-apparitions-c .sl-beast-name{font-family:var(--fd);font-size:12px;letter-spacing:1px;color:var(--text);}';
@@ -12430,22 +12402,29 @@ function renderSpawnLab(tid){
   h+='#p-apparitions-c .sl-pack:last-child{margin-bottom:0;}';
   h+='#p-apparitions-c .sl-pack strong{font-family:var(--fd);font-size:11px;letter-spacing:1px;color:var(--text);}';
   h+='#p-apparitions-c .sl-pack-right{text-align:right;min-width:110px;}';
-  h+='@media (max-width:1100px){#p-apparitions-c .sl-span-4,#p-apparitions-c .sl-span-8{grid-column:span 12;}#p-apparitions-c .sl-fields{grid-template-columns:repeat(2,minmax(0,1fr));}#p-apparitions-c .sl-pool-tools{grid-template-columns:1fr 1fr;}}';
-  h+='@media (max-width:720px){#p-apparitions-c .sl-fields,#p-apparitions-c .sl-pool-tools{grid-template-columns:1fr;}#p-apparitions-c .sl-pack{flex-direction:column;}#p-apparitions-c .sl-pack-right{text-align:left;min-width:0;}}';
+  h+='@media (max-width:1100px){#p-apparitions-c .sl-span-4,#p-apparitions-c .sl-span-8{grid-column:span 12;}#p-apparitions-c .sl-fields{grid-template-columns:repeat(2,minmax(0,1fr));}}';
+  h+='@media (max-width:720px){#p-apparitions-c .sl-fields{grid-template-columns:1fr;}#p-apparitions-c .sl-pack{flex-direction:column;}#p-apparitions-c .sl-pack-right{text-align:left;min-width:0;}}';
   h+='</style>';
   h+='<div class="sl-wrap">';
   h+='<div class="sl-head">';
-  h+='<div><div class="sl-kicker">OUTIL STAFF — GÉNÉRATEUR D’APPARITIONS</div><div class="sl-title">Apparitions dynamiques</div><div class="sl-sub">Tire des rencontres à partir du bestiaire. Chaque créature garde son poids de base, puis son poids actuel baisse quand elle apparaît. Les créatures moins sorties remontent automatiquement. Cet historique est global et commun à tous les channels.</div></div>';
+  h+='<div><div class="sl-kicker">OUTIL STAFF — GÉNÉRATEUR D’APPARITIONS</div><div class="sl-title">Apparitions par zone</div><div class="sl-sub">Choisis une zone, et le roll tire uniquement parmi les mobs configurés dedans. Chaque mob garde son poids global : plus il sort, plus il baisse, pendant que les autres remontent.</div></div>';
   h+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
   h+='<span class="sl-chip" style="border-color:'+pressureColor[Math.max(0,Math.min(4,(s.danger||3)-1))]+';color:'+pressureColor[Math.max(0,Math.min(4,(s.danger||3)-1))]+';">Pression '+esc(pressureLabel)+'</span>';
-  h+='<span class="sl-chip">'+selectedCount+' créature'+(selectedCount>1?'s':'')+' actives</span>';
-  h+='<span class="sl-chip">'+filteredBeasts.length+' affichée'+(filteredBeasts.length>1?'s':'')+'</span>';
+  h+='<span class="sl-chip">Zone '+esc(zoneMeta.label)+'</span>';
+  h+='<span class="sl-chip">'+zonePool.length+' mob'+(zonePool.length>1?'s':'')+' dedans</span>';
   h+='</div>';
   h+='</div>';
   h+='<div class="sl-grid">';
   h+='<div class="sl-card sl-span-12">';
   h+='<div class="sl-kicker">CONFIGURATION DU TIRAGE</div>';
   h+='<div class="sl-fields">';
+  h+='<div class="sl-field"><label>Zone</label><select id="sl-zone" onchange="_spawnLabSyncInputs();renderSpawnLab(\'p-apparitions-c\')">';
+  if(zoneOptions.length){
+    zoneOptions.forEach(function(opt){ h+='<option value="'+escAttr(opt.value)+'"'+(zoneMeta.value===opt.value?' selected':'')+'>'+esc(opt.label)+'</option>'; });
+  }else{
+    h+='<option value="__all__" selected>Toutes zones</option>';
+  }
+  h+='</select></div>';
   h+='<div class="sl-field"><label>Danger de zone</label><select id="sl-danger" onchange="_spawnLabSyncInputs();renderSpawnLab(\'p-apparitions-c\')"><option value="1"'+(s.danger===1?' selected':'')+'>1 — Calme</option><option value="2"'+(s.danger===2?' selected':'')+'>2 — Instable</option><option value="3"'+(s.danger===3?' selected':'')+'>3 — Hostile</option><option value="4"'+(s.danger===4?' selected':'')+'>4 — Lourd</option><option value="5"'+(s.danger===5?' selected':'')+'>5 — Extrême</option></select></div>';
   h+='<div class="sl-field"><label>Joueurs visés</label><input id="sl-players" type="number" min="1" max="8" value="'+esc(s.players)+'" oninput="_spawnLabSyncInputs()"></div>';
   h+='<div class="sl-field"><label>Nombre de tirages</label><input id="sl-draws" type="number" min="1" max="12" value="'+esc(s.draws)+'" oninput="_spawnLabSyncInputs()"></div>';
@@ -12453,31 +12432,22 @@ function renderSpawnLab(tid){
   h+='<div class="sl-actions">';
   h+='<button class="sl-btn sl-btn-gold" onclick="spawnLabGenerate()">Générer les apparitions</button>';
   h+='<button class="sl-btn" onclick="spawnLabCopyLast()">Copier le récap</button>';
-  h+='<button class="sl-btn" onclick="spawnLabSelect(\'visible\')">Sélection filtrée</button>';
-  h+='<button class="sl-btn" onclick="spawnLabSelect(\'all\')">Tout sélectionner</button>';
-  h+='<button class="sl-btn" onclick="spawnLabSelect(\'none\')">Tout retirer</button>';
   h+='<button class="sl-btn sl-btn-red" onclick="spawnLabResetHistory()">Réinitialiser le global</button>';
   h+='</div>';
   h+='</div>';
   h+='<div class="sl-card sl-span-12">';
-  h+='<div class="sl-pool-head"><div><div class="sl-kicker">POOL DE CRÉATURES</div><div style="font-size:12px;color:var(--dim);line-height:1.55;">Filtre le bestiaire, puis active uniquement les créatures qui doivent pouvoir tomber au tirage.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><span class="sl-chip">'+filteredSelectedCount+' / '+filteredBeasts.length+' visibles actifs</span><span class="sl-chip">'+selectedCount+' actifs total</span></div></div>';
-  h+='<div class="sl-pool-tools">';
-  h+='<div class="sl-field"><label>Recherche</label><input id="sl-query" type="search" value="'+esc(s.query||'')+'" placeholder="Nom, type, note..." oninput="spawnLabApplyPoolFilters()"></div>';
-  h+='<div class="sl-field"><label>Comportement</label><select id="sl-behavior" onchange="spawnLabApplyPoolFilters()"><option value="all"'+(s.behavior==='all'?' selected':'')+'>Tous</option><option value="Gibier"'+(s.behavior==='Gibier'?' selected':'')+'>Gibier</option><option value="Passif"'+(s.behavior==='Passif'?' selected':'')+'>Passif</option><option value="Neutre"'+(s.behavior==='Neutre'?' selected':'')+'>Neutre</option><option value="Agressif"'+(s.behavior==='Agressif'?' selected':'')+'>Agressif</option><option value="Très agressif"'+(s.behavior==='Très agressif'?' selected':'')+'>Très agressif</option><option value="Boss"'+(s.behavior==='Boss'?' selected':'')+'>Boss</option></select></div>';
-  h+='<div class="sl-field"><label>Niveau</label><select id="sl-level" onchange="spawnLabApplyPoolFilters()"><option value="all"'+(s.level==='all'?' selected':'')+'>Tous</option><option value="1-2"'+(s.level==='1-2'?' selected':'')+'>1-2</option><option value="3-5"'+(s.level==='3-5'?' selected':'')+'>3-5</option><option value="6-8"'+(s.level==='6-8'?' selected':'')+'>6-8</option><option value="9+"'+(s.level==='9+'?' selected':'')+'>9+</option></select></div>';
-  h+='<button class="sl-btn" style="min-height:42px;" onclick="spawnLabClearFilters()">Effacer filtres</button>';
-  h+='</div>';
+  h+='<div class="sl-pool-head"><div><div class="sl-kicker">MOBS DE LA ZONE</div><div style="font-size:12px;color:var(--dim);line-height:1.55;">Le pool est automatique : tous les mobs visibles rattachés à <strong>'+esc(zoneMeta.label)+'</strong> peuvent tomber au tirage.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><span class="sl-chip">'+zonePool.length+' mob'+(zonePool.length>1?'s':'')+'</span><span class="sl-chip">'+zoneOptions.length+' zone'+(zoneOptions.length>1?'s':'')+'</span></div></div>';
   h+='<div class="sl-pool">';
-  if(!filteredBeasts.length){
-    h+='<div style="grid-column:1/-1;padding:18px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);font-size:12px;color:rgba(255,255,255,.50);line-height:1.7;">Aucune créature ne correspond aux filtres actuels.</div>';
+  if(!zonePool.length){
+    h+='<div style="grid-column:1/-1;padding:18px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);font-size:12px;color:rgba(255,255,255,.50);line-height:1.7;">Aucun mob visible dans cette zone. Ajoute une zone aux créatures dans le bestiaire, ou choisis une autre zone.</div>';
   }
-  filteredBeasts.forEach(function(b){
-    var active=!!selected[b.id];
+  zonePool.forEach(function(b){
     var weight=_spawnLabBaseWeight(b);
-    var tuned=_spawnLabAdjustedWeight(b, selectedPool.length?selectedPool:beasts, s, recentCounts, {});
+    var tuned=_spawnLabAdjustedWeight(b, zonePool.length?zonePool:beasts, s, recentCounts, {});
     var range=_spawnLabQtyRange(b);
     var behCol=cBehaviorColor(b.beh||b.behavior||b.comportement);
-    h+='<div class="sl-beast'+(active?' is-on':'')+'" onclick="spawnLabToggleBeast(\''+jsesc(b.id)+'\')">';
+    var zones=_spawnLabBeastZones(b);
+    h+='<div class="sl-beast">';
     h+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">';
     h+='<div style="min-width:0;">';
     h+='<div class="sl-beast-name">'+esc(b.nom||'Créature')+'</div>';
@@ -12488,13 +12458,14 @@ function renderSpawnLab(tid){
     h+='</div>';
     if(b.sub) h+='<div class="sl-mini" style="margin-top:6px;color:var(--dim);line-height:1.5;">'+esc(b.sub)+'</div>';
     h+='</div>';
-    h+='<div style="flex-shrink:0;font-family:var(--fd);font-size:8px;letter-spacing:2px;color:'+(active?'var(--glacier)':'rgba(255,255,255,.35)')+';">'+(active?'ACTIF':'OFF')+'</div>';
+    h+='<div style="flex-shrink:0;font-family:var(--fd);font-size:8px;letter-spacing:2px;color:var(--glacier);">ZONE</div>';
     h+='</div>';
     h+='<div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;">';
     h+='<span class="sl-chip" style="border-color:rgba(126,184,212,.16);">Base '+weight+'</span>';
     h+='<span class="sl-chip" style="border-color:rgba(126,184,212,.24);color:var(--glacier);">Actuel '+Math.max(1,Math.round(tuned.weight))+'</span>';
     h+='<span class="sl-chip" style="border-color:rgba(201,168,76,.18);color:var(--gold);">Qté '+range.min+'-'+range.max+'</span>';
     if(recentCounts[b.id]) h+='<span class="sl-chip" style="border-color:'+behCol+';color:'+behCol+';">Historique × '+recentCounts[b.id]+'</span>';
+    zones.slice(0,3).forEach(function(z){ h+='<span class="sl-chip" style="border-color:rgba(255,255,255,.08);color:var(--faint);">'+esc(z)+'</span>'; });
     h+='</div>';
     h+='</div>';
   });
@@ -12529,7 +12500,7 @@ function renderSpawnLab(tid){
       h+='</div>';
     });
   } else {
-    h+='<div style="padding:18px;border:1px solid rgba(255,255,255,.06);background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));font-size:12px;color:rgba(255,255,255,.48);line-height:1.7;">Aucun tirage pour le moment. Configure la zone, choisis ton pool, puis lance le générateur.</div>';
+    h+='<div style="padding:18px;border:1px solid rgba(255,255,255,.06);background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));font-size:12px;color:rgba(255,255,255,.48);line-height:1.7;">Aucun tirage pour le moment. Choisis une zone, puis lance le générateur.</div>';
   }
   h+='</div>';
   h+='<div class="sl-card sl-span-4">';
