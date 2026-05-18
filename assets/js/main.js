@@ -6825,7 +6825,7 @@ function renderSynopsis(tid){
 
   // En-tête cinématique
   h+='<div style="text-align:center;padding:32px 0 24px;">';
-  h+='<div style="font-family:var(--fd);font-size:12px;letter-spacing:5px;text-transform:uppercase;color:var(--glacier-dim);margin-bottom:16px;">NUAGES POLAIRES — UNIVERS OFFICIEL</div>';
+  h+='<div style="font-family:var(--fd);font-size:12px;letter-spacing:5px;text-transform:uppercase;color:var(--glacier-dim);margin-bottom:16px;">NUAGES POLAIRES</div>';
   h+='<div style="width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--glacier),transparent);margin:0 auto 20px;"></div>';
   h+='</div>';
 
