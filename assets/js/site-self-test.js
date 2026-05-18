@@ -20,7 +20,7 @@
     var css = `
 #${RESULT_ID}{
   margin:14px 0;
-  border:1px solid rgba(126,184,212,.16);
+  border:1px solid rgba(var(--tm-accent-rgb,126,184,212),.16);
   background:rgba(255,255,255,.035);
   border-radius:16px;
   padding:12px;

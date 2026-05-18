@@ -44,7 +44,7 @@
 }
 #dd-staff-btn.nav-staff-btn{
   border-color:rgba(201,168,76,.22) !important;
-  background:linear-gradient(135deg, rgba(201,168,76,.10), rgba(126,184,212,.055)) !important;
+  background:linear-gradient(135deg, rgba(201,168,76,.10), rgba(var(--tm-accent-rgb,126,184,212),.055)) !important;
 }
 #dd-staff-btn.nav-staff-btn.has-active,
 #dd-staff-btn.nav-staff-btn.open{
@@ -153,8 +153,8 @@
   color:var(--faint);
   font-size:11px;
   line-height:1.45;
-  border:1px solid rgba(126,184,212,.10);
-  background:rgba(126,184,212,.045);
+  border:1px solid rgba(var(--tm-accent-rgb,126,184,212),.10);
+  background:rgba(var(--tm-accent-rgb,126,184,212),.045);
 }
 .np-staff-menu-hint strong{
   color:var(--text);

@@ -108,7 +108,7 @@
   pointer-events:auto;
   border-radius:14px;
   padding:10px 12px;
-  border:1px solid rgba(126,184,212,.18);
+  border:1px solid rgba(var(--tm-accent-rgb,126,184,212),.18);
   background:linear-gradient(180deg,rgba(18,24,40,.94),rgba(8,12,22,.94));
   color:#f5f7fb;
   box-shadow:0 14px 34px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.08);
