@@ -11958,7 +11958,11 @@ body .nav-group-menu .nav-section-header{
 
 // ── LABO D'APPARITIONS STAFF ──────────────────────────────────────────────────
 var _spawnLabState = null;
-var _spawnLabCumulativeCoef = 0.18;
+var _spawnLabUiKey = 'np_spawn_lab_ui_v2';
+var _spawnLabLegacyKey = 'np_spawn_lab_state_v1';
+var _spawnLabStoreKey = 'spawn_lab_staff';
+var _spawnLabCumulativeCoef = 0.22;
+var _spawnLabCatchupCoef = 0.14;
 var _spawnLabSameEncounterCoef = 0.95;
 function _spawnLabDefaults(){
   return {
@@ -11970,23 +11974,73 @@ function _spawnLabDefaults(){
     behavior: 'all',
     level: 'all',
     totals: {},
-    lastRuns: []
+    lastRuns: [],
+    globalVersion: 2,
+    lastGlobalAt: 0
+  };
+}
+function _spawnLabGlobalDefaults(){
+  return {
+    schemaVersion: 2,
+    totals: {},
+    lastRuns: [],
+    totalDraws: 0,
+    lastGeneratedAt: 0,
+    lastGeneratedBy: ''
   };
 }
 function _spawnLabVisibleIds(){
   return gb().filter(function(b){ return !b.hidden; }).map(function(b){ return b.id; });
 }
-function _spawnLabLoad(){
+function _spawnLabNormalizeGlobal(raw){
+  var out=_spawnLabGlobalDefaults();
+  if(raw && typeof raw==='object' && !Array.isArray(raw)){
+    if(raw.totals && typeof raw.totals==='object' && !Array.isArray(raw.totals)) out.totals=raw.totals;
+    if(Array.isArray(raw.lastRuns)) out.lastRuns=raw.lastRuns.slice(0,24);
+    out.totalDraws=Math.max(0,parseInt(raw.totalDraws,10)||0);
+    out.lastGeneratedAt=Math.max(0,parseInt(raw.lastGeneratedAt,10)||0);
+    out.lastGeneratedBy=String(raw.lastGeneratedBy||'');
+  }
+  var clean={};
+  Object.keys(out.totals||{}).forEach(function(id){
+    var n=parseInt(out.totals[id],10)||0;
+    if(n>0) clean[id]=n;
+  });
+  out.totals=clean;
+  out.schemaVersion=2;
+  out.lastDbSyncAt=Date.now();
+  return out;
+}
+function _spawnLabGlobal(){
+  return _spawnLabNormalizeGlobal(sto(_spawnLabStoreKey) || {});
+}
+function _spawnLabSaveGlobal(global){
+  global=_spawnLabNormalizeGlobal(global);
+  sv(_spawnLabStoreKey, global).catch(function(err){
+    console.warn('spawn_lab_staff save failed', err);
+    try{ notif('Apparitions générées, mais synchronisation globale impossible.','err'); }catch(_e){}
+  });
+  return global;
+}
+function _spawnLabLoadUi(){
   var base=_spawnLabDefaults();
   try{
-    var raw=localStorage.getItem('np_spawn_lab_state_v1');
+    var raw=localStorage.getItem(_spawnLabUiKey) || localStorage.getItem(_spawnLabLegacyKey);
     if(raw){
       var data=JSON.parse(raw);
       if(data && typeof data==='object'){
-        Object.keys(base).forEach(function(k){ if(data[k]!==undefined) base[k]=data[k]; });
+        ['selectedIds','danger','players','draws','query','behavior','level'].forEach(function(k){ if(data[k]!==undefined) base[k]=data[k]; });
       }
     }
   }catch(_e){}
+  return base;
+}
+function _spawnLabLoad(){
+  var base=_spawnLabLoadUi();
+  var global=_spawnLabGlobal();
+  base.totals=global.totals||{};
+  base.lastRuns=Array.isArray(global.lastRuns)?global.lastRuns:[];
+  base.lastGlobalAt=global.lastGeneratedAt||0;
   if(!Array.isArray(base.selectedIds) || !base.selectedIds.length) base.selectedIds=_spawnLabVisibleIds();
   if(!Array.isArray(base.lastRuns)) base.lastRuns=[];
   if(!base.totals || typeof base.totals!=='object' || Array.isArray(base.totals)) base.totals={};
@@ -12003,15 +12057,20 @@ function _spawnLabLoad(){
 }
 function _spawnLabEnsure(){
   if(!_spawnLabState) _spawnLabState=_spawnLabLoad();
+  var global=_spawnLabGlobal();
+  _spawnLabState.totals=global.totals||{};
+  _spawnLabState.lastRuns=Array.isArray(global.lastRuns)?global.lastRuns:[];
+  _spawnLabState.lastGlobalAt=global.lastGeneratedAt||0;
   var ids={}; gb().forEach(function(b){ ids[b.id]=1; });
   _spawnLabState.selectedIds=(_spawnLabState.selectedIds||[]).filter(function(id){ return !!ids[id]; });
   if(!_spawnLabState.selectedIds.length) _spawnLabState.selectedIds=_spawnLabVisibleIds();
   if(!_spawnLabState.totals || typeof _spawnLabState.totals!=='object' || Array.isArray(_spawnLabState.totals)) _spawnLabState.totals={};
   return _spawnLabState;
 }
-function _spawnLabSave(){
+function _spawnLabSaveUi(){
   if(!_spawnLabState) return;
-  try{ localStorage.setItem('np_spawn_lab_state_v1', JSON.stringify(_spawnLabState)); }catch(_e){}
+  var ui={selectedIds:_spawnLabState.selectedIds||[],danger:_spawnLabState.danger,players:_spawnLabState.players,draws:_spawnLabState.draws,query:_spawnLabState.query||'',behavior:_spawnLabState.behavior||'all',level:_spawnLabState.level||'all'};
+  try{ localStorage.setItem(_spawnLabUiKey, JSON.stringify(ui)); localStorage.removeItem(_spawnLabLegacyKey); }catch(_e){}
 }
 function _spawnLabSyncInputs(){
   var s=_spawnLabEnsure();
@@ -12022,7 +12081,7 @@ function _spawnLabSyncInputs(){
   if(query) s.query=String(query.value||'').trim();
   if(behavior) s.behavior=String(behavior.value||'all');
   if(level) s.level=String(level.value||'all');
-  _spawnLabSave();
+  _spawnLabSaveUi();
 }
 function _spawnLabTotalCounts(s){
   var counts=Object.create(null);
@@ -12136,6 +12195,26 @@ function _spawnLabPickWeighted(list){
   if(chosen) chosen._prob=chosen.weight/total;
   return chosen;
 }
+function _spawnLabAverageCount(pool, totalCounts){
+  if(!pool || !pool.length) return 0;
+  var sum=0;
+  pool.forEach(function(beast){ sum += parseInt(totalCounts && totalCounts[beast.id],10)||0; });
+  return sum / pool.length;
+}
+function _spawnLabAdjustedWeight(beast, pool, s, totalCounts, encounterCounts){
+  var base=_spawnLabBaseWeight(beast);
+  var fit=_spawnLabThreatFit(beast,s);
+  var count=parseInt(totalCounts && totalCounts[beast.id],10)||0;
+  var avg=_spawnLabAverageCount(pool, totalCounts);
+  var over=Math.max(0, count - avg);
+  var under=Math.max(0, avg - count);
+  var fatigue=1 + over*_spawnLabCumulativeCoef;
+  var catchup=1 + under*_spawnLabCatchupCoef;
+  var encounterPenalty=1 + ((parseInt(encounterCounts && encounterCounts[beast.id],10)||0)*_spawnLabSameEncounterCoef);
+  var weight=(base*fit*catchup)/(fatigue*encounterPenalty);
+  if((encounterCounts[beast.id]||0)>0 && pool.length>1) weight*=0.55;
+  return {weight:weight, base:base, fit:fit, count:count, avg:avg, catchup:catchup, fatigue:fatigue};
+}
 function _spawnLabRollQty(min, max, danger){
   if(max<=min) return min;
   var span=max-min+1;
@@ -12154,13 +12233,8 @@ function _spawnLabGenerateEncounter(pool, s, totals){
   for(var i=0;i<packCount;i++){
     var cands=[];
     pool.forEach(function(beast){
-      var base=_spawnLabBaseWeight(beast);
-      var fit=_spawnLabThreatFit(beast,s);
-      var historicalPenalty=1 + (totalCounts[beast.id]||0)*_spawnLabCumulativeCoef;
-      var encounterPenalty=1 + (encounterCounts[beast.id]||0)*_spawnLabSameEncounterCoef;
-      var weight=(base*fit)/(historicalPenalty*encounterPenalty);
-      if((encounterCounts[beast.id]||0)>0 && pool.length>1) weight*=0.55;
-      if(weight>0.5){ cands.push({beast:beast,weight:weight,base:base,fit:fit,total:totalCounts[beast.id]||0}); }
+      var tuned=_spawnLabAdjustedWeight(beast, pool, s, totalCounts, encounterCounts);
+      if(tuned.weight>0.5){ cands.push({beast:beast,weight:tuned.weight,base:tuned.base,fit:tuned.fit,total:tuned.count,avg:tuned.avg,catchup:tuned.catchup,fatigue:tuned.fatigue}); }
     });
     var chosen=_spawnLabPickWeighted(cands);
     if(!chosen) break;
@@ -12183,12 +12257,15 @@ function _spawnLabGenerateEncounter(pool, s, totals){
         prob: chosen._prob||0,
         total: chosen.total||0,
         range: range,
+        baseWeight: chosen.base,
         weightNow: chosen.weight,
+        catchup: chosen.catchup,
+        fatigue: chosen.fatigue,
         threat: _spawnLabThreatValue(chosen.beast)
       });
     }
-    encounterCounts[chosen.beast.id]=(encounterCounts[chosen.beast.id]||0)+1;
-    totalCounts[chosen.beast.id]=(totalCounts[chosen.beast.id]||0)+1;
+    encounterCounts[chosen.beast.id]=(encounterCounts[chosen.beast.id]||0)+qty;
+    totalCounts[chosen.beast.id]=(totalCounts[chosen.beast.id]||0)+qty;
   }
   if(!packs.length) return null;
   var threatScore=0;
@@ -12199,10 +12276,13 @@ function _spawnLabGenerateEncounter(pool, s, totals){
 function spawnLabGenerate(){
   var s=_spawnLabEnsure();
   _spawnLabSyncInputs();
+  var global=_spawnLabGlobal();
+  s.totals=Object.assign({}, global.totals||{});
+  s.lastRuns=Array.isArray(global.lastRuns)?global.lastRuns:[];
   var selected={}; (s.selectedIds||[]).forEach(function(id){ selected[id]=1; });
   var pool=gb().filter(function(b){ return !!selected[b.id]; });
   if(!pool.length){ notif('Sélectionne au moins une créature.','err'); return; }
-  var totals=Object.assign({}, s.totals||{});
+  var totals=Object.assign({}, global.totals||{});
   var runs=[];
   for(var i=0;i<s.draws;i++){
     var encounter=_spawnLabGenerateEncounter(pool, s, totals);
@@ -12212,17 +12292,26 @@ function spawnLabGenerate(){
   }
   s.totals=totals;
   s.lastRuns=runs;
-  _spawnLabSave();
+  s.lastGlobalAt=Date.now();
+  _spawnLabSaveUi();
+  _spawnLabSaveGlobal({
+    totals: totals,
+    lastRuns: runs,
+    totalDraws: (parseInt(global.totalDraws,10)||0) + runs.length,
+    lastGeneratedAt: s.lastGlobalAt,
+    lastGeneratedBy: (CU && (CU.login || CU.name || CU.role)) || 'staff'
+  });
   renderSpawnLab('p-apparitions-c');
-  notif(runs.length ? 'Apparitions générées.' : 'Aucun tirage possible.', runs.length ? 'ok' : 'err');
+  notif(runs.length ? 'Apparitions générées et poids globaux synchronisés.' : 'Aucun tirage possible.', runs.length ? 'ok' : 'err');
 }
 function spawnLabResetHistory(){
   var s=_spawnLabEnsure();
   s.totals={};
   s.lastRuns=[];
-  _spawnLabSave();
+  s.lastGlobalAt=Date.now();
+  _spawnLabSaveGlobal({totals:{},lastRuns:[],totalDraws:0,lastGeneratedAt:s.lastGlobalAt,lastGeneratedBy:(CU && (CU.login || CU.name || CU.role)) || 'staff'});
   renderSpawnLab('p-apparitions-c');
-  notif('Historique d’apparition réinitialisé.','inf');
+  notif('Historique global d’apparition réinitialisé.','inf');
 }
 function spawnLabToggleBeast(id){
   var s=_spawnLabEnsure();
@@ -12230,7 +12319,7 @@ function spawnLabToggleBeast(id){
   var i=s.selectedIds.indexOf(id);
   if(i>=0) s.selectedIds.splice(i,1);
   else s.selectedIds.push(id);
-  _spawnLabSave();
+  _spawnLabSaveUi();
   renderSpawnLab('p-apparitions-c');
 }
 function spawnLabSelect(mode){
@@ -12239,7 +12328,7 @@ function spawnLabSelect(mode){
   if(mode==='all') s.selectedIds=gb().map(function(b){ return b.id; });
   else if(mode==='visible') s.selectedIds=gb().filter(function(b){ return !b.hidden && _spawnLabMatchesFilters(b, s); }).map(function(b){ return b.id; });
   else s.selectedIds=[];
-  _spawnLabSave();
+  _spawnLabSaveUi();
   renderSpawnLab('p-apparitions-c');
 }
 function spawnLabClearFilters(){
@@ -12247,7 +12336,7 @@ function spawnLabClearFilters(){
   s.query='';
   s.behavior='all';
   s.level='all';
-  _spawnLabSave();
+  _spawnLabSaveUi();
   renderSpawnLab('p-apparitions-c');
 }
 function spawnLabApplyPoolFilters(){
@@ -12296,6 +12385,7 @@ function renderSpawnLab(tid){
     return String(a.nom||'').localeCompare(String(b.nom||''),'fr');
   });
   var selected={}; (s.selectedIds||[]).forEach(function(id){ selected[id]=1; });
+  var selectedPool=beasts.filter(function(b){ return !!selected[b.id]; });
   var filteredBeasts=beasts.filter(function(b){ return _spawnLabMatchesFilters(b, s); });
   var recentCounts=_spawnLabTotalCounts(s);
   var selectedCount=beasts.filter(function(b){ return !!selected[b.id]; }).length;
@@ -12304,6 +12394,8 @@ function renderSpawnLab(tid){
   var totalAppearances=Object.keys(recentCounts).reduce(function(acc,id){ return acc + (recentCounts[id]||0); }, 0);
   var pressureColor=['#6db88a','#8ed0a8','#d5c47a','#d9995c','#c94a4a'];
   var pressureLabel=['Repos','Instable','Hostile','Lourd','Extrême'][Math.max(0,Math.min(4,(s.danger||3)-1))];
+  var global=_spawnLabGlobal();
+  var globalBy=global.lastGeneratedBy ? ' · '+esc(global.lastGeneratedBy) : '';
   var h='';
   h+='<style id="np-spawn-lab-style">';
   h+='#p-apparitions-c .sl-wrap{max-width:1320px;margin:0 auto;padding:10px 0 38px;}';
@@ -12347,7 +12439,7 @@ function renderSpawnLab(tid){
   h+='</style>';
   h+='<div class="sl-wrap">';
   h+='<div class="sl-head">';
-  h+='<div><div class="sl-kicker">OUTIL STAFF — GÉNÉRATEUR D’APPARITIONS</div><div class="sl-title">Apparitions dynamiques</div><div class="sl-sub">Tire des rencontres à partir du bestiaire. La zone choisie détermine le pool disponible, puis le moteur baisse automatiquement le poids des créatures déjà trop sorties sur l’historique cumulé.</div></div>';
+  h+='<div><div class="sl-kicker">OUTIL STAFF — GÉNÉRATEUR D’APPARITIONS</div><div class="sl-title">Apparitions dynamiques</div><div class="sl-sub">Tire des rencontres à partir du bestiaire. Chaque créature garde son poids de base, puis son poids actuel baisse quand elle apparaît. Les créatures moins sorties remontent automatiquement. Cet historique est global et commun à tous les channels.</div></div>';
   h+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
   h+='<span class="sl-chip" style="border-color:'+pressureColor[Math.max(0,Math.min(4,(s.danger||3)-1))]+';color:'+pressureColor[Math.max(0,Math.min(4,(s.danger||3)-1))]+';">Pression '+esc(pressureLabel)+'</span>';
   h+='<span class="sl-chip">'+selectedCount+' créature'+(selectedCount>1?'s':'')+' actives</span>';
@@ -12368,15 +12460,16 @@ function renderSpawnLab(tid){
   h+='<button class="sl-btn" onclick="spawnLabSelect(\'visible\')">Sélection filtrée</button>';
   h+='<button class="sl-btn" onclick="spawnLabSelect(\'all\')">Tout sélectionner</button>';
   h+='<button class="sl-btn" onclick="spawnLabSelect(\'none\')">Tout retirer</button>';
-  h+='<button class="sl-btn sl-btn-red" onclick="spawnLabResetHistory()">Réinitialiser l’historique</button>';
+  h+='<button class="sl-btn sl-btn-red" onclick="spawnLabResetHistory()">Réinitialiser le global</button>';
   h+='</div>';
   h+='</div>';
   h+='<div class="sl-card sl-span-4">';
   h+='<div class="sl-kicker">LECTURE DU SYSTÈME</div>';
   h+='<div class="sl-metric"><strong>Pool actif</strong><span>'+selectedCount+' / '+beasts.length+'</span></div>';
   h+='<div class="sl-metric"><strong>Apparitions cumulées</strong><span>'+totalAppearances+'</span></div>';
-  h+='<div class="sl-metric"><strong>Logique du moteur</strong><span>Historique complet pris en compte</span></div>';
-  h+='<div style="font-size:12px;color:var(--dim);line-height:1.65;margin-top:10px;">Le poids baisse automatiquement selon le nombre total d’apparitions déjà enregistrées depuis le début. Plus une créature est souvent tombée, plus elle devient rare dans les générations suivantes.</div>';
+  h+='<div class="sl-metric"><strong>Tirages globaux</strong><span>'+(parseInt(global.totalDraws,10)||0)+'</span></div>';
+  h+='<div class="sl-metric"><strong>Dernière synchro</strong><span>'+(global.lastGeneratedAt?esc(_beastAgo(global.lastGeneratedAt))+globalBy:'Jamais')+'</span></div>';
+  h+='<div style="font-size:12px;color:var(--dim);line-height:1.65;margin-top:10px;">Les compteurs sont stockés en base via <strong style="color:var(--text);">spawn_lab_staff</strong>. Un mob qui sort souvent descend sous son poids de base ; ceux qui sortent moins que la moyenne du pool remontent.</div>';
   if(recentTop.length){
     h+='<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;">';
     recentTop.forEach(function(b){
@@ -12403,6 +12496,7 @@ function renderSpawnLab(tid){
   filteredBeasts.forEach(function(b){
     var active=!!selected[b.id];
     var weight=_spawnLabBaseWeight(b);
+    var tuned=_spawnLabAdjustedWeight(b, selectedPool.length?selectedPool:beasts, s, recentCounts, {});
     var range=_spawnLabQtyRange(b);
     var behCol=cBehaviorColor(b.beh||b.behavior||b.comportement);
     h+='<div class="sl-beast'+(active?' is-on':'')+'" onclick="spawnLabToggleBeast(\''+jsesc(b.id)+'\')">';
@@ -12419,7 +12513,8 @@ function renderSpawnLab(tid){
     h+='<div style="flex-shrink:0;font-family:var(--fd);font-size:8px;letter-spacing:2px;color:'+(active?'var(--glacier)':'rgba(255,255,255,.35)')+';">'+(active?'ACTIF':'OFF')+'</div>';
     h+='</div>';
     h+='<div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;">';
-    h+='<span class="sl-chip" style="border-color:rgba(126,184,212,.16);">Poids '+weight+'</span>';
+    h+='<span class="sl-chip" style="border-color:rgba(126,184,212,.16);">Base '+weight+'</span>';
+    h+='<span class="sl-chip" style="border-color:rgba(126,184,212,.24);color:var(--glacier);">Actuel '+Math.max(1,Math.round(tuned.weight))+'</span>';
     h+='<span class="sl-chip" style="border-color:rgba(201,168,76,.18);color:var(--gold);">Qté '+range.min+'-'+range.max+'</span>';
     if(recentCounts[b.id]) h+='<span class="sl-chip" style="border-color:'+behCol+';color:'+behCol+';">Historique × '+recentCounts[b.id]+'</span>';
     h+='</div>';
