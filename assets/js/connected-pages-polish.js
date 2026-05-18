@@ -235,6 +235,15 @@
   color:var(--tm-text,var(--text)) !important;
   box-shadow:0 28px 72px rgba(0,0,0,.46), inset 0 1px 0 rgba(255,255,255,.06) !important;
 }
+body.light #app-root :where(.modal,.tab-content.tab-popup-active,.branch-modal-shell,.cmdk,.account-dd,.branch-dd,.nav-dropdown-menu,.nav-group-menu),
+body[data-theme-active="light"] #app-root :where(.modal,.tab-content.tab-popup-active,.branch-modal-shell,.cmdk,.account-dd,.branch-dd,.nav-dropdown-menu,.nav-group-menu),
+body.light :where(#nav-dropdown-root .nav-dropdown-menu,#nav-dropdown-root .nav-group-menu,#mobile-drawer,.nav-dropdown-menu,.nav-group-menu,.account-dd,.branch-dd,.menu),
+body[data-theme-active="light"] :where(#nav-dropdown-root .nav-dropdown-menu,#nav-dropdown-root .nav-group-menu,#mobile-drawer,.nav-dropdown-menu,.nav-group-menu,.account-dd,.branch-dd,.menu){
+  border-color:var(--np-ui-border-soft,rgba(58,143,186,.18)) !important;
+  background:var(--np-ui-dropdown-bg,linear-gradient(180deg,rgba(255,255,255,.998),rgba(241,247,253,.992))) !important;
+  color:var(--tm-text,var(--text)) !important;
+  box-shadow:0 18px 42px rgba(31,57,88,.12), inset 0 1px 0 rgba(255,255,255,.78) !important;
+}
 #app-root :where(.moverlay,.modal-overlay,.drawer-overlay){
   background:rgba(0,0,0,.58) !important;
   backdrop-filter:blur(5px);
