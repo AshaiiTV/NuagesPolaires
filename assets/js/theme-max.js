@@ -760,9 +760,32 @@ body[data-theme-engine="v257"] .np-theme-rarity-chip{display:inline-flex;align-i
 body[data-theme-engine="v257"] .np-theme-rarity-chip strong{color:var(--tm-accent-bright);}
 body[data-theme-engine="v257"] .np-theme-toolbar{display:flex !important;flex-wrap:wrap !important;gap:10px !important;align-items:center !important;}
 body[data-theme-engine="v257"] .np-theme-search{flex:1 1 220px;min-height:42px;border-radius:14px;padding:0 12px;}
+body[data-theme-engine="v257"] .np-theme-quick-filters{
+  flex:1 1 100%;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+}
 body[data-theme-engine="v257"] .np-theme-select{flex:0 1 180px;min-height:42px;border-radius:14px;padding:0 12px;}
-body[data-theme-engine="v257"] .np-theme-filter-btn{min-height:38px;border-radius:999px;padding:0 12px;}
-body[data-theme-engine="v257"] .np-theme-filter-btn.active{background:linear-gradient(90deg,rgba(var(--tm-accent-rgb),.22),rgba(var(--tm-accent-2-rgb),.12)) !important;border-color:var(--tm-border-strong) !important;}
+body[data-theme-engine="v257"] .np-theme-filter-btn{
+  min-height:34px;
+  border-radius:999px;
+  padding:0 13px;
+  border:1px solid var(--tm-border);
+  background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.018)),rgba(var(--tm-accent-rgb),.045);
+  color:var(--tm-text-soft);
+  font-size:12px;
+  font-weight:850;
+  cursor:pointer;
+}
+body[data-theme-engine="v257"] .np-theme-filter-btn:hover,
+body[data-theme-engine="v257"] .np-theme-filter-btn.active{
+  background:linear-gradient(90deg,rgba(var(--tm-accent-rgb),.24),rgba(var(--tm-accent-2-rgb),.14)) !important;
+  border-color:var(--tm-border-strong) !important;
+  color:var(--tm-text) !important;
+  transform:translateY(-1px);
+}
 body[data-theme-engine="v257"] .np-theme-count{font-weight:850;color:var(--tm-text-soft);margin-left:auto;}
 body[data-theme-engine="v257"] .np-theme-empty{text-align:center;color:var(--tm-text-muted);}
 body[data-theme-engine="v257"] .np-theme-hidden{display:none !important;}
@@ -1380,6 +1403,14 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
       toolbar.className = 'np-theme-toolbar';
       toolbar.innerHTML = [
         '<input class="np-theme-search" type="search" placeholder="Rechercher un thème…">',
+        '<div class="np-theme-quick-filters" aria-label="Filtres rapides de rareté">',
+        '<button type="button" class="np-theme-filter-btn" data-rarity-filter="all">Tous</button>',
+        '<button type="button" class="np-theme-filter-btn" data-rarity-filter="common">Communs</button>',
+        '<button type="button" class="np-theme-filter-btn" data-rarity-filter="Saisonnier">Événement</button>',
+        '<button type="button" class="np-theme-filter-btn" data-rarity-filter="rare">Rares</button>',
+        '<button type="button" class="np-theme-filter-btn" data-rarity-filter="Premium">Premium</button>',
+        '<button type="button" class="np-theme-filter-btn" data-rarity-filter="Mythique">Mythique</button>',
+        '</div>',
         '<select class="np-theme-select np-theme-rarity"><option value="all">Toutes raretés</option><option>Base</option><option>Classique</option><option>Saisonnier</option><option>Premium</option><option>Mythique</option></select>',
         '<select class="np-theme-select np-theme-state"><option value="all">Tous états</option><option value="selected">Équipé</option><option value="owned">Possédés</option><option value="available">Disponibles</option><option value="locked">Indisponibles</option></select>',
         '<select class="np-theme-select np-theme-sort"><option value="recommended">Recommandé</option><option value="rarity">Rareté</option><option value="az">A-Z</option><option value="owned">Possédés d’abord</option></select>',
@@ -1399,6 +1430,15 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
         if(e.target.classList.contains('np-theme-state')) f.state = e.target.value || 'all';
         if(e.target.classList.contains('np-theme-sort')) f.sort = e.target.value || 'recommended';
         saveFilters(f);
+        applyCollectionFilters();
+      });
+      toolbar.addEventListener('click', function(e){
+        var btn = e.target && e.target.closest ? e.target.closest('.np-theme-filter-btn[data-rarity-filter]') : null;
+        if(!btn) return;
+        var f = loadFilters();
+        f.rarity = btn.getAttribute('data-rarity-filter') || 'all';
+        saveFilters(f);
+        syncToolbar();
         applyCollectionFilters();
       });
     }
@@ -1426,9 +1466,12 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
     var state = root.querySelector('.np-theme-state');
     var sort = root.querySelector('.np-theme-sort');
     if(q && q.value !== f.q) q.value = f.q;
-    if(rarity) rarity.value = f.rarity || 'all';
+    if(rarity) rarity.value = /^(Base|Classique|Saisonnier|Premium|Mythique|all)$/.test(f.rarity || 'all') ? (f.rarity || 'all') : 'all';
     if(state) state.value = f.state || 'all';
     if(sort) sort.value = f.sort || 'recommended';
+    Array.prototype.forEach.call(root.querySelectorAll('.np-theme-filter-btn[data-rarity-filter]'), function(btn){
+      btn.classList.toggle('active', (btn.getAttribute('data-rarity-filter') || 'all') === (f.rarity || 'all'));
+    });
   }
 
   function stateRank(state){
@@ -1443,6 +1486,13 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
     if(mode === 'rarity') return String(9 - (RARITY_ORDER[c.rarity] || 0)).padStart(2,'0') + '-' + c.label.toLowerCase();
     if(mode === 'owned') return String(stateRank(state)).padStart(2,'0') + '-' + c.label.toLowerCase();
     return String(ORDER.indexOf(c.id)).padStart(2,'0') + '-' + c.label.toLowerCase();
+  }
+
+  function rarityMatches(filter, rarity){
+    if(!filter || filter === 'all') return true;
+    if(filter === 'common') return rarity === 'Base' || rarity === 'Classique';
+    if(filter === 'rare') return rarity === 'Premium' || rarity === 'Mythique';
+    return rarity === filter;
   }
 
   function applyCollectionFilters(){
@@ -1460,7 +1510,7 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
       var text = ((card.textContent || '') + ' ' + c.label + ' ' + c.rarity + ' ' + c.category + ' ' + c.tagline + ' ' + c.desc).toLowerCase();
       var ok = true;
       if(q && text.indexOf(q) < 0) ok = false;
-      if(f.rarity && f.rarity !== 'all' && c.rarity !== f.rarity) ok = false;
+      if(!rarityMatches(f.rarity, c.rarity)) ok = false;
       if(f.state && f.state !== 'all'){
         if(f.state === 'owned') ok = (state === 'owned' || state === 'selected');
         else ok = state === f.state;
