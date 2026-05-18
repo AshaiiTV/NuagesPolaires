@@ -11966,6 +11966,9 @@ function _spawnLabDefaults(){
     danger: 3,
     players: 3,
     draws: 5,
+    query: '',
+    behavior: 'all',
+    level: 'all',
     totals: {},
     lastRuns: []
   };
@@ -12012,10 +12015,13 @@ function _spawnLabSave(){
 }
 function _spawnLabSyncInputs(){
   var s=_spawnLabEnsure();
-  var danger=ge('sl-danger'), players=ge('sl-players'), draws=ge('sl-draws');
+  var danger=ge('sl-danger'), players=ge('sl-players'), draws=ge('sl-draws'), query=ge('sl-query'), behavior=ge('sl-behavior'), level=ge('sl-level');
   if(danger) s.danger=Math.max(1,Math.min(5,parseInt(danger.value,10)||s.danger||3));
   if(players) s.players=Math.max(1,Math.min(8,parseInt(players.value,10)||s.players||3));
   if(draws) s.draws=Math.max(1,Math.min(12,parseInt(draws.value,10)||s.draws||5));
+  if(query) s.query=String(query.value||'').trim();
+  if(behavior) s.behavior=String(behavior.value||'all');
+  if(level) s.level=String(level.value||'all');
   _spawnLabSave();
 }
 function _spawnLabTotalCounts(s){
@@ -12100,6 +12106,23 @@ function _spawnLabThreatValue(beast){
     case 'Boss': return lvl*1.7;
     default: return lvl;
   }
+}
+function _spawnLabMatchesFilters(beast, s){
+  s=s||_spawnLabEnsure();
+  var q=String(s.query||'').trim().toLowerCase();
+  var behFilter=String(s.behavior||'all');
+  var levelFilter=String(s.level||'all');
+  var name=String((beast&&beast.nom)||'').toLowerCase();
+  var sub=String((beast&&beast.sub)||'').toLowerCase();
+  var beh=cBehaviorLabel(beast&&beast.beh);
+  var lvl=parseInt(beast&&beast.niv,10)||1;
+  if(q && (name+' '+sub+' '+beh.toLowerCase()).indexOf(q)<0) return false;
+  if(behFilter!=='all' && beh!==behFilter) return false;
+  if(levelFilter==='1-2' && !(lvl>=1 && lvl<=2)) return false;
+  if(levelFilter==='3-5' && !(lvl>=3 && lvl<=5)) return false;
+  if(levelFilter==='6-8' && !(lvl>=6 && lvl<=8)) return false;
+  if(levelFilter==='9+' && lvl<9) return false;
+  return true;
 }
 function _spawnLabPickWeighted(list){
   var total=0;
@@ -12214,10 +12237,36 @@ function spawnLabSelect(mode){
   var s=_spawnLabEnsure();
   _spawnLabSyncInputs();
   if(mode==='all') s.selectedIds=gb().map(function(b){ return b.id; });
-  else if(mode==='visible') s.selectedIds=_spawnLabVisibleIds();
+  else if(mode==='visible') s.selectedIds=gb().filter(function(b){ return !b.hidden && _spawnLabMatchesFilters(b, s); }).map(function(b){ return b.id; });
   else s.selectedIds=[];
   _spawnLabSave();
   renderSpawnLab('p-apparitions-c');
+}
+function spawnLabClearFilters(){
+  var s=_spawnLabEnsure();
+  s.query='';
+  s.behavior='all';
+  s.level='all';
+  _spawnLabSave();
+  renderSpawnLab('p-apparitions-c');
+}
+function spawnLabApplyPoolFilters(){
+  var active=document.activeElement;
+  var activeId=active&&active.id;
+  var caret=null;
+  try{ if(active&&active.setSelectionRange) caret=active.selectionStart; }catch(_e){}
+  _spawnLabSyncInputs();
+  renderSpawnLab('p-apparitions-c');
+  if(activeId){
+    setTimeout(function(){
+      var next=ge(activeId);
+      if(!next) return;
+      try{
+        next.focus();
+        if(caret!==null && next.setSelectionRange) next.setSelectionRange(caret, caret);
+      }catch(_e){}
+    },0);
+  }
 }
 function spawnLabCopyLast(){
   var s=_spawnLabEnsure();
@@ -12247,8 +12296,10 @@ function renderSpawnLab(tid){
     return String(a.nom||'').localeCompare(String(b.nom||''),'fr');
   });
   var selected={}; (s.selectedIds||[]).forEach(function(id){ selected[id]=1; });
+  var filteredBeasts=beasts.filter(function(b){ return _spawnLabMatchesFilters(b, s); });
   var recentCounts=_spawnLabTotalCounts(s);
   var selectedCount=beasts.filter(function(b){ return !!selected[b.id]; }).length;
+  var filteredSelectedCount=filteredBeasts.filter(function(b){ return !!selected[b.id]; }).length;
   var recentTop=beasts.filter(function(b){ return recentCounts[b.id]; }).sort(function(a,b){ return (recentCounts[b.id]||0)-(recentCounts[a.id]||0); }).slice(0,6);
   var totalAppearances=Object.keys(recentCounts).reduce(function(acc,id){ return acc + (recentCounts[id]||0); }, 0);
   var pressureColor=['#6db88a','#8ed0a8','#d5c47a','#d9995c','#c94a4a'];
@@ -12277,6 +12328,8 @@ function renderSpawnLab(tid){
   h+='#p-apparitions-c .sl-metric{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 13px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);margin-bottom:8px;}';
   h+='#p-apparitions-c .sl-metric strong{font-family:var(--fd);font-size:10px;letter-spacing:1.2px;color:var(--text);}';
   h+='#p-apparitions-c .sl-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);font-size:11px;color:var(--text);}';
+  h+='#p-apparitions-c .sl-pool-tools{display:grid;grid-template-columns:minmax(220px,1fr) 180px 160px auto;gap:10px;align-items:end;margin:0 0 14px;}';
+  h+='#p-apparitions-c .sl-pool-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;}';
   h+='#p-apparitions-c .sl-pool{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;}';
   h+='#p-apparitions-c .sl-beast{padding:12px;border:1px solid rgba(255,255,255,.07);background:linear-gradient(180deg,rgba(255,255,255,.028),rgba(255,255,255,.015));cursor:pointer;transition:border-color .15s,transform .15s, box-shadow .15s;}';
   h+='#p-apparitions-c .sl-beast:hover{border-color:rgba(126,184,212,.28);transform:translateY(-1px);}';
@@ -12289,15 +12342,16 @@ function renderSpawnLab(tid){
   h+='#p-apparitions-c .sl-pack:last-child{margin-bottom:0;}';
   h+='#p-apparitions-c .sl-pack strong{font-family:var(--fd);font-size:11px;letter-spacing:1px;color:var(--text);}';
   h+='#p-apparitions-c .sl-pack-right{text-align:right;min-width:110px;}';
-  h+='@media (max-width:1100px){#p-apparitions-c .sl-span-4,#p-apparitions-c .sl-span-8{grid-column:span 12;}#p-apparitions-c .sl-fields{grid-template-columns:repeat(2,minmax(0,1fr));}}';
-  h+='@media (max-width:720px){#p-apparitions-c .sl-fields{grid-template-columns:1fr;}#p-apparitions-c .sl-pack{flex-direction:column;}#p-apparitions-c .sl-pack-right{text-align:left;min-width:0;}}';
+  h+='@media (max-width:1100px){#p-apparitions-c .sl-span-4,#p-apparitions-c .sl-span-8{grid-column:span 12;}#p-apparitions-c .sl-fields{grid-template-columns:repeat(2,minmax(0,1fr));}#p-apparitions-c .sl-pool-tools{grid-template-columns:1fr 1fr;}}';
+  h+='@media (max-width:720px){#p-apparitions-c .sl-fields,#p-apparitions-c .sl-pool-tools{grid-template-columns:1fr;}#p-apparitions-c .sl-pack{flex-direction:column;}#p-apparitions-c .sl-pack-right{text-align:left;min-width:0;}}';
   h+='</style>';
   h+='<div class="sl-wrap">';
   h+='<div class="sl-head">';
   h+='<div><div class="sl-kicker">OUTIL STAFF — GÉNÉRATEUR D’APPARITIONS</div><div class="sl-title">Apparitions dynamiques</div><div class="sl-sub">Tire des rencontres à partir du bestiaire. La zone choisie détermine le pool disponible, puis le moteur baisse automatiquement le poids des créatures déjà trop sorties sur l’historique cumulé.</div></div>';
   h+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
   h+='<span class="sl-chip" style="border-color:'+pressureColor[Math.max(0,Math.min(4,(s.danger||3)-1))]+';color:'+pressureColor[Math.max(0,Math.min(4,(s.danger||3)-1))]+';">Pression '+esc(pressureLabel)+'</span>';
-  h+='<span class="sl-chip">'+selectedCount+' créature'+(selectedCount>1?'s':'')+' dans le pool</span>';
+  h+='<span class="sl-chip">'+selectedCount+' créature'+(selectedCount>1?'s':'')+' actives</span>';
+  h+='<span class="sl-chip">'+filteredBeasts.length+' affichée'+(filteredBeasts.length>1?'s':'')+'</span>';
   h+='</div>';
   h+='</div>';
   h+='<div class="sl-grid">';
@@ -12311,7 +12365,7 @@ function renderSpawnLab(tid){
   h+='<div class="sl-actions">';
   h+='<button class="sl-btn sl-btn-gold" onclick="spawnLabGenerate()">Générer les apparitions</button>';
   h+='<button class="sl-btn" onclick="spawnLabCopyLast()">Copier le récap</button>';
-  h+='<button class="sl-btn" onclick="spawnLabSelect(\'visible\')">Sélection visible</button>';
+  h+='<button class="sl-btn" onclick="spawnLabSelect(\'visible\')">Sélection filtrée</button>';
   h+='<button class="sl-btn" onclick="spawnLabSelect(\'all\')">Tout sélectionner</button>';
   h+='<button class="sl-btn" onclick="spawnLabSelect(\'none\')">Tout retirer</button>';
   h+='<button class="sl-btn sl-btn-red" onclick="spawnLabResetHistory()">Réinitialiser l’historique</button>';
@@ -12335,9 +12389,18 @@ function renderSpawnLab(tid){
   }
   h+='</div>';
   h+='<div class="sl-card sl-span-12">';
-  h+='<div class="sl-kicker">POOL DE CRÉATURES</div>';
+  h+='<div class="sl-pool-head"><div><div class="sl-kicker">POOL DE CRÉATURES</div><div style="font-size:12px;color:var(--dim);line-height:1.55;">Filtre le bestiaire, puis active uniquement les créatures qui doivent pouvoir tomber au tirage.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><span class="sl-chip">'+filteredSelectedCount+' / '+filteredBeasts.length+' visibles actifs</span><span class="sl-chip">'+selectedCount+' actifs total</span></div></div>';
+  h+='<div class="sl-pool-tools">';
+  h+='<div class="sl-field"><label>Recherche</label><input id="sl-query" type="search" value="'+esc(s.query||'')+'" placeholder="Nom, type, note..." oninput="spawnLabApplyPoolFilters()"></div>';
+  h+='<div class="sl-field"><label>Comportement</label><select id="sl-behavior" onchange="spawnLabApplyPoolFilters()"><option value="all"'+(s.behavior==='all'?' selected':'')+'>Tous</option><option value="Gibier"'+(s.behavior==='Gibier'?' selected':'')+'>Gibier</option><option value="Passif"'+(s.behavior==='Passif'?' selected':'')+'>Passif</option><option value="Neutre"'+(s.behavior==='Neutre'?' selected':'')+'>Neutre</option><option value="Agressif"'+(s.behavior==='Agressif'?' selected':'')+'>Agressif</option><option value="Très agressif"'+(s.behavior==='Très agressif'?' selected':'')+'>Très agressif</option><option value="Boss"'+(s.behavior==='Boss'?' selected':'')+'>Boss</option></select></div>';
+  h+='<div class="sl-field"><label>Niveau</label><select id="sl-level" onchange="spawnLabApplyPoolFilters()"><option value="all"'+(s.level==='all'?' selected':'')+'>Tous</option><option value="1-2"'+(s.level==='1-2'?' selected':'')+'>1-2</option><option value="3-5"'+(s.level==='3-5'?' selected':'')+'>3-5</option><option value="6-8"'+(s.level==='6-8'?' selected':'')+'>6-8</option><option value="9+"'+(s.level==='9+'?' selected':'')+'>9+</option></select></div>';
+  h+='<button class="sl-btn" style="min-height:42px;" onclick="spawnLabClearFilters()">Effacer filtres</button>';
+  h+='</div>';
   h+='<div class="sl-pool">';
-  beasts.forEach(function(b){
+  if(!filteredBeasts.length){
+    h+='<div style="grid-column:1/-1;padding:18px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);font-size:12px;color:rgba(255,255,255,.50);line-height:1.7;">Aucune créature ne correspond aux filtres actuels.</div>';
+  }
+  filteredBeasts.forEach(function(b){
     var active=!!selected[b.id];
     var weight=_spawnLabBaseWeight(b);
     var range=_spawnLabQtyRange(b);
