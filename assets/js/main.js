@@ -14155,11 +14155,41 @@ function closeRuntimeGuard(){
   if(box) box.classList.remove("show");
   if(_runtimeGuardTimer){ clearTimeout(_runtimeGuardTimer); _runtimeGuardTimer=null; }
 }
+function _runtimeDiagnosticsMode(){
+  try{
+    var params=new URLSearchParams(location.search||"");
+    if(params.get("diag")==="1"||params.get("debug")==="1"||params.get("runtime")==="1") return true;
+    if(localStorage.getItem("np_runtime_visible")==="1") return true;
+    if(localStorage.getItem("np_diag_visible")==="1") return true;
+  }catch(_){}
+  return false;
+}
+function _recordRuntimeIssue(info, msg, detail, opts){
+  try{
+    window.__npRuntimeIssues=window.__npRuntimeIssues||[];
+    window.__npRuntimeIssues.unshift({
+      at:new Date().toISOString(),
+      code:info&&info.code,
+      title:info&&info.title,
+      message:String(msg||""),
+      detail:String(detail||""),
+      context:opts&&opts.context||"",
+      viewId:opts&&opts.viewId||""
+    });
+    if(window.__npRuntimeIssues.length>40) window.__npRuntimeIssues.length=40;
+  }catch(_){}
+}
 function reportRuntimeIssue(msg, detail, opts){
+  opts=opts||{};
   var info=_resolveRuntimeIssue(Object.assign({}, opts||{}, {msg:msg, detail:detail}));
   var low=(String(msg||"")+" "+String(detail||"")).toLowerCase();
   if(low.indexOf("chrome-extension://")>=0) return;
   if(low.indexOf("imgur")>=0 && low.indexOf("content security policy")>=0) return;
+  _recordRuntimeIssue(info, msg, detail, opts);
+  if(!opts.force && !_runtimeDiagnosticsMode()){
+    try{ console.warn("[runtime guarded]", info.shortLabel+" · "+info.title, {message:msg, detail:detail, context:opts.context||"", viewId:opts.viewId||""}); }catch(_){}
+    return;
+  }
   var box=ge("runtime-guard"), body=ge("runtime-guard-msg"), title=ge("runtime-guard-title") || (box ? box.querySelector('.runtime-guard-title') : null);
   if(!box||!body) return;
   if(title) title.textContent=info.shortLabel+" · "+info.title;
@@ -14380,7 +14410,6 @@ window.__npStabilityPassV55 = true;
       console.error('[safeRun]', label, err);
       try{
         reportRuntimeIssue("Erreur 500 — incident sur « "+label+" ».", _npErrText(err), {context:label});
-        if(typeof notif === 'function') notif("Erreur sur « " + label + " » : " + _resolveRuntimeIssue({context:label, err:err}).title + ".", "err");
       }catch(_){}
       if(typeof fallback === 'function'){
         try{ return fallback(err); }catch(_){}
@@ -14395,7 +14424,6 @@ window.__npStabilityPassV55 = true;
       console.error('[safeRunAsync]', label, err);
       try{
         reportRuntimeIssue("Erreur 500 — incident sur « "+label+" ».", _npErrText(err), {context:label});
-        if(typeof notif === 'function') notif("Erreur sur « " + label + " » : " + _resolveRuntimeIssue({context:label, err:err}).title + ".", "err");
       }catch(_){}
       if(typeof fallback === 'function'){
         try{ return await fallback(err); }catch(_){}
