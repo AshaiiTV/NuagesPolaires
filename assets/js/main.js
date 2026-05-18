@@ -9,9 +9,6 @@ function esc(str){
     .replace(/"/g,"&quot;")
     .replace(/'/g,"&#x27;");
 }
-function escAttr(str){
-  return esc(str).replace(/[\u0000-\u001f\u007f]/g,"");
-}
 
 // ==========================================
 // HACHAGE DES MOTS DE PASSE (SHA-256)
@@ -6723,22 +6720,6 @@ function renderAccueil(tid){
   var displayName=CU?CU.name:"";
 
   var adminPendingCount=accounts.filter(function(a){return (a.role==="joueur"||!a.role)&&!a.pid;}).length;
-  var combatsSemaine=cleanArcs.filter(function(arc){ return (Number(arc.savedAt)||0) > semaine; }).length;
-  var creaturesTuees=cleanArcs.reduce(function(sum, arc){
-    return sum + arcFighters(arc).filter(function(f){ return f&&f.type==='beast'&&(Number(f.pvCur)||0)<=0; }).length;
-  }, 0);
-  var latestPlayers=players.slice().sort(function(a,b){ return (Number(b.createdAt)||0)-(Number(a.createdAt)||0); }).slice(0,6);
-  var recentCombatsAdmin=cleanArcs.slice().sort(function(a,b){ return (Number(b.savedAt)||0)-(Number(a.savedAt)||0); }).slice(0,6);
-  var usedBeasts=beasts.map(function(b){
-    var usage=(typeof _beastUsageFor==='function')?_beastUsageFor(b):{count:0,lastUsedAt:0,recent:false,combats:[]};
-    return { beast:b, usage:usage };
-  }).filter(function(entry){ return entry.usage && entry.usage.count>0; }).sort(function(a,b){
-    var c=(b.usage.count||0)-(a.usage.count||0);
-    if(c!==0) return c;
-    return (Number(b.usage.lastUsedAt)||0)-(Number(a.usage.lastUsedAt)||0);
-  }).slice(0,6);
-  var createdThisWeek=players.filter(function(p){ return (Number(p.createdAt)||0) > semaine; }).length;
-  var beastUsedDistinct=usedBeasts.length;
 
   var h='<div style="max-width:1040px;padding:0 0 48px;">';
 
@@ -6769,116 +6750,6 @@ function renderAccueil(tid){
     h+='</div>';
   });
   h+='</div>';
-
-  if(isAdmin){
-    h+='<div class="card" style="margin-bottom:20px;padding:16px 18px;">';
-    h+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;">';
-    h+='<div><div class="card-title">Tableau de bord admin</div><div style="font-size:12px;color:var(--faint);margin-top:4px;">Vue d’ensemble vivante du site : comptes, créations, combats et usage du bestiaire.</div></div>';
-    h+='<div style="display:flex;gap:8px;flex-wrap:wrap;">';
-    h+='<button class="btn btn-sm" style="border-color:rgba(201,168,76,.4);color:var(--gold);" onclick="switchDropTab(\'joueurs\',null,\'dd-staff\')"><span>Joueurs</span></button>';
-    h+='<button class="btn btn-sm" style="border-color:rgba(201,168,76,.4);color:var(--gold);" onclick="switchDropTab(\'combat-mj\',null,\'dd-staff\')"><span>Simulation</span></button>';
-    h+='<button class="btn btn-sm" style="border-color:rgba(201,168,76,.4);color:var(--gold);" onclick="switchDropTab(\'bestiaire\',null,\'dd-staff\')"><span>Bestiaire</span></button>';
-    h+='<button class="btn btn-sm" style="border-color:rgba(201,168,76,.4);color:var(--gold);" onclick="switchDropTab(\'database\',null,\'dd-staff\')"><span>Database</span></button>';
-    h+='</div></div>';
-
-    var adminStats=[
-      {val:joueurTotal,lbl:'Personnages',sub:createdThisWeek+' créés sur 7j',col:'var(--glacier)'},
-      {val:actifsS,lbl:'Comptes actifs',sub:'activité récente',col:'var(--green)'},
-      {val:creaturesTuees,lbl:'Créatures tuées',sub:'issues des archives',col:'var(--red)'},
-      {val:combatsSemaine,lbl:'Combats sur 7j',sub:cleanArcs.length+' au total',col:'var(--gold)'},
-      {val:adminPendingCount,lbl:'Comptes en attente',sub:'liaison à finir',col:'var(--purple)'},
-      {val:beastUsedDistinct,lbl:'Créatures utilisées',sub:'bestiaire réellement joué',col:'var(--glacier-bright)'}
-    ];
-    h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-bottom:14px;">';
-    adminStats.forEach(function(s){
-      h+='<div style="padding:14px 14px 12px;border:1px solid var(--border2);background:var(--bg4);border-radius:2px;">';
-      h+='<div style="font-family:var(--fd);font-size:24px;letter-spacing:1px;color:'+s.col+';line-height:1;margin-bottom:6px;">'+esc(String(s.val))+'</div>';
-      h+='<div style="font-family:var(--fd);font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text);margin-bottom:4px;">'+esc(s.lbl)+'</div>';
-      h+='<div style="font-size:11px;color:var(--faint);line-height:1.45;">'+esc(s.sub)+'</div>';
-      h+='</div>';
-    });
-    h+='</div>';
-
-    h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;">';
-
-    h+='<div class="card" style="margin:0;">';
-    h+='<div class="card-title">Dernières créations de personnages</div>';
-    if(latestPlayers.length){
-      latestPlayers.forEach(function(p){
-        var linked=accounts.find(function(a){ return a && a.pid===p.id; }) || null;
-        h+='<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(126,184,212,.08);">';
-        h+='<div style="width:34px;height:34px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--bg4);border:1px solid var(--border2);">'+((p.avatar||'').trim()?'<img src="'+escAttr(p.avatar)+'" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">':'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--faint);">✦</div>')+'</div>';
-        h+='<div style="flex:1;min-width:0;">';
-        h+='<div style="font-family:var(--fd);font-size:10px;letter-spacing:1px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(p.name||'Sans nom')+'</div>';
-        h+='<div style="font-size:11px;color:var(--faint);margin-top:3px;line-height:1.45;">'+esc((p.classe||'Sans classe')+' · Serment '+(p.sLevel||1)+(p.branch&&p.branch!=='Aucune'?' · '+p.branch:''))+'</div>';
-        h+='<div style="font-size:10px;color:var(--dim);margin-top:3px;">'+fmtMiniDate(p.createdAt)+' · '+esc(linked?('Compte : '+linked.pseudo):'Non lié')+'</div>';
-        h+='</div>';
-        h+='</div>';
-      });
-    } else {
-      h+='<div class="empty-state" style="padding:18px 0 6px;"><div class="empty-state-icon">✦</div><div class="empty-state-title">Aucune création récente</div><div class="empty-state-sub">Les nouveaux personnages apparaîtront ici.</div></div>';
-    }
-    h+='</div>';
-
-    h+='<div class="card" style="margin:0;">';
-    h+='<div class="card-title">Créatures les plus utilisées</div>';
-    if(usedBeasts.length){
-      usedBeasts.forEach(function(entry){
-        var b=entry.beast||{}; var u=entry.usage||{};
-        h+='<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(126,184,212,.08);">';
-        h+='<div style="width:38px;height:38px;border-radius:10px;overflow:hidden;flex-shrink:0;background:var(--bg4);border:1px solid var(--border2);">'+((b.img||'').trim()?'<img src="'+escAttr(b.img)+'" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">':'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--faint);">☬</div>')+'</div>';
-        h+='<div style="flex:1;min-width:0;">';
-        h+='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">';
-        h+='<div style="font-family:var(--fd);font-size:10px;letter-spacing:1px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(b.nom||'Créature')+'</div>';
-        h+='<span style="font-family:var(--fd);font-size:8px;letter-spacing:1.4px;padding:2px 8px;border:1px solid rgba(126,184,212,.18);color:var(--glacier);border-radius:999px;flex-shrink:0;">'+esc(String(u.count||0))+' usage'+((u.count||0)>1?'s':'')+'</span>';
-        h+='</div>';
-        h+='<div style="font-size:11px;color:var(--faint);margin-top:3px;line-height:1.45;">Niv. '+esc(String(b.niv||1))+' · '+esc(_beastThreatBand?(_beastThreatBand(b)||'Menace modérée'):'Menace modérée')+'</div>';
-        h+='<div style="font-size:10px;color:var(--dim);margin-top:3px;">Dernière apparition : '+fmtMiniDate(u.lastUsedAt)+'</div>';
-        h+='</div>';
-        h+='</div>';
-      });
-    } else {
-      h+='<div class="empty-state" style="padding:18px 0 6px;"><div class="empty-state-icon">☬</div><div class="empty-state-title">Aucune créature encore jouée</div><div class="empty-state-sub">Le bestiaire commencera à remonter ici dès les premiers combats archivés.</div></div>';
-    }
-    h+='</div>';
-
-    h+='<div class="card" style="margin:0;grid-column:1 / -1;">';
-    h+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px;">';
-    h+='<div><div class="card-title">Derniers combats staff</div><div style="font-size:12px;color:var(--faint);margin-top:4px;">Les dernières archives complètes avec créateur, joueurs et résultat.</div></div>';
-    h+='<button class="btn btn-sm" style="border-color:rgba(201,168,76,.4);color:var(--gold);" onclick="switchDropTab(\'combat-mj\',null,\'dd-staff\')"><span>Ouvrir la simulation</span></button>';
-    h+='</div>';
-    if(recentCombatsAdmin.length){
-      h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;">';
-      recentCombatsAdmin.forEach(function(arc){
-        var result=combatResultMeta(arc);
-        var fighters=arcFighters(arc);
-        var playersList=fighters.filter(function(f){ return f&&f.type==='player'; }).map(function(f){ return String(f.name||'').trim(); }).filter(Boolean).slice(0,4);
-        var beastsList=fighters.filter(function(f){ return f&&f.type==='beast'; }).map(function(f){ return String(f.name||'').trim(); }).filter(Boolean).slice(0,3);
-        var owner=String(arc._owner||arc.owner||'système').trim()||'système';
-        h+='<div style="padding:12px 12px 11px;border:1px solid var(--border2);background:var(--bg4);border-radius:2px;">';
-        h+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">';
-        h+='<div style="min-width:0;flex:1;">';
-        h+='<div style="font-family:var(--fd);font-size:10px;letter-spacing:1px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(arc.name||'Combat sans nom')+'</div>';
-        h+='<div style="font-size:10px;color:var(--dim);margin-top:4px;">'+fmtMiniDate(arc.savedAt)+' · Créé par '+esc(owner)+'</div>';
-        h+='</div>';
-        h+='<span style="font-family:var(--fd);font-size:8px;letter-spacing:1.4px;text-transform:uppercase;color:'+result.col+';padding:2px 8px;border:1px solid '+result.col+';border-radius:999px;flex-shrink:0;">'+esc(result.txt)+'</span>';
-        h+='</div>';
-        h+='<div style="font-size:11px;color:var(--faint);line-height:1.5;margin-top:10px;">Joueurs : '+esc(playersList.join(' · ')||'Aucun')+'</div>';
-        h+='<div style="font-size:11px;color:var(--faint);line-height:1.5;margin-top:4px;">Adversaires : '+esc(beastsList.join(' · ')||'Aucun')+(beastsList.length>=3?'…':'')+'</div>';
-        h+='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;">';
-        h+='<div style="font-size:10px;color:var(--dim);">Round '+esc(String(arc.round||1))+'</div>';
-        h+='<div style="font-size:10px;color:var(--dim);">'+esc(String(fighters.length||0))+' entité'+((fighters.length||0)>1?'s':'')+'</div>';
-        h+='</div>';
-        h+='</div>';
-      });
-      h+='</div>';
-    } else {
-      h+='<div class="empty-state" style="padding:18px 0 6px;"><div class="empty-state-icon">⚔</div><div class="empty-state-title">Aucune archive staff</div><div class="empty-state-sub">Les derniers combats apparaîtront ici dès qu’ils seront archivés.</div></div>';
-    }
-    h+='</div>';
-    h+='</div>';
-    h+='</div>';
-  }
 
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:20px;">';
 
