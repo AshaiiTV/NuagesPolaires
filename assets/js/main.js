@@ -9,6 +9,9 @@ function esc(str){
     .replace(/"/g,"&quot;")
     .replace(/'/g,"&#x27;");
 }
+function escAttr(str){
+  return esc(str).replace(/[\u0000-\u001f\u007f]/g,"");
+}
 
 // ==========================================
 // HACHAGE DES MOTS DE PASSE (SHA-256)
