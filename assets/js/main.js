@@ -8395,6 +8395,10 @@ function _restoreNavDrop(menu){
   ["position","top","left","right","bottom","min-width","max-width","max-height","margin","pointer-events","visibility","overflow-y","transform-origin"].forEach(function(prop){
     try{ menu.style.removeProperty(prop); }catch(_e){}
   });
+  try{
+    menu.style.removeProperty('--np-nav-menu-left');
+    menu.style.removeProperty('--np-nav-menu-top');
+  }catch(_e){}
 }
 function _closeAllNavDrops(){
   document.querySelectorAll(".nav-dropdown-menu.open,.nav-group-menu.open").forEach(function(m){
@@ -8434,6 +8438,8 @@ function _positionNavDrop(ddId){
   }
   menu.style.left=left+'px';
   menu.style.top=top+'px';
+  menu.style.setProperty('--np-nav-menu-left', left+'px');
+  menu.style.setProperty('--np-nav-menu-top', top+'px');
   menu.style.visibility='';
 }
 function _scheduleNavDropPosition(ddId){
@@ -11382,8 +11388,8 @@ body :where(.nav-dropdown-menu,.nav-group-menu,.account-dd,.branch-dd,.menu){
 #nav-dropdown-root .nav-dropdown-menu.open,
 #nav-dropdown-root .nav-group-menu.open{
   position:fixed !important;
-  top:0 !important;
-  left:0 !important;
+  top:var(--np-nav-menu-top, 0px) !important;
+  left:var(--np-nav-menu-left, 0px) !important;
   right:auto !important;
   bottom:auto !important;
   margin:0 !important;
