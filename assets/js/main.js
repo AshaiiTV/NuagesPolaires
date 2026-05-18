@@ -8375,9 +8375,16 @@ function _ensureNavDropRoot(){
     _navDropRoot.style.inset = "0";
     _navDropRoot.style.pointerEvents = "none";
     _navDropRoot.style.zIndex = "10135";
+    _navDropRoot.addEventListener("click", function(e){
+      if(e.target === _navDropRoot) try{ _closeAllNavDrops(); }catch(_e){}
+    });
     document.body.appendChild(_navDropRoot);
   }
   return _navDropRoot;
+}
+function _setNavDropLayerActive(active){
+  var root = _ensureNavDropRoot();
+  if(root) root.style.pointerEvents = active ? "auto" : "none";
 }
 function _restoreNavDrop(menu){
   if(!menu) return;
@@ -8401,6 +8408,7 @@ function _closeAllNavDrops(){
   });
   document.querySelectorAll(".nav-dropdown-btn.open,.nav-group-btn.open").forEach(function(b){b.classList.remove("open");});
   _openDrop=null;
+  _setNavDropLayerActive(false);
 }
 function _positionNavDrop(ddId){
   var wrap=ge(ddId);
@@ -8464,6 +8472,8 @@ function toggleNavDrop(ddId){
     var root=_ensureNavDropRoot();
     menu.dataset.ownerDrop=ddId;
     if(root && menu.parentNode!==root) root.appendChild(menu);
+    _setNavDropLayerActive(true);
+    menu.style.pointerEvents='auto';
     menu.classList.add("portal-open");
     menu.classList.add("open");
     if(btn) btn.classList.add("open");
