@@ -1006,6 +1006,14 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
     var shadowSoft = c.tone === 'light'
       ? '0 12px 28px rgba(31,57,88,.09), inset 0 1px 0 rgba(255,255,255,.72)'
       : '0 12px 28px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.035)';
+    var finalSoft = c.tone === 'light' ? 'rgba(54,75,64,.76)' : 'rgba(232,240,248,.76)';
+    var finalStrong = c.tone === 'light' ? 'rgba(25,36,30,.94)' : 'rgba(248,252,255,.96)';
+    var finalPress = c.tone === 'light'
+      ? controlBase
+      : 'linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.018)),linear-gradient(90deg,rgba(' + v.accentRgb + ',.12),rgba(' + v.accentRgb + ',.05))';
+    var finalPressStrong = c.tone === 'light'
+      ? controlHover
+      : 'linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.03)),linear-gradient(90deg,rgba(' + v.accentRgb + ',.18),rgba(' + v.accentRgb + ',.08))';
     root.setProperty('--tm-bg', v.bg);
     root.setProperty('--tm-bg2', v.bg2);
     root.setProperty('--tm-bg3', v.bg3);
@@ -1051,6 +1059,7 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
     root.setProperty('--purple', v.accentDim);
     root.setProperty('--theme-accent', v.accent);
     root.setProperty('--theme-accent-rgb', v.accentRgb);
+    root.setProperty('--accent-rgb', v.accentRgb);
     root.setProperty('--theme-contrast', v.text);
     root.setProperty('--theme-contrast-soft', textSoft);
     root.setProperty('--theme-panel', 'rgba(' + v.accentRgb + ',.08)');
@@ -1066,6 +1075,17 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
     root.setProperty('--theme-ui-panel-strong', panelStrong);
     root.setProperty('--theme-ui-press', 'linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02)),linear-gradient(90deg,rgba(' + v.accentRgb + ',.09),rgba(' + v.accentRgb + ',.045))');
     root.setProperty('--theme-ui-press-active', 'linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.03)),linear-gradient(90deg,rgba(' + v.accentRgb + ',.15),rgba(' + v.accentRgb + ',.08))');
+    root.setProperty('--theme-final-border-soft', 'rgba(' + v.accentRgb + ',.18)');
+    root.setProperty('--theme-final-border-strong', 'rgba(' + v.accentRgb + ',.34)');
+    root.setProperty('--theme-final-panel', panelBase);
+    root.setProperty('--theme-final-panel-soft', panelStrong);
+    root.setProperty('--theme-final-press', finalPress);
+    root.setProperty('--theme-final-press-strong', finalPressStrong);
+    root.setProperty('--theme-final-table-even', 'rgba(' + v.accentRgb + ',.05)');
+    root.setProperty('--theme-final-table-hover', 'rgba(' + v.accentRgb + ',.09)');
+    root.setProperty('--theme-final-soft', finalSoft);
+    root.setProperty('--theme-final-strong', finalStrong);
+    root.setProperty('--theme-final-shadow', shadowSoft);
     root.setProperty('--np-ui-text', v.text);
     root.setProperty('--np-ui-text-soft', textSoft);
     root.setProperty('--np-ui-muted', textMuted);
