@@ -12390,12 +12390,8 @@ function renderSpawnLab(tid){
   var recentCounts=_spawnLabTotalCounts(s);
   var selectedCount=beasts.filter(function(b){ return !!selected[b.id]; }).length;
   var filteredSelectedCount=filteredBeasts.filter(function(b){ return !!selected[b.id]; }).length;
-  var recentTop=beasts.filter(function(b){ return recentCounts[b.id]; }).sort(function(a,b){ return (recentCounts[b.id]||0)-(recentCounts[a.id]||0); }).slice(0,6);
-  var totalAppearances=Object.keys(recentCounts).reduce(function(acc,id){ return acc + (recentCounts[id]||0); }, 0);
   var pressureColor=['#6db88a','#8ed0a8','#d5c47a','#d9995c','#c94a4a'];
   var pressureLabel=['Repos','Instable','Hostile','Lourd','Extrême'][Math.max(0,Math.min(4,(s.danger||3)-1))];
-  var global=_spawnLabGlobal();
-  var globalBy=global.lastGeneratedBy ? ' · '+esc(global.lastGeneratedBy) : '';
   var h='';
   h+='<style id="np-spawn-lab-style">';
   h+='#p-apparitions-c .sl-wrap{max-width:1320px;margin:0 auto;padding:10px 0 38px;}';
@@ -12447,7 +12443,7 @@ function renderSpawnLab(tid){
   h+='</div>';
   h+='</div>';
   h+='<div class="sl-grid">';
-  h+='<div class="sl-card sl-span-8">';
+  h+='<div class="sl-card sl-span-12">';
   h+='<div class="sl-kicker">CONFIGURATION DU TIRAGE</div>';
   h+='<div class="sl-fields">';
   h+='<div class="sl-field"><label>Danger de zone</label><select id="sl-danger" onchange="_spawnLabSyncInputs();renderSpawnLab(\'p-apparitions-c\')"><option value="1"'+(s.danger===1?' selected':'')+'>1 — Calme</option><option value="2"'+(s.danger===2?' selected':'')+'>2 — Instable</option><option value="3"'+(s.danger===3?' selected':'')+'>3 — Hostile</option><option value="4"'+(s.danger===4?' selected':'')+'>4 — Lourd</option><option value="5"'+(s.danger===5?' selected':'')+'>5 — Extrême</option></select></div>';
@@ -12462,24 +12458,6 @@ function renderSpawnLab(tid){
   h+='<button class="sl-btn" onclick="spawnLabSelect(\'none\')">Tout retirer</button>';
   h+='<button class="sl-btn sl-btn-red" onclick="spawnLabResetHistory()">Réinitialiser le global</button>';
   h+='</div>';
-  h+='</div>';
-  h+='<div class="sl-card sl-span-4">';
-  h+='<div class="sl-kicker">LECTURE DU SYSTÈME</div>';
-  h+='<div class="sl-metric"><strong>Pool actif</strong><span>'+selectedCount+' / '+beasts.length+'</span></div>';
-  h+='<div class="sl-metric"><strong>Apparitions cumulées</strong><span>'+totalAppearances+'</span></div>';
-  h+='<div class="sl-metric"><strong>Tirages globaux</strong><span>'+(parseInt(global.totalDraws,10)||0)+'</span></div>';
-  h+='<div class="sl-metric"><strong>Dernière synchro</strong><span>'+(global.lastGeneratedAt?esc(_beastAgo(global.lastGeneratedAt))+globalBy:'Jamais')+'</span></div>';
-  h+='<div style="font-size:12px;color:var(--dim);line-height:1.65;margin-top:10px;">Les compteurs sont stockés en base via <strong style="color:var(--text);">spawn_lab_staff</strong>. Un mob qui sort souvent descend sous son poids de base ; ceux qui sortent moins que la moyenne du pool remontent.</div>';
-  if(recentTop.length){
-    h+='<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;">';
-    recentTop.forEach(function(b){
-      var col=cBehaviorColor(b.beh||b.behavior||b.comportement);
-      h+='<span class="sl-chip" style="border-color:'+col+';color:'+col+';">'+esc(b.nom)+' × '+recentCounts[b.id]+'</span>';
-    });
-    h+='</div>';
-  } else {
-    h+='<div style="margin-top:12px;font-size:12px;color:rgba(255,255,255,.45);">Aucune apparition enregistrée pour le moment.</div>';
-  }
   h+='</div>';
   h+='<div class="sl-card sl-span-12">';
   h+='<div class="sl-pool-head"><div><div class="sl-kicker">POOL DE CRÉATURES</div><div style="font-size:12px;color:var(--dim);line-height:1.55;">Filtre le bestiaire, puis active uniquement les créatures qui doivent pouvoir tomber au tirage.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><span class="sl-chip">'+filteredSelectedCount+' / '+filteredBeasts.length+' visibles actifs</span><span class="sl-chip">'+selectedCount+' actifs total</span></div></div>';
