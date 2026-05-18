@@ -60,6 +60,55 @@
   background:linear-gradient(180deg, rgba(255,255,255,.070), rgba(255,255,255,.026)), rgba(var(--tm-accent-rgb,155,216,244),.060) !important;
   color:var(--tm-text,var(--text)) !important;
 }
+body.light #app-root,
+body[data-theme-active="light"] #app-root{
+  --np-readable-card:var(--tm-card-bg,linear-gradient(180deg,rgba(255,255,255,.98),rgba(246,250,255,.92))) !important;
+  --np-readable-card-strong:var(--tm-card-bg-strong,linear-gradient(180deg,rgba(255,255,255,1),rgba(241,247,253,.96))) !important;
+  --np-readable-border:var(--np-ui-border-soft,rgba(58,143,186,.18)) !important;
+  --np-readable-border-strong:var(--np-ui-border-strong,rgba(58,143,186,.30)) !important;
+  --np-readable-soft:rgba(58,143,186,.055) !important;
+  --np-readable-shadow:var(--tm-shadow-soft,0 12px 28px rgba(31,57,88,.09), inset 0 1px 0 rgba(255,255,255,.72)) !important;
+  --np-readable-shadow-strong:var(--tm-shadow,0 20px 42px rgba(31,57,88,.11), inset 0 1px 0 rgba(255,255,255,.78)) !important;
+}
+body.light #app-root :where(.card,.panel,.staff-panel,.modal,.db-card,.summary-card,.archive-card,.history-card,.bcrd,.prog-panel,.sim-panel,.sim-fighter-card,.sim-log,.sim-history,.sl-card,.collection-card,.theme-card-premium,.warnbox,.hlbox,.empty-state,.home-footer,.journal-entry,.activity-item),
+body[data-theme-active="light"] #app-root :where(.card,.panel,.staff-panel,.modal,.db-card,.summary-card,.archive-card,.history-card,.bcrd,.prog-panel,.sim-panel,.sim-fighter-card,.sim-log,.sim-history,.sl-card,.collection-card,.theme-card-premium,.warnbox,.hlbox,.empty-state,.home-footer,.journal-entry,.activity-item){
+  border-color:var(--np-readable-border) !important;
+  background:var(--np-readable-card) !important;
+  color:var(--tm-text,var(--text)) !important;
+  box-shadow:var(--np-readable-shadow) !important;
+}
+body.light #app-root :where(.card-title,.section-title,.panel-title,.modal-title,.title,.mtit,.sl-title,.arc-name,.summary-kicker,.home-footer-label,h1,h2,h3,h4,.empty-state-title),
+body[data-theme-active="light"] #app-root :where(.card-title,.section-title,.panel-title,.modal-title,.title,.mtit,.sl-title,.arc-name,.summary-kicker,.home-footer-label,h1,h2,h3,h4,.empty-state-title){
+  color:var(--tm-text,var(--text)) !important;
+  text-shadow:none !important;
+}
+body.light #app-root :where(.desc,.sub,.muted,.small,.help,.note,.hint,.tagline,.faint,.pcls,.siwpn,.eslv.empty,.arc-summary-label,.theme-preview-foot,.empty-state-sub),
+body[data-theme-active="light"] #app-root :where(.desc,.sub,.muted,.small,.help,.note,.hint,.tagline,.faint,.pcls,.siwpn,.eslv.empty,.arc-summary-label,.theme-preview-foot,.empty-state-sub){
+  color:var(--tm-text-muted,var(--dim)) !important;
+  opacity:1 !important;
+}
+body.light #app-root [style*="background:rgba(7,8,16"],
+body.light #app-root [style*="background: rgba(7,8,16"],
+body.light #app-root [style*="background:rgba(7,8,18"],
+body.light #app-root [style*="background: rgba(7,8,18"],
+body.light #app-root [style*="background:rgba(5,8,14"],
+body.light #app-root [style*="background: rgba(5,8,14"],
+body.light #app-root [style*="background:rgba(6,8,16"],
+body.light #app-root [style*="background: rgba(6,8,16"],
+body.light #app-root [style*="linear-gradient(180deg, rgba(18,25,42"],
+body[data-theme-active="light"] #app-root [style*="background:rgba(7,8,16"],
+body[data-theme-active="light"] #app-root [style*="background: rgba(7,8,16"],
+body[data-theme-active="light"] #app-root [style*="background:rgba(7,8,18"],
+body[data-theme-active="light"] #app-root [style*="background: rgba(7,8,18"],
+body[data-theme-active="light"] #app-root [style*="background:rgba(5,8,14"],
+body[data-theme-active="light"] #app-root [style*="background: rgba(5,8,14"],
+body[data-theme-active="light"] #app-root [style*="background:rgba(6,8,16"],
+body[data-theme-active="light"] #app-root [style*="background: rgba(6,8,16"],
+body[data-theme-active="light"] #app-root [style*="linear-gradient(180deg, rgba(18,25,42"]{
+  background:var(--np-readable-card) !important;
+  color:var(--tm-text,var(--text)) !important;
+  border-color:var(--np-readable-border) !important;
+}
 
 /* Buttons and controls */
 #app-root :where(.btn,.btn-out,.mini-btn,.tab-btn,.ltab-btn,.settings-tab,.collection-chip,.quick-link,.bfilt,.spw-btn,.theme-vis-btn,.drawer-item,.drawer-close,.mclose,.tab-popup-close,.theme-chip,button){
