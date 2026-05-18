@@ -15,13 +15,13 @@
     var css = `
 /* === v270 — connected pages readability foundation === */
 #app-root{
-  --np-readable-card:linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.026)), rgba(10,15,28,.78);
-  --np-readable-card-strong:linear-gradient(180deg, rgba(255,255,255,.095), rgba(255,255,255,.035)), rgba(12,19,34,.88);
-  --np-readable-border:rgba(var(--tm-accent-rgb,155,216,244),.20);
-  --np-readable-border-strong:rgba(var(--tm-accent-2-rgb,228,191,102),.27);
-  --np-readable-soft:rgba(255,255,255,.045);
-  --np-readable-shadow:0 16px 36px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.050);
-  --np-readable-shadow-strong:0 24px 54px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.060);
+  --np-readable-card:var(--tm-card-bg,linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.026)), rgba(10,15,28,.78));
+  --np-readable-card-strong:var(--tm-card-bg-strong,linear-gradient(180deg, rgba(255,255,255,.095), rgba(255,255,255,.035)), rgba(12,19,34,.88));
+  --np-readable-border:var(--tm-border,rgba(var(--tm-accent-rgb,155,216,244),.20));
+  --np-readable-border-strong:var(--tm-border-strong,rgba(var(--tm-accent-2-rgb,228,191,102),.27));
+  --np-readable-soft:rgba(var(--tm-accent-rgb,155,216,244),.055);
+  --np-readable-shadow:var(--tm-shadow-soft,0 16px 36px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.050));
+  --np-readable-shadow-strong:var(--tm-shadow,0 24px 54px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.060));
   color:var(--tm-text,var(--text)) !important;
 }
 #app-root .tab-content{
