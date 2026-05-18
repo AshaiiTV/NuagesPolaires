@@ -106,19 +106,23 @@ html,body{
     max-width:126px !important;
   }
   .app-header .hdr-profile{
-    height:44px !important;
-    max-height:44px !important;
-    padding:3px 7px !important;
+    height:48px !important;
+    max-height:48px !important;
+    padding:2px 7px !important;
     align-self:center !important;
-    overflow:hidden !important;
+    overflow:visible !important;
   }
   .app-header .hdr-av{
-    width:36px !important;
-    height:36px !important;
-    max-width:36px !important;
-    max-height:36px !important;
+    width:42px !important;
+    height:42px !important;
+    max-width:42px !important;
+    max-height:42px !important;
+    box-sizing:border-box !important;
   }
   .app-header .hdr-av img{
+    display:block !important;
+    width:100% !important;
+    height:100% !important;
     object-fit:contain !important;
     object-position:center !important;
     background:var(--bg4) !important;
