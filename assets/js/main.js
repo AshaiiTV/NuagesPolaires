@@ -2643,13 +2643,6 @@ function renderProfil(){
   h+='</div>';
   h+='</div>';
 
-  h+='<div class="card" style="margin-top:16px;">';
-  h+='<div>';
-  h+='<div style="font-family:var(--fd);font-size:13px;letter-spacing:1px;margin-bottom:3px;">Collection de thèmes</div>';
-  h+='<div style="font-size:12px;color:var(--dim);">Accède à tes thèmes débloqués et personnalise ton interface.</div>';
-  h+='</div>';
-  h+='</div>';
-
   h+='<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">';
   h+='<button class="btn btn-full" style="border-color:rgba(201,74,74,0.4);color:rgba(201,74,74,0.75);letter-spacing:3px;" onclick="logout()"><span>Déconnexion</span></button>';
   h+='</div>';
@@ -2675,8 +2668,6 @@ function renderProfil(){
   }
   } else {
     h+='<div class="card" style="margin-bottom:16px;">';
-    h+='<div class="card-title">Collection de thèmes</div>';
-    h+='<div style="font-size:13px;color:var(--dim);line-height:1.6;margin-bottom:14px;">Retrouve ici tous les thèmes débloqués, applique-les en un clic, et surveille les thèmes événement disponibles en ce moment.</div>';
     h+='<div id="appearance-section"></div>';
     h+='</div>';
   }
