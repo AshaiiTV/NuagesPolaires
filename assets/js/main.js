@@ -8416,6 +8416,7 @@ function _positionNavDrop(ddId){
   menu.style.bottom='auto';
   menu.style.left='0px';
   menu.style.top='0px';
+  menu.style.minWidth=Math.max(220, Math.ceil(rect.width))+'px';
   menu.style.maxWidth='min(320px, calc(100vw - 16px))';
   menu.style.maxHeight='calc(100vh - 16px - '+Math.max(0, Math.round(rect.bottom + gap))+'px)';
   menu.style.visibility='hidden';
@@ -8461,6 +8462,10 @@ function toggleNavDrop(ddId){
   var isOpen=menu.classList.contains("open");
   _closeAllNavDrops();
   if(!isOpen){
+    var root=_ensureNavDropRoot();
+    menu.dataset.ownerDrop=ddId;
+    if(root && menu.parentNode!==root) root.appendChild(menu);
+    menu.classList.add("portal-open");
     menu.classList.add("open");
     if(btn) btn.classList.add("open");
     _openDrop=ddId;
@@ -11288,7 +11293,15 @@ body.tab-popup-open{padding-right:var(--tab-lock-pr,0px)!important;}
   display:none;
 }
 .nav-dropdown-menu.open,.nav-group-menu.open{display:block!important;}
-.nav-dropdown-menu.portal-open,.nav-group-menu.portal-open{position:absolute!important;top:calc(100% + 10px)!important;left:0!important;}
+.nav-dropdown-menu.portal-open,.nav-group-menu.portal-open{
+  position:fixed!important;
+  top:var(--np-nav-menu-top,0px)!important;
+  left:var(--np-nav-menu-left,0px)!important;
+  right:auto!important;
+  bottom:auto!important;
+  margin:0!important;
+  transform:none!important;
+}
 #nav-dropdown-root{display:block!important;pointer-events:none!important;position:fixed!important;inset:0!important;z-index:10135!important;}
 #nav-dropdown-root .nav-dropdown-menu,#nav-dropdown-root .nav-group-menu{pointer-events:auto!important;}
 .tab-content.tab-popup-active :where(button,[role=button],a,input,select,textarea,label,.btn,.mini-btn,.bfilt,.toggle-sw){pointer-events:auto;}
