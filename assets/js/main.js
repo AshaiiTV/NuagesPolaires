@@ -6351,6 +6351,27 @@ function openBeastZoneManager(zone){
   renderBeastZoneManager(zone||(_beastZoneNames()[0]||''));
   openModal("m-beast-zones");
 }
+function beastZoneFilterList(q){
+  q=String(q||'').trim().toLowerCase();
+  document.querySelectorAll("#m-beast-zones .bz-row").forEach(function(row){
+    var hay=String(row.getAttribute("data-search")||'').toLowerCase();
+    row.style.display=(!q || hay.indexOf(q)>=0)?"flex":"none";
+  });
+}
+function beastZoneSetVisible(checked){
+  document.querySelectorAll("#m-beast-zones .bz-row").forEach(function(row){
+    if(row.style.display==="none") return;
+    var box=row.querySelector(".bz-beast");
+    if(box) box.checked=!!checked;
+  });
+  beastZoneRefreshCount();
+}
+function beastZoneRefreshCount(){
+  var count=0;
+  document.querySelectorAll("#m-beast-zones .bz-beast").forEach(function(node){ if(node.checked) count++; });
+  var el=ge("bz-count");
+  if(el) el.textContent=count+" mob"+(count>1?"s":"")+" dans la zone";
+}
 function renderBeastZoneManager(zone){
   var zones=_beastZoneNames();
   var selected=String(zone||'').trim();
@@ -6363,32 +6384,56 @@ function renderBeastZoneManager(zone){
     modal.className="moverlay";
     document.body.appendChild(modal);
   }
+  var selectedCount=beasts.filter(function(b){ return (Array.isArray(b.zones)?b.zones:[]).indexOf(selected)>=0; }).length;
   var h='';
-  h+='<div class="modal" style="max-width:760px;">';
+  h+='<div class="modal" style="max-width:980px;">';
   h+='<button class="mclose" onclick="closeModal(\'m-beast-zones\')">✕</button>';
-  h+='<div class="mtit">Zones d’apparition</div>';
-  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end;">';
-  h+='<div class="frow"><label class="flbl">Zone existante</label><select id="bz-select" onchange="renderBeastZoneManager(this.value)">';
-  if(zones.length){ zones.forEach(function(z){ h+='<option value="'+escAttr(z)+'"'+(z===selected?' selected':'')+'>'+esc(z)+'</option>'; }); }
-  else h+='<option value="">Aucune zone</option>';
-  h+='</select></div>';
-  h+='<div class="frow"><label class="flbl">Créer / renommer la zone</label><input type="text" id="bz-name" value="'+escAttr(selected)+'" placeholder="Nom de zone"></div>';
+  h+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px;">';
+  h+='<div><div class="mtit" style="margin-bottom:4px;">Zones d’apparition</div><div style="font-size:12px;color:var(--faint);line-height:1.55;max-width:620px;">Crée une zone, puis coche les mobs qui appartiennent à ce groupe. Le roll d’apparitions tirera uniquement parmi ces mobs.</div></div>';
+  h+='<div id="bz-count" style="padding:8px 11px;border:1px solid rgba(201,168,76,.28);background:rgba(201,168,76,.08);color:var(--gold);font-family:var(--fd);font-size:10px;letter-spacing:1.2px;white-space:nowrap;">'+selectedCount+' mob'+(selectedCount>1?'s':'')+' dans la zone</div>';
   h+='</div>';
-  h+='<div style="font-size:12px;color:var(--faint);line-height:1.55;margin:4px 0 12px;">Coche les mobs qui appartiennent à cette zone, puis enregistre. Le roll d’apparitions tirera uniquement dans ce groupe.</div>';
-  h+='<div style="max-height:420px;overflow:auto;border:1px solid var(--border2);background:var(--bg3);padding:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;">';
+  h+='<div style="display:grid;grid-template-columns:230px minmax(0,1fr);gap:14px;align-items:start;">';
+  h+='<aside style="border:1px solid var(--border2);background:var(--bg3);padding:10px;max-height:520px;overflow:auto;">';
+  h+='<div style="font-family:var(--fd);font-size:8px;letter-spacing:3px;color:var(--faint);margin-bottom:8px;">ZONES</div>';
+  if(zones.length){
+    zones.forEach(function(z){
+      var count=beasts.filter(function(b){ return (Array.isArray(b.zones)?b.zones:[]).indexOf(z)>=0; }).length;
+      h+='<button type="button" onclick="renderBeastZoneManager(\''+jsesc(z)+'\')" style="width:100%;display:flex;justify-content:space-between;gap:8px;align-items:center;text-align:left;margin-bottom:6px;padding:9px 10px;border:1px solid '+(z===selected?'rgba(201,168,76,.42)':'rgba(255,255,255,.07)')+';background:'+(z===selected?'rgba(201,168,76,.10)':'rgba(255,255,255,.025)')+';color:var(--text);cursor:pointer;">'
+        +'<span style="font-family:var(--fd);font-size:10px;letter-spacing:1px;overflow:hidden;text-overflow:ellipsis;">'+esc(z)+'</span>'
+        +'<span style="font-size:10px;color:var(--faint);">'+count+'</span>'
+      +'</button>';
+    });
+  }else{
+    h+='<div style="font-size:12px;color:var(--faint);line-height:1.55;">Aucune zone créée.</div>';
+  }
+  h+='</aside>';
+  h+='<section>';
+  h+='<div style="display:grid;grid-template-columns:minmax(220px,1fr) minmax(220px,1fr);gap:10px;align-items:end;">';
+  h+='<div class="frow"><label class="flbl">Nom de la zone</label><input type="text" id="bz-name" value="'+escAttr(selected)+'" placeholder="Nouvelle zone ou nom existant"></div>';
+  h+='<div class="frow"><label class="flbl">Rechercher un mob</label><input type="search" id="bz-search" placeholder="Nom, comportement, niveau..." oninput="beastZoneFilterList(this.value)"></div>';
+  h+='</div>';
+  h+='<input type="hidden" id="bz-select" value="'+escAttr(selected)+'">';
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px;">';
+  h+='<button type="button" class="btn btn-sm" onclick="beastZoneSetVisible(true)"><span>Tout cocher visible</span></button>';
+  h+='<button type="button" class="btn btn-sm" onclick="beastZoneSetVisible(false)"><span>Décocher visible</span></button>';
+  if(selected) h+='<button type="button" class="btn btn-sm btn-red" onclick="deleteBeastZone(\''+jsesc(selected)+'\')"><span>Supprimer la zone</span></button>';
+  h+='</div>';
+  h+='<div style="max-height:390px;overflow:auto;border:1px solid var(--border2);background:var(--bg3);padding:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;">';
   beasts.forEach(function(b){
     var checked=(Array.isArray(b.zones)?b.zones:[]).indexOf(selected)>=0;
-    h+='<label style="display:flex;gap:8px;align-items:flex-start;padding:9px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.025);cursor:pointer;">';
-    h+='<input type="checkbox" class="bz-beast" value="'+escAttr(b.id)+'"'+(checked?' checked':'')+' style="margin-top:2px;">';
+    var search=[b.nom,b.sub,b.niv,cBehaviorLabel(b.beh),Array.isArray(b.zones)?b.zones.join(' '):''].join(' ');
+    h+='<label class="bz-row" data-search="'+escAttr(search)+'" style="display:flex;gap:8px;align-items:flex-start;padding:10px;border:1px solid '+(checked?'rgba(201,168,76,.30)':'rgba(255,255,255,.07)')+';background:'+(checked?'rgba(201,168,76,.075)':'rgba(255,255,255,.025)')+';cursor:pointer;">';
+    h+='<input type="checkbox" class="bz-beast" value="'+escAttr(b.id)+'"'+(checked?' checked':'')+' onchange="beastZoneRefreshCount()" style="margin-top:2px;">';
     h+='<span><span style="display:block;font-family:var(--fd);font-size:10px;letter-spacing:1px;color:var(--text);">'+esc(b.nom||'Créature')+'</span><span style="display:block;font-size:10px;color:var(--faint);margin-top:3px;">Niv. '+esc(b.niv||1)+' · '+esc(cBehaviorLabel(b.beh)||'Neutre')+'</span></span>';
     h+='</label>';
   });
   h+='</div>';
   h+='<p class="errmsg" id="bz-err"></p>';
-  h+='<div class="factions">';
-  if(selected) h+='<button class="btn btn-sm btn-red" onclick="deleteBeastZone(\''+jsesc(selected)+'\')"><span>Supprimer la zone</span></button>';
-  h+='<button class="btn btn-sm" onclick="closeModal(\'m-beast-zones\')"><span>Annuler</span></button>';
-  h+='<button class="btn btn-sm btn-grn" onclick="saveBeastZoneAssignments()"><span>Enregistrer la zone</span></button>';
+  h+='<div class="factions" style="margin-top:12px;">';
+  h+='<button class="btn btn-sm" onclick="closeModal(\'m-beast-zones\')"><span>Fermer</span></button>';
+  h+='<button class="btn btn-sm btn-grn" onclick="saveBeastZoneAssignments()"><span>Enregistrer</span></button>';
+  h+='</div>';
+  h+='</section>';
   h+='</div>';
   h+='</div>';
   modal.innerHTML=h;
