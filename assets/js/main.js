@@ -12401,6 +12401,13 @@ function spawnLabCopyLast(){
     notif('Copie indisponible ici.','err');
   }
 }
+function spawnLabOpenZoneAdmin(){
+  if(!can("manage_beasts")){ notif("Réservé à l’admin bestiaire.","err"); return; }
+  var input=ge("sl-admin-zone-name");
+  var select=ge("sl-admin-zone-select");
+  var zone=String((input&&input.value)||(select&&select.value)||'').trim();
+  openBeastZoneManager(zone);
+}
 function renderSpawnLab(tid){
   if(!CU||CU.type!=='staff'){ return; }
   var el=ge(tid); if(!el) return;
@@ -12458,10 +12465,6 @@ function renderSpawnLab(tid){
   h+='<div class="sl-wrap">';
   h+='<div class="sl-head">';
   h+='<div><div class="sl-kicker">OUTIL STAFF — GÉNÉRATEUR D’APPARITIONS</div><div class="sl-title">Roll par zone</div><div class="sl-sub">Choisis une zone, lance le roll, et le résultat tombe parmi les mobs configurés dedans. Les poids restent globaux : un mob qui sort baisse, les autres remontent.</div></div>';
-  h+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
-  h+='<span class="sl-chip">Zone '+esc(zoneMeta.label)+'</span>';
-  h+='<span class="sl-chip">'+zonePool.length+' mob'+(zonePool.length>1?'s':'')+' dedans</span>';
-  h+='</div>';
   h+='</div>';
   h+='<div class="sl-grid">';
   h+='<div class="sl-card sl-span-12">';
@@ -12481,8 +12484,21 @@ function renderSpawnLab(tid){
   h+='<button class="sl-btn sl-btn-red" onclick="spawnLabResetHistory()">Réinitialiser le global</button>';
   h+='</div>';
   h+='</div>';
+  if(can("manage_beasts")){
+    h+='<div class="sl-card sl-span-12" style="border-color:rgba(201,168,76,.24);background:linear-gradient(180deg,rgba(34,27,11,.92),rgba(12,10,8,.96));">';
+    h+='<div class="sl-pool-head"><div><div class="sl-kicker" style="color:var(--gold);">ADMIN UNIQUEMENT — CRÉATION DE ZONES</div><div style="font-size:12px;color:var(--dim);line-height:1.55;">Cette section sert à créer une zone et à mettre les mobs dedans. Elle est réservée aux admins du bestiaire.</div></div></div>';
+    h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;align-items:end;">';
+    h+='<div class="sl-field"><label>Zone existante</label><select id="sl-admin-zone-select">';
+    if(zoneOptions.length){ zoneOptions.forEach(function(opt){ h+='<option value="'+escAttr(opt.label)+'"'+(zoneMeta.label===opt.label?' selected':'')+'>'+esc(opt.label)+'</option>'; }); }
+    else h+='<option value="">Aucune zone</option>';
+    h+='</select></div>';
+    h+='<div class="sl-field"><label>Créer / ouvrir une zone</label><input id="sl-admin-zone-name" type="text" placeholder="Nom de la nouvelle zone"></div>';
+    h+='<button class="sl-btn sl-btn-gold" style="min-height:42px;" onclick="spawnLabOpenZoneAdmin()">Gérer les mobs</button>';
+    h+='</div>';
+    h+='</div>';
+  }
   h+='<div class="sl-card sl-span-12">';
-  h+='<div class="sl-pool-head"><div><div class="sl-kicker">MOBS DE LA ZONE</div><div style="font-size:12px;color:var(--dim);line-height:1.55;">Le pool est automatique : tous les mobs visibles rattachés à <strong>'+esc(zoneMeta.label)+'</strong> peuvent tomber au tirage.</div></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><span class="sl-chip">'+zonePool.length+' mob'+(zonePool.length>1?'s':'')+'</span><span class="sl-chip">'+zoneOptions.length+' zone'+(zoneOptions.length>1?'s':'')+'</span></div></div>';
+  h+='<div class="sl-pool-head"><div><div class="sl-kicker">MOBS DE LA ZONE</div><div style="font-size:12px;color:var(--dim);line-height:1.55;">Le pool est automatique : tous les mobs visibles rattachés à <strong>'+esc(zoneMeta.label)+'</strong> peuvent tomber au tirage.</div></div></div>';
   h+='<div class="sl-pool">';
   if(!zonePool.length){
     h+='<div style="grid-column:1/-1;padding:18px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);font-size:12px;color:rgba(255,255,255,.50);line-height:1.7;">Aucun mob visible dans cette zone. Ajoute une zone aux créatures dans le bestiaire, ou choisis une autre zone.</div>';
