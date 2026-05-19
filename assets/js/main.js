@@ -6359,7 +6359,6 @@ function _beastZoneNames(){
   out.sort(function(a,b){ return a.localeCompare(b,'fr',{sensitivity:'base'}); });
   return out;
 }
-var _beastZoneReturnAfterAdd='';
 var _beastZoneReturnAfterEdit='';
 function _beastZoneCurrentName(){
   return String((ge("bz-name")&&ge("bz-name").value)||(ge("bz-select")&&ge("bz-select").value)||'').trim();
@@ -6368,18 +6367,6 @@ function openBeastZoneManager(zone){
   if(!can("manage_beasts")){ notif("Permission insuffisante.","err"); return; }
   renderBeastZoneManager(zone||(_beastZoneNames()[0]||''));
   openModal("m-beast-zones");
-}
-function beastZoneOpenAddMob(){
-  if(!can("manage_beasts")){ notif("Permission insuffisante.","err"); return; }
-  var zone=_beastZoneCurrentName();
-  if(!zone){ if(ge("bz-err")) ge("bz-err").textContent="Nom de zone requis avant de créer un mob."; return; }
-  _beastZoneReturnAfterAdd=zone;
-  closeModal("m-beast-zones");
-  openModal("m-addb");
-  setTimeout(function(){
-    if(ge("ab-zones")) ge("ab-zones").value=zone;
-    if(ge("ab-n")) ge("ab-n").focus();
-  },0);
 }
 function beastZoneOpenEditMob(id){
   if(!can("manage_beasts")){ notif("Permission insuffisante.","err"); return; }
@@ -6413,7 +6400,14 @@ function beastZoneSetVisible(checked){
     if(row.style.display==="none") return;
     var box=row.querySelector(".bz-beast");
     if(box) box.checked=!!checked;
+    row.classList.toggle("is-selected", !!checked);
   });
+  beastZoneRefreshCount();
+}
+function beastZoneToggleRow(input){
+  if(!input) return;
+  var row=input.closest ? input.closest(".bz-row") : null;
+  if(row) row.classList.toggle("is-selected", !!input.checked);
   beastZoneRefreshCount();
 }
 function beastZoneRefreshCount(){
@@ -6437,6 +6431,13 @@ function renderBeastZoneManager(zone){
   var selectedCount=beasts.filter(function(b){ return (Array.isArray(b.zones)?b.zones:[]).indexOf(selected)>=0; }).length;
   var h='';
   h+='<div class="modal" style="max-width:980px;">';
+  h+='<style>'
+    +'#m-beast-zones .bz-row{display:flex;gap:8px;align-items:flex-start;padding:10px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.025);cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s,transform .15s;}'
+    +'#m-beast-zones .bz-row:hover{border-color:rgba(126,184,212,.26);background:rgba(126,184,212,.045);transform:translateY(-1px);}'
+    +'#m-beast-zones .bz-row.is-selected{border-color:rgba(201,168,76,.46);background:linear-gradient(180deg,rgba(201,168,76,.12),rgba(201,168,76,.055));box-shadow:0 0 0 1px rgba(201,168,76,.18), inset 0 1px 0 rgba(255,255,255,.04);}'
+    +'#m-beast-zones .bz-row .bz-beast{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;}'
+    +'#m-beast-zones .bz-row-label{display:flex;min-width:0;flex:1;cursor:pointer;}'
+  +'</style>';
   h+='<button class="mclose" onclick="closeModal(\'m-beast-zones\')">✕</button>';
   h+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px;">';
   h+='<div><div class="mtit" style="margin-bottom:4px;">Zones d’apparition</div><div style="font-size:12px;color:var(--faint);line-height:1.55;max-width:620px;">Crée une zone, puis coche les mobs qui appartiennent à ce groupe. Le roll d’apparitions tirera uniquement parmi ces mobs.</div></div>';
@@ -6464,7 +6465,6 @@ function renderBeastZoneManager(zone){
   h+='</div>';
   h+='<input type="hidden" id="bz-select" value="'+escAttr(selected)+'">';
   h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px;">';
-  h+='<button type="button" class="btn btn-sm btn-grn" onclick="beastZoneOpenAddMob()"><span>Créer un mob dans cette zone</span></button>';
   h+='<button type="button" class="btn btn-sm" onclick="beastZoneSetVisible(true)"><span>Tout cocher visible</span></button>';
   h+='<button type="button" class="btn btn-sm" onclick="beastZoneSetVisible(false)"><span>Décocher visible</span></button>';
   if(selected) h+='<button type="button" class="btn btn-sm btn-red" onclick="deleteBeastZone(\''+jsesc(selected)+'\')"><span>Supprimer la zone</span></button>';
@@ -6473,9 +6473,9 @@ function renderBeastZoneManager(zone){
   beasts.forEach(function(b){
     var checked=(Array.isArray(b.zones)?b.zones:[]).indexOf(selected)>=0;
     var search=[b.nom,b.sub,b.niv,cBehaviorLabel(b.beh),Array.isArray(b.zones)?b.zones.join(' '):''].join(' ');
-    h+='<div class="bz-row" data-search="'+escAttr(search)+'" style="display:flex;gap:8px;align-items:flex-start;padding:10px;border:1px solid '+(checked?'rgba(201,168,76,.30)':'rgba(255,255,255,.07)')+';background:'+(checked?'rgba(201,168,76,.075)':'rgba(255,255,255,.025)')+';">';
-    h+='<label style="display:flex;gap:8px;align-items:flex-start;min-width:0;flex:1;cursor:pointer;">';
-    h+='<input type="checkbox" class="bz-beast" value="'+escAttr(b.id)+'"'+(checked?' checked':'')+' onchange="beastZoneRefreshCount()" style="margin-top:2px;">';
+    h+='<div class="bz-row'+(checked?' is-selected':'')+'" data-search="'+escAttr(search)+'">';
+    h+='<label class="bz-row-label">';
+    h+='<input type="checkbox" class="bz-beast" value="'+escAttr(b.id)+'"'+(checked?' checked':'')+' onchange="beastZoneToggleRow(this)">';
     h+='<span style="min-width:0;"><span style="display:block;font-family:var(--fd);font-size:10px;letter-spacing:1px;color:var(--text);overflow:hidden;text-overflow:ellipsis;">'+esc(b.nom||'Créature')+'</span><span style="display:block;font-size:10px;color:var(--faint);margin-top:3px;">Niv. '+esc(b.niv||1)+' · '+esc(cBehaviorLabel(b.beh)||'Neutre')+'</span></span>';
     h+='</label>';
     h+='<div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">';
@@ -8195,11 +8195,6 @@ function addBeast(){
   var bs=gb();bs.unshift(b);sb(bs);closeModal("m-addb");
   ["ab-n","ab-sub","ab-fr","ab-co","ab-dr","ab-gm","ab-de","ab-img","ab-zones","ab-note"].forEach(function(id){if(ge(id)) ge(id).value="";}); if(ge("ab-niv")) ge("ab-niv").value=1; if(ge("ab-hidden")) ge("ab-hidden").checked=false; if(ge("ab-archived")) ge("ab-archived").checked=false;
   renderBGrid("p-bgrd",!!(CU&&can("manage_beasts")));notif(n+" ajouté.","ok");
-  if(_beastZoneReturnAfterAdd){
-    var returnZone=_beastZoneReturnAfterAdd;
-    _beastZoneReturnAfterAdd='';
-    openBeastZoneManager(returnZone);
-  }
 }
 function openEditBeast(id){
   if(!CU||!can("manage_beasts")){ notif("Non autorisé.","err"); return; }
