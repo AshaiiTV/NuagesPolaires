@@ -290,7 +290,6 @@ body.np-is-admin #dd-staff-menu .perm-admin{
       ['joueurs','Joueurs'],
       ['combat-mj','Simulation'],
       ['apparitions','Apparitions'],
-      ['systeme-jeu','Dés'],
       ['stats','Tableau de bord'],
       ['database','Database']
     ];

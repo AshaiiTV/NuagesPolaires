@@ -3443,7 +3443,6 @@ body.theme-noel .theme-preview-bar{background:linear-gradient(90deg, #70c060, #f
 #p-bgrd > .card,
 #p-events-c > .card,
 #p-regles-c > .card,
-#p-des-c > .card,
 #p-stats-c > .card,
 #p-database-c > .card,
 #p-combat-mj-c > .card,
@@ -3504,7 +3503,7 @@ body.theme-noel .theme-preview-bar{background:linear-gradient(90deg, #70c060, #f
 .tab-content.active{
   animation: tabFadeIn .18s ease both !important;
 }
-#p-accueil-c, #p-synopsis-c, #p-serments-c, #p-bgrd, #p-events-c, #p-regles-c, #p-des-c, #p-stats-c, #p-database-c, #p-combat-mj-c, #p-fiche-c{
+#p-accueil-c, #p-synopsis-c, #p-serments-c, #p-bgrd, #p-events-c, #p-regles-c, #p-stats-c, #p-database-c, #p-combat-mj-c, #p-fiche-c{
   display: grid;
   gap: 16px;
 }
@@ -5601,7 +5600,6 @@ body.theme-aquaris .home-title{
           <button class="nav-dropdown-item perm-mj" onclick="switchDropTab('joueurs',this,'dd-staff')"><span class="nav-item-icon">👥</span>Joueurs<span id="dd-joueurs-pending-badge" style="display:none;background:var(--red);color:#fff;font-size:8px;padding:1px 5px;border-radius:99px;margin-left:auto;font-family:var(--fd);"></span></button>
           <button class="nav-dropdown-item perm-mj" onclick="switchDropTab('combat-mj',this,'dd-staff')"><span class="nav-item-icon">⚔</span>Simulation</button>
           <button class="nav-dropdown-item perm-mj" onclick="switchDropTab('apparitions',this,'dd-staff')"><span class="nav-item-icon">🜂</span>Apparitions</button>
-          <button class="nav-dropdown-item perm-mj" onclick="switchDropTab('systeme-jeu',this,'dd-staff')"><span class="nav-item-icon">🎲</span>Dés</button>
           <div class="nav-divider perm-admin"></div>
           <div class="nav-section-header perm-admin" style="color:rgba(201,74,74,0.5);">ADMIN</div>
           <button class="nav-dropdown-item perm-admin" onclick="switchDropTab('stats',this,'dd-staff')"><span class="nav-item-icon">📊</span>Tableau de bord</button>
@@ -5656,7 +5654,6 @@ body.theme-aquaris .home-title{
       <button onclick="switchDropTab('joueurs',null,'dd-staff');closeMobileDrawer();" class="drawer-item">Joueurs</button>
       <button onclick="switchDropTab('combat-mj',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-mj">Simulation</button>
       <button onclick="switchDropTab('apparitions',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-mj">Apparitions</button>
-      <button onclick="switchDropTab('systeme-jeu',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-mj">Dés</button>
       <button onclick="switchDropTab('stats',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-admin">Tableau de bord</button>
       <button onclick="switchDropTab('database',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-admin">Database</button>
     </div>
@@ -5853,9 +5850,6 @@ body.theme-aquaris .home-title{
 
     <!-- APPARITIONS -->
     <div id="apparitions" class="tab-content" data-private="true"><div id="p-apparitions-c"></div></div>
-
-    <!-- DÉS -->
-    <div id="systeme-jeu" class="tab-content" data-private="true"><div id="p-des-c"></div></div>
 
     <!-- JOURNAL DE BORD -->
 

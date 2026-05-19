@@ -4705,7 +4705,7 @@ async function logout(){
     if(ge("pl-pass"))ge("pl-pass").value="";
     if(ge("err-p"))ge("err-p").textContent="";
     if(ge("err-s"))ge("err-s").textContent="";
-    ["t-database-c","p-stats-c","p-joueurs-c","p-combat-mj-c","p-apparitions-c","p-des-c",
+    ["t-database-c","p-stats-c","p-joueurs-c","p-combat-mj-c","p-apparitions-c",
      "p-gestion-mj-c","p-en-attente-c","p-profil-c","p-serm-c","p-hist",
      "s-plist"].forEach(function(id){
       var el=document.getElementById(id); if(el) el.innerHTML="";
@@ -4816,7 +4816,7 @@ function historyBack(){
   _updateBackBtn();
 }
 
-var TAB_POPUP_IDS=['synopsis','serments','bestiaire','combat','reglement','profil','fiche','joueurs','gestion-mj','en-attente','combat-mj','apparitions','systeme-jeu','stats','evenements','carte','database'];
+var TAB_POPUP_IDS=['synopsis','serments','bestiaire','combat','reglement','profil','fiche','joueurs','gestion-mj','en-attente','combat-mj','apparitions','stats','evenements','carte','database'];
 var _popupReturnTab='accueil';
 var _activePopupTab=null;
 function _isTabPopup(id){ return !!id && TAB_POPUP_IDS.indexOf(id)>=0; }
@@ -4890,7 +4890,7 @@ if(!window.__npPopupEscBound){
 function switchTab(id, btn, _isBack){
   if(id==='arena') id='combat-mj';
   // ── SECURITY GUARDS ─────────────────────────────────────
-  var STAFF_TABS=["joueurs","gestion-mj","en-attente","combat-mj","apparitions","systeme-jeu","stats","database"];
+  var STAFF_TABS=["joueurs","gestion-mj","en-attente","combat-mj","apparitions","stats","database"];
   var ADMIN_TABS=["stats","database","gestion-mj","en-attente"];
   var isStaffUser = !!(CU && ((CU.type==="staff") || ["admin","mj","designer"].indexOf((CU.role||"").toLowerCase())>=0));
   if(STAFF_TABS.indexOf(id)>=0){
@@ -4967,7 +4967,6 @@ function switchTab(id, btn, _isBack){
     setTimeout(function(){ try{ renderView(); }catch(e){} }, 30);
   }
   if(id==="database"){ if(window._dbTab==="audit"){ loadAuditLogAdmin(false).then(function(){ renderDatabase(); }); } else { renderDatabase(); } }
-  if(id==="systeme-jeu"){ renderDes("p-des-c"); }
   if(id==="combat-mj"){
     rCombat("p-combat-mj-c");
     _startCombatMJPoll();
@@ -9485,220 +9484,6 @@ document.addEventListener("keydown",function(e){
   }
 });
 
-// ==========================================
-// DÉS
-// ==========================================
-var _desLog=[];
-var _desLogPage=0;
-var _desLogPerPage=10;
-
-function renderDes(tid){
-  if(!CU||CU.type!=="staff"){ return; }
-  var el=ge(tid);if(!el)return;
-  var players=gp();
-  var beasts=gb();
-  var h='<div style="max-width:760px;">';
-  h+='<div class="card-title" style="margin-bottom:20px;">🎲 Lanceur de dés</div>';
-
-  // Dés rapides
-  h+='<div class="card mb16">';
-  h+='<div class="card-title" style="font-size:9px;margin-bottom:14px;">LANCER RAPIDE</div>';
-  h+='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">';
-  [4,6,8,10,12,20,100].forEach(function(d){
-    h+='<button class="btn btn-sm" onclick="rollDie('+d+',1)" style="min-width:54px;"><span>D'+d+'</span></button>';
-  });
-  h+='</div></div>';
-
-  // Lancer personnalisé + ciblage joueur
-  h+='<div class="card mb16">';
-  h+='<div class="card-title" style="font-size:9px;margin-bottom:14px;">LANCER PERSONNALISÉ</div>';
-  h+='<div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">';
-  h+='<div class="frow" style="margin:0;flex:0 0 auto;"><label class="flbl">Dés</label><input type="number" id="des-qty" value="1" min="1" max="20" style="width:60px;"></div>';
-  h+='<div class="frow" style="margin:0;flex:0 0 auto;"><label class="flbl">Faces</label><input type="number" id="des-faces" value="100" min="2" max="1000" style="width:70px;"></div>';
-  h+='<div class="frow" style="margin:0;flex:0 0 auto;"><label class="flbl">Bonus</label><input type="number" id="des-bonus" value="0" style="width:60px;"></div>';
-  h+='<div class="frow" style="margin:0;flex:1;min-width:110px;"><label class="flbl">Raison</label><input type="text" id="des-label" placeholder="Ex: Drop Wissem"></div>';
-  h+='</div>';
-  // Ciblage joueur
-  h+='<div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:10px;">';
-  h+='<div class="frow" style="margin:0;flex:1;min-width:140px;"><label class="flbl">Joueur ciblé (optionnel)</label><select id="des-player"><option value="">— Aucun —</option>';
-  players.forEach(function(p){ h+='<option value="'+p.id+'">'+esc(p.name)+'</option>'; });
-  h+='</select></div>';
-  h+='<button class="btn btn-sm btn-grn" onclick="rollCustom()" style="height:40px;flex-shrink:0;"><span>Lancer</span></button>';
-  h+='</div></div>';
-
-  // Drop de gemme par mob
-  h+='<div class="card mb16">';
-  h+='<div class="card-title" style="font-size:9px;margin-bottom:14px;">DROP DE GEMME (D100)</div>';
-  h+='<div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">';
-  h+='<div class="frow" style="margin:0;flex:1;min-width:140px;"><label class="flbl">Créature</label><select id="des-mob"><option value="">— Choisir —</option>';
-  beasts.forEach(function(b){ h+='<option value="'+b.id+'">'+esc(b.nom)+' (Niv.'+b.niv+')</option>'; });
-  h+='</select></div>';
-  h+='<div class="frow" style="margin:0;flex:1;min-width:140px;"><label class="flbl">Joueur (optionnel)</label><select id="des-mob-player"><option value="">— Aucun —</option>';
-  players.forEach(function(p){ h+='<option value="'+p.id+'">'+esc(p.name)+'</option>'; });
-  h+='</select></div>';
-  h+='<button class="btn btn-sm btn-grn" onclick="rollGemDrop()" style="height:40px;flex-shrink:0;"><span>Lancer D100</span></button>';
-  h+='</div>';
-  h+='<div id="des-gem-result" style="display:none;margin-top:12px;"></div>';
-  h+='</div>';
-
-  // Résultat en cours
-  h+='<div id="des-result" style="display:none;" class="card mb16"></div>';
-
-  // Log
-  h+='<div class="card" id="des-log-card">';
-  h+=renderDesLogHtml();
-  h+='</div>';
-  h+='</div>';
-  el.innerHTML=h;
-}
-
-function renderDesLogHtml(){
-  var h='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
-  h+='<div class="card-title" style="font-size:9px;">HISTORIQUE</div>';
-  h+='<button class="btn btn-sm" onclick="_desLog=[];_desLogPage=0;renderDes(\'p-des-c\')" style="border-color:var(--faint);color:var(--faint);font-size:9px;padding:3px 8px;"><span>Vider</span></button>';
-  h+='</div>';
-  if(!_desLog.length) return h+'<p style="color:var(--faint);font-style:italic;font-size:13px;">Aucun lancer.</p>';
-  var sorted=_desLog.slice().reverse();
-  var tot=sorted.length;
-  var pages=Math.ceil(tot/_desLogPerPage);
-  if(_desLogPage>=pages) _desLogPage=pages-1;
-  if(_desLogPage<0) _desLogPage=0;
-  var page=_desLogPage;
-  var slice=sorted.slice(page*_desLogPerPage,(page+1)*_desLogPerPage);
-  h+='<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px;">';
-  slice.forEach(function(entry){
-    var col=entry.crit?'var(--green)':entry.fail?'var(--red)':'var(--text)';
-    var border=entry.crit?'var(--green)':entry.fail?'var(--red)':'var(--border2)';
-    h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-left:2px solid '+border+'">';
-    h+='<span style="font-family:var(--fm);font-size:18px;font-weight:700;color:'+col+';min-width:46px;">'+entry.total+'</span>';
-    h+='<div style="flex:1;min-width:0;">';
-    h+='<div style="font-size:13px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+entry.label+(entry.playerName?' <span style="color:var(--glacier-dim);">&rarr; '+entry.playerName+'</span>':'')+'</div>';
-    h+='<div style="display:flex;gap:10px;margin-top:2px;flex-wrap:wrap;">';
-    h+='<span style="font-family:var(--fm);font-size:10px;color:var(--faint);">'+entry.detail+'</span>';
-    h+='<span style="font-size:10px;color:var(--dim);">par <strong style="color:var(--text);">'+(entry.rolledBy||"?")+'</strong></span>';
-    h+='</div></div>';
-    h+='<span style="font-size:11px;color:var(--faint);flex-shrink:0;">'+fdt(entry.ts)+'</span>';
-    h+='</div>';
-  });
-  h+='</div>';
-  if(pages>1){
-    var prevDis=page===0?'opacity:.4;pointer-events:none;':'';
-    var nextDis=page>=pages-1?'opacity:.4;pointer-events:none;':'';
-    h+='<div style="display:flex;align-items:center;justify-content:space-between;padding-top:8px;border-top:1px solid var(--border);">';
-    h+='<button class="btn btn-sm" onclick="_desLogPage=Math.max(0,_desLogPage-1);renderDesLog()" style="font-size:9px;padding:3px 10px;'+prevDis+'"><span>&larr; Préc.</span></button>';
-    h+='<span style="font-family:var(--fm);font-size:11px;color:var(--dim);">Page '+(page+1)+' / '+pages+' <span style="color:var(--faint);">('+tot+' lancers)</span></span>';
-    h+='<button class="btn btn-sm" onclick="_desLogPage=Math.min('+(pages-1)+',_desLogPage+1);renderDesLog()" style="font-size:9px;padding:3px 10px;'+nextDis+'"><span>Suiv. &rarr;</span></button>';
-    h+='</div>';
-  }
-  return h;
-}
-
-function renderDesLog(){
-  var card=ge("des-log-card"); if(!card) return;
-  card.innerHTML=renderDesLogHtml();
-}
-
-function rollDie(faces,qty,bonus,label,pid){
-  qty=qty||1; bonus=bonus||0; label=label||('D'+faces);
-  var rolls=[];
-  for(var i=0;i<qty;i++) rolls.push(Math.floor(Math.random()*faces)+1);
-  var total=rolls.reduce(function(a,b){return a+b;},0)+bonus;
-  var isCrit=(faces===20&&total-bonus===20)||(faces===100&&total-bonus>=95);
-  var isFail=(faces===20&&total-bonus===1)||(faces===100&&total-bonus<=5);
-  var detail=qty+'D'+faces+(bonus?'+'+bonus:'')+' → ['+rolls.join(', ')+']'+(bonus?' +'+bonus:'');
-  var pName=pid?(function(){var p=gpid(pid);return p?p.name:null;})():null;
-  var rolledBy=CU?(CU.name||CU.pseudo||"Staff"):"?";
-  var entry={ts:Date.now(),total:total,label:label,detail:detail,crit:isCrit,fail:isFail,rolls:rolls,playerName:pName,rolledBy:rolledBy};
-  _desLog.push(entry);
-  // Ajouter à l'historique du joueur si ciblé
-  if(pid){
-    var p=gpid(pid);
-    if(p){
-      p.history=p.history||[];
-      p.history.push({ts:Date.now(),type:"de",text:"🎲 "+label+" : "+total+" ("+detail+")",by:"MJ "+(CU?CU.name:"Staff")});
-      up(p);
-    }
-  }
-  // Afficher résultat
-  var res=ge("des-result");
-  if(res){
-    res.style.display="block";
-    var col=isCrit?'var(--green)':isFail?'var(--red)':'var(--glacier)';
-    var badge=isCrit?'<span style="font-family:var(--fd);font-size:9px;letter-spacing:2px;padding:2px 8px;background:var(--green);color:var(--bg);margin-left:10px;">CRITIQUE</span>':isFail?'<span style="font-family:var(--fd);font-size:9px;letter-spacing:2px;padding:2px 8px;background:var(--red);color:#fff;margin-left:10px;">ÉCHEC</span>':'';
-    res.innerHTML='<div style="display:flex;align-items:center;gap:16px;padding:4px 0;">'
-      +'<div style="font-family:var(--fm);font-size:48px;font-weight:700;color:'+col+';">'+total+'</div>'
-      +'<div><div style="font-family:var(--fd);font-size:13px;letter-spacing:1px;">'+label+badge+(pName?' <span style="color:var(--dim);font-size:11px;">→ '+pName+'</span>':'')+'</div>'
-      +'<div style="font-size:13px;color:var(--dim);margin-top:4px;">'+detail+'</div></div></div>';
-  }
-  renderDesLog();
-  return entry;
-}
-
-function rollCustom(){
-  var qty=parseInt(ge("des-qty").value)||1;
-  var faces=parseInt(ge("des-faces").value)||100;
-  var bonus=parseInt(ge("des-bonus").value)||0;
-  var label=ge("des-label").value.trim()||qty+'D'+faces;
-  var pid=ge("des-player")?ge("des-player").value||null:null;
-  rollDie(faces,qty,bonus,label,pid);
-}
-
-function rollGemDrop(){
-  var mobSel=ge("des-mob"); if(!mobSel||!mobSel.value){notif("Choisis une créature.","err");return;}
-  var pid=ge("des-mob-player")?ge("des-mob-player").value||null:null;
-  var beast=gb().find(function(b){return b.id===mobSel.value;});
-  if(!beast) return;
-  var roll=Math.floor(Math.random()*100)+1;
-  // Déterminer la gemme selon le champ gem du monstre
-  var gemText=beast.gem||"";
-  var gemResult="Aucune";
-  var gemCol="var(--faint)";
-  // Parser les plages : "01–40 : Aucune / 41–100 : Gemme Blanche"
-  var parts=gemText.split("/");
-  for(var i=0;i<parts.length;i++){
-    var part=parts[i].trim();
-    var match=part.match(/(\d+)[–\-](\d+)\s*:\s*(.+)/);
-    if(match){
-      var lo=parseInt(match[1]), hi=parseInt(match[2]), lbl=match[3].trim();
-      if(roll>=lo&&roll<=hi){
-        gemResult=lbl;
-        if(lbl.indexOf("Écarlate")>-1) gemCol="var(--red)";
-        else if(lbl.indexOf("Incarnate")>-1) gemCol="var(--gold)";
-        else if(lbl.indexOf("Blanche")>-1) gemCol="var(--glacier)";
-        else gemCol="var(--faint)";
-        break;
-      }
-    }
-  }
-  var label="Drop "+beast.nom+" (D100)";
-  var entry={ts:Date.now(),total:roll,label:label,detail:"Résultat : "+gemResult,crit:false,fail:false,rolls:[roll],playerName:null,rolledBy:CU?(CU.name||CU.pseudo||"Staff"):"?"};
-  _desLog.push(entry);
-  // Log joueur
-  if(pid){
-    var p=gpid(pid);
-    if(p){
-      p.history=p.history||[];
-      var dropTxt=gemResult==="Aucune"?"Aucune gemme droppée":"Gemme droppée : "+gemResult;
-      p.history.push({ts:Date.now(),type:gemResult==="Aucune"?"add":"add",text:"🎲 Drop "+beast.nom+" ("+roll+"/100) — "+dropTxt,by:"MJ "+(CU?CU.name:"Staff")});
-      up(p);
-    }
-  }
-  // Afficher
-  var res=ge("des-gem-result");
-  if(res){
-    res.style.display="block";
-    res.innerHTML='<div style="display:flex;align-items:center;gap:14px;padding:10px 14px;background:var(--bg3);border-left:3px solid '+gemCol+';">'
-      +'<span style="font-family:var(--fm);font-size:28px;font-weight:700;color:var(--glacier);">'+roll+'</span>'
-      +'<div>'
-      +'<div style="font-family:var(--fd);font-size:12px;letter-spacing:1px;margin-bottom:3px;">'+beast.nom+' — D100</div>'
-      +'<div style="font-size:15px;font-weight:600;color:'+gemCol+';">'+gemResult+'</div>'
-      +(pid&&gpid(pid)?'<div style="font-size:11px;color:var(--dim);margin-top:3px;">Logué sur '+gpid(pid).name+'</div>':'')
-      +'</div></div>';
-  }
-  renderDesLog();
-}
-
-// ==========================================
 // ==========================================
 // ==========================================
 // SIMULATEUR DE COMBAT v2 — DÉCLARATION / RÉSOLUTION
@@ -14259,7 +14044,6 @@ function _runtimeViewLabel(id){
     "bestiaire":"Bestiaire",
     "evenements":"Événements",
     "reglement":"Règlement",
-    "systeme-jeu":"Système de jeu",
     "profil":"Profil",
     "fiche":"Fiche",
     "joueurs":"Joueurs",
@@ -14498,7 +14282,6 @@ function getCommandItems(){
   push("bestiaire","Bestiaire","Voir les créatures",function(){ switchTab("bestiaire",null); },"B");
   push("evenements","Événements","Suivre les événements",function(){ switchTab("evenements",null); },"E");
   push("reglement","Règlement","Consulter le cadre HRP",function(){ switchTab("reglement",null); },"R");
-  push("systeme-jeu","Système de jeu","Règles et dés",function(){ switchTab("systeme-jeu",null); },"D");
   if(CU) push("profil","Paramètres","Compte, collection et apparence",function(){ switchTab("profil",null); },"P");
   if(CU&&CU.pid) push("fiche","Ma fiche","Ouvrir la fiche du personnage",function(){ switchTab("fiche",null); },"F");
   var role=String((CU&&CU.role)||"").toLowerCase();
