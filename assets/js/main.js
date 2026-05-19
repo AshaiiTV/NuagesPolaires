@@ -6348,6 +6348,11 @@ function _beastZoneInputValues(id){
 }
 function _beastZoneNames(){
   var seen=Object.create(null), out=[];
+  _spawnLabCustomZones().forEach(function(z){
+    if(!z || seen[z]) return;
+    seen[z]=1;
+    out.push(z);
+  });
   gb().forEach(function(b){
     (Array.isArray(b&&b.zones)?b.zones:[]).forEach(function(z){
       z=String(z||'').trim();
@@ -6500,6 +6505,7 @@ function saveBeastZoneAssignments(){
   var name=String((ge("bz-name")&&ge("bz-name").value)||'').trim();
   var previous=String((ge("bz-select")&&ge("bz-select").value)||'').trim();
   if(!name){ if(ge("bz-err")) ge("bz-err").textContent="Nom de zone requis."; return; }
+  _spawnLabSaveCustomZone(name);
   var checked=Object.create(null);
   document.querySelectorAll("#m-beast-zones .bz-beast").forEach(function(node){ if(node.checked) checked[String(node.value||'')]=1; });
   var beasts=gb();
@@ -6525,6 +6531,7 @@ function deleteBeastZone(zone){
     b.zones=(Array.isArray(b.zones)?b.zones:[]).filter(function(z){ return z!==zone; });
     b.updatedAt=Date.now();
   });
+  _spawnLabRemoveCustomZone(zone);
   sb(beasts);
   renderBeastZoneManager(_beastZoneNames()[0]||'');
   renderBGrid("p-bgrd",!!(CU&&can("manage_beasts")));
@@ -12126,6 +12133,13 @@ var _spawnLabState = null;
 var _spawnLabUiKey = 'np_spawn_lab_ui_v2';
 var _spawnLabLegacyKey = 'np_spawn_lab_state_v1';
 var _spawnLabStoreKey = 'spawn_lab_staff';
+var _spawnLabDefaultZones = [
+  '[🌳]-forêt-aux-lianes',
+  '[🌳]-forêt-aux-arbres-sombres',
+  '[🌳]-arbre-géant',
+  '[🌳]-forêt-centre',
+  '[🌳]-lisière-du-canyon'
+];
 var _spawnLabCumulativeCoef = 0.22;
 var _spawnLabCatchupCoef = 0.14;
 var _spawnLabSameEncounterCoef = 0.95;
@@ -12145,8 +12159,19 @@ function _spawnLabGlobalDefaults(){
     lastRuns: [],
     totalDraws: 0,
     lastGeneratedAt: 0,
-    lastGeneratedBy: ''
+    lastGeneratedBy: '',
+    customZones: _spawnLabDefaultZones.slice()
   };
+}
+function _spawnLabNormalizeZoneList(list){
+  var seen=Object.create(null), out=[];
+  _spawnLabDefaultZones.concat(Array.isArray(list)?list:[]).forEach(function(z){
+    z=String(z||'').trim();
+    if(!z || seen[z]) return;
+    seen[z]=1;
+    out.push(z);
+  });
+  return out.slice(0,80);
 }
 function _spawnLabNormalizeGlobal(raw){
   var out=_spawnLabGlobalDefaults();
@@ -12156,6 +12181,7 @@ function _spawnLabNormalizeGlobal(raw){
     out.totalDraws=Math.max(0,parseInt(raw.totalDraws,10)||0);
     out.lastGeneratedAt=Math.max(0,parseInt(raw.lastGeneratedAt,10)||0);
     out.lastGeneratedBy=String(raw.lastGeneratedBy||'');
+    out.customZones=_spawnLabNormalizeZoneList(raw.customZones);
   }
   var clean={};
   Object.keys(out.totals||{}).forEach(function(id){
@@ -12177,6 +12203,25 @@ function _spawnLabSaveGlobal(global){
     try{ notif('Apparitions générées, mais synchronisation globale impossible.','err'); }catch(_e){}
   });
   return global;
+}
+function _spawnLabCustomZones(){
+  return _spawnLabNormalizeZoneList((_spawnLabGlobal()||{}).customZones);
+}
+function _spawnLabSaveCustomZone(zone){
+  zone=String(zone||'').trim();
+  if(!zone) return;
+  var global=_spawnLabGlobal();
+  global.customZones=_spawnLabNormalizeZoneList((global.customZones||[]).concat([zone]));
+  _spawnLabSaveGlobal(global);
+}
+function _spawnLabRemoveCustomZone(zone){
+  zone=String(zone||'').trim();
+  if(!zone) return;
+  var global=_spawnLabGlobal();
+  var defaults=Object.create(null);
+  _spawnLabDefaultZones.forEach(function(z){ defaults[z]=1; });
+  global.customZones=_spawnLabNormalizeZoneList(global.customZones).filter(function(z){ return z!==zone || defaults[z]; });
+  _spawnLabSaveGlobal(global);
 }
 function _spawnLabLoadUi(){
   var base=_spawnLabDefaults();
@@ -12290,6 +12335,9 @@ function _spawnLabZoneLabel(value){
 }
 function _spawnLabZoneOptions(beasts){
   var seen=Object.create(null), labels=[];
+  _spawnLabCustomZones().forEach(function(label){
+    if(!seen[label]){ seen[label]=1; labels.push(label); }
+  });
   (beasts||[]).forEach(function(b){
     if(!b || b.hidden) return;
     _spawnLabBeastZones(b).forEach(function(label){
