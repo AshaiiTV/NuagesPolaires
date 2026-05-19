@@ -3419,7 +3419,6 @@ function renderThemeGrid(containerId){
     h += '<div class="theme-card-body">';
     h += '<div class="theme-title">' + esc(t.name) + '</div>';
     if(t.desc) h += '<div class="tagline">' + esc(t.desc) + '</div>';
-    if(isEvent && !isAvail && !isLocked) h += '<div class="theme-card-note">Dans ta collection</div>';
     h += '</div>';
     h += '<div class="theme-meta-row">';
     h += '<span class="theme-meta-pill" data-kind="rarity" data-rarity="'+esc(rarity)+'">'+esc(rarity)+'</span>';
