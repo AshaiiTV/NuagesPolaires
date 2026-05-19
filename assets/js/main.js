@@ -9792,6 +9792,78 @@ function _startCombatMJPoll(){
 
 // ── Log ───────────────────────────────────────────────────────────────────────
 function cLog(text,type){ _cs.log.push({round:_cs.round,text:text,ts:Date.now(),type:type||"info"}); }
+function combatQueueFx(ev){
+  if(!_cs||!ev) return;
+  _cs._fxQueue=_cs._fxQueue||[];
+  ev.id=ev.id||("fx"+Date.now().toString(36)+Math.random().toString(36).slice(2,7));
+  _cs._fxQueue.push(ev);
+  if(_cs._fxQueue.length>36) _cs._fxQueue=_cs._fxQueue.slice(-36);
+}
+function combatFxCard(cid){
+  if(!cid) return null;
+  var cards=document.querySelectorAll('#p-combat-mj-c .sim-fighter-card[data-cid]');
+  for(var i=0;i<cards.length;i++){
+    if(cards[i].getAttribute('data-cid')===cid) return cards[i];
+  }
+  return null;
+}
+function combatFxFloat(card, text, kind){
+  if(!card||!text) return;
+  var r=card.getBoundingClientRect();
+  var el=document.createElement('div');
+  el.className='sim-fx-float sim-fx-'+(kind||'hit');
+  el.textContent=text;
+  el.style.left=(r.left+r.width*0.5)+'px';
+  el.style.top=(r.top+Math.min(90,r.height*0.38))+'px';
+  document.body.appendChild(el);
+  setTimeout(function(){ if(el&&el.parentNode) el.parentNode.removeChild(el); }, 1150);
+}
+function combatFxTrace(fromCard,toCard,kind){
+  if(!fromCard||!toCard) return;
+  var a=fromCard.getBoundingClientRect(), b=toCard.getBoundingClientRect();
+  var x1=a.left+a.width*0.5, y1=a.top+a.height*0.42;
+  var x2=b.left+b.width*0.5, y2=b.top+b.height*0.42;
+  var dx=x2-x1, dy=y2-y1, len=Math.sqrt(dx*dx+dy*dy);
+  if(!len) return;
+  var line=document.createElement('div');
+  line.className='sim-fx-trace sim-fx-trace-'+(kind||'hit');
+  line.style.left=x1+'px';
+  line.style.top=y1+'px';
+  line.style.width=len+'px';
+  line.style.transform='rotate('+Math.atan2(dy,dx)+'rad)';
+  document.body.appendChild(line);
+  setTimeout(function(){ if(line&&line.parentNode) line.parentNode.removeChild(line); }, 620);
+}
+function combatPlayFx(ev){
+  if(!ev) return;
+  var from=combatFxCard(ev.fromCid);
+  var to=combatFxCard(ev.toCid);
+  var kind=ev.kind||'hit';
+  if(from){
+    from.classList.add(kind==='heal'?'sim-fx-cast':'sim-fx-lunge');
+    setTimeout(function(){ from.classList.remove('sim-fx-lunge','sim-fx-cast'); }, 520);
+  }
+  if(to){
+    if(kind==='heal') to.classList.add('sim-fx-heal');
+    else if(kind==='dodge') to.classList.add('sim-fx-dodge');
+    else if(kind==='ko') to.classList.add('sim-fx-ko');
+    else to.classList.add('sim-fx-hit');
+    setTimeout(function(){ to.classList.remove('sim-fx-hit','sim-fx-heal','sim-fx-dodge','sim-fx-ko'); }, 760);
+  }
+  if(kind==='hit'||kind==='ko') combatFxTrace(from,to,'hit');
+  if(kind==='heal') combatFxTrace(from,to,'heal');
+  if(kind==='dodge') combatFxTrace(from,to,'dodge');
+  combatFxFloat(to||from, ev.text||'', kind);
+}
+function combatPlayPendingFx(){
+  if(!window||!document||!_cs) return;
+  var reduce=false;
+  try{ reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(_e){}
+  var list=(_cs._fxQueue||[]).slice(0,32);
+  _cs._fxQueue=[];
+  if(reduce||!list.length) return;
+  list.forEach(function(ev,i){ setTimeout(function(){ combatPlayFx(ev); }, 140+(i*240)); });
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function cCurIdx(){
@@ -10509,6 +10581,7 @@ function cResolveAttackInstance(attacker, fi, atk){
       if(def){
         usedDefs[defKey]=defIdx+1;
         if(def.action==="esquive"){
+          combatQueueFx({kind:'dodge',fromCid:cEnsureFighterCid(attacker),toCid:cEnsureFighterCid(target),text:'ESQUIVE'});
           cLog("🛡 "+target.name+" esquive l'attaque de "+attacker.name+" — 0 dégâts","info");
           return;
         } else if(def.action==="bloquer"){
@@ -10528,6 +10601,7 @@ function cResolveAttackInstance(attacker, fi, atk){
       }
     }
     var res=cApplyRawDamage(target,dmg);
+    combatQueueFx({kind:res.ko?'ko':'hit',fromCid:cEnsureFighterCid(attacker),toCid:cEnsureFighterCid(target),text:(res.ko?'KO · ':'−')+res.dmg+' PV'});
     cLog("💥 "+attacker.name+" → "+target.name+" : −"+res.dmg+" PV"+defDesc+" ("+res.old+"→"+res.newPv+")"+(res.ko?" 💀 KO!":""),"damage");
     if(atk.statusToTarget) cAddOrRefreshStatut(target, atk.statusToTarget, 2);
     if(atk.epDrain){ var oldEp=target.epCur; target.epCur=Math.max(0,(target.epCur||0)-atk.epDrain); cLog("⚡ "+target.name+" perd "+(oldEp-target.epCur)+" EP","info"); }
@@ -10536,10 +10610,15 @@ function cResolveAttackInstance(attacker, fi, atk){
     if(atk.repulse) cLog("↔ "+target.name+" est repoussé par "+attacker.name,"info");
     if(atk.disarm) cLog("🪓 "+attacker.name+" a lancé son arme — à récupérer ou réinvoquer IRP","info");
     if(atk.selfPvMaxBonus){ attacker.pvMaxBonus=(attacker.pvMaxBonus||0)+atk.selfPvMaxBonus; attacker.pvMax+=atk.selfPvMaxBonus; attacker.pvCur=Math.min(attacker.pvCur+atk.selfPvMaxBonus, attacker.pvMax); cLog("🛡 "+attacker.name+" gagne +"+atk.selfPvMaxBonus+" PV max","heal"); }
-    if(res.ko&&target.type==="beast") setTimeout(function(){openDropModal(target,ti);},400);
+    if(res.ko&&target.type==="beast") setTimeout(function(){openDropModal(target,ti);},1400);
     if(atk.action==="frappe_dechainees"&&atk.healAmt&&atk.healTarget!==undefined){
       var ht=_cs.fighters[parseInt(atk.healTarget,10)];
-      if(ht){ var o2=ht.pvCur; ht.pvCur=Math.min(ht.pvMax,ht.pvCur+atk.healAmt); cLog("💚 Soin auto → "+ht.name+" +"+(ht.pvCur-o2)+" PV","heal"); }
+      if(ht){
+        var o2=ht.pvCur;
+        ht.pvCur=Math.min(ht.pvMax,ht.pvCur+atk.healAmt);
+        combatQueueFx({kind:'heal',fromCid:cEnsureFighterCid(attacker),toCid:cEnsureFighterCid(ht),text:'+'+(ht.pvCur-o2)+' PV'});
+        cLog("💚 Soin auto → "+ht.name+" +"+(ht.pvCur-o2)+" PV","heal");
+      }
     }
   });
 }
@@ -10588,7 +10667,12 @@ function combatResolve(){
       if((a.action==="soin" || (a.action==="capacite"&&a.healAmt>0))&&a.healAmt>0){
         var healIdx=(a.healTarget!==undefined&&a.healTarget!==null&&a.healTarget!=="")?parseInt(a.healTarget,10):fi;
         var ht2=_cs.fighters[healIdx];
-        if(ht2){ var o3=ht2.pvCur; ht2.pvCur=Math.min(ht2.pvMax,ht2.pvCur+(a.healAmt||0)); cLog("💚 "+f.name+" → "+ht2.name+" +"+(ht2.pvCur-o3)+" PV","heal"); }
+        if(ht2){
+          var o3=ht2.pvCur;
+          ht2.pvCur=Math.min(ht2.pvMax,ht2.pvCur+(a.healAmt||0));
+          combatQueueFx({kind:'heal',fromCid:cEnsureFighterCid(f),toCid:cEnsureFighterCid(ht2),text:'+'+(ht2.pvCur-o3)+' PV'});
+          cLog("💚 "+f.name+" → "+ht2.name+" +"+(ht2.pvCur-o3)+" PV","heal");
+        }
       }
       if(a.action==="capacite"&&a.provoke){
         cApplyShieldCallTaunt(fi, a.perEnemyPvMax||0);
@@ -10597,10 +10681,11 @@ function combatResolve(){
         var sum=a.summon;
         if(cActiveSummonForOwner(sum.ownerPid) || cHasUsedSummon(sum.ownerPid, sum.name)) return;
         _cs.fighters.push({type:f.type,isSummon:true,ownerPid:sum.ownerPid,pid:sum.ownerPid,name:f.name+" · "+sum.name,classe:f.classe+" — Invocation",level:f.level||1,pvCur:sum.pv,pvMax:sum.pv,epCur:999,epMax:999,emCur:0,emMax:0,dmgBase:sum.dmg,statuts:[],actionsMax:2,autoInterpose:!!sum.autoInterpose,rangeType:sum.rangeType||"cac",img:""});
+        combatQueueFx({kind:'heal',fromCid:cEnsureFighterCid(f),toCid:cEnsureFighterCid(_cs.fighters[_cs.fighters.length-1]),text:'INVOCATION'});
         cLog("🌀 "+f.name+" invoque "+sum.name+" ["+sum.ownerPid+":"+sum.name+"]","summon");
       }
       if(a.action==="capacite") cLog("✨ "+f.name+" : "+(a.palNom||a.label||"Capacité")+(a.emCost?" (−"+a.emCost+" EM)":""),"spell");
-      if(a.action==="deplacer") cLog("🏃 "+f.name+" se déplace","info");
+      if(a.action==="deplacer"){ combatQueueFx({kind:'dodge',fromCid:cEnsureFighterCid(f),toCid:cEnsureFighterCid(f),text:'DÉPLACEMENT'}); cLog("🏃 "+f.name+" se déplace","info"); }
     });
   });
 
@@ -10621,6 +10706,7 @@ function combatResolve(){
   else { cLog("— Round "+_cs.round+" — Déclarations","round"); _nextDeclarant(); }
 
   rCombat("p-combat-mj-c");
+  setTimeout(combatPlayPendingFx, 80);
 }
 
 // ── Terminer manuellement ─────────────────────────────────────────────────────
@@ -11420,6 +11506,75 @@ body .nav-dropdown-menu .nav-section-header,
 body .nav-group-menu .nav-section-header{
   padding-top:10px !important;
 }
+#p-combat-mj-c .sim-fighter-card{
+  transform-origin:center;
+  will-change:transform,filter,box-shadow;
+  overflow:hidden;
+}
+#p-combat-mj-c .sim-fighter-card::after{
+  content:"";
+  position:absolute;
+  inset:-35%;
+  pointer-events:none;
+  opacity:0;
+  transform:rotate(18deg) translateX(-45%);
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.36), transparent);
+}
+#p-combat-mj-c .sim-fighter-card.sim-fx-lunge{animation:simFxLunge .48s cubic-bezier(.2,.85,.18,1) both;}
+#p-combat-mj-c .sim-fighter-card.sim-fx-cast{animation:simFxCast .55s ease both;}
+#p-combat-mj-c .sim-fighter-card.sim-fx-hit{animation:simFxHit .58s cubic-bezier(.16,.88,.24,1) both;}
+#p-combat-mj-c .sim-fighter-card.sim-fx-heal{animation:simFxHeal .72s ease both;}
+#p-combat-mj-c .sim-fighter-card.sim-fx-dodge{animation:simFxDodge .62s ease both;}
+#p-combat-mj-c .sim-fighter-card.sim-fx-ko{animation:simFxKo .78s ease both;}
+#p-combat-mj-c .sim-fighter-card.sim-fx-lunge::after,
+#p-combat-mj-c .sim-fighter-card.sim-fx-hit::after,
+#p-combat-mj-c .sim-fighter-card.sim-fx-ko::after{animation:simFxSheen .46s ease both;}
+.sim-fx-float{
+  position:fixed;
+  z-index:4000;
+  pointer-events:none;
+  transform:translate(-50%,-50%);
+  font-family:var(--fd);
+  font-size:12px;
+  letter-spacing:2px;
+  color:#fff;
+  text-shadow:0 2px 12px rgba(0,0,0,.75);
+  padding:6px 10px;
+  border:1px solid rgba(255,255,255,.18);
+  background:rgba(5,8,16,.72);
+  box-shadow:0 12px 28px rgba(0,0,0,.35);
+  animation:simFxFloat 1.05s ease both;
+}
+.sim-fx-float.sim-fx-hit,.sim-fx-float.sim-fx-ko{color:#ffd8d8;border-color:rgba(201,74,74,.45);background:rgba(60,8,12,.76);}
+.sim-fx-float.sim-fx-heal{color:#d8ffe8;border-color:rgba(90,170,122,.46);background:rgba(6,40,24,.74);}
+.sim-fx-float.sim-fx-dodge{color:#d8f2ff;border-color:rgba(126,184,212,.42);background:rgba(8,28,45,.74);}
+.sim-fx-trace{
+  position:fixed;
+  z-index:3999;
+  height:2px;
+  pointer-events:none;
+  transform-origin:left center;
+  opacity:0;
+  border-radius:999px;
+  animation:simFxTrace .56s ease both;
+}
+.sim-fx-trace-hit{background:linear-gradient(90deg,transparent,rgba(255,245,220,.95),rgba(201,74,74,.88),transparent);box-shadow:0 0 18px rgba(201,74,74,.38);}
+.sim-fx-trace-heal{background:linear-gradient(90deg,transparent,rgba(120,255,180,.86),transparent);box-shadow:0 0 18px rgba(90,170,122,.38);}
+.sim-fx-trace-dodge{background:linear-gradient(90deg,transparent,rgba(126,184,212,.78),transparent);box-shadow:0 0 14px rgba(126,184,212,.28);}
+@keyframes simFxLunge{0%{transform:translateX(0) scale(1);}38%{transform:translateX(10px) scale(1.025);filter:brightness(1.25);}100%{transform:translateX(0) scale(1);}}
+@keyframes simFxCast{0%{transform:scale(1);box-shadow:none;}45%{transform:scale(1.018);box-shadow:0 0 0 2px rgba(126,184,212,.18),0 0 34px rgba(126,184,212,.20);}100%{transform:scale(1);box-shadow:none;}}
+@keyframes simFxHit{0%{transform:translateX(0);filter:brightness(1);}18%{transform:translateX(-7px);filter:brightness(1.55) saturate(1.3);}34%{transform:translateX(6px);}52%{transform:translateX(-3px);}100%{transform:translateX(0);filter:brightness(1);}}
+@keyframes simFxHeal{0%{transform:scale(1);filter:brightness(1);}44%{transform:scale(1.025);filter:brightness(1.28);box-shadow:0 0 0 2px rgba(90,170,122,.22),0 0 30px rgba(90,170,122,.20);}100%{transform:scale(1);filter:brightness(1);box-shadow:none;}}
+@keyframes simFxDodge{0%{transform:translateX(0);opacity:1;}32%{transform:translateX(14px) skewX(-3deg);opacity:.72;filter:blur(.2px);}64%{transform:translateX(-5px);opacity:.94;}100%{transform:translateX(0);opacity:1;filter:none;}}
+@keyframes simFxKo{0%{transform:scale(1) rotate(0);filter:brightness(1);}24%{transform:scale(1.025) rotate(-1deg);filter:brightness(1.65) saturate(1.35);}100%{transform:scale(.985) rotate(0);filter:brightness(.72) grayscale(.2);}}
+@keyframes simFxSheen{0%{opacity:0;transform:rotate(18deg) translateX(-55%);}35%{opacity:.55;}100%{opacity:0;transform:rotate(18deg) translateX(55%);}}
+@keyframes simFxFloat{0%{opacity:0;transform:translate(-50%,4px) scale(.92);}18%{opacity:1;transform:translate(-50%,-50%) scale(1.04);}100%{opacity:0;transform:translate(-50%,-86px) scale(.98);}}
+@keyframes simFxTrace{0%{opacity:0;clip-path:inset(0 100% 0 0);}20%{opacity:1;}100%{opacity:0;clip-path:inset(0 0 0 100%);}}
+@media (prefers-reduced-motion: reduce){
+  #p-combat-mj-c .sim-fighter-card,
+  .sim-fx-float,
+  .sim-fx-trace{animation:none!important;transition:none!important;}
+}
 </style><div class="sim-ui sim-ultra" style="max-width:1380px;">`;
 
 
@@ -11623,8 +11778,9 @@ body .nav-group-menu .nav-section-header{
       var leftBorder=isCurDecl?accent:(isJ?"rgba(126,184,212,0.2)":"rgba(201,74,74,0.2)");
       var incomingTaunt=cGetForcedTargetInfo(fi);
       var outgoingTauntCount=cCountTauntedBySource(fi);
+      var fighterCid=cEnsureFighterCid(f);
 
-      h+='<div class="sim-fighter-card" style="background:'+(isCurDecl?("linear-gradient(160deg,"+accentDim+",rgba(0,0,0,0))"):"linear-gradient(160deg,#0f1022,#0d0e18)")+';border:1px solid '+borderStyle+';border-left:3px solid '+leftBorder+';padding:12px;position:relative;'+(isDead?"opacity:.45;":"")+'">';
+      h+='<div class="sim-fighter-card" data-cid="'+esc(fighterCid)+'" style="background:'+(isCurDecl?("linear-gradient(160deg,"+accentDim+",rgba(0,0,0,0))"):"linear-gradient(160deg,#0f1022,#0d0e18)")+';border:1px solid '+borderStyle+';border-left:3px solid '+leftBorder+';padding:12px;position:relative;'+(isDead?"opacity:.45;":"")+'">';
 
       // En-tête
       h+='<div style="position:absolute;top:6px;right:8px;display:flex;align-items:center;gap:5px;">';
