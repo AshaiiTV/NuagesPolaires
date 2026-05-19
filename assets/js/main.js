@@ -2841,6 +2841,7 @@ function _buildStaffModals(){
     +'</div>'
   +'</div>'
   +'<div class="frow"><label class="flbl">Image</label><input type="text" id="ab-img" placeholder="https://..."></div>'
+  +'<div class="frow"><label class="flbl">Zones</label><input type="text" id="ab-zones" placeholder="Forêt gelée, Ruines, Grotte..."></div>'
   +'<div class="frow"><label class="flbl">Frappe</label><textarea id="ab-fr" style="min-height:72px;" placeholder="Description des frappes..."></textarea></div>'
   +'<div class="frow"><label class="flbl">Compétences</label><textarea id="ab-co" style="min-height:72px;" placeholder="Compétences..."></textarea></div>'
   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
@@ -2879,6 +2880,7 @@ function _buildStaffModals(){
     +'</div>'
   +'</div>'
   +'<div class="frow"><label class="flbl">Image</label><input type="text" id="eb-img" placeholder="https://..."></div>'
+  +'<div class="frow"><label class="flbl">Zones</label><input type="text" id="eb-zones" placeholder="Forêt gelée, Ruines, Grotte..."></div>'
   +'<div class="frow"><label class="flbl">Frappe</label><textarea id="eb-fr" style="min-height:72px;" placeholder="Description des frappes..."></textarea></div>'
   +'<div class="frow"><label class="flbl">Compétences</label><textarea id="eb-co" style="min-height:72px;" placeholder="Compétences..."></textarea></div>'
   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
@@ -6059,6 +6061,7 @@ function renderBeastAdminToolbar(total, filteredCount){
           +'<div style="font-size:12px;color:var(--faint);margin-top:4px;">'+esc(_beastAdminSummaryText(total||0, filteredCount||0))+' · filtres cumulables · duplication, aperçu, archivage, JSON et simulateur.</div>'
         +'</div>'
         +'<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+          +'<button class="btn btn-sm" onclick="openBeastZoneManager()"><span>Zones</span></button>'
           +'<button class="btn btn-sm" onclick="importBeastJson()"><span>Importer JSON</span></button>'
           +'<button class="btn btn-sm" onclick="resetBeastAdminFilters()"><span>Réinitialiser</span></button>'
         +'</div>'
@@ -6318,6 +6321,113 @@ function bTag(beh,variant){
     +'<span style="font-size:9px;line-height:1;">'+icon+'</span><span>'+lbl+'</span></span>';
 }
 
+function _beastZoneInputValues(id){
+  var node=ge(id);
+  var raw=node?String(node.value||''):'';
+  var seen=Object.create(null), out=[];
+  raw.split(/[,;\n]/).forEach(function(part){
+    var z=String(part||'').trim();
+    if(!z || seen[z]) return;
+    seen[z]=1;
+    out.push(z);
+  });
+  return out.slice(0,24);
+}
+function _beastZoneNames(){
+  var seen=Object.create(null), out=[];
+  gb().forEach(function(b){
+    (Array.isArray(b&&b.zones)?b.zones:[]).forEach(function(z){
+      z=String(z||'').trim();
+      if(!z || seen[z]) return;
+      seen[z]=1;
+      out.push(z);
+    });
+  });
+  out.sort(function(a,b){ return a.localeCompare(b,'fr',{sensitivity:'base'}); });
+  return out;
+}
+function openBeastZoneManager(zone){
+  if(!can("manage_beasts")){ notif("Permission insuffisante.","err"); return; }
+  renderBeastZoneManager(zone||(_beastZoneNames()[0]||''));
+  openModal("m-beast-zones");
+}
+function renderBeastZoneManager(zone){
+  var zones=_beastZoneNames();
+  var selected=String(zone||'').trim();
+  if(!selected && zones.length) selected=zones[0];
+  var beasts=gb().slice().sort(function(a,b){ return String(a.nom||'').localeCompare(String(b.nom||''),'fr'); });
+  var modal=ge("m-beast-zones");
+  if(!modal){
+    modal=document.createElement("div");
+    modal.id="m-beast-zones";
+    modal.className="moverlay";
+    document.body.appendChild(modal);
+  }
+  var h='';
+  h+='<div class="modal" style="max-width:760px;">';
+  h+='<button class="mclose" onclick="closeModal(\'m-beast-zones\')">✕</button>';
+  h+='<div class="mtit">Zones d’apparition</div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end;">';
+  h+='<div class="frow"><label class="flbl">Zone existante</label><select id="bz-select" onchange="renderBeastZoneManager(this.value)">';
+  if(zones.length){ zones.forEach(function(z){ h+='<option value="'+escAttr(z)+'"'+(z===selected?' selected':'')+'>'+esc(z)+'</option>'; }); }
+  else h+='<option value="">Aucune zone</option>';
+  h+='</select></div>';
+  h+='<div class="frow"><label class="flbl">Créer / renommer la zone</label><input type="text" id="bz-name" value="'+escAttr(selected)+'" placeholder="Nom de zone"></div>';
+  h+='</div>';
+  h+='<div style="font-size:12px;color:var(--faint);line-height:1.55;margin:4px 0 12px;">Coche les mobs qui appartiennent à cette zone, puis enregistre. Le roll d’apparitions tirera uniquement dans ce groupe.</div>';
+  h+='<div style="max-height:420px;overflow:auto;border:1px solid var(--border2);background:var(--bg3);padding:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;">';
+  beasts.forEach(function(b){
+    var checked=(Array.isArray(b.zones)?b.zones:[]).indexOf(selected)>=0;
+    h+='<label style="display:flex;gap:8px;align-items:flex-start;padding:9px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.025);cursor:pointer;">';
+    h+='<input type="checkbox" class="bz-beast" value="'+escAttr(b.id)+'"'+(checked?' checked':'')+' style="margin-top:2px;">';
+    h+='<span><span style="display:block;font-family:var(--fd);font-size:10px;letter-spacing:1px;color:var(--text);">'+esc(b.nom||'Créature')+'</span><span style="display:block;font-size:10px;color:var(--faint);margin-top:3px;">Niv. '+esc(b.niv||1)+' · '+esc(cBehaviorLabel(b.beh)||'Neutre')+'</span></span>';
+    h+='</label>';
+  });
+  h+='</div>';
+  h+='<p class="errmsg" id="bz-err"></p>';
+  h+='<div class="factions">';
+  if(selected) h+='<button class="btn btn-sm btn-red" onclick="deleteBeastZone(\''+jsesc(selected)+'\')"><span>Supprimer la zone</span></button>';
+  h+='<button class="btn btn-sm" onclick="closeModal(\'m-beast-zones\')"><span>Annuler</span></button>';
+  h+='<button class="btn btn-sm btn-grn" onclick="saveBeastZoneAssignments()"><span>Enregistrer la zone</span></button>';
+  h+='</div>';
+  h+='</div>';
+  modal.innerHTML=h;
+}
+function saveBeastZoneAssignments(){
+  if(!can("manage_beasts")){ notif("Permission insuffisante.","err"); return; }
+  var name=String((ge("bz-name")&&ge("bz-name").value)||'').trim();
+  var previous=String((ge("bz-select")&&ge("bz-select").value)||'').trim();
+  if(!name){ if(ge("bz-err")) ge("bz-err").textContent="Nom de zone requis."; return; }
+  var checked=Object.create(null);
+  document.querySelectorAll("#m-beast-zones .bz-beast").forEach(function(node){ if(node.checked) checked[String(node.value||'')]=1; });
+  var beasts=gb();
+  beasts.forEach(function(b){
+    var zones=Array.isArray(b.zones)?b.zones.slice():[];
+    zones=zones.filter(function(z){ return z!==previous && z!==name; });
+    if(checked[String(b.id||'')]) zones.push(name);
+    b.zones=zones;
+    b.updatedAt=Date.now();
+  });
+  sb(beasts);
+  renderBeastZoneManager(name);
+  renderBGrid("p-bgrd",!!(CU&&can("manage_beasts")));
+  notif("Zone enregistrée.","ok");
+}
+function deleteBeastZone(zone){
+  if(!can("manage_beasts")){ notif("Permission insuffisante.","err"); return; }
+  zone=String(zone||'').trim();
+  if(!zone) return;
+  if(!confirm("Retirer la zone '"+zone+"' de tous les mobs ?")) return;
+  var beasts=gb();
+  beasts.forEach(function(b){
+    b.zones=(Array.isArray(b.zones)?b.zones:[]).filter(function(z){ return z!==zone; });
+    b.updatedAt=Date.now();
+  });
+  sb(beasts);
+  renderBeastZoneManager(_beastZoneNames()[0]||'');
+  renderBGrid("p-bgrd",!!(CU&&can("manage_beasts")));
+  notif("Zone supprimée.","ok");
+}
 
 function _findBeastById(id){ return gb().find(function(x){ return String(x&&x.id||'')===String(id||''); }); }
 function duplicateBeast(id){
@@ -7979,9 +8089,9 @@ function addBeast(){
   if(!can("manage_beasts")){notif("Permission insuffisante.","err");return;}
   var n=ge("ab-n").value.trim();if(!n)return;
   var behArr=["","Gibier","Passif","Neutre","Agressif","Très agressif"];
-  var b={id:"b"+Date.now(),nom:n,sub:(ge("ab-sub")?ge("ab-sub").value.trim():""),beh:behArr[parseInt(ge("ab-beh").value,10)||3]||"Neutre",niv:(ge("ab-niv")?(parseInt(ge("ab-niv").value)||1):1),pv:parseInt(ge("ab-pv").value)||20,ep:parseInt(ge("ab-ep").value)||20,img:ge("ab-img").value.trim(),frappe:ge("ab-fr").value.trim(),comp:ge("ab-co").value.trim(),drops:ge("ab-dr").value.trim(),gem:ge("ab-gm").value.trim(),desc:ge("ab-de").value.trim(),adminNote:(ge("ab-note")&&ge("ab-note").value||'').trim(),hidden:!!(ge("ab-hidden")&&ge("ab-hidden").checked),archived:!!(ge("ab-archived")&&ge("ab-archived").checked),createdAt:Date.now(),updatedAt:Date.now()};
+  var b={id:"b"+Date.now(),nom:n,sub:(ge("ab-sub")?ge("ab-sub").value.trim():""),beh:behArr[parseInt(ge("ab-beh").value,10)||3]||"Neutre",niv:(ge("ab-niv")?(parseInt(ge("ab-niv").value)||1):1),pv:parseInt(ge("ab-pv").value)||20,ep:parseInt(ge("ab-ep").value)||20,img:ge("ab-img").value.trim(),zones:_beastZoneInputValues("ab-zones"),frappe:ge("ab-fr").value.trim(),comp:ge("ab-co").value.trim(),drops:ge("ab-dr").value.trim(),gem:ge("ab-gm").value.trim(),desc:ge("ab-de").value.trim(),adminNote:(ge("ab-note")&&ge("ab-note").value||'').trim(),hidden:!!(ge("ab-hidden")&&ge("ab-hidden").checked),archived:!!(ge("ab-archived")&&ge("ab-archived").checked),createdAt:Date.now(),updatedAt:Date.now()};
   var bs=gb();bs.unshift(b);sb(bs);closeModal("m-addb");
-  ["ab-n","ab-sub","ab-fr","ab-co","ab-dr","ab-gm","ab-de","ab-img","ab-note"].forEach(function(id){if(ge(id)) ge(id).value="";}); if(ge("ab-niv")) ge("ab-niv").value=1; if(ge("ab-hidden")) ge("ab-hidden").checked=false; if(ge("ab-archived")) ge("ab-archived").checked=false;
+  ["ab-n","ab-sub","ab-fr","ab-co","ab-dr","ab-gm","ab-de","ab-img","ab-zones","ab-note"].forEach(function(id){if(ge(id)) ge(id).value="";}); if(ge("ab-niv")) ge("ab-niv").value=1; if(ge("ab-hidden")) ge("ab-hidden").checked=false; if(ge("ab-archived")) ge("ab-archived").checked=false;
   renderBGrid("p-bgrd",!!(CU&&can("manage_beasts")));notif(n+" ajouté.","ok");
 }
 function openEditBeast(id){
@@ -8003,6 +8113,10 @@ function openEditBeast(id){
   ge("eb-gm").value=b.gem||"";
   ge("eb-de").value=b.desc||"";
   ge("eb-img").value=b.img||"";
+  if(ge("eb-zones")) ge("eb-zones").value=(Array.isArray(b.zones)?b.zones:[]).join(", ");
+  if(ge("eb-note")) ge("eb-note").value=b.adminNote||"";
+  if(ge("eb-hidden")) ge("eb-hidden").checked=!!b.hidden;
+  if(ge("eb-archived")) ge("eb-archived").checked=!!b.archived;
   ge("eb-err").textContent="";
   var modalEl=ge("m-editb");
   if(modalEl) _hoistModalToRoot(modalEl);
@@ -8028,6 +8142,7 @@ function saveEditBeast(){
   b.gem=ge("eb-gm").value.trim();
   b.desc=ge("eb-de").value.trim();
   b.img=ge("eb-img").value.trim();
+  b.zones=_beastZoneInputValues("eb-zones");
   b.adminNote=(ge("eb-note")&&ge("eb-note").value||'').trim();
   b.hidden=!!(ge("eb-hidden")&&ge("eb-hidden").checked);
   b.archived=!!(ge("eb-archived")&&ge("eb-archived").checked);
@@ -11968,9 +12083,6 @@ var _spawnLabSameEncounterCoef = 0.95;
 function _spawnLabDefaults(){
   return {
     zone: '',
-    danger: 3,
-    players: 3,
-    draws: 5,
     totals: {},
     lastRuns: [],
     globalVersion: 2,
@@ -12024,7 +12136,7 @@ function _spawnLabLoadUi(){
     if(raw){
       var data=JSON.parse(raw);
       if(data && typeof data==='object'){
-        ['zone','danger','players','draws'].forEach(function(k){ if(data[k]!==undefined) base[k]=data[k]; });
+        ['zone'].forEach(function(k){ if(data[k]!==undefined) base[k]=data[k]; });
       }
     }
   }catch(_e){}
@@ -12044,9 +12156,6 @@ function _spawnLabLoad(){
   delete base.recent;
   delete base.memory;
   delete base.penalty;
-  base.danger=Math.max(1,Math.min(5,parseInt(base.danger,10)||3));
-  base.players=Math.max(1,Math.min(8,parseInt(base.players,10)||3));
-  base.draws=Math.max(1,Math.min(12,parseInt(base.draws,10)||5));
   return base;
 }
 function _spawnLabEnsure(){
@@ -12060,16 +12169,13 @@ function _spawnLabEnsure(){
 }
 function _spawnLabSaveUi(){
   if(!_spawnLabState) return;
-  var ui={zone:_spawnLabState.zone||'',danger:_spawnLabState.danger,players:_spawnLabState.players,draws:_spawnLabState.draws};
+  var ui={zone:_spawnLabState.zone||''};
   try{ localStorage.setItem(_spawnLabUiKey, JSON.stringify(ui)); localStorage.removeItem(_spawnLabLegacyKey); }catch(_e){}
 }
 function _spawnLabSyncInputs(){
   var s=_spawnLabEnsure();
-  var zone=ge('sl-zone'), danger=ge('sl-danger'), players=ge('sl-players'), draws=ge('sl-draws');
+  var zone=ge('sl-zone');
   if(zone) s.zone=String(zone.value||'');
-  if(danger) s.danger=Math.max(1,Math.min(5,parseInt(danger.value,10)||s.danger||3));
-  if(players) s.players=Math.max(1,Math.min(8,parseInt(players.value,10)||s.players||3));
-  if(draws) s.draws=Math.max(1,Math.min(12,parseInt(draws.value,10)||s.draws||5));
   _spawnLabSaveUi();
 }
 function _spawnLabTotalCounts(s){
@@ -12119,41 +12225,6 @@ function _spawnLabQtyRange(beast){
   if(beh==='Gibier' && lvl<=2) max+=1;
   if(lvl>=9 || beh==='Boss'){ min=1; max=1; }
   return {min:min,max:Math.max(min,max)};
-}
-function _spawnLabScaledQty(beast, s){
-  var r=_spawnLabQtyRange(beast), min=r.min, max=r.max;
-  var lvl=Math.max(1,parseInt(beast&&beast.niv,10)||1);
-  var beh=cBehaviorLabel(beast&&beast.beh);
-  var density=0;
-  if(s.danger>=3 && lvl<=s.danger+1) density+=1;
-  if(s.players>=4 && lvl<=Math.max(3, s.players)) density+=1;
-  if(beh==='Gibier' && s.players>=3) density+=1;
-  if(beh==='Très agressif') density=Math.max(0,density-1);
-  if(beh==='Boss'){ min=1; max=1; }
-  max+=density;
-  if(lvl>=Math.max(6, s.danger+s.players-1)) max=Math.min(max,2);
-  if(lvl>=9) max=1;
-  return {min:min,max:Math.max(min,max)};
-}
-function _spawnLabThreatFit(beast, s){
-  var lvl=Math.max(1,parseInt(beast&&beast.niv,10)||1);
-  var target=Math.max(1, Math.round(s.danger + (s.players-1)*0.5));
-  var diff=Math.abs(lvl-target);
-  var fit=Math.max(0.45, 1.28 - diff*0.13);
-  if(cBehaviorLabel(beast&&beast.beh)==='Boss' && s.danger<4) fit*=0.65;
-  return fit;
-}
-function _spawnLabThreatValue(beast){
-  var lvl=Math.max(1,parseInt(beast&&beast.niv,10)||1);
-  switch(cBehaviorLabel(beast&&beast.beh)){
-    case 'Gibier': return lvl*0.75;
-    case 'Passif': return lvl*0.9;
-    case 'Neutre': return lvl;
-    case 'Agressif': return lvl*1.15;
-    case 'Très agressif': return lvl*1.3;
-    case 'Boss': return lvl*1.7;
-    default: return lvl;
-  }
 }
 function _spawnLabBeastZones(beast){
   var zones=Array.isArray(beast&&beast.zones)?beast.zones:[];
@@ -12221,7 +12292,6 @@ function _spawnLabAverageCount(pool, totalCounts){
 }
 function _spawnLabAdjustedWeight(beast, pool, s, totalCounts, encounterCounts){
   var base=_spawnLabBaseWeight(beast);
-  var fit=_spawnLabThreatFit(beast,s);
   var count=parseInt(totalCounts && totalCounts[beast.id],10)||0;
   var avg=_spawnLabAverageCount(pool, totalCounts);
   var over=Math.max(0, count - avg);
@@ -12229,15 +12299,14 @@ function _spawnLabAdjustedWeight(beast, pool, s, totalCounts, encounterCounts){
   var fatigue=1 + over*_spawnLabCumulativeCoef;
   var catchup=1 + under*_spawnLabCatchupCoef;
   var encounterPenalty=1 + ((parseInt(encounterCounts && encounterCounts[beast.id],10)||0)*_spawnLabSameEncounterCoef);
-  var weight=(base*fit*catchup)/(fatigue*encounterPenalty);
+  var weight=(base*catchup)/(fatigue*encounterPenalty);
   if((encounterCounts[beast.id]||0)>0 && pool.length>1) weight*=0.55;
-  return {weight:weight, base:base, fit:fit, count:count, avg:avg, catchup:catchup, fatigue:fatigue};
+  return {weight:weight, base:base, count:count, avg:avg, catchup:catchup, fatigue:fatigue};
 }
-function _spawnLabRollQty(min, max, danger){
+function _spawnLabRollQty(min, max){
   if(max<=min) return min;
   var span=max-min+1;
-  var bias=danger>=4?1.0:1.35;
-  var n=min+Math.floor(Math.pow(Math.random(), bias)*span);
+  var n=min+Math.floor(Math.random()*span);
   if(n>max) n=max;
   return n;
 }
@@ -12245,51 +12314,35 @@ function _spawnLabGenerateEncounter(pool, s, totals){
   var totalCounts=Object.create(null);
   Object.keys(totals||{}).forEach(function(id){ totalCounts[id]=parseInt(totals[id],10)||0; });
   var encounterCounts=Object.create(null);
-  var maxPacks=Math.min(pool.length||1, Math.min(4, 1 + (s.danger>=3?1:0) + (s.danger>=5?1:0) + (s.players>=5?1:0)));
-  var packCount=maxPacks<=1 ? 1 : (1 + Math.floor(Math.random()*maxPacks));
   var packs=[];
-  for(var i=0;i<packCount;i++){
-    var cands=[];
-    pool.forEach(function(beast){
-      var tuned=_spawnLabAdjustedWeight(beast, pool, s, totalCounts, encounterCounts);
-      if(tuned.weight>0.5){ cands.push({beast:beast,weight:tuned.weight,base:tuned.base,fit:tuned.fit,total:tuned.count,avg:tuned.avg,catchup:tuned.catchup,fatigue:tuned.fatigue}); }
-    });
-    var chosen=_spawnLabPickWeighted(cands);
-    if(!chosen) break;
-    var range=_spawnLabScaledQty(chosen.beast,s);
-    var qty=_spawnLabRollQty(range.min, range.max, s.danger);
-    var existing=packs.find(function(p){ return p.id===chosen.beast.id; });
-    if(existing){
-      existing.qty+=qty;
-      existing.pickCount=(existing.pickCount||1)+1;
-      existing.prob=Math.max(existing.prob||0, chosen._prob||0);
-      existing.total=Math.max(existing.total||0, chosen.total||0);
-    }else{
-      packs.push({
-        id: chosen.beast.id,
-        nom: chosen.beast.nom,
-        niv: parseInt(chosen.beast.niv,10)||1,
-        beh: cBehaviorLabel(chosen.beast.beh),
-        hidden: !!chosen.beast.hidden,
-        qty: qty,
-        prob: chosen._prob||0,
-        total: chosen.total||0,
-        range: range,
-        baseWeight: chosen.base,
-        weightNow: chosen.weight,
-        catchup: chosen.catchup,
-        fatigue: chosen.fatigue,
-        threat: _spawnLabThreatValue(chosen.beast)
-      });
-    }
-    encounterCounts[chosen.beast.id]=(encounterCounts[chosen.beast.id]||0)+qty;
-    totalCounts[chosen.beast.id]=(totalCounts[chosen.beast.id]||0)+qty;
-  }
+  var cands=[];
+  pool.forEach(function(beast){
+    var tuned=_spawnLabAdjustedWeight(beast, pool, s, totalCounts, encounterCounts);
+    if(tuned.weight>0.5){ cands.push({beast:beast,weight:tuned.weight,base:tuned.base,total:tuned.count,avg:tuned.avg,catchup:tuned.catchup,fatigue:tuned.fatigue}); }
+  });
+  var chosen=_spawnLabPickWeighted(cands);
+  if(!chosen) return null;
+  var range=_spawnLabQtyRange(chosen.beast);
+  var qty=_spawnLabRollQty(range.min, range.max);
+  packs.push({
+    id: chosen.beast.id,
+    nom: chosen.beast.nom,
+    niv: parseInt(chosen.beast.niv,10)||1,
+    beh: cBehaviorLabel(chosen.beast.beh),
+    hidden: !!chosen.beast.hidden,
+    qty: qty,
+    prob: chosen._prob||0,
+    total: chosen.total||0,
+    range: range,
+    baseWeight: chosen.base,
+    weightNow: chosen.weight,
+    catchup: chosen.catchup,
+    fatigue: chosen.fatigue
+  });
+  encounterCounts[chosen.beast.id]=qty;
+  totalCounts[chosen.beast.id]=(totalCounts[chosen.beast.id]||0)+qty;
   if(!packs.length) return null;
-  var threatScore=0;
-  packs.forEach(function(p){ threatScore += p.qty*p.threat; });
-  var threatLabel=threatScore < (s.players*2.4) ? 'léger' : threatScore < (s.players*4.4) ? 'tenu' : threatScore < (s.players*6.8) ? 'dangereux' : 'critique';
-  return { packs:packs, threatScore:threatScore, threatLabel:threatLabel, totals:totalCounts };
+  return { packs:packs, totals:totalCounts };
 }
 function spawnLabGenerate(){
   var s=_spawnLabEnsure();
@@ -12302,12 +12355,11 @@ function spawnLabGenerate(){
   s.lastRuns=Array.isArray(global.lastRuns)?global.lastRuns:[];
   if(!pool.length){ notif('Aucun mob dans cette zone.','err'); return; }
   var totals=Object.assign({}, global.totals||{});
+  var encounter=_spawnLabGenerateEncounter(pool, s, totals);
   var runs=[];
-  for(var i=0;i<s.draws;i++){
-    var encounter=_spawnLabGenerateEncounter(pool, s, totals);
-    if(!encounter) break;
+  if(encounter){
     totals=encounter.totals||totals;
-    runs.push({ idx:i+1, packs:encounter.packs, threatScore:encounter.threatScore, threatLabel:encounter.threatLabel });
+    runs.push({ idx:1, packs:encounter.packs });
   }
   s.totals=totals;
   s.lastRuns=runs;
@@ -12337,10 +12389,10 @@ function spawnLabCopyLast(){
   if(!s.lastRuns || !s.lastRuns.length){ notif('Aucun résultat à copier.','err'); return; }
   var lines=[];
   lines.push('**Générateur d’apparitions**');
-  lines.push('Zone '+_spawnLabZoneLabel(s.zone||'')+' • Danger '+s.danger+' • '+s.players+' joueur(s)');
+  lines.push('Zone '+_spawnLabZoneLabel(s.zone||''));
   lines.push('');
   s.lastRuns.forEach(function(run){
-    lines.push('**Tirage '+run.idx+'** — '+run.packs.map(function(p){ return p.qty+'x '+p.nom; }).join(' • ')+' _(pression '+run.threatLabel+')_');
+    lines.push('**Roll** — '+run.packs.map(function(p){ return p.qty+'x '+p.nom; }).join(' • '));
   });
   var text=lines.join('\n');
   if(navigator.clipboard && navigator.clipboard.writeText){
@@ -12363,8 +12415,6 @@ function renderSpawnLab(tid){
   var zoneMeta=_spawnLabResolveZone(s, beasts);
   var zonePool=_spawnLabZonePool(zoneMeta.value, beasts);
   var recentCounts=_spawnLabTotalCounts(s);
-  var pressureColor=['#6db88a','#8ed0a8','#d5c47a','#d9995c','#c94a4a'];
-  var pressureLabel=['Repos','Instable','Hostile','Lourd','Extrême'][Math.max(0,Math.min(4,(s.danger||3)-1))];
   var h='';
   h+='<style id="np-spawn-lab-style">';
   h+='#p-apparitions-c .sl-wrap{max-width:1320px;margin:0 auto;padding:10px 0 38px;}';
@@ -12377,7 +12427,7 @@ function renderSpawnLab(tid){
   h+='#p-apparitions-c .sl-card>*{position:relative;z-index:1;}';
   h+='#p-apparitions-c .sl-span-4{grid-column:span 4;} #p-apparitions-c .sl-span-8{grid-column:span 8;} #p-apparitions-c .sl-span-12{grid-column:span 12;}';
   h+='#p-apparitions-c .sl-kicker{font-family:var(--fd);font-size:8px;letter-spacing:4px;color:rgba(126,184,212,.45);margin-bottom:10px;text-transform:uppercase;}';
-  h+='#p-apparitions-c .sl-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}';
+  h+='#p-apparitions-c .sl-fields{display:grid;grid-template-columns:minmax(220px,420px);gap:10px;}';
   h+='#p-apparitions-c .sl-field label{display:block;font-size:11px;color:var(--faint);margin-bottom:5px;}';
   h+='#p-apparitions-c .sl-field input,#p-apparitions-c .sl-field select{width:100%;padding:11px 12px;background:rgba(6,8,16,.9);border:1px solid rgba(126,184,212,.16);color:var(--text);outline:none;}';
   h+='#p-apparitions-c .sl-field input:focus,#p-apparitions-c .sl-field select:focus{border-color:rgba(126,184,212,.42);}';
@@ -12407,16 +12457,15 @@ function renderSpawnLab(tid){
   h+='</style>';
   h+='<div class="sl-wrap">';
   h+='<div class="sl-head">';
-  h+='<div><div class="sl-kicker">OUTIL STAFF — GÉNÉRATEUR D’APPARITIONS</div><div class="sl-title">Apparitions par zone</div><div class="sl-sub">Choisis une zone, et le roll tire uniquement parmi les mobs configurés dedans. Chaque mob garde son poids global : plus il sort, plus il baisse, pendant que les autres remontent.</div></div>';
+  h+='<div><div class="sl-kicker">OUTIL STAFF — GÉNÉRATEUR D’APPARITIONS</div><div class="sl-title">Roll par zone</div><div class="sl-sub">Choisis une zone, lance le roll, et le résultat tombe parmi les mobs configurés dedans. Les poids restent globaux : un mob qui sort baisse, les autres remontent.</div></div>';
   h+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
-  h+='<span class="sl-chip" style="border-color:'+pressureColor[Math.max(0,Math.min(4,(s.danger||3)-1))]+';color:'+pressureColor[Math.max(0,Math.min(4,(s.danger||3)-1))]+';">Pression '+esc(pressureLabel)+'</span>';
   h+='<span class="sl-chip">Zone '+esc(zoneMeta.label)+'</span>';
   h+='<span class="sl-chip">'+zonePool.length+' mob'+(zonePool.length>1?'s':'')+' dedans</span>';
   h+='</div>';
   h+='</div>';
   h+='<div class="sl-grid">';
   h+='<div class="sl-card sl-span-12">';
-  h+='<div class="sl-kicker">CONFIGURATION DU TIRAGE</div>';
+  h+='<div class="sl-kicker">ZONE DU ROLL</div>';
   h+='<div class="sl-fields">';
   h+='<div class="sl-field"><label>Zone</label><select id="sl-zone" onchange="_spawnLabSyncInputs();renderSpawnLab(\'p-apparitions-c\')">';
   if(zoneOptions.length){
@@ -12425,12 +12474,9 @@ function renderSpawnLab(tid){
     h+='<option value="__all__" selected>Toutes zones</option>';
   }
   h+='</select></div>';
-  h+='<div class="sl-field"><label>Danger de zone</label><select id="sl-danger" onchange="_spawnLabSyncInputs();renderSpawnLab(\'p-apparitions-c\')"><option value="1"'+(s.danger===1?' selected':'')+'>1 — Calme</option><option value="2"'+(s.danger===2?' selected':'')+'>2 — Instable</option><option value="3"'+(s.danger===3?' selected':'')+'>3 — Hostile</option><option value="4"'+(s.danger===4?' selected':'')+'>4 — Lourd</option><option value="5"'+(s.danger===5?' selected':'')+'>5 — Extrême</option></select></div>';
-  h+='<div class="sl-field"><label>Joueurs visés</label><input id="sl-players" type="number" min="1" max="8" value="'+esc(s.players)+'" oninput="_spawnLabSyncInputs()"></div>';
-  h+='<div class="sl-field"><label>Nombre de tirages</label><input id="sl-draws" type="number" min="1" max="12" value="'+esc(s.draws)+'" oninput="_spawnLabSyncInputs()"></div>';
   h+='</div>';
   h+='<div class="sl-actions">';
-  h+='<button class="sl-btn sl-btn-gold" onclick="spawnLabGenerate()">Générer les apparitions</button>';
+  h+='<button class="sl-btn sl-btn-gold" onclick="spawnLabGenerate()">Roll</button>';
   h+='<button class="sl-btn" onclick="spawnLabCopyLast()">Copier le récap</button>';
   h+='<button class="sl-btn sl-btn-red" onclick="spawnLabResetHistory()">Réinitialiser le global</button>';
   h+='</div>';
@@ -12472,12 +12518,11 @@ function renderSpawnLab(tid){
   h+='</div>';
   h+='</div>';
   h+='<div class="sl-card sl-span-8">';
-  h+='<div class="sl-kicker">RÉSULTATS GÉNÉRÉS</div>';
+  h+='<div class="sl-kicker">RÉSULTAT DU ROLL</div>';
   if(s.lastRuns && s.lastRuns.length){
     s.lastRuns.forEach(function(run){
-      var threatCol=run.threatLabel==='léger'?'var(--green)':run.threatLabel==='tenu'?'var(--glacier)':run.threatLabel==='dangereux'?'var(--gold)':'var(--red)';
       h+='<div class="sl-run">';
-      h+='<div class="sl-runhead"><div style="font-family:var(--fd);font-size:12px;letter-spacing:1px;color:var(--text);">Tirage '+run.idx+'</div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span class="sl-chip" style="border-color:'+threatCol+';color:'+threatCol+';">Pression '+esc(run.threatLabel)+'</span><span class="sl-chip">Score '+Math.round(run.threatScore)+'</span></div></div>';
+      h+='<div class="sl-runhead"><div style="font-family:var(--fd);font-size:12px;letter-spacing:1px;color:var(--text);">Dernier roll</div></div>';
       run.packs.forEach(function(pack){
         var bcol=cBehaviorColor(pack.beh);
         h+='<div class="sl-pack">';
@@ -12512,7 +12557,7 @@ function renderSpawnLab(tid){
       h+='<div class="sl-metric"><strong>'+esc(name)+'</strong><span>'+summary[name]+'</span></div>';
     });
   } else {
-    h+='<div style="font-size:12px;color:rgba(255,255,255,.48);line-height:1.7;">Le résumé consolidera ici les créatures les plus sorties sur le dernier lot de tirages.</div>';
+    h+='<div style="font-size:12px;color:rgba(255,255,255,.48);line-height:1.7;">Le résumé consolidera ici les créatures sorties sur le dernier roll.</div>';
   }
   h+='</div>';
   h+='</div>';
