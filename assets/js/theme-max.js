@@ -143,7 +143,7 @@
       }
     },
     bloodmoon: {
-      id:'bloodmoon', label:'BloodMoon', cls:'theme-bloodmoon', rarity:'Mythique', category:'Rares',
+      id:'bloodmoon', label:'BloodMoon', cls:'theme-bloodmoon', rarity:'Fondateur', category:'Fondateur',
       tagline:'Lune rouge souveraine et tension rituelle.',
       desc:'Noir rituel, lune carmine, menace souveraine et éclat cramoisi.',
       signature:'Lune de sang',
@@ -160,7 +160,7 @@
   };
 
   var ORDER = ['dark','light','violet','red','green','easter','halloween','noel','aquaris','bloodmoon'];
-  var RARITY_ORDER = { 'Base':0, 'Classique':1, 'Saisonnier':2, 'Premium':3, 'Mythique':4 };
+  var RARITY_ORDER = { 'Base':0, 'Classique':1, 'Saisonnier':2, 'Premium':3, 'Fondateur':4, 'Mythique':5 };
 
   var CSS = `
 /* === Nuages Polaires Theme Engine v257 === */
@@ -1219,12 +1219,13 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
     window.prettyThemeName = function(themeId){ return cfg(themeId).label; };
 
     window.categoryOrder = function(category){
-      var order = { 'Équipé':-1, 'Base':0, 'Classiques':1, 'Saisonniers':2, 'Rares':3, 'Secrets':9 };
+      var order = { 'Équipé':-1, 'Base':0, 'Classiques':1, 'Saisonniers':2, 'Rares':3, 'Fondateur':4, 'Secrets':9 };
       return Object.prototype.hasOwnProperty.call(order, category) ? order[category] : 5;
     };
 
     window.rarityTone = function(rarity){
       rarity = String(rarity || '').toLowerCase();
+      if(rarity.indexOf('fondateur') >= 0) return 'gold';
       if(rarity.indexOf('mythique') >= 0) return 'danger';
       if(rarity.indexOf('premium') >= 0) return 'gold';
       if(rarity.indexOf('saisonnier') >= 0) return 'event';
@@ -1234,6 +1235,7 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
 
     window.themeRestrictionLabel = function(themeId){
       var c = cfg(themeId);
+      if(c.rarity === 'Fondateur') return 'Fondateur';
       if(c.rarity === 'Mythique') return 'Mythique';
       if(c.rarity === 'Premium') return 'Premium';
       if(c.rarity === 'Saisonnier') return 'Saisonnier';
@@ -1409,9 +1411,9 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
         '<button type="button" class="np-theme-filter-btn" data-rarity-filter="Saisonnier">Événement</button>',
         '<button type="button" class="np-theme-filter-btn" data-rarity-filter="rare">Rares</button>',
         '<button type="button" class="np-theme-filter-btn" data-rarity-filter="Premium">Premium</button>',
-        '<button type="button" class="np-theme-filter-btn" data-rarity-filter="Mythique">Mythique</button>',
+        '<button type="button" class="np-theme-filter-btn" data-rarity-filter="Fondateur">Fondateur</button>',
         '</div>',
-        '<select class="np-theme-select np-theme-rarity"><option value="all">Toutes raretés</option><option>Base</option><option>Classique</option><option>Saisonnier</option><option>Premium</option><option>Mythique</option></select>',
+        '<select class="np-theme-select np-theme-rarity"><option value="all">Toutes raretés</option><option>Base</option><option>Classique</option><option>Saisonnier</option><option>Premium</option><option>Fondateur</option><option>Mythique</option></select>',
         '<select class="np-theme-select np-theme-state"><option value="all">Tous états</option><option value="selected">Équipé</option><option value="owned">Possédés</option><option value="available">Disponibles</option><option value="locked">Indisponibles</option></select>',
         '<select class="np-theme-select np-theme-sort"><option value="recommended">Recommandé</option><option value="rarity">Rareté</option><option value="az">A-Z</option><option value="owned">Possédés d’abord</option></select>',
         '<span class="np-theme-count"></span>'
@@ -1466,7 +1468,7 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
     var state = root.querySelector('.np-theme-state');
     var sort = root.querySelector('.np-theme-sort');
     if(q && q.value !== f.q) q.value = f.q;
-    if(rarity) rarity.value = /^(Base|Classique|Saisonnier|Premium|Mythique|all)$/.test(f.rarity || 'all') ? (f.rarity || 'all') : 'all';
+    if(rarity) rarity.value = /^(Base|Classique|Saisonnier|Premium|Fondateur|Mythique|all)$/.test(f.rarity || 'all') ? (f.rarity || 'all') : 'all';
     if(state) state.value = f.state || 'all';
     if(sort) sort.value = f.sort || 'recommended';
     Array.prototype.forEach.call(root.querySelectorAll('.np-theme-filter-btn[data-rarity-filter]'), function(btn){
@@ -1549,14 +1551,14 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
       byRarity[rarity] = (byRarity[rarity] || 0) + 1;
       if(state === 'selected'){ count.selected++; count.owned++; }
       else if(state === 'owned') count.owned++;
-      if(rarity === 'Premium' || rarity === 'Mythique') count.rare++;
+      if(rarity === 'Premium' || rarity === 'Mythique' || rarity === 'Fondateur') count.rare++;
     });
     if(stats){
       stats.innerHTML = [
         ['Total', count.total],
         ['Possédés', count.owned],
         ['Équipé', count.selected],
-        ['Premium / Mythique', count.rare]
+        ['Premium / Fondateur', count.rare]
       ].map(function(x){
         return '<div class="np-theme-stat"><div class="np-theme-stat-value">'+x[1]+'</div><div class="np-theme-stat-label">'+x[0]+'</div></div>';
       }).join('');
@@ -1564,7 +1566,7 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
     var progress = root.querySelector('.np-theme-progress');
     if(progress){
       var pct = count.total ? Math.round((count.owned / count.total) * 100) : 0;
-      var lane = ['Base','Classique','Saisonnier','Premium','Mythique'].map(function(r){
+      var lane = ['Base','Classique','Saisonnier','Premium','Fondateur','Mythique'].map(function(r){
         return '<span class="np-theme-rarity-chip">'+r+' <strong>'+((byRarity[r] || 0))+'</strong></span>';
       }).join('');
       progress.innerHTML = '<div class="np-theme-progress-top"><span>Progression de collection</span><span>'+count.owned+' / '+count.total+' · '+pct+'%</span></div><div class="np-theme-progress-track" style="--owned-pct:'+pct+'%;"><div class="np-theme-progress-fill"></div></div><div class="np-theme-rarity-lane">'+lane+'</div>';

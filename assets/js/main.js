@@ -3366,7 +3366,7 @@ function renderThemeGrid(containerId){
   var cur = _currentTheme;
 
   function themeRarity(t){
-    if(t.id === "bloodmoon") return "Mythique";
+    if(t.id === "bloodmoon") return "Fondateur";
     if(t.id === "aquaris") return "Premium";
     if(t.event) return "Saisonnier";
     if(t.id === "dark" || t.id === "light") return "Base";
@@ -3374,7 +3374,8 @@ function renderThemeGrid(containerId){
   }
 
   function themeCategory(t){
-    if(t.id === "bloodmoon" || t.id === "aquaris") return "Rares";
+    if(t.id === "bloodmoon") return "Fondateur";
+    if(t.id === "aquaris") return "Rares";
     if(t.event) return "Événement";
     if(t.id === "dark" || t.id === "light") return "Base";
     return "Classique";
@@ -3408,7 +3409,7 @@ function renderThemeGrid(containerId){
       onclick = "applyTheme('" + t.id + "');renderAppearanceSection();";
     }
 
-    var featured = (rarity === 'Mythique' || rarity === 'Premium' || category === 'Événement');
+    var featured = (rarity === 'Fondateur' || rarity === 'Premium' || category === 'Événement');
     h += '<article class="theme-card-premium collection-card np-theme-vault-card'+(featured?' is-featured':'')+(isLocked?' th-locked':'')+'"'
       + ' data-theme-id="'+esc(t.id)+'" data-theme-rarity="'+esc(rarity)+'" data-theme-category="'+esc(category)+'" data-theme-state="'+esc(state)+'"'
       + ' style="--card-bg:'+esc(bg1)+';--card-a:'+esc(bg2)+';--card-b:'+esc(bg3)+';" onclick="' + onclick + '">';
