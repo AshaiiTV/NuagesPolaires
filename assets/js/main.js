@@ -3439,18 +3439,27 @@ function renderAppearanceSection(){
   var el = ge("appearance-section"); if(!el) return;
   // Le titre / descriptif sont déjà rendus dans l'écrou : ici on évite le doublon.
   el.innerHTML = "<style id='np-collection-width-polish'>"
-    +".profile-collection-shell{width:min(100%,1320px);}"
-    +".profile-collection-shell>.card{padding:18px !important;}"
-    +".profile-collection-shell .theme-collection-grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr)) !important;gap:14px !important;align-items:stretch;}"
-    +".profile-collection-shell .np-theme-vault-card{min-height:260px !important;border-radius:12px !important;padding:14px !important;}"
-    +".profile-collection-shell .np-theme-vault-card.is-featured{grid-column:span 2;min-height:300px !important;}"
-    +".profile-collection-shell .np-theme-vault-card.is-featured .theme-preview-mini{min-height:138px;}"
-    +".profile-collection-shell .theme-preview-mini{min-height:116px;margin-top:6px !important;border-radius:10px !important;}"
-    +".profile-collection-shell .theme-card-body{min-height:74px;}"
-    +".profile-collection-shell .theme-title{font-size:15px;line-height:1.2;}"
-    +".profile-collection-shell .tagline{font-size:12px;line-height:1.45;min-height:auto !important;}"
-    +".profile-collection-shell .theme-meta-row{margin-top:auto;}"
-    +"@media(max-width:900px){.profile-collection-shell .np-theme-vault-card.is-featured{grid-column:span 1;}}"
+    +".profile-collection-shell{width:min(100%,1440px);}"
+    +".profile-collection-shell>.card{padding:16px !important;}"
+    +".profile-collection-shell .theme-collection-grid{grid-template-columns:repeat(auto-fill,minmax(225px,1fr)) !important;gap:12px !important;align-items:stretch !important;grid-auto-flow:dense;}"
+    +".profile-collection-shell .np-theme-vault-card,.profile-collection-shell .np-theme-vault-card.is-featured{grid-column:span 1 !important;min-height:0 !important;height:282px !important;border-radius:12px !important;padding:13px !important;gap:9px !important;}"
+    +".profile-collection-shell .np-theme-vault-card{display:flex !important;flex-direction:column !important;}"
+    +".profile-collection-shell .np-theme-vault-card::after{display:none !important;content:none !important;}"
+    +".profile-collection-shell .theme-topline{min-height:22px !important;flex-shrink:0;}"
+    +".profile-collection-shell .theme-preview-mini,.profile-collection-shell .np-theme-vault-card.is-featured .theme-preview-mini{height:104px !important;min-height:104px !important;max-height:104px !important;margin-top:2px !important;border-radius:10px !important;padding:10px !important;flex-shrink:0;}"
+    +".profile-collection-shell .theme-preview-cards{margin:9px 0 !important;gap:6px !important;}"
+    +".profile-collection-shell .theme-preview-cards span{height:28px !important;border-radius:8px !important;}"
+    +".profile-collection-shell .theme-preview-head{height:12px !important;}"
+    +".profile-collection-shell .theme-preview-bar{height:7px !important;}"
+    +".profile-collection-shell .theme-card-body{min-height:58px !important;max-height:70px !important;overflow:hidden;}"
+    +".profile-collection-shell .theme-title{font-size:13px !important;line-height:1.2 !important;letter-spacing:1.6px !important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}"
+    +".profile-collection-shell .tagline{font-size:11px !important;line-height:1.35 !important;min-height:0 !important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}"
+    +".profile-collection-shell .theme-meta-row{margin-top:auto !important;gap:6px !important;min-height:24px;align-items:center;}"
+    +".profile-collection-shell .theme-meta-pill{min-height:21px !important;padding:0 8px !important;font-size:9px !important;letter-spacing:.06em;}"
+    +".profile-collection-shell .theme-palette{gap:3px !important;margin-left:auto;}"
+    +".profile-collection-shell .theme-swatch{width:13px !important;height:13px !important;}"
+    +".profile-collection-shell .theme-card-action{min-height:34px !important;border-radius:10px !important;font-size:9px !important;letter-spacing:1.6px !important;flex-shrink:0;}"
+    +"@media(max-width:760px){.profile-collection-shell{width:100%;}.profile-collection-shell .theme-collection-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr)) !important;}.profile-collection-shell .np-theme-vault-card,.profile-collection-shell .np-theme-vault-card.is-featured{height:260px !important;padding:11px !important;}.profile-collection-shell .theme-preview-mini,.profile-collection-shell .np-theme-vault-card.is-featured .theme-preview-mini{height:92px !important;min-height:92px !important;max-height:92px !important;}}"
     +"</style><div id='theme-grid-container'></div>";
   renderThemeGrid("theme-grid-container");
 }
@@ -6400,19 +6409,59 @@ function beastZoneFilterList(q){
     row.style.display=(!q || hay.indexOf(q)>=0)?"flex":"none";
   });
 }
+function beastZoneMoveRow(row, checked){
+  if(!row) return;
+  var box=row.querySelector(".bz-beast");
+  if(box) box.checked=!!checked;
+  row.classList.toggle("is-selected", !!checked);
+  var list=ge(checked?"bz-in-list":"bz-out-list");
+  if(list && row.parentNode!==list) list.appendChild(row);
+}
 function beastZoneSetVisible(checked){
   document.querySelectorAll("#m-beast-zones .bz-row").forEach(function(row){
     if(row.style.display==="none") return;
-    var box=row.querySelector(".bz-beast");
-    if(box) box.checked=!!checked;
-    row.classList.toggle("is-selected", !!checked);
+    beastZoneMoveRow(row, checked);
   });
   beastZoneRefreshCount();
 }
 function beastZoneToggleRow(input){
   if(!input) return;
   var row=input.closest ? input.closest(".bz-row") : null;
-  if(row) row.classList.toggle("is-selected", !!input.checked);
+  if(row) beastZoneMoveRow(row, !!input.checked);
+  beastZoneRefreshCount();
+}
+function beastZoneDragStart(ev, id){
+  if(!ev || !ev.dataTransfer) return;
+  ev.dataTransfer.setData("text/plain", String(id||""));
+  ev.dataTransfer.effectAllowed="move";
+  var row=ev.currentTarget;
+  if(row) row.classList.add("is-dragging");
+}
+function beastZoneDragEnd(ev){
+  var row=ev&&ev.currentTarget;
+  if(row) row.classList.remove("is-dragging");
+  document.querySelectorAll("#m-beast-zones .bz-drop").forEach(function(zone){ zone.classList.remove("is-over"); });
+}
+function beastZoneDragOver(ev){
+  if(!ev) return;
+  ev.preventDefault();
+  if(ev.dataTransfer) ev.dataTransfer.dropEffect="move";
+  var zone=ev.currentTarget;
+  if(zone) zone.classList.add("is-over");
+}
+function beastZoneDragLeave(ev){
+  var zone=ev&&ev.currentTarget;
+  if(zone) zone.classList.remove("is-over");
+}
+function beastZoneDrop(ev, checked){
+  if(!ev) return;
+  ev.preventDefault();
+  var zone=ev.currentTarget;
+  if(zone) zone.classList.remove("is-over");
+  var id=ev.dataTransfer?ev.dataTransfer.getData("text/plain"):"";
+  if(!id) return;
+  var row=document.querySelector('#m-beast-zones .bz-row[data-id="'+String(id).replace(/"/g,'\\"')+'"]');
+  beastZoneMoveRow(row, !!checked);
   beastZoneRefreshCount();
 }
 function beastZoneRefreshCount(){
@@ -6440,8 +6489,16 @@ function renderBeastZoneManager(zone){
     +'#m-beast-zones .bz-row{display:flex;gap:8px;align-items:flex-start;padding:10px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.025);cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s,transform .15s;}'
     +'#m-beast-zones .bz-row:hover{border-color:rgba(126,184,212,.26);background:rgba(126,184,212,.045);transform:translateY(-1px);}'
     +'#m-beast-zones .bz-row.is-selected{border-color:rgba(201,168,76,.46);background:linear-gradient(180deg,rgba(201,168,76,.12),rgba(201,168,76,.055));box-shadow:0 0 0 1px rgba(201,168,76,.18), inset 0 1px 0 rgba(255,255,255,.04);}'
+    +'#m-beast-zones .bz-row.is-dragging{opacity:.55;transform:scale(.985);}'
     +'#m-beast-zones .bz-row .bz-beast{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;}'
     +'#m-beast-zones .bz-row-label{display:flex;min-width:0;flex:1;cursor:pointer;}'
+    +'#m-beast-zones .bz-drop-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-height:430px;}'
+    +'#m-beast-zones .bz-drop{min-height:250px;overflow:auto;border:1px dashed rgba(255,255,255,.12);background:rgba(255,255,255,.018);padding:8px;display:flex;flex-direction:column;gap:8px;transition:border-color .15s,background .15s,box-shadow .15s;}'
+    +'#m-beast-zones .bz-drop.is-over{border-color:rgba(201,168,76,.58);background:rgba(201,168,76,.08);box-shadow:0 0 0 1px rgba(201,168,76,.16) inset;}'
+    +'#m-beast-zones .bz-drop-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px;padding:2px 2px 7px;border-bottom:1px solid rgba(255,255,255,.06);font-family:var(--fd);font-size:9px;letter-spacing:2px;color:var(--faint);}'
+    +'#m-beast-zones .bz-drop-title strong{color:var(--text);font-weight:600;}'
+    +'#m-beast-zones .bz-drag-hint{font-size:10px;color:var(--faint);line-height:1.45;}'
+    +'@media(max-width:820px){#m-beast-zones .bz-drop-grid{grid-template-columns:1fr;max-height:none;}#m-beast-zones .bz-drop{max-height:320px;}}'
   +'</style>';
   h+='<button class="mclose" onclick="closeModal(\'m-beast-zones\')">✕</button>';
   h+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px;">';
@@ -6474,21 +6531,36 @@ function renderBeastZoneManager(zone){
   h+='<button type="button" class="btn btn-sm" onclick="beastZoneSetVisible(false)"><span>Décocher visible</span></button>';
   if(selected) h+='<button type="button" class="btn btn-sm btn-red" onclick="deleteBeastZone(\''+jsesc(selected)+'\')"><span>Supprimer la zone</span></button>';
   h+='</div>';
-  h+='<div style="max-height:390px;overflow:auto;border:1px solid var(--border2);background:var(--bg3);padding:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;">';
+  function beastZoneRowHtml(b, checked){
+    var search=[b.nom,b.sub,b.niv,cBehaviorLabel(b.beh),Array.isArray(b.zones)?b.zones.join(' '):''].join(' ');
+    var id=String(b.id||'');
+    var out='';
+    out+='<div class="bz-row'+(checked?' is-selected':'')+'" draggable="true" data-id="'+escAttr(id)+'" data-search="'+escAttr(search)+'" ondragstart="beastZoneDragStart(event,\''+jsesc(id)+'\')" ondragend="beastZoneDragEnd(event)">';
+    out+='<label class="bz-row-label">';
+    out+='<input type="checkbox" class="bz-beast" value="'+escAttr(id)+'"'+(checked?' checked':'')+' onchange="beastZoneToggleRow(this)">';
+    out+='<span style="min-width:0;"><span style="display:block;font-family:var(--fd);font-size:10px;letter-spacing:1px;color:var(--text);overflow:hidden;text-overflow:ellipsis;">'+esc(b.nom||'Créature')+'</span><span style="display:block;font-size:10px;color:var(--faint);margin-top:3px;">Niv. '+esc(b.niv||1)+' · '+esc(cBehaviorLabel(b.beh)||'Neutre')+'</span><span class="bz-drag-hint" style="display:block;margin-top:5px;">Glisse vers l’autre colonne</span></span>';
+    out+='</label>';
+    out+='<div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">';
+    out+='<button type="button" class="btn btn-sm" style="padding:5px 8px;font-size:10px;" onclick="beastZoneOpenEditMob(\''+jsesc(id)+'\')"><span>Modifier</span></button>';
+    out+='</div>';
+    out+='</div>';
+    return out;
+  }
+  h+='<div class="bz-drop-grid">';
+  h+='<div class="bz-drop" id="bz-in-list" ondragover="beastZoneDragOver(event)" ondragleave="beastZoneDragLeave(event)" ondrop="beastZoneDrop(event,true)">';
+  h+='<div class="bz-drop-title"><strong>Dans la zone</strong><span>Drop ici pour ajouter</span></div>';
   beasts.forEach(function(b){
     var checked=(Array.isArray(b.zones)?b.zones:[]).indexOf(selected)>=0;
-    var search=[b.nom,b.sub,b.niv,cBehaviorLabel(b.beh),Array.isArray(b.zones)?b.zones.join(' '):''].join(' ');
-    h+='<div class="bz-row'+(checked?' is-selected':'')+'" data-search="'+escAttr(search)+'">';
-    h+='<label class="bz-row-label">';
-    h+='<input type="checkbox" class="bz-beast" value="'+escAttr(b.id)+'"'+(checked?' checked':'')+' onchange="beastZoneToggleRow(this)">';
-    h+='<span style="min-width:0;"><span style="display:block;font-family:var(--fd);font-size:10px;letter-spacing:1px;color:var(--text);overflow:hidden;text-overflow:ellipsis;">'+esc(b.nom||'Créature')+'</span><span style="display:block;font-size:10px;color:var(--faint);margin-top:3px;">Niv. '+esc(b.niv||1)+' · '+esc(cBehaviorLabel(b.beh)||'Neutre')+'</span></span>';
-    h+='</label>';
-    h+='<div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">';
-    h+='<button type="button" class="btn btn-sm" style="padding:5px 8px;font-size:10px;" onclick="beastZoneOpenEditMob(\''+jsesc(b.id)+'\')"><span>Modifier</span></button>';
-    if(checked) h+='<button type="button" class="btn btn-sm btn-red" style="padding:5px 8px;font-size:10px;" onclick="beastZoneRemoveMob(\''+jsesc(b.id)+'\',\''+jsesc(selected)+'\')"><span>Retirer</span></button>';
-    h+='</div>';
-    h+='</div>';
+    if(checked) h+=beastZoneRowHtml(b, true);
   });
+  h+='</div>';
+  h+='<div class="bz-drop" id="bz-out-list" ondragover="beastZoneDragOver(event)" ondragleave="beastZoneDragLeave(event)" ondrop="beastZoneDrop(event,false)">';
+  h+='<div class="bz-drop-title"><strong>Hors zone</strong><span>Drop ici pour retirer</span></div>';
+  beasts.forEach(function(b){
+    var checked=(Array.isArray(b.zones)?b.zones:[]).indexOf(selected)>=0;
+    if(!checked) h+=beastZoneRowHtml(b, false);
+  });
+  h+='</div>';
   h+='</div>';
   h+='<p class="errmsg" id="bz-err"></p>';
   h+='<div class="factions" style="margin-top:12px;">';
