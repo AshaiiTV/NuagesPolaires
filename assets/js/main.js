@@ -12587,30 +12587,6 @@ function renderSpawnLab(tid){
     h+='</div>';
     h+='</div>';
   }
-  h+='<div class="sl-card sl-span-12">';
-  h+='<div class="sl-pool-head"><div><div class="sl-kicker">MOBS DE LA ZONE</div><div style="font-size:12px;color:var(--dim);line-height:1.55;">Le pool est automatique : tous les mobs visibles rattachés à <strong>'+esc(zoneMeta.label)+'</strong> peuvent tomber au tirage.</div></div></div>';
-  h+='<div class="sl-pool">';
-  if(!zonePool.length){
-    h+='<div style="grid-column:1/-1;padding:18px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);font-size:12px;color:rgba(255,255,255,.50);line-height:1.7;">Aucun mob visible dans cette zone. Ajoute une zone aux créatures dans le bestiaire, ou choisis une autre zone.</div>';
-  }
-  zonePool.forEach(function(b){
-    var weight=_spawnLabBaseWeight(b);
-    var tuned=_spawnLabAdjustedWeight(b, zonePool.length?zonePool:beasts, s, recentCounts, {});
-    var range=_spawnLabQtyRange(b);
-    var beh=cBehaviorLabel(b.beh||b.behavior||b.comportement)||'Neutre';
-    h+='<div class="sl-beast">';
-    h+='<div class="sl-beast-name">'+esc(b.nom||'Créature')+'</div>';
-    h+='<div class="sl-mini" style="margin-top:5px;color:var(--dim);line-height:1.5;">Niv. '+esc(b.niv||1)+' · '+esc(beh)+' · Qté '+range.min+'-'+range.max+'</div>';
-    if(b.sub) h+='<div class="sl-mini" style="margin-top:6px;color:var(--dim);line-height:1.5;">'+esc(b.sub)+'</div>';
-    h+='<div class="sl-mini" style="display:flex;justify-content:space-between;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.06);color:var(--faint);">';
-    h+='<span>Poids '+weight+' → '+Math.max(1,Math.round(tuned.weight))+'</span>';
-    if(recentCounts[b.id]) h+='<span>Sorties × '+recentCounts[b.id]+'</span>';
-    else h+='<span>Jamais sorti</span>';
-    h+='</div>';
-    h+='</div>';
-  });
-  h+='</div>';
-  h+='</div>';
   h+='<div class="sl-card sl-span-8">';
   h+='<div class="sl-kicker">RÉSULTAT DU ROLL</div>';
   if(s.lastRuns && s.lastRuns.length){
@@ -12641,6 +12617,30 @@ function renderSpawnLab(tid){
   } else {
     h+='<div style="padding:18px;border:1px solid rgba(255,255,255,.06);background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));font-size:12px;color:rgba(255,255,255,.48);line-height:1.7;">Aucun tirage pour le moment. Choisis une zone, puis lance le générateur.</div>';
   }
+  h+='</div>';
+  h+='<div class="sl-card sl-span-12">';
+  h+='<div class="sl-pool-head"><div><div class="sl-kicker">MOBS DE LA ZONE</div><div style="font-size:12px;color:var(--dim);line-height:1.55;">Le pool est automatique : tous les mobs visibles rattachés à <strong>'+esc(zoneMeta.label)+'</strong> peuvent tomber au tirage.</div></div></div>';
+  h+='<div class="sl-pool">';
+  if(!zonePool.length){
+    h+='<div style="grid-column:1/-1;padding:18px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);font-size:12px;color:rgba(255,255,255,.50);line-height:1.7;">Aucun mob visible dans cette zone. Ajoute une zone aux créatures dans le bestiaire, ou choisis une autre zone.</div>';
+  }
+  zonePool.forEach(function(b){
+    var weight=_spawnLabBaseWeight(b);
+    var tuned=_spawnLabAdjustedWeight(b, zonePool.length?zonePool:beasts, s, recentCounts, {});
+    var range=_spawnLabQtyRange(b);
+    var beh=cBehaviorLabel(b.beh||b.behavior||b.comportement)||'Neutre';
+    h+='<div class="sl-beast">';
+    h+='<div class="sl-beast-name">'+esc(b.nom||'Créature')+'</div>';
+    h+='<div class="sl-mini" style="margin-top:5px;color:var(--dim);line-height:1.5;">Niv. '+esc(b.niv||1)+' · '+esc(beh)+' · Qté '+range.min+'-'+range.max+'</div>';
+    if(b.sub) h+='<div class="sl-mini" style="margin-top:6px;color:var(--dim);line-height:1.5;">'+esc(b.sub)+'</div>';
+    h+='<div class="sl-mini" style="display:flex;justify-content:space-between;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.06);color:var(--faint);">';
+    h+='<span>Poids '+weight+' → '+Math.max(1,Math.round(tuned.weight))+'</span>';
+    if(recentCounts[b.id]) h+='<span>Sorties × '+recentCounts[b.id]+'</span>';
+    else h+='<span>Jamais sorti</span>';
+    h+='</div>';
+    h+='</div>';
+  });
+  h+='</div>';
   h+='</div>';
   h+='<div class="sl-card sl-span-4">';
   h+='<div class="sl-kicker">HISTORIQUE DES ROLLS</div>';
