@@ -6346,10 +6346,47 @@ function _beastZoneNames(){
   out.sort(function(a,b){ return a.localeCompare(b,'fr',{sensitivity:'base'}); });
   return out;
 }
+var _beastZoneReturnAfterAdd='';
+var _beastZoneReturnAfterEdit='';
+function _beastZoneCurrentName(){
+  return String((ge("bz-name")&&ge("bz-name").value)||(ge("bz-select")&&ge("bz-select").value)||'').trim();
+}
 function openBeastZoneManager(zone){
   if(!can("manage_beasts")){ notif("Permission insuffisante.","err"); return; }
   renderBeastZoneManager(zone||(_beastZoneNames()[0]||''));
   openModal("m-beast-zones");
+}
+function beastZoneOpenAddMob(){
+  if(!can("manage_beasts")){ notif("Permission insuffisante.","err"); return; }
+  var zone=_beastZoneCurrentName();
+  if(!zone){ if(ge("bz-err")) ge("bz-err").textContent="Nom de zone requis avant de créer un mob."; return; }
+  _beastZoneReturnAfterAdd=zone;
+  closeModal("m-beast-zones");
+  openModal("m-addb");
+  setTimeout(function(){
+    if(ge("ab-zones")) ge("ab-zones").value=zone;
+    if(ge("ab-n")) ge("ab-n").focus();
+  },0);
+}
+function beastZoneOpenEditMob(id){
+  if(!can("manage_beasts")){ notif("Permission insuffisante.","err"); return; }
+  _beastZoneReturnAfterEdit=_beastZoneCurrentName();
+  closeModal("m-beast-zones");
+  openEditBeast(id);
+}
+function beastZoneRemoveMob(id, zone){
+  if(!can("manage_beasts")){ notif("Permission insuffisante.","err"); return; }
+  zone=String(zone||_beastZoneCurrentName()||'').trim();
+  if(!zone) return;
+  var beasts=gb();
+  var b=beasts.find(function(x){ return String(x&&x.id||'')===String(id||''); });
+  if(!b) return;
+  b.zones=(Array.isArray(b.zones)?b.zones:[]).filter(function(z){ return z!==zone; });
+  b.updatedAt=Date.now();
+  sb(beasts);
+  renderBeastZoneManager(zone);
+  renderBGrid("p-bgrd",!!(CU&&can("manage_beasts")));
+  notif((b.nom||"Mob")+" retiré de la zone.","ok");
 }
 function beastZoneFilterList(q){
   q=String(q||'').trim().toLowerCase();
@@ -6414,6 +6451,7 @@ function renderBeastZoneManager(zone){
   h+='</div>';
   h+='<input type="hidden" id="bz-select" value="'+escAttr(selected)+'">';
   h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px;">';
+  h+='<button type="button" class="btn btn-sm btn-grn" onclick="beastZoneOpenAddMob()"><span>Créer un mob dans cette zone</span></button>';
   h+='<button type="button" class="btn btn-sm" onclick="beastZoneSetVisible(true)"><span>Tout cocher visible</span></button>';
   h+='<button type="button" class="btn btn-sm" onclick="beastZoneSetVisible(false)"><span>Décocher visible</span></button>';
   if(selected) h+='<button type="button" class="btn btn-sm btn-red" onclick="deleteBeastZone(\''+jsesc(selected)+'\')"><span>Supprimer la zone</span></button>';
@@ -6422,10 +6460,16 @@ function renderBeastZoneManager(zone){
   beasts.forEach(function(b){
     var checked=(Array.isArray(b.zones)?b.zones:[]).indexOf(selected)>=0;
     var search=[b.nom,b.sub,b.niv,cBehaviorLabel(b.beh),Array.isArray(b.zones)?b.zones.join(' '):''].join(' ');
-    h+='<label class="bz-row" data-search="'+escAttr(search)+'" style="display:flex;gap:8px;align-items:flex-start;padding:10px;border:1px solid '+(checked?'rgba(201,168,76,.30)':'rgba(255,255,255,.07)')+';background:'+(checked?'rgba(201,168,76,.075)':'rgba(255,255,255,.025)')+';cursor:pointer;">';
+    h+='<div class="bz-row" data-search="'+escAttr(search)+'" style="display:flex;gap:8px;align-items:flex-start;padding:10px;border:1px solid '+(checked?'rgba(201,168,76,.30)':'rgba(255,255,255,.07)')+';background:'+(checked?'rgba(201,168,76,.075)':'rgba(255,255,255,.025)')+';">';
+    h+='<label style="display:flex;gap:8px;align-items:flex-start;min-width:0;flex:1;cursor:pointer;">';
     h+='<input type="checkbox" class="bz-beast" value="'+escAttr(b.id)+'"'+(checked?' checked':'')+' onchange="beastZoneRefreshCount()" style="margin-top:2px;">';
-    h+='<span><span style="display:block;font-family:var(--fd);font-size:10px;letter-spacing:1px;color:var(--text);">'+esc(b.nom||'Créature')+'</span><span style="display:block;font-size:10px;color:var(--faint);margin-top:3px;">Niv. '+esc(b.niv||1)+' · '+esc(cBehaviorLabel(b.beh)||'Neutre')+'</span></span>';
+    h+='<span style="min-width:0;"><span style="display:block;font-family:var(--fd);font-size:10px;letter-spacing:1px;color:var(--text);overflow:hidden;text-overflow:ellipsis;">'+esc(b.nom||'Créature')+'</span><span style="display:block;font-size:10px;color:var(--faint);margin-top:3px;">Niv. '+esc(b.niv||1)+' · '+esc(cBehaviorLabel(b.beh)||'Neutre')+'</span></span>';
     h+='</label>';
+    h+='<div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">';
+    h+='<button type="button" class="btn btn-sm" style="padding:5px 8px;font-size:10px;" onclick="beastZoneOpenEditMob(\''+jsesc(b.id)+'\')"><span>Modifier</span></button>';
+    if(checked) h+='<button type="button" class="btn btn-sm btn-red" style="padding:5px 8px;font-size:10px;" onclick="beastZoneRemoveMob(\''+jsesc(b.id)+'\',\''+jsesc(selected)+'\')"><span>Retirer</span></button>';
+    h+='</div>';
+    h+='</div>';
   });
   h+='</div>';
   h+='<p class="errmsg" id="bz-err"></p>';
@@ -8138,6 +8182,11 @@ function addBeast(){
   var bs=gb();bs.unshift(b);sb(bs);closeModal("m-addb");
   ["ab-n","ab-sub","ab-fr","ab-co","ab-dr","ab-gm","ab-de","ab-img","ab-zones","ab-note"].forEach(function(id){if(ge(id)) ge(id).value="";}); if(ge("ab-niv")) ge("ab-niv").value=1; if(ge("ab-hidden")) ge("ab-hidden").checked=false; if(ge("ab-archived")) ge("ab-archived").checked=false;
   renderBGrid("p-bgrd",!!(CU&&can("manage_beasts")));notif(n+" ajouté.","ok");
+  if(_beastZoneReturnAfterAdd){
+    var returnZone=_beastZoneReturnAfterAdd;
+    _beastZoneReturnAfterAdd='';
+    openBeastZoneManager(returnZone);
+  }
 }
 function openEditBeast(id){
   if(!CU||!can("manage_beasts")){ notif("Non autorisé.","err"); return; }
@@ -8197,6 +8246,11 @@ function saveEditBeast(){
   closeModal("m-editb");
   renderBGrid("p-bgrd",true);
   notif(b.nom+" mis à jour.","ok");
+  if(_beastZoneReturnAfterEdit){
+    var returnZone=_beastZoneReturnAfterEdit;
+    _beastZoneReturnAfterEdit='';
+    openBeastZoneManager(returnZone);
+  }
 }
 
 function delBeast(id){
