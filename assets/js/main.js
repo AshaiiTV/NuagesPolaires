@@ -12443,6 +12443,15 @@ function _spawnLabGenerateEncounter(pool, s, totals){
   if(!packs.length) return null;
   return { packs:packs, totals:totalCounts };
 }
+function _spawnLabActorName(){
+  return (CU && (CU.login || CU.name || CU.pseudo || CU.role)) || 'staff';
+}
+function _spawnLabRunTimeLabel(ts){
+  ts=parseInt(ts,10)||0;
+  if(!ts) return 'Date inconnue';
+  try{ return new Date(ts).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+  catch(_e){ return 'Date inconnue'; }
+}
 function spawnLabGenerate(){
   var s=_spawnLabEnsure();
   _spawnLabSyncInputs();
@@ -12458,21 +12467,48 @@ function spawnLabGenerate(){
   var runs=[];
   if(encounter){
     totals=encounter.totals||totals;
-    runs.push({ idx:1, packs:encounter.packs });
+    runs.push({
+      id:'roll_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+      idx:1,
+      zone: zoneMeta.label,
+      zoneValue: zoneMeta.value,
+      rolledBy: _spawnLabActorName(),
+      rolledAt: Date.now(),
+      packs: encounter.packs
+    });
   }
   s.totals=totals;
-  s.lastRuns=runs;
+  s.lastRuns=runs.concat(Array.isArray(global.lastRuns)?global.lastRuns:[]).slice(0,24);
   s.lastGlobalAt=Date.now();
   _spawnLabSaveUi();
   _spawnLabSaveGlobal({
     totals: totals,
-    lastRuns: runs,
+    lastRuns: s.lastRuns,
     totalDraws: (parseInt(global.totalDraws,10)||0) + runs.length,
     lastGeneratedAt: s.lastGlobalAt,
     lastGeneratedBy: (CU && (CU.login || CU.name || CU.role)) || 'staff'
   });
   renderSpawnLab('p-apparitions-c');
   notif(runs.length ? 'Apparitions générées et poids globaux synchronisés.' : 'Aucun tirage possible.', runs.length ? 'ok' : 'err');
+}
+function spawnLabDeleteHistory(id){
+  if(!can("manage_beasts")){ notif("Réservé à l’admin.","err"); return; }
+  var s=_spawnLabEnsure();
+  var global=_spawnLabGlobal();
+  var runs=Array.isArray(global.lastRuns)?global.lastRuns.slice():[];
+  var before=runs.length;
+  runs=runs.filter(function(run, idx){ return String(run&&run.id||idx)!==String(id); });
+  if(runs.length===before){ notif("Entrée introuvable.","err"); return; }
+  s.lastRuns=runs;
+  _spawnLabSaveGlobal({
+    totals: global.totals||{},
+    lastRuns: runs,
+    totalDraws: parseInt(global.totalDraws,10)||0,
+    lastGeneratedAt: global.lastGeneratedAt||Date.now(),
+    lastGeneratedBy: (CU && (CU.login || CU.name || CU.role)) || 'staff'
+  });
+  renderSpawnLab('p-apparitions-c');
+  notif("Roll supprimé de l’historique.","ok");
 }
 function spawnLabResetHistory(){
   var s=_spawnLabEnsure();
@@ -12490,7 +12526,7 @@ function spawnLabCopyLast(){
   lines.push('**Générateur d’apparitions**');
   lines.push('Zone '+_spawnLabZoneLabel(s.zone||''));
   lines.push('');
-  s.lastRuns.forEach(function(run){
+  s.lastRuns.slice(0,1).forEach(function(run){
     lines.push('**Roll** — '+run.packs.map(function(p){ return p.qty+'x '+p.nom; }).join(' • '));
   });
   var text=lines.join('\n');
@@ -12623,7 +12659,7 @@ function renderSpawnLab(tid){
   h+='<div class="sl-card sl-span-8">';
   h+='<div class="sl-kicker">RÉSULTAT DU ROLL</div>';
   if(s.lastRuns && s.lastRuns.length){
-    s.lastRuns.forEach(function(run){
+    s.lastRuns.slice(0,1).forEach(function(run){
       h+='<div class="sl-run">';
       h+='<div class="sl-runhead"><div style="font-family:var(--fd);font-size:12px;letter-spacing:1px;color:var(--text);">Dernier roll</div></div>';
       run.packs.forEach(function(pack){
@@ -12652,15 +12688,25 @@ function renderSpawnLab(tid){
   }
   h+='</div>';
   h+='<div class="sl-card sl-span-4">';
-  h+='<div class="sl-kicker">RÉSUMÉ RAPIDE</div>';
+  h+='<div class="sl-kicker">HISTORIQUE DES ROLLS</div>';
   if(s.lastRuns && s.lastRuns.length){
-    var summary=Object.create(null);
-    s.lastRuns.forEach(function(run){ run.packs.forEach(function(pack){ summary[pack.nom]=(summary[pack.nom]||0)+pack.qty; }); });
-    Object.keys(summary).sort(function(a,b){ return summary[b]-summary[a]; }).slice(0,8).forEach(function(name){
-      h+='<div class="sl-metric"><strong>'+esc(name)+'</strong><span>'+summary[name]+'</span></div>';
+    s.lastRuns.slice(0,12).forEach(function(run, idx){
+      var packs=Array.isArray(run&&run.packs)?run.packs:[];
+      var label=packs.map(function(pack){ return (pack.qty||1)+'× '+(pack.nom||'Mob'); }).join(' • ')||'Roll vide';
+      var by=String(run&&run.rolledBy||run&&run.by||'Inconnu');
+      var zone=String(run&&run.zone||_spawnLabZoneLabel(run&&run.zoneValue||'')||'Zone inconnue');
+      var rid=String(run&&run.id||idx);
+      h+='<div class="sl-metric" style="align-items:flex-start;">';
+      h+='<div style="min-width:0;">';
+      h+='<strong style="display:block;white-space:normal;line-height:1.45;">'+esc(label)+'</strong>';
+      h+='<div class="sl-mini" style="margin-top:5px;color:var(--dim);line-height:1.45;">'+esc(zone)+' · '+esc(_spawnLabRunTimeLabel(run&&run.rolledAt))+'</div>';
+      h+='<div class="sl-mini" style="margin-top:3px;color:var(--faint);">Roll par '+esc(by)+'</div>';
+      h+='</div>';
+      if(can("manage_beasts")) h+='<button class="sl-btn sl-btn-red" style="padding:6px 8px;font-size:8px;flex-shrink:0;" onclick="spawnLabDeleteHistory(\''+jsesc(rid)+'\')">Supprimer</button>';
+      h+='</div>';
     });
   } else {
-    h+='<div style="font-size:12px;color:rgba(255,255,255,.48);line-height:1.7;">Le résumé consolidera ici les créatures sorties sur le dernier roll.</div>';
+    h+='<div style="font-size:12px;color:rgba(255,255,255,.48);line-height:1.7;">Aucun roll enregistré pour le moment.</div>';
   }
   h+='</div>';
   h+='</div>';
