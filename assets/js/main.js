@@ -2577,7 +2577,7 @@ function renderProfil(){
   var col=roleCols[role]||"var(--glacier)";
 
   var isCollectionTab = (_settingsTab === "collection");
-  var h='<div style="max-width:'+(isCollectionTab?'860px':'560px')+';">';
+  var h='<div class="'+(isCollectionTab?'profile-collection-shell':'')+'" style="max-width:'+(isCollectionTab?'1320px':'560px')+';">';
   h+='<div class="settings-tabs">';
   h+='<button type="button" class="settings-tab'+(!isCollectionTab?' active':'')+'" onclick="switchSettingsTab(\'compte\')">Compte</button>';
   h+='<button type="button" class="settings-tab'+(isCollectionTab?' active':'')+'" onclick="switchSettingsTab(\'collection\')">Collection</button>';
@@ -3408,7 +3408,8 @@ function renderThemeGrid(containerId){
       onclick = "applyTheme('" + t.id + "');renderAppearanceSection();";
     }
 
-    h += '<article class="theme-card-premium collection-card np-theme-vault-card'+(isLocked?' th-locked':'')+'"'
+    var featured = (rarity === 'Mythique' || rarity === 'Premium' || category === 'Événement');
+    h += '<article class="theme-card-premium collection-card np-theme-vault-card'+(featured?' is-featured':'')+(isLocked?' th-locked':'')+'"'
       + ' data-theme-id="'+esc(t.id)+'" data-theme-rarity="'+esc(rarity)+'" data-theme-category="'+esc(category)+'" data-theme-state="'+esc(state)+'"'
       + ' style="--card-bg:'+esc(bg1)+';--card-a:'+esc(bg2)+';--card-b:'+esc(bg3)+';" onclick="' + onclick + '">';
     h += '<div class="theme-topline" data-theme-eyebrow="'+esc(rarity)+'"><span class="theme-card-state">'+(isActive?'Équipé':(isLocked?(isAvail?'À débloquer':'Indisponible'):'Possédé'))+'</span></div>';
@@ -3437,7 +3438,20 @@ function renderThemeGrid(containerId){
 function renderAppearanceSection(){
   var el = ge("appearance-section"); if(!el) return;
   // Le titre / descriptif sont déjà rendus dans l'écrou : ici on évite le doublon.
-  el.innerHTML = "<div id='theme-grid-container'></div>";
+  el.innerHTML = "<style id='np-collection-width-polish'>"
+    +".profile-collection-shell{width:min(100%,1320px);}"
+    +".profile-collection-shell>.card{padding:18px !important;}"
+    +".profile-collection-shell .theme-collection-grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr)) !important;gap:14px !important;align-items:stretch;}"
+    +".profile-collection-shell .np-theme-vault-card{min-height:260px !important;border-radius:12px !important;padding:14px !important;}"
+    +".profile-collection-shell .np-theme-vault-card.is-featured{grid-column:span 2;min-height:300px !important;}"
+    +".profile-collection-shell .np-theme-vault-card.is-featured .theme-preview-mini{min-height:138px;}"
+    +".profile-collection-shell .theme-preview-mini{min-height:116px;margin-top:6px !important;border-radius:10px !important;}"
+    +".profile-collection-shell .theme-card-body{min-height:74px;}"
+    +".profile-collection-shell .theme-title{font-size:15px;line-height:1.2;}"
+    +".profile-collection-shell .tagline{font-size:12px;line-height:1.45;min-height:auto !important;}"
+    +".profile-collection-shell .theme-meta-row{margin-top:auto;}"
+    +"@media(max-width:900px){.profile-collection-shell .np-theme-vault-card.is-featured{grid-column:span 1;}}"
+    +"</style><div id='theme-grid-container'></div>";
   renderThemeGrid("theme-grid-container");
 }
 
