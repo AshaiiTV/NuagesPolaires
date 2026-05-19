@@ -73,16 +73,16 @@
     },
     green: {
       id:'green', label:'Sylvan', cls:'theme-green', rarity:'Classique', category:'Classiques',
-      tagline:'Sylvan, végétal et élégant.',
-      desc:'Nature nocturne, vert magique et atmosphère organique.',
-      colors:['#0c1510','#69c47d','#c0aa5a'],
+      tagline:'Canopée profonde, mousse vivante et lianes anciennes.',
+      desc:'Un thème jungle organique : sous-bois dense, feuillage humide, sève dorée et lumière filtrée par la canopée.',
+      colors:['#06130b','#39b66b','#d5b75d'],
       tone:'dark',
       vars:{
-        bg:'#0c1510', bg2:'#111f17', bg3:'#172c20', bg4:'#203d2b',
-        text:'#f4fff7', dim:'#c6e0cc', faint:'#88a590',
-        accent:'#69c47d', accentDim:'#3d8750', accentBright:'#c0aa5a',
-        accentRgb:'105,196,125', accent2Rgb:'192,170,90',
-        pageBg:'radial-gradient(circle at 18% 14%, rgba(105,196,125,.13), transparent 24rem),radial-gradient(circle at 84% 82%, rgba(192,170,90,.09), transparent 26rem),linear-gradient(180deg,#0c1510 0%,#111f17 52%,#050b07 100%)'
+        bg:'#06130b', bg2:'#0b2212', bg3:'#12351d', bg4:'#1c4b2a',
+        text:'#f1fff4', dim:'#c1e5c5', faint:'#82aa89',
+        accent:'#39b66b', accentDim:'#1d7543', accentBright:'#d5b75d',
+        accentRgb:'57,182,107', accent2Rgb:'213,183,93',
+        pageBg:'radial-gradient(circle at 14% 12%, rgba(57,182,107,.24), transparent 22rem),radial-gradient(circle at 82% 18%, rgba(213,183,93,.13), transparent 18rem),radial-gradient(ellipse at 50% 105%, rgba(14,78,35,.62), transparent 42rem),linear-gradient(180deg,#06130b 0%,#0b2212 46%,#031008 100%)'
       }
     },
     easter: {
@@ -128,7 +128,7 @@
       }
     },
     aquaris: {
-      id:'aquaris', label:'Aquaris — Royaume englouti', cls:'theme-aquaris', rarity:'Premium', category:'Rares',
+      id:'aquaris', label:'Aquaris — Royaume englouti', cls:'theme-aquaris', rarity:'Rare', category:'Rares',
       tagline:'Royaume englouti, cyan abyssal et or ancien.',
       desc:'Palais noyés, lumière abyssale, cyan profond et or ancien.',
       signature:'Royaume englouti',
@@ -160,7 +160,7 @@
   };
 
   var ORDER = ['dark','light','violet','red','green','easter','halloween','noel','aquaris','bloodmoon'];
-  var RARITY_ORDER = { 'Base':0, 'Classique':1, 'Saisonnier':2, 'Premium':3, 'Fondateur':4, 'Mythique':5 };
+  var RARITY_ORDER = { 'Base':0, 'Classique':1, 'Saisonnier':2, 'Rare':3, 'Premium':3, 'Fondateur':4, 'Mythique':5 };
 
   var CSS = `
 /* === Nuages Polaires Theme Engine v257 === */
@@ -479,6 +479,8 @@ body[data-theme-engine="v257"] :where(.empty-state-sub,.empty-state p,.field lab
 /* Ambient overlays */
 body[data-theme-engine="v257"].theme-easter::before,
 body[data-theme-engine="v257"].theme-easter::after,
+body[data-theme-engine="v257"].theme-green::before,
+body[data-theme-engine="v257"].theme-green::after,
 body[data-theme-engine="v257"].theme-aquaris::before,
 body[data-theme-engine="v257"].theme-aquaris::after,
 body[data-theme-engine="v257"].theme-bloodmoon::before,
@@ -506,6 +508,28 @@ body[data-theme-engine="v257"].theme-easter #s-app::after{
   content:none !important;
   display:none !important;
   background:none !important;
+}
+body[data-theme-engine="v257"].theme-green::before{
+  inset:0;
+  z-index:0;
+  opacity:.72;
+  background:
+    radial-gradient(ellipse at 16% 2%,rgba(84,210,117,.24),transparent 28rem),
+    radial-gradient(ellipse at 88% 18%,rgba(213,183,93,.12),transparent 18rem),
+    repeating-linear-gradient(118deg,rgba(90,190,98,.075) 0 2px,transparent 2px 34px),
+    repeating-linear-gradient(62deg,rgba(213,183,93,.050) 0 1px,transparent 1px 42px);
+}
+body[data-theme-engine="v257"].theme-green::after{
+  left:0;
+  right:0;
+  bottom:0;
+  height:330px;
+  z-index:0;
+  opacity:.86;
+  background:
+    radial-gradient(ellipse at 8% 100%,rgba(25,126,55,.48),transparent 32rem),
+    radial-gradient(ellipse at 94% 100%,rgba(13,88,45,.44),transparent 30rem),
+    linear-gradient(180deg,rgba(6,19,11,0),rgba(5,23,10,.42) 42%,rgba(2,11,5,.90) 100%);
 }
 body[data-theme-engine="v257"].theme-aquaris::before{
   inset:0;z-index:-1;
@@ -672,7 +696,7 @@ body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-pre
 body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="light"]{--preview-bg:#f4f5fa;--preview-bg2:#ffffff;--preview-a:#3a8fba;--preview-b:#9a7020;--preview-c:#d7a84e;}
 body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="violet"]{--preview-bg:#0e0d18;--preview-bg2:#211637;--preview-a:#b07ae0;--preview-b:#9a74c4;--preview-c:#e4c9ff;}
 body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="red"]{--preview-bg:#160d0d;--preview-bg2:#2b1114;--preview-a:#d45050;--preview-b:#c9a84c;--preview-c:#ff9a9a;}
-body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="green"]{--preview-bg:#0a150e;--preview-bg2:#122c1a;--preview-a:#50c864;--preview-b:#c9a84c;--preview-c:#a8f1b0;}
+body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="green"]{--preview-bg:#06130b;--preview-bg2:#12351d;--preview-a:#39b66b;--preview-b:#d5b75d;--preview-c:#a8f1b0;}
 body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="easter"]{--preview-bg:#f7fff2;--preview-bg2:#e7f8de;--preview-a:#7fdc82;--preview-b:#ffd86b;--preview-c:#ffb6d8;color:#213326 !important;}
 body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="halloween"]{--preview-bg:#0a0911;--preview-bg2:#16111f;--preview-a:#ff8f2b;--preview-b:#7c59ff;--preview-c:#d8d2ff;}
 body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="noel"]{--preview-bg:#08140d;--preview-bg2:#122219;--preview-a:#d84a52;--preview-b:#2ea85f;--preview-c:#f2c66d;}
@@ -688,6 +712,9 @@ body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-pre
 }
 body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="bloodmoon"]{
   background:radial-gradient(circle at 84% 12%,rgba(227,19,63,.30),transparent 27%),radial-gradient(circle at 18% 86%,rgba(240,199,111,.10),transparent 26%),linear-gradient(145deg,#050102,#210812) !important;
+}
+body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="green"]{
+  background:radial-gradient(ellipse at 18% 12%,rgba(57,182,107,.38),transparent 35%),radial-gradient(ellipse at 84% 20%,rgba(213,183,93,.18),transparent 28%),repeating-linear-gradient(128deg,rgba(168,241,176,.10) 0 2px,transparent 2px 18px),linear-gradient(145deg,#06130b,#12351d) !important;
 }
 body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme] .theme-preview-head{background:linear-gradient(90deg,var(--preview-a),var(--preview-c)) !important;}
 body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme] .theme-preview-bar{background:linear-gradient(90deg,var(--preview-a),var(--preview-b),var(--preview-c)) !important;}
@@ -1053,6 +1080,15 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
     var shadowSoft = c.tone === 'light'
       ? '0 12px 28px rgba(31,57,88,.09), inset 0 1px 0 rgba(255,255,255,.72)'
       : '0 12px 28px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.035)';
+    if(c.id === 'green'){
+      panelBase = 'radial-gradient(ellipse at 12% 0%,rgba(57,182,107,.13),transparent 42%),radial-gradient(ellipse at 92% 100%,rgba(213,183,93,.08),transparent 36%),linear-gradient(180deg,rgba(255,255,255,.050),rgba(255,255,255,.016)),linear-gradient(180deg,#12351d,#07180d)';
+      panelStrong = 'radial-gradient(ellipse at 10% 0%,rgba(57,182,107,.18),transparent 44%),radial-gradient(ellipse at 86% 100%,rgba(213,183,93,.11),transparent 38%),linear-gradient(180deg,rgba(255,255,255,.070),rgba(255,255,255,.022)),linear-gradient(180deg,#1a4728,#0b2212)';
+      controlBase = 'linear-gradient(180deg,rgba(255,255,255,.070),rgba(255,255,255,.024)),linear-gradient(90deg,rgba(57,182,107,.16),rgba(213,183,93,.07)),rgba(8,32,16,.82)';
+      controlHover = 'linear-gradient(180deg,rgba(255,255,255,.105),rgba(255,255,255,.034)),linear-gradient(90deg,rgba(57,182,107,.24),rgba(213,183,93,.12)),rgba(11,45,22,.90)';
+      inputBase = 'linear-gradient(180deg,rgba(255,255,255,.040),rgba(255,255,255,.014)),rgba(3,17,8,.82)';
+      shadow = '0 24px 50px rgba(0,18,6,.34), inset 0 1px 0 rgba(198,255,210,.045)';
+      shadowSoft = '0 14px 30px rgba(0,18,6,.24), inset 0 1px 0 rgba(198,255,210,.035)';
+    }
     var finalSoft = c.tone === 'light' ? 'rgba(54,75,64,.76)' : 'rgba(232,240,248,.76)';
     var finalStrong = c.tone === 'light' ? 'rgba(25,36,30,.94)' : 'rgba(248,252,255,.96)';
     var finalPress = c.tone === 'light'
@@ -1227,6 +1263,7 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
       rarity = String(rarity || '').toLowerCase();
       if(rarity.indexOf('fondateur') >= 0) return 'gold';
       if(rarity.indexOf('mythique') >= 0) return 'danger';
+      if(rarity.indexOf('rare') >= 0) return 'gold';
       if(rarity.indexOf('premium') >= 0) return 'gold';
       if(rarity.indexOf('saisonnier') >= 0) return 'event';
       if(rarity.indexOf('secret') >= 0) return 'secret';
@@ -1237,6 +1274,7 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
       var c = cfg(themeId);
       if(c.rarity === 'Fondateur') return 'Fondateur';
       if(c.rarity === 'Mythique') return 'Mythique';
+      if(c.rarity === 'Rare') return 'Rare';
       if(c.rarity === 'Premium') return 'Premium';
       if(c.rarity === 'Saisonnier') return 'Saisonnier';
       return c.rarity || 'Thème';
@@ -1373,7 +1411,11 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
   function loadFilters(){
     try{
       var raw = localStorage.getItem(FILTER_STORAGE_KEY);
-      if(raw) return Object.assign({q:'', rarity:'all', state:'all', sort:'recommended'}, JSON.parse(raw));
+      if(raw){
+        var saved = Object.assign({q:'', rarity:'all', state:'all', sort:'recommended'}, JSON.parse(raw));
+        if(saved.rarity === 'Premium') saved.rarity = 'Rare';
+        return saved;
+      }
     }catch(e){}
     return {q:'', rarity:'all', state:'all', sort:'recommended'};
   }
@@ -1395,7 +1437,7 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
     if(!hero){
       hero = document.createElement('section');
       hero.className = 'np-theme-hero';
-      hero.innerHTML = '<h2 class="np-theme-hero-title">Collection des thèmes</h2><p class="np-theme-hero-sub">Construis ta galerie de thèmes, équipe tes trouvailles et suis ta progression entre classiques, événements, premium et mythiques.</p><div class="np-theme-stats"></div><div class="np-theme-progress"></div>';
+      hero.innerHTML = '<h2 class="np-theme-hero-title">Collection des thèmes</h2><p class="np-theme-hero-sub">Construis ta galerie de thèmes, équipe tes trouvailles et suis ta progression entre classiques, événements, rares et fondateurs.</p><div class="np-theme-stats"></div><div class="np-theme-progress"></div>';
       root.insertBefore(hero, root.firstChild);
     }
 
@@ -1410,10 +1452,9 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
         '<button type="button" class="np-theme-filter-btn" data-rarity-filter="common">Communs</button>',
         '<button type="button" class="np-theme-filter-btn" data-rarity-filter="Saisonnier">Événement</button>',
         '<button type="button" class="np-theme-filter-btn" data-rarity-filter="rare">Rares</button>',
-        '<button type="button" class="np-theme-filter-btn" data-rarity-filter="Premium">Premium</button>',
         '<button type="button" class="np-theme-filter-btn" data-rarity-filter="Fondateur">Fondateur</button>',
         '</div>',
-        '<select class="np-theme-select np-theme-rarity"><option value="all">Toutes raretés</option><option>Base</option><option>Classique</option><option>Saisonnier</option><option>Premium</option><option>Fondateur</option><option>Mythique</option></select>',
+        '<select class="np-theme-select np-theme-rarity"><option value="all">Toutes raretés</option><option>Base</option><option>Classique</option><option>Saisonnier</option><option>Rare</option><option>Fondateur</option><option>Mythique</option></select>',
         '<select class="np-theme-select np-theme-state"><option value="all">Tous états</option><option value="selected">Équipé</option><option value="owned">Possédés</option><option value="available">Disponibles</option><option value="locked">Indisponibles</option></select>',
         '<select class="np-theme-select np-theme-sort"><option value="recommended">Recommandé</option><option value="rarity">Rareté</option><option value="az">A-Z</option><option value="owned">Possédés d’abord</option></select>',
         '<span class="np-theme-count"></span>'
@@ -1468,7 +1509,7 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
     var state = root.querySelector('.np-theme-state');
     var sort = root.querySelector('.np-theme-sort');
     if(q && q.value !== f.q) q.value = f.q;
-    if(rarity) rarity.value = /^(Base|Classique|Saisonnier|Premium|Fondateur|Mythique|all)$/.test(f.rarity || 'all') ? (f.rarity || 'all') : 'all';
+    if(rarity) rarity.value = /^(Base|Classique|Saisonnier|Rare|Premium|Fondateur|Mythique|all)$/.test(f.rarity || 'all') ? (f.rarity || 'all') : 'all';
     if(state) state.value = f.state || 'all';
     if(sort) sort.value = f.sort || 'recommended';
     Array.prototype.forEach.call(root.querySelectorAll('.np-theme-filter-btn[data-rarity-filter]'), function(btn){
@@ -1493,7 +1534,7 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
   function rarityMatches(filter, rarity){
     if(!filter || filter === 'all') return true;
     if(filter === 'common') return rarity === 'Base' || rarity === 'Classique';
-    if(filter === 'rare') return rarity === 'Premium' || rarity === 'Mythique';
+    if(filter === 'rare') return rarity === 'Rare' || rarity === 'Premium' || rarity === 'Mythique';
     return rarity === filter;
   }
 
@@ -1551,14 +1592,14 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
       byRarity[rarity] = (byRarity[rarity] || 0) + 1;
       if(state === 'selected'){ count.selected++; count.owned++; }
       else if(state === 'owned') count.owned++;
-      if(rarity === 'Premium' || rarity === 'Mythique' || rarity === 'Fondateur') count.rare++;
+      if(rarity === 'Rare' || rarity === 'Premium' || rarity === 'Mythique' || rarity === 'Fondateur') count.rare++;
     });
     if(stats){
       stats.innerHTML = [
         ['Total', count.total],
         ['Possédés', count.owned],
         ['Équipé', count.selected],
-        ['Premium / Fondateur', count.rare]
+        ['Rare / Fondateur', count.rare]
       ].map(function(x){
         return '<div class="np-theme-stat"><div class="np-theme-stat-value">'+x[1]+'</div><div class="np-theme-stat-label">'+x[0]+'</div></div>';
       }).join('');
@@ -1566,7 +1607,7 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
     var progress = root.querySelector('.np-theme-progress');
     if(progress){
       var pct = count.total ? Math.round((count.owned / count.total) * 100) : 0;
-      var lane = ['Base','Classique','Saisonnier','Premium','Fondateur','Mythique'].map(function(r){
+      var lane = ['Base','Classique','Saisonnier','Rare','Fondateur','Mythique'].map(function(r){
         return '<span class="np-theme-rarity-chip">'+r+' <strong>'+((byRarity[r] || 0))+'</strong></span>';
       }).join('');
       progress.innerHTML = '<div class="np-theme-progress-top"><span>Progression de collection</span><span>'+count.owned+' / '+count.total+' · '+pct+'%</span></div><div class="np-theme-progress-track" style="--owned-pct:'+pct+'%;"><div class="np-theme-progress-fill"></div></div><div class="np-theme-rarity-lane">'+lane+'</div>';

@@ -279,7 +279,7 @@ var THEMES_BASE = [
   { id:"light",       name:"Brume Claire",    cls:"light",         preview:["#f4f5fa","#3a8fba","#9a7020"], desc:"Mode clair.",        event:false },
   { id:"violet",      name:"Abyssal",         cls:"theme-violet",  preview:["#0e0d18","#b07ae0","#9a74c4"], desc:"Teintes abyssales.", event:false },
   { id:"red",         name:"Écarlate",        cls:"theme-red",     preview:["#160d0d","#d45050","#c9a84c"], desc:"Rouge sang.",        event:false },
-  { id:"green",       name:"Sylvan",          cls:"theme-green",   preview:["#0a150e","#50c864","#c9a84c"], desc:"Vert forêt.",        event:false },
+  { id:"green",       name:"Sylvan",          cls:"theme-green",   preview:["#06130b","#39b66b","#d5b75d"], desc:"Canopée profonde, mousse vivante et lianes anciennes.", event:false },
 ];
 
 // Thèmes événement — chargés depuis la DB (clé "event_themes")
@@ -3367,7 +3367,7 @@ function renderThemeGrid(containerId){
 
   function themeRarity(t){
     if(t.id === "bloodmoon") return "Fondateur";
-    if(t.id === "aquaris") return "Premium";
+    if(t.id === "aquaris") return "Rare";
     if(t.event) return "Saisonnier";
     if(t.id === "dark" || t.id === "light") return "Base";
     return "Classique";
@@ -3409,7 +3409,7 @@ function renderThemeGrid(containerId){
       onclick = "applyTheme('" + t.id + "');renderAppearanceSection();";
     }
 
-    var featured = (rarity === 'Fondateur' || rarity === 'Premium' || category === 'Événement');
+    var featured = (rarity === 'Fondateur' || rarity === 'Rare' || category === 'Événement');
     h += '<article class="theme-card-premium collection-card np-theme-vault-card'+(featured?' is-featured':'')+(isLocked?' th-locked':'')+'"'
       + ' data-theme-id="'+esc(t.id)+'" data-theme-rarity="'+esc(rarity)+'" data-theme-category="'+esc(category)+'" data-theme-state="'+esc(state)+'"'
       + ' style="--card-bg:'+esc(bg1)+';--card-a:'+esc(bg2)+';--card-b:'+esc(bg3)+';" onclick="' + onclick + '">';
