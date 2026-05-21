@@ -23,6 +23,10 @@
     }catch(e){ return false; }
   }
 
+  function dashboardTargetId(){
+    return document.getElementById('p-admin-dashboard-c') ? 'p-admin-dashboard-c' : 'p-stats-c';
+  }
+
   function escapeHtml(str){
     return String(str == null ? '' : str)
       .replace(/&/g,'&amp;')
@@ -59,7 +63,7 @@
     var entry = { at:nowIso(), type:type || 'info', label:String(label || ''), detail:String(detail || ''), extra:extra || null };
     LAST_ACTIONS.unshift(entry);
     if(LAST_ACTIONS.length > MAX_ACTIONS) LAST_ACTIONS.length = MAX_ACTIONS;
-    try{ renderDashboardConsole('p-stats-c'); }catch(e){}
+    try{ renderDashboardConsole(dashboardTargetId()); }catch(e){}
     return entry;
   }
 
@@ -507,13 +511,13 @@
         : { items:[{name:'Self-test',status:'bad',detail:'Module npSiteSelfTest absent.'}] };
       LAST_REPORT = normalizeReport(report);
       addAction(count(LAST_REPORT.items,'bad') ? 'warn' : 'ok', 'Self-test terminé', count(LAST_REPORT.items,'bad') + ' erreur(s), ' + count(LAST_REPORT.items,'warn') + ' warning(s).', LAST_REPORT);
-      renderDashboardConsole('p-stats-c');
+      renderDashboardConsole(dashboardTargetId());
       try{ if(window.npApiHardening) window.npApiHardening.toast('Self-test terminé.', 'ok', 2800); }catch(e){}
       return LAST_REPORT;
     }catch(e){
       LAST_REPORT = { items:[{name:'Self-test',status:'bad',detail:String(e && e.message || e),extra:{stack:e && e.stack}}] };
       addAction('error', 'Self-test échoué', String(e && e.message || e), {stack:e && e.stack});
-      renderDashboardConsole('p-stats-c');
+      renderDashboardConsole(dashboardTargetId());
       return LAST_REPORT;
     }
   }
@@ -572,7 +576,7 @@
       return { name:it.name, status:it.status, detail:it.detail, extra:it.extra || null };
     }) };
     addAction(count(LAST_REPORT.items,'bad') ? 'warn' : 'ok', 'Diagnostic serveur terminé', count(LAST_REPORT.items,'bad') + ' erreur(s), ' + count(LAST_REPORT.items,'warn') + ' warning(s).', HEALTH_REPORT);
-    renderDashboardConsole('p-stats-c');
+    renderDashboardConsole(dashboardTargetId());
     return HEALTH_REPORT;
   }
 
@@ -585,12 +589,12 @@
         : null;
       LAST_REPORT = normalizeReport({results:report});
       addAction(count(LAST_REPORT.items,'bad') ? 'warn' : 'ok', 'Diagnostic terminé', count(LAST_REPORT.items,'bad') + ' erreur(s), ' + count(LAST_REPORT.items,'warn') + ' warning(s).', LAST_REPORT);
-      renderDashboardConsole('p-stats-c');
+      renderDashboardConsole(dashboardTargetId());
       return LAST_REPORT;
     }catch(e){
       LAST_REPORT = { items:[{name:'Diagnostic DB/Auth',status:'bad',detail:String(e && e.message || e),extra:{stack:e && e.stack}}] };
       addAction('error', 'Diagnostic échoué', String(e && e.message || e), {stack:e && e.stack});
-      renderDashboardConsole('p-stats-c');
+      renderDashboardConsole(dashboardTargetId());
       return LAST_REPORT;
     }
   }
@@ -609,12 +613,12 @@
         extra: report
       }] };
       addAction(LAST_REPORT.items[0].status, 'Retry API terminé', LAST_REPORT.items[0].detail, report);
-      renderDashboardConsole('p-stats-c');
+      renderDashboardConsole(dashboardTargetId());
       return LAST_REPORT;
     }catch(e){
       LAST_REPORT = { items:[{name:'Retry API',status:'bad',detail:String(e && e.message || e),extra:{stack:e && e.stack}}] };
       addAction('error', 'Retry API échoué', String(e && e.message || e), {stack:e && e.stack});
-      renderDashboardConsole('p-stats-c');
+      renderDashboardConsole(dashboardTargetId());
       return LAST_REPORT;
     }
   }
@@ -629,7 +633,7 @@
     LAST_ACTIONS = [];
     LAST_REPORT = { items:[{name:'Erreurs front',status:'ok',detail:'Journal console local vidé. Les erreurs internes du module diagnostics peuvent rester en mémoire si non exposées.'}] };
     addAction('ok', 'Erreurs front', 'Journal console local vidé.');
-    renderDashboardConsole('p-stats-c');
+    renderDashboardConsole(dashboardTargetId());
   }
 
   async function copyDashboardConsoleReport(){
@@ -680,7 +684,7 @@
         var previous = window.renderStats;
         var wrapped = function(containerId){
           var out = previous.apply(this, arguments);
-          setTimeout(function(){ renderDashboardConsole(containerId || 'p-stats-c'); }, 30);
+          setTimeout(function(){ renderDashboardConsole(containerId || dashboardTargetId()); }, 30);
           return out;
         };
         wrapped.__dashboardConsoleV263 = true;
@@ -698,7 +702,7 @@
     setInterval(syncAdminOnly, 1000);
     setInterval(function(){
       var stats = document.getElementById('stats');
-      if(stats && stats.classList.contains('active')) renderDashboardConsole('p-stats-c');
+      if(stats && stats.classList.contains('active')) renderDashboardConsole(dashboardTargetId());
     }, 5000);
 
     window.renderDashboardConsole = renderDashboardConsole;
@@ -766,7 +770,8 @@
     if(document.getElementById(STYLE_ID)) return;
     var css = `
 /* === Dashboard admin polish v264 === */
-#p-stats-c.np-dashboard-polished{
+#p-stats-c.np-dashboard-polished,
+#p-admin-dashboard-c.np-dashboard-polished{
   display:grid;
   gap:18px;
 }
@@ -878,13 +883,18 @@
 }
 #p-stats-c.np-dashboard-polished > .card,
 #p-stats-c.np-dashboard-polished > .panel,
-#p-stats-c.np-dashboard-polished .staff-panel{
+#p-stats-c.np-dashboard-polished .staff-panel,
+#p-admin-dashboard-c.np-dashboard-polished > .card,
+#p-admin-dashboard-c.np-dashboard-polished > .panel,
+#p-admin-dashboard-c.np-dashboard-polished .staff-panel{
   border-radius:20px !important;
 }
-#p-stats-c.np-dashboard-polished .np-dashboard-console{
+#p-stats-c.np-dashboard-polished .np-dashboard-console,
+#p-admin-dashboard-c.np-dashboard-polished .np-dashboard-console{
   margin-top:0;
 }
-#p-stats-c.np-dashboard-polished .np-dashboard-console-hero{
+#p-stats-c.np-dashboard-polished .np-dashboard-console-hero,
+#p-admin-dashboard-c.np-dashboard-polished .np-dashboard-console-hero{
   border-radius:24px;
 }
 .np-admin-dashboard-divider{
@@ -954,7 +964,7 @@
 
   function ensureOverview(){
     if(!isAdmin()) return;
-    var root = document.getElementById('p-stats-c');
+    var root = document.getElementById(dashboardTargetId());
     if(!root) return;
     root.classList.add('np-dashboard-polished');
 
@@ -1081,7 +1091,7 @@
   try{
     window.npAdminDashboard = window.npAdminDashboard || {
       version:'v267',
-      render:function(){ return window.renderDashboardConsole && window.renderDashboardConsole('p-stats-c'); },
+      render:function(){ return window.renderDashboardConsole && window.renderDashboardConsole((document.getElementById('p-admin-dashboard-c') ? 'p-admin-dashboard-c' : 'p-stats-c')); },
       console:function(){ return window.npDashboardConsole || null; },
       polish:function(){ return window.npDashboardPolish || null; },
       status:function(){

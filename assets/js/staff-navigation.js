@@ -274,7 +274,7 @@ body.np-is-admin #dd-staff-menu .perm-admin{
     var hint = document.createElement('div');
     hint.className = 'np-staff-menu-hint';
     hint.innerHTML = isAdmin()
-      ? '<strong>Admin</strong> · outils de gestion, dashboard technique et database.'
+      ? '<strong>Admin</strong> · outils de gestion, données et santé technique.'
       : '<strong>Staff</strong> · outils MJ disponibles selon ton rôle.';
 
     var firstHeader = menu.querySelector('.nav-section-header');
@@ -290,8 +290,7 @@ body.np-is-admin #dd-staff-menu .perm-admin{
       ['joueurs','Joueurs'],
       ['combat-mj','Simulation'],
       ['apparitions','Apparitions'],
-      ['stats','Tableau de bord'],
-      ['database','Database']
+      ['database','Administration']
     ];
 
     labels.forEach(function(pair){
@@ -303,9 +302,9 @@ body.np-is-admin #dd-staff-menu .perm-admin{
       }
     });
 
-    var dashboard = menu.querySelector('[data-staff-tool="stats"]');
+    var dashboard = menu.querySelector('[data-staff-tool="database"]');
     if(dashboard){
-      dashboard.setAttribute('title', 'Tableau de bord admin : statistiques et santé technique');
+      dashboard.setAttribute('title', 'Administration : tableau de bord, comptes, thèmes, logs et sécurité');
     }
   }
 

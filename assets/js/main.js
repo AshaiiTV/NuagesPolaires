@@ -4093,7 +4093,7 @@ async function loadAuditLogAdmin(force){
   return _auditLog||[];
 }
 function openDatabaseInnerTab(tabKey){
-  var next = tabKey || "comptes";
+  var next = tabKey || "dashboard";
   window._dbTab = next;
   if(next === "audit"){
     _auditPage = 0;
@@ -4258,10 +4258,10 @@ function renderDatabase(){
   var roleCols={admin:"var(--red)",mj:"var(--gold)",designer:"var(--purple)",joueur:"var(--glacier)"};
   var roleLabels={admin:"Admin",mj:"MJ",designer:"Designer",joueur:"Joueur"};
   var roles=["joueur","mj","designer","admin"];
-  var _tab=window._dbTab||"comptes";
+  var _tab=window._dbTab||"dashboard";
 
   // --- Onglets internes ---
-  var tabs=[{k:"comptes",l:"Comptes"},{k:"themes",l:"Thèmes"},{k:"historiques",l:"Log"},{k:"audit",l:"Sécurité"}];
+  var tabs=[{k:"dashboard",l:"Vue d'ensemble"},{k:"comptes",l:"Comptes"},{k:"themes",l:"Thèmes"},{k:"historiques",l:"Log"},{k:"audit",l:"Sécurité"}];
   var html='<div class="warnbox" style="margin-bottom:16px;">⚠ Données confidentielles — Accès administrateur uniquement.</div>';
   html+='<div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border2);padding-bottom:0;">';
   tabs.forEach(function(t){
@@ -4271,7 +4271,12 @@ function renderDatabase(){
   html+='</div>';
 
   // ================================================================
-  if(_tab==="comptes"){
+  if(_tab==="dashboard"){
+    html+='<div id="p-admin-dashboard-c"></div>';
+  }
+
+  // ================================================================
+  else if(_tab==="comptes"){
     html+='<div class="card">';
     html+='<div class="card-title">Tous les comptes ('+accounts.length+')</div>';
     if(!accounts.length){ html+='<p class="iempty">Aucun compte.</p>'; }
@@ -4462,6 +4467,10 @@ function renderDatabase(){
 
 
   el.innerHTML=html;
+  if(_tab==="dashboard"){
+    try{ renderStats("p-admin-dashboard-c"); }catch(e){ console.error("renderStats admin", e); }
+    try{ if(typeof renderDashboardConsole==="function") renderDashboardConsole("p-admin-dashboard-c"); }catch(e){ console.error("renderDashboardConsole admin", e); }
+  }
   if(_tab==="themes"){
     try{ renderAdminThemes("p-admin-themes-db-c"); }catch(e){ console.error("renderAdminThemes DB", e); }
   }
@@ -4750,7 +4759,7 @@ async function logout(){
     if(ge("pl-pass"))ge("pl-pass").value="";
     if(ge("err-p"))ge("err-p").textContent="";
     if(ge("err-s"))ge("err-s").textContent="";
-    ["t-database-c","p-stats-c","p-joueurs-c","p-combat-mj-c","p-apparitions-c",
+    ["t-database-c","p-admin-dashboard-c","p-joueurs-c","p-combat-mj-c","p-apparitions-c",
      "p-gestion-mj-c","p-en-attente-c","p-profil-c","p-serm-c","p-hist",
      "s-plist"].forEach(function(id){
       var el=document.getElementById(id); if(el) el.innerHTML="";
@@ -4934,6 +4943,10 @@ if(!window.__npPopupEscBound){
 
 function switchTab(id, btn, _isBack){
   if(id==='arena') id='combat-mj';
+  if(id==='stats'){
+    id='database';
+    if(!window._dbTab) window._dbTab='dashboard';
+  }
   // ── SECURITY GUARDS ─────────────────────────────────────
   var STAFF_TABS=["joueurs","gestion-mj","en-attente","combat-mj","apparitions","stats","database"];
   var ADMIN_TABS=["stats","database","gestion-mj","en-attente"];
@@ -5011,7 +5024,7 @@ function switchTab(id, btn, _isBack){
     renderView();
     setTimeout(function(){ try{ renderView(); }catch(e){} }, 30);
   }
-  if(id==="database"){ if(window._dbTab==="audit"){ loadAuditLogAdmin(false).then(function(){ renderDatabase(); }); } else { renderDatabase(); } }
+  if(id==="database"){ if(!window._dbTab) window._dbTab="dashboard"; if(window._dbTab==="audit"){ loadAuditLogAdmin(false).then(function(){ renderDatabase(); }); } else { renderDatabase(); } }
   if(id==="combat-mj"){
     rCombat("p-combat-mj-c");
     _startCombatMJPoll();
@@ -5020,7 +5033,6 @@ function switchTab(id, btn, _isBack){
     renderSpawnLab("p-apparitions-c");
   }
 
-  if(id==="stats"){ renderStats("p-stats-c"); }
   if(id==="evenements"){ renderEvents("p-events-c"); }
   // CARTE HIDDEN: if(id==="carte"){ renderCarte("p-carte-c"); }
   if(id==="joueurs"&&CU&&CU.type==="staff"){
@@ -7118,7 +7130,7 @@ function renderAccueil(tid){
     h+='<button class="btn btn-sm" style="border-color:rgba(201,168,76,.4);color:var(--gold);" onclick="switchDropTab(\'joueurs\',null,\'dd-staff\')"><span>Joueurs</span></button>';
   }
   if(isAdmin){
-    h+='<button class="btn btn-sm" style="border-color:rgba(201,168,76,.5);color:var(--gold);" onclick="switchDropTab(\'database\',null,\'dd-staff\')"><span>Database</span></button>';
+    h+='<button class="btn btn-sm" style="border-color:rgba(201,168,76,.5);color:var(--gold);" onclick="switchDropTab(\'database\',null,\'dd-staff\')"><span>Administration</span></button>';
     if(adminPendingCount>0) h+='<button class="btn btn-sm" style="border-color:rgba(201,74,74,.5);color:var(--red);" onclick="switchDropTab(\'joueurs\',null,\'dd-staff\')"><span>'+adminPendingCount+' en attente</span></button>';
   }
   h+='</div>';
@@ -9550,7 +9562,8 @@ function importDB(input){
       if(data.beasts) sb(data.beasts);
       if(data.serments_custom) ssd(data.serments_custom);
       notif("Import réussi — "+( data.players?data.players.length:0)+" joueurs, "+(data.beasts?data.beasts.length:0)+" créatures.","ok");
-      renderStats("p-stats-c");
+      window._dbTab="dashboard";
+      renderDatabase();
     }catch(err){ notif("Erreur de lecture JSON.","err"); }
   };
   reader.readAsText(file);
@@ -14764,8 +14777,7 @@ function getCommandItems(){
     push("combat-mj","Simulation","Outils de combat",function(){ switchTab("combat-mj",null); },"C");
   }
   if(role==="admin"){
-    push("stats","Tableau de bord","Vue d’ensemble admin",function(){ switchTab("stats",null); },"T");
-    push("database","Database","Données et logs",function(){ switchTab("database",null); },"DB");
+    push("database","Administration","Vue d’ensemble, comptes, thèmes, logs et sécurité",function(){ switchTab("database",null); },"ADM");
     if(isAdminRole(CU)) push("audit","Journal sécurité","Logs d'authentification et actions sensibles",function(){ switchTab("database",null); openAuditLogAdmin(); },"SEC");
   }
   return items;
