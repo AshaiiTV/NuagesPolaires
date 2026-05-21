@@ -277,7 +277,7 @@ var SD={
 var THEMES_BASE = [
   { id:"dark",        name:"Nuages Polaires", cls:"",              preview:["#0d0e18","#7eb8d4","#c9a84c"], desc:"Le thème original.", event:false },
   { id:"light",       name:"Brume Claire",    cls:"light",         preview:["#f4f5fa","#3a8fba","#9a7020"], desc:"Mode clair.",        event:false },
-  { id:"violet",      name:"Abyssal",         cls:"theme-violet",  preview:["#0e0d18","#b07ae0","#9a74c4"], desc:"Teintes abyssales.", event:false },
+  { id:"violet",      name:"Galactique",      cls:"theme-violet",  preview:["#03020b","#9b7cff","#73d8ff"], desc:"Constellations, nébuleuses et verre cosmique.", event:false },
   { id:"red",         name:"Écarlate",        cls:"theme-red",     preview:["#160d0d","#d45050","#c9a84c"], desc:"Rouge sang.",        event:false },
   { id:"green",       name:"Sylvan",          cls:"theme-green",   preview:["#06130b","#39b66b","#d5b75d"], desc:"Canopée profonde, mousse vivante et lianes anciennes.", event:false },
 ];
@@ -3368,6 +3368,7 @@ function renderThemeGrid(containerId){
   function themeRarity(t){
     if(t.id === "bloodmoon") return "Fondateur";
     if(t.id === "aquaris") return "Rare";
+    if(t.id === "violet" || t.id === "red" || t.id === "green") return "Rare";
     if(t.event) return "Saisonnier";
     if(t.id === "dark" || t.id === "light") return "Base";
     return "Classique";
@@ -3376,6 +3377,7 @@ function renderThemeGrid(containerId){
   function themeCategory(t){
     if(t.id === "bloodmoon") return "Fondateur";
     if(t.id === "aquaris") return "Rares";
+    if(t.id === "violet" || t.id === "red" || t.id === "green") return "Rares";
     if(t.event) return "Événement";
     if(t.id === "dark" || t.id === "light") return "Base";
     return "Classique";

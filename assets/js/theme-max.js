@@ -44,21 +44,21 @@
       }
     },
     violet: {
-      id:'violet', label:'Abyssal', cls:'theme-violet', rarity:'Classique', category:'Classiques',
-      tagline:'Abyssal violet, noble et feutré.',
-      desc:'Une ambiance froide, mystique et nocturne.',
-      colors:['#0e0d18','#b07ae0','#9a74c4'],
+      id:'violet', label:'Galactique', cls:'theme-violet', rarity:'Rare', category:'Rares',
+      tagline:'Constellations, nébuleuses et lumière d’orbite.',
+      desc:'Un thème spatial franc : ciel profond, étoiles vives, halos stellaires et verre cosmique.',
+      colors:['#03020b','#9b7cff','#73d8ff'],
       tone:'dark',
       vars:{
-        bg:'#0e0d18', bg2:'#171326', bg3:'#211a36', bg4:'#30234b',
-        text:'#fbf7ff', dim:'#d7c8e8', faint:'#9d8caf',
-        accent:'#b07ae0', accentDim:'#6c4794', accentBright:'#d9b6ff',
-        accentRgb:'176,122,224', accent2Rgb:'217,182,255',
-        pageBg:'radial-gradient(circle at 18% 14%, rgba(176,122,224,.15), transparent 24rem),radial-gradient(circle at 84% 82%, rgba(154,116,196,.11), transparent 26rem),linear-gradient(180deg,#0e0d18 0%,#171326 52%,#090711 100%)'
+        bg:'#03020b', bg2:'#090621', bg3:'#140d3d', bg4:'#21145f',
+        text:'#fcfaff', dim:'#d9d4f4', faint:'#9a93c7',
+        accent:'#9b7cff', accentDim:'#5a4ac4', accentBright:'#73d8ff',
+        accentRgb:'155,124,255', accent2Rgb:'115,216,255',
+        pageBg:'radial-gradient(ellipse at 50% -12%,rgba(203,194,255,.32),transparent 31rem),radial-gradient(circle at 14% 18%,rgba(124,84,255,.34),transparent 26rem),radial-gradient(circle at 86% 18%,rgba(71,206,255,.24),transparent 24rem),radial-gradient(ellipse at 74% 86%,rgba(220,92,255,.20),transparent 32rem),linear-gradient(180deg,#020108 0%,#07041b 34%,#100830 62%,#020108 100%)'
       }
     },
     red: {
-      id:'red', label:'Écarlate', cls:'theme-red', rarity:'Classique', category:'Classiques',
+      id:'red', label:'Écarlate', cls:'theme-red', rarity:'Rare', category:'Rares',
       tagline:'Écarlate, chaud et affirmé.',
       desc:'Rouge profond, chaleur et tension élégante.',
       colors:['#180b0d','#e35f5f','#d7a04b'],
@@ -72,7 +72,7 @@
       }
     },
     green: {
-      id:'green', label:'Sylvan', cls:'theme-green', rarity:'Classique', category:'Classiques',
+      id:'green', label:'Sylvan', cls:'theme-green', rarity:'Rare', category:'Rares',
       tagline:'Canopée profonde, mousse vivante et lianes anciennes.',
       desc:'Un thème jungle organique : sous-bois dense, feuillage humide, sève dorée et lumière filtrée par la canopée.',
       colors:['#06130b','#39b66b','#d5b75d'],
@@ -131,7 +131,6 @@
       id:'aquaris', label:'Aquaris — Royaume englouti', cls:'theme-aquaris', rarity:'Rare', category:'Rares',
       tagline:'Royaume englouti, cyan abyssal et or ancien.',
       desc:'Palais noyés, lumière abyssale, cyan profond et or ancien.',
-      signature:'Royaume englouti',
       colors:['#011018','#48d6ef','#e5c878'],
       tone:'dark',
       vars:{
@@ -479,6 +478,8 @@ body[data-theme-engine="v257"] :where(.empty-state-sub,.empty-state p,.field lab
 /* Ambient overlays */
 body[data-theme-engine="v257"].theme-easter::before,
 body[data-theme-engine="v257"].theme-easter::after,
+body[data-theme-engine="v257"].theme-violet::before,
+body[data-theme-engine="v257"].theme-violet::after,
 body[data-theme-engine="v257"].theme-green::before,
 body[data-theme-engine="v257"].theme-green::after,
 body[data-theme-engine="v257"].theme-aquaris::before,
@@ -508,6 +509,75 @@ body[data-theme-engine="v257"].theme-easter #s-app::after{
   content:none !important;
   display:none !important;
   background:none !important;
+}
+body[data-theme-engine="v257"].theme-violet::before{
+  inset:0;
+  z-index:0;
+  opacity:1;
+  background-image:
+    radial-gradient(circle,rgba(255,255,255,.98) 0 1.8px,transparent 2.8px),
+    radial-gradient(circle,rgba(205,240,255,.92) 0 1.45px,transparent 2.55px),
+    radial-gradient(circle,rgba(230,204,255,.94) 0 1.6px,transparent 2.7px),
+    radial-gradient(circle,rgba(255,255,255,.70) 0 1px,transparent 2px);
+  background-size:172px 172px,243px 243px,329px 329px,94px 94px;
+  background-position:18px 30px,86px 14px,22px 108px,45px 66px;
+  filter:drop-shadow(0 0 7px rgba(173,147,255,.58));
+  animation:tmGalaxyStars 34s linear infinite;
+}
+body[data-theme-engine="v257"].theme-violet::after{
+  inset:-12%;
+  z-index:0;
+  opacity:.92;
+  background:
+    radial-gradient(ellipse at 20% 28%,rgba(129,82,255,.50),transparent 26rem),
+    radial-gradient(ellipse at 84% 18%,rgba(73,211,255,.33),transparent 24rem),
+    radial-gradient(ellipse at 68% 82%,rgba(227,102,255,.27),transparent 32rem),
+    conic-gradient(from 198deg at 48% 44%,transparent 0 16%,rgba(155,124,255,.16) 24%,rgba(115,216,255,.18) 34%,transparent 48% 100%),
+    linear-gradient(180deg,rgba(255,255,255,.05),transparent 22%,transparent 72%,rgba(1,0,7,.62)) !important;
+  transform:translate3d(0,0,0) scale(1.04);
+  animation:tmGalaxyNebula 18s ease-in-out infinite alternate;
+}
+body[data-theme-engine="v257"].theme-violet #s-app::before,
+body[data-theme-engine="v257"].theme-violet #s-app::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  display:block;
+}
+body[data-theme-engine="v257"].theme-violet #s-app::before{
+  opacity:1;
+  background:
+    radial-gradient(circle at 8% 17%,rgba(255,255,255,1) 0 2px,rgba(255,255,255,.22) 2.4px,transparent 5px),
+    radial-gradient(circle at 18% 64%,rgba(201,240,255,.98) 0 1.8px,rgba(115,216,255,.18) 2.4px,transparent 5px),
+    radial-gradient(circle at 31% 29%,rgba(240,220,255,1) 0 2px,rgba(155,124,255,.20) 2.7px,transparent 5.4px),
+    radial-gradient(circle at 46% 82%,rgba(255,255,255,.98) 0 1.7px,transparent 4.2px),
+    radial-gradient(circle at 61% 21%,rgba(201,240,255,1) 0 2px,rgba(115,216,255,.18) 2.7px,transparent 5.4px),
+    radial-gradient(circle at 74% 57%,rgba(240,220,255,.98) 0 1.9px,rgba(155,124,255,.18) 2.5px,transparent 5px),
+    radial-gradient(circle at 88% 12%,rgba(255,255,255,1) 0 2px,transparent 4.6px),
+    radial-gradient(circle at 94% 76%,rgba(201,240,255,.96) 0 1.8px,transparent 4.4px);
+  animation:tmGalaxyTwinkle 6.8s ease-in-out infinite;
+}
+body[data-theme-engine="v257"].theme-violet #s-app::after{
+  opacity:.86;
+  background:
+    linear-gradient(105deg,transparent 2%,rgba(155,124,255,.10) 20%,rgba(115,216,255,.18) 39%,transparent 56%),
+    linear-gradient(72deg,transparent 18%,rgba(227,102,255,.12) 36%,rgba(255,255,255,.08) 44%,transparent 58%),
+    radial-gradient(ellipse at 50% -8%,rgba(255,246,255,.22),transparent 34rem);
+  mix-blend-mode:screen;
+  animation:tmGalaxyAurora 22s ease-in-out infinite alternate;
+}
+body[data-theme-engine="v257"].theme-violet :where(#s-app,.screen,.app-body,.tab-content.tab-popup-active){
+  background-color:transparent !important;
+}
+body[data-theme-engine="v257"].theme-violet :where(.card,.panel,.staff-panel,.summary-card,.collection-section,.theme-card-premium,.tab-content.tab-popup-active,.modal){
+  background:
+    radial-gradient(circle at 11% 14%,rgba(255,255,255,.20) 0 1px,transparent 2.2px),
+    radial-gradient(circle at 86% 19%,rgba(201,240,255,.17) 0 1px,transparent 2.2px),
+    radial-gradient(ellipse at top left,rgba(155,124,255,.18),transparent 38%),
+    radial-gradient(ellipse at bottom right,rgba(115,216,255,.11),transparent 34%),
+    var(--tm-card-bg) !important;
 }
 body[data-theme-engine="v257"].theme-green::before{
   inset:0;
@@ -555,6 +625,23 @@ body[data-theme-engine="v257"].theme-noel::after{
   background-size:140px 140px,180px 180px,220px 220px;
   background-position:0 0,60px 30px,30px 80px;
   opacity:.30;
+}
+@keyframes tmGalaxyStars{
+  0%{background-position:18px 30px,86px 14px,22px 108px,45px 66px;}
+  100%{background-position:72px 178px,14px 192px,124px 280px,6px 214px;}
+}
+@keyframes tmGalaxyTwinkle{
+  0%,100%{opacity:.72;filter:brightness(.92);}
+  38%{opacity:1;filter:brightness(1.22);}
+  68%{opacity:.84;filter:brightness(1.05);}
+}
+@keyframes tmGalaxyNebula{
+  0%{transform:translate3d(-1.5%,-1%,0) scale(1.04) rotate(-1deg);opacity:.72;}
+  100%{transform:translate3d(2.4%,1.4%,0) scale(1.08) rotate(1.4deg);opacity:1;}
+}
+@keyframes tmGalaxyAurora{
+  0%{transform:translate3d(-2%,-1%,0) scale(1.03);opacity:.66;}
+  100%{transform:translate3d(2%,1.4%,0) scale(1.08);opacity:.96;}
 }
 
 /* Theme cards and previews */
@@ -694,7 +781,7 @@ body[data-theme-engine="v257"] .theme-preview-mini.aquaris{--preview-bg:#011018;
 body[data-theme-engine="v257"] .theme-preview-mini.bloodmoon{--preview-bg:#050102;--preview-bg2:#210812;--preview-a:#e3133f;--preview-b:#ff7d92;--preview-c:#f0c76f;background:radial-gradient(circle at 84% 12%,rgba(227,19,63,.30),transparent 27%),radial-gradient(circle at 18% 86%,rgba(240,199,111,.10),transparent 26%),linear-gradient(145deg,#050102,#210812) !important;}
 body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="dark"]{--preview-bg:#0d0e18;--preview-bg2:#151a2a;--preview-a:#7eb8d4;--preview-b:#c9a84c;--preview-c:#f0d78a;}
 body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="light"]{--preview-bg:#f4f5fa;--preview-bg2:#ffffff;--preview-a:#3a8fba;--preview-b:#9a7020;--preview-c:#d7a84e;}
-body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="violet"]{--preview-bg:#0e0d18;--preview-bg2:#211637;--preview-a:#b07ae0;--preview-b:#9a74c4;--preview-c:#e4c9ff;}
+body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="violet"]{--preview-bg:#05010f;--preview-bg2:#1e0c43;--preview-a:#b773ff;--preview-b:#6aaeff;--preview-c:#f0d5ff;}
 body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="red"]{--preview-bg:#160d0d;--preview-bg2:#2b1114;--preview-a:#d45050;--preview-b:#c9a84c;--preview-c:#ff9a9a;}
 body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="green"]{--preview-bg:#06130b;--preview-bg2:#12351d;--preview-a:#39b66b;--preview-b:#d5b75d;--preview-c:#a8f1b0;}
 body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="easter"]{--preview-bg:#f7fff2;--preview-bg2:#e7f8de;--preview-a:#7fdc82;--preview-b:#ffd86b;--preview-c:#ffb6d8;color:#213326 !important;}
@@ -713,11 +800,37 @@ body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-pre
 body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="bloodmoon"]{
   background:radial-gradient(circle at 84% 12%,rgba(227,19,63,.30),transparent 27%),radial-gradient(circle at 18% 86%,rgba(240,199,111,.10),transparent 26%),linear-gradient(145deg,#050102,#210812) !important;
 }
+body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="violet"]{
+  background:
+    radial-gradient(circle at 11% 20%,rgba(255,255,255,.96) 0 1px,transparent 2px),
+    radial-gradient(circle at 27% 12%,rgba(224,195,255,.86) 0 1px,transparent 2px),
+    radial-gradient(circle at 41% 32%,rgba(255,255,255,.82) 0 1.2px,transparent 2.2px),
+    radial-gradient(circle at 63% 16%,rgba(202,224,255,.84) 0 1px,transparent 2px),
+    radial-gradient(circle at 81% 27%,rgba(255,255,255,.90) 0 1px,transparent 2px),
+    radial-gradient(ellipse at 18% 24%,rgba(183,115,255,.46),transparent 40%),
+    radial-gradient(ellipse at 84% 18%,rgba(106,174,255,.30),transparent 36%),
+    radial-gradient(ellipse at 64% 90%,rgba(240,213,255,.22),transparent 42%),
+    linear-gradient(145deg,#05010f,#1e0c43 56%,#09031a) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 16px 34px rgba(67,22,128,.34),0 0 0 1px rgba(240,213,255,.10) !important;
+}
+body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="violet"] .theme-preview-head{
+  height:22px !important;
+  border-radius:18px !important;
+  background:
+    radial-gradient(circle at 16% 50%,rgba(255,255,255,.98) 0 1px,transparent 2px),
+    radial-gradient(circle at 42% 34%,rgba(220,193,255,.92) 0 1px,transparent 2px),
+    radial-gradient(circle at 78% 58%,rgba(205,228,255,.88) 0 1px,transparent 2px),
+    linear-gradient(100deg,rgba(49,18,105,.92),rgba(183,115,255,.92) 42%,rgba(106,174,255,.80),rgba(240,213,255,.96)) !important;
+  box-shadow:0 0 20px rgba(183,115,255,.28),inset 0 1px 0 rgba(255,255,255,.24) !important;
+}
+body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="violet"] .theme-preview-bar{
+  background:linear-gradient(90deg,rgba(183,115,255,.24),#b773ff,#6aaeff,#f0d5ff) !important;
+}
 body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme="green"]{
   background:radial-gradient(ellipse at 18% 12%,rgba(57,182,107,.38),transparent 35%),radial-gradient(ellipse at 84% 20%,rgba(213,183,93,.18),transparent 28%),repeating-linear-gradient(128deg,rgba(168,241,176,.10) 0 2px,transparent 2px 18px),linear-gradient(145deg,#06130b,#12351d) !important;
 }
-body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme] .theme-preview-head{background:linear-gradient(90deg,var(--preview-a),var(--preview-c)) !important;}
-body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme] .theme-preview-bar{background:linear-gradient(90deg,var(--preview-a),var(--preview-b),var(--preview-c)) !important;}
+body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme]:not([data-preview-theme="violet"]) .theme-preview-head{background:linear-gradient(90deg,var(--preview-a),var(--preview-c)) !important;}
+body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme]:not([data-preview-theme="violet"]) .theme-preview-bar{background:linear-gradient(90deg,var(--preview-a),var(--preview-b),var(--preview-c)) !important;}
 body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-preview-theme] .theme-preview-cards span{background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.05)),color-mix(in srgb,var(--preview-a) 14%,rgba(255,255,255,.06)) !important;}
 body[data-theme-engine="v257"] [data-theme-id="aquaris"]{border-color:rgba(72,214,239,.28) !important;box-shadow:0 22px 52px rgba(0,7,12,.28),0 0 0 1px rgba(229,200,120,.08) inset !important;}
 body[data-theme-engine="v257"] [data-theme-id="bloodmoon"]{border-color:rgba(227,19,63,.34) !important;box-shadow:0 22px 52px rgba(0,0,0,.34),0 0 0 1px rgba(240,199,111,.08) inset !important;}
@@ -1080,6 +1193,15 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
     var shadowSoft = c.tone === 'light'
       ? '0 12px 28px rgba(31,57,88,.09), inset 0 1px 0 rgba(255,255,255,.72)'
       : '0 12px 28px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.035)';
+    if(c.id === 'violet'){
+      panelBase = 'linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.028)),radial-gradient(ellipse at 12% 0%,rgba(155,124,255,.18),transparent 44%),radial-gradient(ellipse at 92% 100%,rgba(115,216,255,.10),transparent 36%),rgba(8,5,28,.72)';
+      panelStrong = 'linear-gradient(180deg,rgba(255,255,255,.115),rgba(255,255,255,.040)),radial-gradient(ellipse at 10% 0%,rgba(155,124,255,.24),transparent 46%),radial-gradient(ellipse at 90% 100%,rgba(115,216,255,.14),transparent 38%),rgba(13,8,42,.82)';
+      controlBase = 'linear-gradient(180deg,rgba(255,255,255,.105),rgba(255,255,255,.032)),linear-gradient(100deg,rgba(155,124,255,.18),rgba(115,216,255,.08)),rgba(11,8,35,.76)';
+      controlHover = 'linear-gradient(180deg,rgba(255,255,255,.145),rgba(255,255,255,.048)),linear-gradient(100deg,rgba(155,124,255,.28),rgba(115,216,255,.14)),rgba(16,10,50,.88)';
+      inputBase = 'linear-gradient(180deg,rgba(255,255,255,.060),rgba(255,255,255,.018)),rgba(5,3,20,.78)';
+      shadow = '0 26px 58px rgba(2,0,16,.44),0 0 34px rgba(155,124,255,.10),inset 0 1px 0 rgba(255,255,255,.08)';
+      shadowSoft = '0 16px 34px rgba(2,0,16,.34),0 0 22px rgba(115,216,255,.07),inset 0 1px 0 rgba(255,255,255,.06)';
+    }
     if(c.id === 'green'){
       panelBase = 'radial-gradient(ellipse at 12% 0%,rgba(57,182,107,.13),transparent 42%),radial-gradient(ellipse at 92% 100%,rgba(213,183,93,.08),transparent 36%),linear-gradient(180deg,rgba(255,255,255,.050),rgba(255,255,255,.016)),linear-gradient(180deg,#12351d,#07180d)';
       panelStrong = 'radial-gradient(ellipse at 10% 0%,rgba(57,182,107,.18),transparent 44%),radial-gradient(ellipse at 86% 100%,rgba(213,183,93,.11),transparent 38%),linear-gradient(180deg,rgba(255,255,255,.070),rgba(255,255,255,.022)),linear-gradient(180deg,#1a4728,#0b2212)';
@@ -1313,7 +1435,7 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
     if(txt.indexOf('bloodmoon') >= 0 || txt.indexOf('lune de sang') >= 0) return 'bloodmoon';
     if(txt.indexOf('noël') >= 0 || txt.indexOf('noel') >= 0 || txt.indexOf('hivernale') >= 0) return 'noel';
     if(txt.indexOf('halloween') >= 0 || txt.indexOf('âmes') >= 0 || txt.indexOf('citrouille') >= 0) return 'halloween';
-    if(txt.indexOf('abyssal') >= 0 || txt.indexOf('violet') >= 0) return 'violet';
+    if(txt.indexOf('galactique') >= 0 || txt.indexOf('abyssal') >= 0 || txt.indexOf('violet') >= 0) return 'violet';
     if(txt.indexOf('écarlate') >= 0 || txt.indexOf('ecarlate') >= 0) return 'red';
     if(txt.indexOf('sylvan') >= 0 || txt.indexOf('vert') >= 0) return 'green';
     if(txt.indexOf('claire') >= 0 || txt.indexOf('light') >= 0) return 'light';
