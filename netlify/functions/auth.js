@@ -485,6 +485,7 @@ async function buildSessionBundle(account) {
   const accounts = await loadAccounts();
   const players = await loadPlayers();
   const themeVisibility = await readStore("theme_visibility", {});
+  const spawnLabStaff = ["admin", "mj", "designer"].includes(role) ? await readStore("spawn_lab_staff", {}) : null;
   let filteredAccounts = [];
   let filteredPlayers = [];
   const combatArchivesByOwner = {};
@@ -547,6 +548,7 @@ async function buildSessionBundle(account) {
     accounts: filteredAccounts,
     players: filteredPlayers,
     themeVisibility: (themeVisibility && typeof themeVisibility==='object' && !Array.isArray(themeVisibility)) ? themeVisibility : {},
+    spawn_lab_staff: (spawnLabStaff && typeof spawnLabStaff==='object' && !Array.isArray(spawnLabStaff)) ? spawnLabStaff : undefined,
     combatArchivesByOwner,
     combatArchiveIndexByOwner
   };

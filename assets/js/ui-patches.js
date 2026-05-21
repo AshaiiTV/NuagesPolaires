@@ -101,13 +101,9 @@ function renderThemeCollectionPremium(player){
       <div class="collection-section-title">${cat}</div>
       <div class="theme-collection-grid">
         ${groups[cat].map(it => {
-          const tone = rarityTone(it.rarity);
-          const restriction = !it.secret ? themeRestrictionLabel(it.id, player) : '';
           const badges = [
             it.equipped ? `<span class="chip ok">Équipé</span>` : '',
-            it.secret ? `<span class="chip">Secret</span>` : (it.owned ? `<span class="chip ok">Obtenu</span>` : `<span class="chip">Non obtenu</span>`),
-            `<span class="chip ${tone}">${it.rarity}</span>`,
-            restriction ? `<span class="chip ${restriction.includes('Indisponible') ? 'danger' : 'gold'}">${restriction}</span>` : ''
+            it.secret ? `<span class="chip">Secret</span>` : (it.owned ? `<span class="chip ok">Obtenu</span>` : `<span class="chip">Non obtenu</span>`)
           ].join('');
           const button = it.secret
             ? `<button class="btn ghost" disabled>Inconnu</button>`

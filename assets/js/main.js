@@ -1,4 +1,15 @@
 function ge(id){return document.getElementById(id);}
+function togglePasswordVisibility(inputId, btn){
+  var input=ge(inputId);
+  if(!input) return;
+  var show=input.type==="password";
+  input.type=show?"text":"password";
+  if(btn){
+    btn.classList.toggle("is-visible", show);
+    btn.setAttribute("aria-label", show ? "Masquer le mot de passe" : "Afficher le mot de passe");
+    btn.setAttribute("title", show ? "Masquer le mot de passe" : "Afficher le mot de passe");
+  }
+}
 // Sanitisation HTML — empêche les injections XSS dans les données rendues depuis la DB
 function esc(str){
   if(str===null||str===undefined) return "";
@@ -576,6 +587,10 @@ function _hydrateBundleData(bundle){
     ['players','accounts','beasts','events','serments_custom','lieux','event_themes'].forEach(function(k){
       if(Object.prototype.hasOwnProperty.call(data, k)) _dbCache[k] = data[k];
     });
+    if(Object.prototype.hasOwnProperty.call(data, 'spawn_lab_staff')){
+      _dbCache.spawn_lab_staff = _spawnLabMergeGlobal(data.spawn_lab_staff, _spawnLabReadLocalGlobalRaw());
+      try{ localStorage.setItem("np_spawn_lab_staff", JSON.stringify(_dbCache.spawn_lab_staff)); }catch(e0){}
+    }
     if(data.combatArchivesByOwner && typeof data.combatArchivesByOwner==='object' && !Array.isArray(data.combatArchivesByOwner)){
       Object.keys(data.combatArchivesByOwner).forEach(function(owner){
         _dbCache['combat_arc_'+owner] = Array.isArray(data.combatArchivesByOwner[owner]) ? data.combatArchivesByOwner[owner] : [];
@@ -930,6 +945,8 @@ async function _dbBootstrap() {
     // Le serveur filtre les clés privées selon l'auth du cookie
     var data = await Promise.race([_loadPublicBundle(), timeoutPromise]);
     _dbCache = data.data || {};
+    if(_dbCache.spawn_lab_staff === undefined) _dbCache.spawn_lab_staff = _spawnLabReadLocalGlobalRaw();
+    else _dbCache.spawn_lab_staff = _spawnLabMergeGlobal(_dbCache.spawn_lab_staff, _spawnLabReadLocalGlobalRaw());
     // Stocker uniquement les clés publiques dans localStorage (fallback offline)
     // Les données privées restent en RAM uniquement et disparaissent au refresh/logout.
     ["beasts","serments_custom","events","lieux","public_stats"].forEach(function(k){
@@ -949,7 +966,7 @@ async function _dbBootstrap() {
     // Charger depuis localStorage (fallback offline)
     // Clés privées exclues : on ne restaure jamais accounts/players hors-ligne.
     var cacheLoaded=0;
-    var offlineKeys = ["beasts","serments_custom","events","lieux","public_stats"];
+    var offlineKeys = ["beasts","serments_custom","events","lieux","public_stats","spawn_lab_staff"];
     offlineKeys.forEach(function(k) {
       try {
         var v = localStorage.getItem("np_"+k);
@@ -978,7 +995,7 @@ function _dbSetToken(v){
   return _dbToken;
 }
 (function initDbCache(){
-  var preloadKeys = ["beasts","serments_custom","events","event_themes","theme_visibility","lieux","public_stats","np_syslog","np_syslog_archive"];
+  var preloadKeys = ["beasts","serments_custom","events","event_themes","theme_visibility","lieux","public_stats","np_syslog","np_syslog_archive","spawn_lab_staff"];
   for(var i=0;i<preloadKeys.length;i++){
     var k = preloadKeys[i];
     try{
@@ -3424,8 +3441,6 @@ function renderThemeGrid(containerId){
     if(t.desc) h += '<div class="tagline">' + esc(t.desc) + '</div>';
     h += '</div>';
     h += '<div class="theme-meta-row">';
-    h += '<span class="theme-meta-pill" data-kind="rarity" data-rarity="'+esc(rarity)+'">'+esc(rarity)+'</span>';
-    if(category !== rarity) h += '<span class="theme-meta-pill" data-kind="category">'+esc(category)+'</span>';
     h += '<span class="theme-palette">'+swatch(bg1)+swatch(bg2)+swatch(bg3)+'</span>';
     h += '</div>';
     h += '<div class="theme-card-action">'+(isActive?'Thème actif':(isLocked && isAvail?'Débloquer':(isLocked?'Non disponible':'Équiper')))+'</div>';
@@ -3448,8 +3463,12 @@ function renderAppearanceSection(){
     +".profile-collection-shell .np-theme-vault-card{display:flex !important;flex-direction:column !important;justify-content:flex-start !important;}"
     +".profile-collection-shell .np-theme-vault-card::after{display:none !important;content:none !important;}"
     +".profile-collection-shell .theme-topline{min-height:22px !important;flex-shrink:0;}"
-    +".profile-collection-shell .theme-preview-mini,.profile-collection-shell .np-theme-vault-card.is-featured .theme-preview-mini{height:112px !important;min-height:112px !important;max-height:112px !important;margin-top:2px !important;border-radius:10px !important;padding:10px !important;flex-shrink:0;box-sizing:border-box !important;}"
-    +".profile-collection-shell .theme-preview-cards{margin:9px 0 !important;gap:6px !important;}"
+    +".profile-collection-shell .theme-preview-mini,.profile-collection-shell .np-theme-vault-card.is-featured .theme-preview-mini{width:100% !important;height:112px !important;min-height:112px !important;max-height:112px !important;margin:2px 0 0 !important;border-radius:10px !important;padding:10px !important;flex:0 0 112px !important;align-self:stretch !important;box-sizing:border-box !important;display:flex !important;flex-direction:column !important;justify-content:space-between !important;transform:none !important;}"
+    +".profile-collection-shell .np-theme-vault-card[data-theme-id]{height:340px !important;align-self:stretch !important;transform:none !important;}"
+    +".profile-collection-shell .np-theme-vault-card[data-theme-id] .theme-preview-mini{width:100% !important;max-width:100% !important;align-self:stretch !important;margin-left:0 !important;margin-right:0 !important;transform:none !important;}"
+    +".profile-collection-shell .theme-preview-mini,.profile-collection-shell .theme-preview-mini *{box-sizing:border-box !important;}"
+    +".profile-collection-shell .theme-preview-head,.profile-collection-shell .theme-preview-bar{width:100% !important;max-width:100% !important;}"
+    +".profile-collection-shell .theme-preview-cards{margin:0 !important;gap:6px !important;flex:0 0 auto !important;}"
     +".profile-collection-shell .theme-preview-cards span{height:28px !important;border-radius:8px !important;}"
     +".profile-collection-shell .theme-preview-head{height:12px !important;}"
     +".profile-collection-shell .theme-preview-bar{height:7px !important;}"
@@ -3461,7 +3480,7 @@ function renderAppearanceSection(){
     +".profile-collection-shell .theme-palette{gap:3px !important;margin-left:auto;}"
     +".profile-collection-shell .theme-swatch{width:13px !important;height:13px !important;}"
     +".profile-collection-shell .theme-card-action{height:46px !important;min-height:46px !important;padding:0 12px !important;border-radius:10px !important;font-size:9px !important;letter-spacing:1.6px !important;line-height:1 !important;flex-shrink:0;display:flex !important;align-items:center !important;justify-content:center !important;text-align:center !important;box-sizing:border-box !important;overflow:visible !important;}"
-    +"@media(max-width:760px){.profile-collection-shell{width:100%;}.profile-collection-shell .theme-collection-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr)) !important;}.profile-collection-shell .np-theme-vault-card,.profile-collection-shell .np-theme-vault-card.is-featured{height:318px !important;padding:12px !important;}.profile-collection-shell .theme-preview-mini,.profile-collection-shell .np-theme-vault-card.is-featured .theme-preview-mini{height:100px !important;min-height:100px !important;max-height:100px !important;}}"
+    +"@media(max-width:760px){.profile-collection-shell{width:100%;}.profile-collection-shell .theme-collection-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr)) !important;}.profile-collection-shell .np-theme-vault-card,.profile-collection-shell .np-theme-vault-card.is-featured{height:318px !important;padding:12px !important;}.profile-collection-shell .theme-preview-mini,.profile-collection-shell .np-theme-vault-card.is-featured .theme-preview-mini{height:100px !important;min-height:100px !important;max-height:100px !important;flex-basis:100px !important;}}"
     +"</style><div id='theme-grid-container'></div>";
   renderThemeGrid("theme-grid-container");
 }
@@ -12267,11 +12286,53 @@ function _spawnLabNormalizeGlobal(raw){
   out.lastDbSyncAt=Date.now();
   return out;
 }
+function _spawnLabReadLocalGlobalRaw(){
+  try{
+    var localRaw=localStorage.getItem("np_"+_spawnLabStoreKey);
+    if(localRaw) return JSON.parse(localRaw);
+  }catch(_e){}
+  return null;
+}
+function _spawnLabMergeRuns(aRuns, bRuns){
+  var seen=Object.create(null), out=[];
+  function push(list){
+    (Array.isArray(list)?list:[]).forEach(function(run, idx){
+      if(!run || typeof run!=='object') return;
+      var key=String(run.id||'') || ('roll_at_'+String(run.rolledAt||'')+'_'+idx);
+      if(seen[key]) return;
+      seen[key]=1;
+      out.push(run);
+    });
+  }
+  push(aRuns);
+  push(bRuns);
+  out.sort(function(a,b){ return (parseInt(b&&b.rolledAt,10)||0)-(parseInt(a&&a.rolledAt,10)||0); });
+  return out.slice(0,24);
+}
+function _spawnLabMergeGlobal(primary, fallback){
+  var a=_spawnLabNormalizeGlobal(primary||{});
+  var b=_spawnLabNormalizeGlobal(fallback||{});
+  var newer=((b.lastGeneratedAt||0) > (a.lastGeneratedAt||0)) ? b : a;
+  var older=newer===a ? b : a;
+  newer.lastRuns=_spawnLabMergeRuns(newer.lastRuns, older.lastRuns);
+  var totals=Object.assign({}, older.totals||{}, newer.totals||{});
+  Object.keys(older.totals||{}).forEach(function(id){
+    totals[id]=Math.max(parseInt(totals[id],10)||0, parseInt(older.totals[id],10)||0);
+  });
+  newer.totals=totals;
+  newer.customZones=_spawnLabNormalizeZoneList((older.customZones||[]).concat(newer.customZones||[]));
+  newer.totalDraws=Math.max(parseInt(a.totalDraws,10)||0, parseInt(b.totalDraws,10)||0, newer.lastRuns.length);
+  return _spawnLabNormalizeGlobal(newer);
+}
 function _spawnLabGlobal(){
-  return _spawnLabNormalizeGlobal(sto(_spawnLabStoreKey) || {});
+  return _spawnLabMergeGlobal(sto(_spawnLabStoreKey), _spawnLabReadLocalGlobalRaw());
 }
 function _spawnLabSaveGlobal(global){
+  var previous=_spawnLabGlobal();
+  global=global&&typeof global==='object'&&!Array.isArray(global)?global:{};
+  if(!Array.isArray(global.customZones)) global.customZones=previous.customZones||_spawnLabDefaultZones.slice();
   global=_spawnLabNormalizeGlobal(global);
+  try{ localStorage.setItem("np_"+_spawnLabStoreKey, JSON.stringify(global)); }catch(_e){}
   sv(_spawnLabStoreKey, global).catch(function(err){
     console.warn('spawn_lab_staff save failed', err);
     try{ notif('Apparitions générées, mais synchronisation globale impossible.','err'); }catch(_e){}
@@ -12518,6 +12579,11 @@ function _spawnLabGenerateEncounter(pool, s, totals){
 function _spawnLabActorName(){
   return (CU && (CU.login || CU.name || CU.pseudo || CU.role)) || 'staff';
 }
+function _spawnLabCanResetGlobal(){
+  if(!CU) return false;
+  var role=String(CU.role||"").toLowerCase();
+  return role==="admin" || role==="fondateur" || role==="founder";
+}
 function _spawnLabRunTimeLabel(ts){
   ts=parseInt(ts,10)||0;
   if(!ts) return 'Date inconnue';
@@ -12583,6 +12649,7 @@ function spawnLabDeleteHistory(id){
   notif("Roll supprimé de l’historique.","ok");
 }
 function spawnLabResetHistory(){
+  if(!_spawnLabCanResetGlobal()){ notif("Réservé au fondateur.","err"); return; }
   var s=_spawnLabEnsure();
   s.totals={};
   s.lastRuns=[];
@@ -12608,6 +12675,68 @@ function spawnLabCopyLast(){
     notif('Copie indisponible ici.','err');
   }
 }
+function _spawnLabFindBeastForPack(pack){
+  var beasts=gb();
+  var id=String(pack&&pack.id||'');
+  var beast=beasts.find(function(b){ return String(b&&b.id||'')===id; });
+  if(beast) return beast;
+  var name=String(pack&&pack.nom||'').trim().toLowerCase();
+  if(!name) return null;
+  return beasts.find(function(b){ return String(b&&b.nom||'').trim().toLowerCase()===name; }) || null;
+}
+function _spawnLabPushBeastToCombat(beast){
+  if(!beast) return false;
+  if(typeof _cs==='undefined' || !_cs || !Array.isArray(_cs.fighters)){
+    _cs=(typeof combatBlankState==='function') ? combatBlankState() : {active:false,round:1,initiative:0,fighters:[],log:[],id:null,name:'',order:[],turn:0,phase:'idle',_new:true,notes:'',_iv:{},decl:{},pendingDrops:[]};
+  }
+  _cs._iv=_cs._iv||{};
+  _cs.decl=_cs.decl||{};
+  var existing=_cs.fighters.filter(function(f){ return f&&f.type==='beast'&&String(f.bid||'')===String(beast.id||''); });
+  if(existing.length===1 && existing[0].name===beast.nom) existing[0].name=beast.nom+' 1';
+  var displayName=existing.length>0 ? beast.nom+' '+(existing.length+1) : beast.nom;
+  var dmgMatch=String(beast.frappe||'6').match(/\d+/);
+  var pv=parseInt(beast.pv,10)||20;
+  var ep=parseInt(beast.ep,10)||20;
+  _cs.fighters.push({
+    type:'beast',
+    bid:beast.id,
+    name:displayName||'Créature',
+    level:parseInt(beast.niv,10)||1,
+    pvCur:pv,
+    pvMax:pv,
+    epCur:ep,
+    epMax:ep,
+    emCur:0,
+    emMax:0,
+    dmgBase:parseInt(dmgMatch?dmgMatch[0]:6,10)||6,
+    frappe:beast.frappe||'',
+    comp:beast.comp||'',
+    img:beast.img||'',
+    beh:beast.beh||'Neutre',
+    statuts:[],
+    _cid:'cf'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)
+  });
+  return true;
+}
+function spawnLabTransferLastToSimulator(){
+  var s=_spawnLabEnsure();
+  var run=s.lastRuns&&s.lastRuns[0];
+  if(!run || !Array.isArray(run.packs) || !run.packs.length){ notif('Aucun roll à transférer.','err'); return; }
+  var added=0, missing=[];
+  run.packs.forEach(function(pack){
+    var beast=_spawnLabFindBeastForPack(pack);
+    if(!beast){ missing.push(pack&&pack.nom?pack.nom:'Mob inconnu'); return; }
+    var qty=Math.max(1,Math.min(30,parseInt(pack.qty,10)||1));
+    for(var i=0;i<qty;i++){ if(_spawnLabPushBeastToCombat(beast)) added++; }
+  });
+  if(!added){ notif('Aucun mob transféré dans le simulateur.','err'); return; }
+  if(!_cs.name) _cs.name='Apparition — '+String(run.zone||_spawnLabZoneLabel(run.zoneValue)||'Zone');
+  if(typeof cLog==='function') cLog('Apparition transférée : '+run.packs.map(function(p){ return (p.qty||1)+'× '+(p.nom||'Mob'); }).join(' • '),'info');
+  if(typeof rCombat==='function') rCombat('p-combat-mj-c');
+  if(typeof switchTab==='function') switchTab('combat-mj', null);
+  if(missing.length) notif(added+' mob(s) transféré(s). Introuvable : '+missing.join(', '),'err');
+  else notif(added+' mob(s) transféré(s) dans le simulateur.','ok');
+}
 function spawnLabOpenZoneAdmin(){
   if(!can("manage_beasts")){ notif("Réservé à l’admin bestiaire.","err"); return; }
   var input=ge("sl-admin-zone-name");
@@ -12629,6 +12758,7 @@ function renderSpawnLab(tid){
   var zoneMeta=_spawnLabResolveZone(s, beasts);
   var zonePool=_spawnLabZonePool(zoneMeta.value, beasts);
   var recentCounts=_spawnLabTotalCounts(s);
+  var canSeeWeights=_spawnLabCanResetGlobal();
   var h='';
   h+='<style id="np-spawn-lab-style">';
   h+='#p-apparitions-c .sl-wrap{max-width:1320px;margin:0 auto;padding:10px 0 38px;}';
@@ -12645,6 +12775,20 @@ function renderSpawnLab(tid){
   h+='#p-apparitions-c .sl-field label{display:block;font-size:11px;color:var(--faint);margin-bottom:5px;}';
   h+='#p-apparitions-c .sl-field input,#p-apparitions-c .sl-field select{width:100%;padding:11px 12px;background:rgba(6,8,16,.9);border:1px solid rgba(126,184,212,.16);color:var(--text);outline:none;}';
   h+='#p-apparitions-c .sl-field input:focus,#p-apparitions-c .sl-field select:focus{border-color:rgba(126,184,212,.42);}';
+  h+='#p-apparitions-c .sl-zone-vault{position:relative;margin-top:13px;padding:14px;border:1px solid rgba(126,184,212,.22);background:radial-gradient(circle at 12% 0%,rgba(126,184,212,.18),transparent 34%),radial-gradient(circle at 92% 100%,rgba(201,168,76,.12),transparent 30%),linear-gradient(145deg,rgba(16,25,48,.86),rgba(7,10,20,.96));box-shadow:0 18px 38px rgba(0,0,0,.25),0 0 0 1px rgba(126,184,212,.07) inset;overflow:hidden;}';
+  h+='#p-apparitions-c .sl-zone-vault::after{content:"";position:absolute;left:14px;right:14px;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(184,222,238,.82),rgba(201,168,76,.46),transparent);opacity:.84;}';
+  h+='#p-apparitions-c .sl-zone-vault-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:11px;}';
+  h+='#p-apparitions-c .sl-zone-vault-title{font-family:var(--fd);font-size:14px;letter-spacing:1.6px;color:var(--text);text-shadow:0 0 18px rgba(126,184,212,.18);}';
+  h+='#p-apparitions-c .sl-zone-vault-count{padding:5px 10px;border:1px solid rgba(201,168,76,.30);background:linear-gradient(90deg,rgba(201,168,76,.15),rgba(126,184,212,.08));font-family:var(--fd);font-size:9px;letter-spacing:1.4px;color:var(--gold);text-transform:uppercase;}';
+  h+='#p-apparitions-c .sl-zone-vault-sub{font-size:11px;line-height:1.55;color:var(--dim);margin-bottom:10px;}';
+  h+='#p-apparitions-c .sl-zone-reveal{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;}';
+  h+='#p-apparitions-c .sl-zone-token{position:relative;min-height:66px;padding:10px 11px;border:1px solid rgba(126,184,212,.18);background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.022));box-shadow:0 10px 25px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.06);overflow:hidden;}';
+  h+='#p-apparitions-c .sl-zone-token::before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 0%,rgba(184,222,238,.10) 38%,transparent 68%);transform:translateX(-70%);animation:slZoneGleam 5.8s ease-in-out infinite;}';
+  h+='#p-apparitions-c .sl-zone-token>*{position:relative;z-index:1;}';
+  h+='#p-apparitions-c .sl-zone-token-name{font-family:var(--fd);font-size:11px;letter-spacing:1px;color:var(--text);line-height:1.35;}';
+  h+='#p-apparitions-c .sl-zone-token-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px;font-size:10px;color:var(--dim);}';
+  h+='#p-apparitions-c .sl-zone-empty{padding:12px;border:1px dashed rgba(201,168,76,.24);background:rgba(201,168,76,.055);font-size:12px;line-height:1.6;color:var(--dim);}';
+  h+='@keyframes slZoneGleam{0%,68%{transform:translateX(-82%);opacity:0;}78%{opacity:1;}100%{transform:translateX(82%);opacity:0;}}';
   h+='#p-apparitions-c .sl-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}';
   h+='#p-apparitions-c .sl-btn{padding:10px 13px;border:1px solid rgba(126,184,212,.22);background:linear-gradient(180deg,rgba(24,34,58,.95),rgba(12,18,32,.95));color:var(--text);cursor:pointer;font-family:var(--fd);font-size:10px;letter-spacing:1.4px;text-transform:uppercase;transition:border-color .15s, transform .15s, filter .15s;}';
   h+='#p-apparitions-c .sl-btn:hover{border-color:rgba(126,184,212,.44);transform:translateY(-1px);filter:brightness(1.06);}';
@@ -12671,7 +12815,7 @@ function renderSpawnLab(tid){
   h+='</style>';
   h+='<div class="sl-wrap">';
   h+='<div class="sl-head">';
-  h+='<div><div class="sl-kicker">OUTIL STAFF — GÉNÉRATEUR D’APPARITIONS</div><div class="sl-title">Roll par zone</div><div class="sl-sub">Choisis une zone, lance le roll, et le résultat tombe parmi les mobs configurés dedans. Les poids restent globaux : un mob qui sort baisse, les autres remontent.</div></div>';
+  h+='<div><div class="sl-kicker">OUTIL STAFF — GÉNÉRATEUR D’APPARITIONS</div><div class="sl-title">Roll par zone</div><div class="sl-sub">Choisis une zone, lance le roll, et le résultat tombe parmi les mobs configurés dedans.'+(canSeeWeights?' Les poids restent globaux : un mob qui sort baisse, les autres remontent.':'')+'</div></div>';
   h+='</div>';
   h+='<div class="sl-grid">';
   h+='<div class="sl-card sl-span-12">';
@@ -12685,10 +12829,29 @@ function renderSpawnLab(tid){
   }
   h+='</select></div>';
   h+='</div>';
+  h+='<div class="sl-zone-vault">';
+  h+='<div class="sl-zone-vault-head"><div class="sl-zone-vault-title">'+esc(zoneMeta.label)+'</div><div class="sl-zone-vault-count">'+zonePool.length+' mob'+(zonePool.length>1?'s':'')+' visible'+(zonePool.length>1?'s':'')+'</div></div>';
+  h+='<div class="sl-zone-vault-sub">Contenu sélectionné pour le prochain roll. Ces créatures sont mises en avant dès que tu changes de zone.</div>';
+  if(zonePool.length){
+    h+='<div class="sl-zone-reveal">';
+    zonePool.forEach(function(b){
+      var previewBeh=cBehaviorLabel(b.beh||b.behavior||b.comportement)||'Neutre';
+      var previewRange=_spawnLabQtyRange(b);
+      h+='<div class="sl-zone-token">';
+      h+='<div class="sl-zone-token-name">'+esc(b.nom||'Créature')+'</div>';
+      h+='<div class="sl-zone-token-meta"><span>Niv. '+esc(b.niv||1)+'</span><span>•</span><span>'+esc(previewBeh)+'</span><span>•</span><span>Qté '+previewRange.min+'-'+previewRange.max+'</span></div>';
+      h+='</div>';
+    });
+    h+='</div>';
+  }else{
+    h+='<div class="sl-zone-empty">Cette zone ne contient aucun mob visible. Gère les mobs de la zone avant de lancer un roll.</div>';
+  }
+  h+='</div>';
   h+='<div class="sl-actions">';
   h+='<button class="sl-btn sl-btn-gold" onclick="spawnLabGenerate()">Roll</button>';
   h+='<button class="sl-btn" onclick="spawnLabCopyLast()">Copier le récap</button>';
-  h+='<button class="sl-btn sl-btn-red" onclick="spawnLabResetHistory()">Réinitialiser le global</button>';
+  if(s.lastRuns && s.lastRuns.length) h+='<button class="sl-btn sl-btn-gold" onclick="spawnLabTransferLastToSimulator()">Transférer dans le simulateur</button>';
+  if(_spawnLabCanResetGlobal()) h+='<button class="sl-btn sl-btn-red" onclick="spawnLabResetHistory()">Réinitialiser le global</button>';
   h+='</div>';
   h+='</div>';
   if(can("manage_beasts")){
@@ -12722,10 +12885,12 @@ function renderSpawnLab(tid){
         h+='</div>';
         h+='</div>';
         h+='<div class="sl-pack-right">';
-        h+='<div style="font-family:var(--fd);font-size:10px;letter-spacing:1px;color:'+bcol+';">'+Math.round((pack.prob||0)*100)+'%</div>';
-        h+='<div class="sl-mini" style="margin-top:4px;">Poids actuel '+Math.round(pack.weightNow||0)+'</div>';
+        if(canSeeWeights){
+          h+='<div style="font-family:var(--fd);font-size:10px;letter-spacing:1px;color:'+bcol+';">'+Math.round((pack.prob||0)*100)+'%</div>';
+          h+='<div class="sl-mini" style="margin-top:4px;">Poids actuel '+Math.round(pack.weightNow||0)+'</div>';
+        }
         h+='<div class="sl-mini">Fourchette '+pack.range.min+'-'+pack.range.max+'</div>';
-        if(pack.total) h+='<div class="sl-mini" style="color:var(--gold);">Historique × '+pack.total+'</div>';
+        if(canSeeWeights && pack.total) h+='<div class="sl-mini" style="color:var(--gold);">Historique × '+pack.total+'</div>';
         h+='</div>';
         h+='</div>';
       });
@@ -12750,11 +12915,13 @@ function renderSpawnLab(tid){
     h+='<div class="sl-beast-name">'+esc(b.nom||'Créature')+'</div>';
     h+='<div class="sl-mini" style="margin-top:5px;color:var(--dim);line-height:1.5;">Niv. '+esc(b.niv||1)+' · '+esc(beh)+' · Qté '+range.min+'-'+range.max+'</div>';
     if(b.sub) h+='<div class="sl-mini" style="margin-top:6px;color:var(--dim);line-height:1.5;">'+esc(b.sub)+'</div>';
-    h+='<div class="sl-mini" style="display:flex;justify-content:space-between;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.06);color:var(--faint);">';
-    h+='<span>Poids '+weight+' → '+Math.max(1,Math.round(tuned.weight))+'</span>';
-    if(recentCounts[b.id]) h+='<span>Sorties × '+recentCounts[b.id]+'</span>';
-    else h+='<span>Jamais sorti</span>';
-    h+='</div>';
+    if(canSeeWeights){
+      h+='<div class="sl-mini" style="display:flex;justify-content:space-between;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.06);color:var(--faint);">';
+      h+='<span>Poids '+weight+' → '+Math.max(1,Math.round(tuned.weight))+'</span>';
+      if(recentCounts[b.id]) h+='<span>Sorties × '+recentCounts[b.id]+'</span>';
+      else h+='<span>Jamais sorti</span>';
+      h+='</div>';
+    }
     h+='</div>';
   });
   h+='</div>';
