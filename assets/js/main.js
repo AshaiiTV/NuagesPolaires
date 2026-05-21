@@ -3492,15 +3492,31 @@ function renderAdminThemes(targetId){
   if(!can("manage_mjs")){ el.innerHTML = ""; return; }
   var allThemes = getAllThemes();
   var playerAccounts = getAccounts().filter(function(a){ return String(a.role||"joueur").toLowerCase()==="joueur"; });
+  function adminThemeRarity(t){
+    if(t.id === "bloodmoon") return "Fondateur";
+    if(t.id === "aquaris" || t.id === "violet" || t.id === "red" || t.id === "green" || t.id === "sylvan" || t.id === "galactic") return "Rare";
+    if(t.event) return "Saisonnier";
+    if(t.id === "dark" || t.id === "light") return "Base";
+    return "Classique";
+  }
+  function adminThemeCategory(t){
+    if(t.id === "bloodmoon") return "Fondateur";
+    if(adminThemeRarity(t) === "Rare") return "Rares";
+    if(t.event) return "Événement";
+    if(t.id === "dark" || t.id === "light") return "Base";
+    return "Classique";
+  }
+  function adminSwatch(c){ return '<span class="theme-swatch" style="background:'+esc(c)+';"></span>'; }
   var h = "<div class='card-title'>Gestion des thèmes</div>";
-  h += "<div style='font-size:13px;color:var(--dim);line-height:1.7;margin:0 0 18px;'>Administre la visibilité, la distribution et les restrictions des thèmes. Les noms et descriptifs modifiés ici sont répercutés automatiquement dans la collection joueur.</div>";
-  h += "<div style='display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;'>";
+  h += "<div style='font-size:13px;color:var(--dim);line-height:1.7;margin:0 0 18px;'>Même bibliothèque visuelle que la Collection : tu pilotes ici la visibilité et la distribution, sans changer la DA côté joueurs.</div>";
+  h += "<div style='display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;align-items:center;'>";
   h += "<button class='btn btn-sm btn-grn' onclick='openCreateTheme()'><span>+ Créer un thème</span></button>";
-  h += "<span style='font-family:var(--fd);font-size:10px;letter-spacing:1.8px;padding:7px 10px;border:1px solid var(--border2);color:var(--glacier);background:rgba(126,184,212,.05);'>"+playerAccounts.length+" joueur"+(playerAccounts.length>1?"s":"")+" ciblable"+(playerAccounts.length>1?"s":"")+"</span>";
+  h += "<span class='collection-counter'>"+playerAccounts.length+" joueur"+(playerAccounts.length>1?"s":"")+" ciblable"+(playerAccounts.length>1?"s":"")+"</span>";
   h += "</div>";
   if(!allThemes.length){
     h += "<div class='empty-state'><div class='empty-state-icon'>🎨</div><div class='empty-state-title'>Aucun thème</div></div>";
   } else {
+    h += "<div class='theme-collection-grid db-theme-admin-grid'>";
     allThemes.forEach(function(t){
       var autoGrant = !!t.autoGrantAll;
       var isVisibleForPlayers = getAdminThemeVisibilityState(t.id);
@@ -3508,6 +3524,9 @@ function renderAdminThemes(targetId){
       var bg1 = (t.preview && t.preview[0]) || "#0d0e18";
       var bg2 = (t.preview && t.preview[1]) || "#7eb8d4";
       var bg3 = (t.preview && t.preview[2]) || "#c9a84c";
+      var rarity = adminThemeRarity(t);
+      var category = adminThemeCategory(t);
+      var state = isVisibleForPlayers ? "visible" : "hidden";
       var selectId = "theme-grant-player-"+String(t.id).replace(/[^a-zA-Z0-9_-]/g,"_");
       var safeThemeId = jsesc(t.id);
       var options = '<option value="">Choisir un joueur…</option>';
@@ -3515,47 +3534,39 @@ function renderAdminThemes(targetId){
         var owns = Array.isArray(acc.unlockedThemes) && acc.unlockedThemes.map(normalizeThemeId).indexOf(normalizeThemeId(t.id))>=0;
         options += '<option value="'+acc.id+'">'+esc(acc.pseudo)+(owns?' • déjà débloqué':'')+'</option>';
       });
-      h += "<div class='card' data-theme-admin-card='"+safeThemeId+"' style='margin-top:14px;padding:18px 18px 16px;background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.012));border-color:rgba(255,255,255,.08);box-shadow:0 18px 40px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.03);'>";
-      h += "<div style='display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;'>";
-      h += "<div data-theme-admin-preview='"+safeThemeId+"' style='width:110px;min-width:110px;height:74px;border-radius:10px;flex-shrink:0;border:1px solid "+(isVisibleForPlayers?"rgba(126,184,212,.30)":"rgba(255,255,255,.08)")+";box-shadow:0 10px 26px rgba(0,0,0,.22);background:linear-gradient(145deg,"+bg1+", "+bg3+");position:relative;overflow:hidden;opacity:"+(isVisibleForPlayers?"1":".58")+";transition:opacity .18s ease,border-color .18s ease,box-shadow .18s ease;'></div>";
-      h += "<div style='flex:1;min-width:260px;'>";
-      h += "<div style='display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;'>";
-      h += "<div data-theme-admin-name='"+safeThemeId+"' style='font-family:var(--fd);font-size:12px;letter-spacing:2px;color:var(--text);opacity:"+(isVisibleForPlayers?"1":".72")+";transition:opacity .18s ease;'>"+esc(t.name)+"</div>";
-      if(autoGrant) h += "<span style='font-family:var(--fd);font-size:8px;letter-spacing:1.6px;padding:4px 8px;border:1px solid rgba(126,184,212,.35);color:var(--glacier-bright);border-radius:999px;background:rgba(126,184,212,.08);'>AUTO TOUS</span>";
-      h += "<button class='btn btn-sm' style='margin-left:auto;' onclick=\"openEditTheme('"+safeThemeId+"')\"><span>✎ Modifier</span></button>";
+      h += "<article class='theme-card-premium collection-card np-theme-vault-card db-theme-admin-item"+(isVisibleForPlayers?"":" th-locked")+"' data-theme-admin-card='"+safeThemeId+"' data-theme-id='"+esc(t.id)+"' data-theme-rarity='"+esc(rarity)+"' data-theme-category='"+esc(category)+"' data-theme-state='"+esc(state)+"' style='--card-bg:"+esc(bg1)+";--card-a:"+esc(bg2)+";--card-b:"+esc(bg3)+";'>";
+      h += "<div class='theme-topline' data-theme-eyebrow='"+esc(rarity)+"'><span class='theme-card-state' data-theme-admin-visibility-label='"+safeThemeId+"'>"+(isAlways?"Toujours visible":(isVisibleForPlayers?"Visible":"Masqué"))+"</span></div>";
+      h += "<div data-theme-admin-preview='"+safeThemeId+"' class='theme-preview-mini "+esc(t.id)+"' data-preview-theme='"+esc(t.id)+"' style='opacity:"+(isVisibleForPlayers?"1":".58")+";transition:opacity .18s ease,border-color .18s ease,box-shadow .18s ease;'>";
+      h += "<div class='theme-preview-head'></div><div class='theme-preview-cards'><span></span><span></span><span></span></div><div class='theme-preview-bar'></div>";
       h += "</div>";
-      h += "<div style='font-size:12px;color:var(--dim);line-height:1.7;margin-bottom:12px;'>"+esc(t.desc||"Aucune description.")+"</div>";
-      h += "<div style='display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:10px;align-items:stretch;'>";
-      h += "<div style='min-width:0;'>";
-      h += "<div style='font-family:var(--fd);font-size:9px;letter-spacing:1.6px;color:var(--faint);margin-bottom:6px;'>DON MANUEL</div>";
-      h += "<select id='"+selectId+"' style='width:100%;padding:10px 12px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:13px;border-radius:8px;'>"+options+"</select>";
-      h += "<button class='btn btn-sm' style='width:100%;margin-top:8px;border-color:var(--glacier-dim);color:var(--glacier);' onclick=\"(function(){var sel=ge('"+selectId+"'); if(!sel||!sel.value){notif('Choisis un joueur.','err'); return;} grantThemeToAccount(sel.value,'"+safeThemeId+"');})();\"><span>Donner au joueur</span></button>";
+      h += "<div class='theme-card-body'>";
+      h += "<div data-theme-admin-name='"+safeThemeId+"' class='theme-title' style='opacity:"+(isVisibleForPlayers?"1":".72")+";transition:opacity .18s ease;'>"+esc(t.name)+"</div>";
+      h += "<div class='tagline'>"+esc(t.desc||"Aucune description.")+"</div>";
       h += "</div>";
-      h += "<div>";
-      h += "<div style='font-family:var(--fd);font-size:9px;letter-spacing:1.6px;color:var(--faint);margin-bottom:6px;'>VISIBILITÉ JOUEURS</div>";
-      h += "<div data-theme-admin-visibility-box='"+safeThemeId+"' style='width:100%;min-height:42px;padding:10px 12px;border-radius:10px;border:1px solid "+(isVisibleForPlayers?"rgba(126,184,212,.24)":"rgba(255,255,255,.08)")+";background:rgba(6,10,20,.55);display:flex;align-items:center;justify-content:space-between;gap:12px;transition:border-color .18s ease,box-shadow .18s ease;'>";
-      h += "<div style='min-width:0;display:flex;flex-direction:column;gap:2px;'>";
-      h += "<span data-theme-admin-visibility-label='"+safeThemeId+"' style='font-family:var(--fd);font-size:9px;letter-spacing:1.6px;color:"+(isVisibleForPlayers?"var(--glacier-bright)":"var(--faint)")+";'>"+(isAlways?"TOUJOURS VISIBLE":(isVisibleForPlayers?"VISIBLE":"NON VISIBLE"))+"</span>";
-      h += "<span data-theme-admin-visibility-text='"+safeThemeId+"' style='font-size:11px;color:var(--faint);line-height:1.4;'>"+(isAlways?"Attribué à tout le monde. Ce thème reste visible pour tous les joueurs.":(isVisibleForPlayers?"Les joueurs voient ce thème dans leur collection.":"Les joueurs ne voient pas ce thème dans leur collection."))+"</span>";
+      h += "<div class='theme-meta-row'>";
+      h += "<span class='theme-palette'>"+adminSwatch(bg1)+adminSwatch(bg2)+adminSwatch(bg3)+"</span>";
+      if(autoGrant) h += "<span class='theme-meta-pill'>Auto tous</span>";
       h += "</div>";
-      h += "<button type='button' class='theme-vis-btn "+(isVisibleForPlayers?"is-on":"")+"' data-action='theme-visibility-toggle' data-theme-id='"+safeThemeId+"' style='margin-left:auto;' "+(isAlways?"disabled aria-disabled='true'":"")+"></button>";
+      h += "<div class='db-theme-admin-controls'>";
+      h += "<button class='btn btn-sm' onclick=\"openEditTheme('"+safeThemeId+"')\"><span>Modifier</span></button>";
+      h += "<div class='db-theme-admin-field'>";
+      h += "<span>Don manuel</span>";
+      h += "<select id='"+selectId+"'>"+options+"</select>";
+      h += "<button class='btn btn-sm' onclick=\"(function(){var sel=ge('"+selectId+"'); if(!sel||!sel.value){notif('Choisis un joueur.','err'); return;} grantThemeToAccount(sel.value,'"+safeThemeId+"');})();\"><span>Donner</span></button>";
       h += "</div>";
+      h += "<div class='db-theme-admin-field' data-theme-admin-visibility-box='"+safeThemeId+"'>";
+      h += "<span data-theme-admin-visibility-text='"+safeThemeId+"'>"+(isAlways?"Attribué à tout le monde.":(isVisibleForPlayers?"Visible dans la collection joueur.":"Masqué côté joueurs."))+"</span>";
+      h += "<button type='button' class='theme-vis-btn "+(isVisibleForPlayers?"is-on":"")+"' data-action='theme-visibility-toggle' data-theme-id='"+safeThemeId+"' "+(isAlways?"disabled aria-disabled='true'":"")+"></button>";
       h += "</div>";
-      h += "<div>";
-      h += "<div style='font-family:var(--fd);font-size:9px;letter-spacing:1.6px;color:var(--faint);margin-bottom:6px;'>DISTRIBUTION</div>";
       if(isAlways){
-        h += '<button class="btn btn-sm" style="width:100%;height:42px;opacity:.6;cursor:not-allowed;" disabled><span>Attribué à tout le monde</span></button>';
-        h += "<div style='font-size:11px;color:var(--faint);line-height:1.5;margin-top:8px;'>Le thème est donné automatiquement à tous les comptes joueur.</div>";
+        h += '<button class="theme-card-action" disabled>Attribué à tout le monde</button>';
       }else{
-        h += "<button class='btn btn-sm btn-gold' style='width:100%;height:42px;' onclick=\"grantThemeToAllPlayers('"+safeThemeId+"')\"><span>Donner à tous</span></button>";
-        h += "<div style='font-size:11px;color:var(--faint);line-height:1.5;margin-top:8px;'>Ajoute le thème à tous les comptes joueur existants.</div>";
+        h += "<button class='theme-card-action' onclick=\"grantThemeToAllPlayers('"+safeThemeId+"')\">Donner à tous</button>";
       }
       h += "</div>";
-      h += "</div>";
-      h += "</div>";
-      h += "</div>";
-      h += "</div>";
+      h += "</article>";
     });
+    h += "</div>";
   }
   el.innerHTML = h;
 }
@@ -3650,6 +3661,10 @@ function __syncThemeAdminCard(themeId, visible, busy){
   var id = normalizeThemeId(themeId);
   if(!id) return;
   var state = __getThemeAdminVisibilityCopy(id, visible);
+  __forEachThemeAdminNode('data-theme-admin-card', id, function(node){
+    node.classList.toggle('th-locked', !state.shown);
+    node.setAttribute('data-theme-state', state.shown ? 'visible' : 'hidden');
+  });
   __forEachThemeAdminNode('data-theme-admin-preview', id, function(node){
     node.style.opacity = state.previewOpacity;
     node.style.borderColor = state.previewBorder;

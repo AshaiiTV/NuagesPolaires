@@ -3389,6 +3389,30 @@ body.theme-noel .theme-preview-bar{background:linear-gradient(90deg, #70c060, #f
 .db-theme-admin-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;border:1px solid rgba(var(--accent-rgb,160,200,255),.18);border-radius:14px;background:rgba(9,14,28,.46)}
 .db-theme-admin-item .chip{margin-right:8px}
 .db-theme-admin-item .chip.danger{border-color:rgba(255,120,120,.45);color:#ffb7b7;box-shadow:inset 0 0 0 1px rgba(255,120,120,.12)}
+#database .db-theme-admin-grid{grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:14px;align-items:stretch}
+#database .db-theme-admin-item{
+  display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:10px;
+  min-height:360px;padding:15px;border-radius:12px;
+}
+#database .db-theme-admin-item .theme-preview-mini{width:100%;height:112px;min-height:112px;max-height:112px;margin:2px 0 0;border-radius:10px;padding:10px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between}
+#database .db-theme-admin-item .theme-preview-cards{gap:6px}
+#database .db-theme-admin-item .theme-preview-cards span{height:28px;border-radius:8px}
+#database .db-theme-admin-item .theme-preview-head{height:12px}
+#database .db-theme-admin-item .theme-preview-bar{height:7px}
+#database .db-theme-admin-item .theme-card-body{min-height:58px;max-height:70px;overflow:hidden}
+#database .db-theme-admin-item .tagline{font-size:11px;line-height:1.35;min-height:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#database .db-theme-admin-item .theme-meta-row{display:flex;align-items:center;gap:6px;margin-top:auto;min-height:24px}
+#database .db-theme-admin-item .theme-meta-pill{display:inline-flex;align-items:center;min-height:21px;padding:0 8px;border-radius:999px;border:1px solid rgba(var(--accent-rgb,150,200,255),.20);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--glacier);background:rgba(var(--accent-rgb,150,200,255),.08)}
+#database .db-theme-admin-controls{display:grid;gap:8px;margin-top:2px}
+#database .db-theme-admin-controls>.btn{width:100%;justify-content:center}
+#database .db-theme-admin-field{display:grid;grid-template-columns:1fr auto;gap:7px;align-items:center;padding:9px;border:1px solid rgba(var(--accent-rgb,150,200,255),.12);border-radius:10px;background:rgba(255,255,255,.03)}
+#database .db-theme-admin-field>span{grid-column:1/-1;font-family:var(--fd);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);line-height:1.4}
+#database .db-theme-admin-field select{grid-column:1/-1;width:100%;min-width:0;padding:9px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:12px}
+#database .db-theme-admin-field .btn{grid-column:1/-1;justify-content:center}
+#database .db-theme-admin-field .theme-vis-btn{justify-self:end}
+#database .db-theme-admin-item .theme-card-action{width:100%;min-height:42px;border-radius:10px;cursor:pointer}
+#database .db-theme-admin-item .theme-card-action[disabled]{opacity:.6;cursor:not-allowed}
+body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);border-color:rgba(40,84,110,.12)}
 
 
 /* v38 premium collection */
