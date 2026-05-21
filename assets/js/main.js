@@ -7836,9 +7836,13 @@ function _buildJoueursTab(){
   var root = ge("p-joueurs-c"); if(!root) return;
   if(ge("s-plist")) return;
   var h = "";
-  h += "<div id='joueurs-toolbar' style='display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;'>";
-  h += "  <div class='card-title' style='flex:1;'>Joueurs</div>";
-  h += "  <button class='btn btn-sm btn-grn' onclick=\"openModal('m-addp');setTimeout(renderNewPlayerAvatarDraft,0)\"><span>+ Nouveau joueur</span></button>";
+  h += "<div id='joueurs-toolbar' class='players-hero'>";
+  h += "  <div class='players-hero-copy'>";
+  h += "    <div class='players-kicker'>Registre staff</div>";
+  h += "    <div class='players-title'>Joueurs</div>";
+  h += "  </div>";
+  h += "  <div id='players-hero-stats' class='players-hero-stats'></div>";
+  h += "  <button class='btn btn-sm btn-grn players-add-btn' onclick=\"openModal('m-addp');setTimeout(renderNewPlayerAvatarDraft,0)\"><span>+ Nouveau joueur</span></button>";
   h += "</div>";
   h += "<div id='pending-accounts-section' style='display:none;margin-bottom:16px;'>";
   h += "  <div class='card' style='border-color:var(--gold);background:rgba(201,168,76,.03);'>";
@@ -7856,6 +7860,19 @@ function _buildJoueursTab(){
   root.innerHTML = h;
 }
 
+function _renderPlayersHeroStats(players,accounts){
+  var el=ge("players-hero-stats");
+  if(!el) return;
+  var linked=(accounts||[]).filter(function(a){return a&&a.pid;}).length;
+  var staff=(accounts||[]).filter(function(a){return a&&a.role&&a.role!=="joueur";}).length;
+  var avg=players.length?Math.round(players.reduce(function(sum,p){return sum+(p.level||1);},0)/players.length):0;
+  el.innerHTML=''
+    +'<span><strong>'+players.length+'</strong> personnages</span>'
+    +'<span><strong>'+linked+'</strong> comptes liés</span>'
+    +'<span><strong>'+staff+'</strong> staff</span>'
+    +'<span><strong>'+avg+'</strong> niv. moyen</span>';
+}
+
 function _accountForPlayer(pid,accounts){
   return (accounts||getAccounts()).find(function(a){return a&&a.pid===pid;})||null;
 }
@@ -7870,7 +7887,7 @@ function _playerAccountAdminBlock(p,accounts){
   var isLastAdmin=linked&&role==="admin"&&admins.length<=1;
   var choices=accounts.filter(function(a){return a&&(!a.pid||a.pid===p.id);});
   choices.sort(function(a,b){return String(a.pseudo||"").localeCompare(String(b.pseudo||""),"fr");});
-  var sel='<select onchange="setPlayerAccountLink(\''+jsesc(p.id)+'\',this.value)" style="min-width:170px;max-width:230px;padding:6px 9px;font-size:12px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);">';
+  var sel='<select class="player-account-select" onchange="setPlayerAccountLink(\''+jsesc(p.id)+'\',this.value)">';
   sel+='<option value="">'+(linked?'— Délier le compte —':'— Lier un compte —')+'</option>';
   choices.forEach(function(a){
     sel+='<option value="'+jsesc(a.id)+'"'+(linked&&linked.id===a.id?' selected':'')+'>'+esc(a.pseudo||"Compte")+(a.role&&a.role!=="joueur"?" · "+esc(ROLE_LABELS[a.role]||a.role):"")+'</option>';
@@ -7883,15 +7900,15 @@ function _playerAccountAdminBlock(p,accounts){
           var active=role===r;
           var rc=roleCols[r]||"var(--dim)";
           var rLabel={joueur:"Joueur",mj:"MJ",designer:"Designer",admin:"Admin"}[r];
-          return '<button type="button" onclick="setPlayerAccountRole(\''+jsesc(p.id)+'\',\''+r+'\')" style="padding:5px 8px;font-family:var(--fd);font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:1px solid '+(active?rc:'var(--border2)')+';background:'+(active?'color-mix(in srgb, '+rc+' 16%, transparent)':'transparent')+';color:'+(active?rc:'var(--dim)')+';">'+rLabel+'</button>';
+          return '<button type="button" class="player-role-chip'+(active?' active':'')+'" onclick="setPlayerAccountRole(\''+jsesc(p.id)+'\',\''+r+'\')" style="--role-col:'+rc+';">'+rLabel+'</button>';
         }).join(""))
     : '<span style="font-size:11px;color:var(--faint);font-style:italic;">Aucun compte lié</span>';
-  return '<div class="player-account-tools" style="grid-column:1/-1;margin-top:8px;padding:9px 10px;border:1px solid var(--border);background:var(--bg3);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
-    +'<span style="font-family:var(--fd);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);">Compte</span>'
-    +(linked?'<span style="font-family:var(--fd);font-size:11px;letter-spacing:1px;color:var(--text);">'+esc(linked.pseudo||"Compte")+'</span>':'')
+  return '<div class="player-account-tools">'
+    +'<span class="player-tool-label">Compte</span>'
+    +(linked?'<span class="player-account-name">'+esc(linked.pseudo||"Compte")+'</span>':'')
     +sel
-    +'<span style="font-family:var(--fd);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-left:auto;">Rôle</span>'
-    +'<div style="display:flex;gap:5px;flex-wrap:wrap;">'+roleSwitches+'</div>'
+    +'<span class="player-tool-label player-tool-role">Rôle</span>'
+    +'<div class="player-role-row">'+roleSwitches+'</div>'
   +'</div>';
 }
 
@@ -7904,6 +7921,7 @@ function renderSPList(){
   var plistEl=ge("s-plist"); if(!plistEl) return;
   var players = gp();
   var accounts = getAccounts();
+  _renderPlayersHeroStats(players,accounts);
   if(!players.length){
     plistEl.innerHTML='<div class="empty-state"><div class="empty-state-icon">⚔</div><div class="empty-state-title">Aucun joueur</div><div class="empty-state-sub">Les personnages apparaîtront ici une fois créés.</div></div>';
     return;
@@ -7918,10 +7936,27 @@ function renderSPList(){
     if(canXP) btns+='<button class="btn btn-sm" onclick="openProgPanel(\''+p.id+'\')"><span>XP</span></button>';
     btns+='<button class="btn btn-sm" style="border-color:var(--glacier-dim);color:var(--glacier-dim);" onclick="loadPlayer(\''+p.id+'\')"><span>Accéder</span></button>';
     if(canDel) btns+='<button class="btn btn-sm btn-red" onclick="delP(\''+p.id+'\')"><span>Sup.</span></button>';
-    return'<div class="prow'+(isCurrent?" sel":"")+'" id="pr-'+p.id+'">'
-      +'<div>'+av+'</div>'
-      +'<div><div class="pname">'+esc(p.name)+(isCurrent?' <span class="tag tgl" style="font-size:8px;padding:2px 6px;">Affiché</span>':'')+'</div><div class="pcls">'+esc(p.classe)+' — Niv. Serment '+p.sLevel+(p.createdAt?' <span style="color:var(--faint);font-size:10px;margin-left:6px;">· '+new Date(p.createdAt).toLocaleDateString("fr-FR")+'</span>':'')+'</div></div>'
-      +'<div class="fx" style="gap:6px;"><span class="plvl">Niv. '+p.level+'</span>'+btns+'</div>'
+    var linked=_accountForPlayer(p.id,accounts);
+    var role=linked?(linked.role||"joueur"):"";
+    var roleLabel=role?(ROLE_LABELS[role]||role):"Non lié";
+    return'<div class="prow player-card'+(isCurrent?" sel":"")+'" id="pr-'+p.id+'">'
+      +'<div class="player-avatar-wrap">'+av+'</div>'
+      +'<div class="player-main">'
+        +'<div class="player-card-top">'
+          +'<div>'
+            +'<div class="pname">'+esc(p.name)+(isCurrent?' <span class="tag tgl player-active-tag">Affiché</span>':'')+'</div>'
+            +'<div class="pcls">'+esc(p.classe)+' — Serment niv. '+p.sLevel+(p.createdAt?' <span class="player-date">· '+new Date(p.createdAt).toLocaleDateString("fr-FR")+'</span>':'')+'</div>'
+          +'</div>'
+          +'<div class="player-mini-badges"><span class="plvl">Niv. '+p.level+'</span><span class="player-role-badge">'+esc(roleLabel)+'</span></div>'
+        +'</div>'
+        +'<div class="player-vitals">'
+          +'<span><b>'+p.pvCur+'/'+p.pvMax+'</b> PV</span>'
+          +'<span><b>'+p.epCur+'/'+p.epMax+'</b> EP</span>'
+          +'<span><b>'+p.emCur+'/'+p.emMax+'</b> EM</span>'
+          +'<span><b>'+p.xp+'/'+p.xpMax+'</b> XP</span>'
+        +'</div>'
+      +'</div>'
+      +'<div class="player-actions">'+btns+'</div>'
       +_playerAccountAdminBlock(p,accounts)
     +'</div>';
   }).join("");
