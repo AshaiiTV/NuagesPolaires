@@ -7853,12 +7853,46 @@ function _buildJoueursTab(){
   h += "  </div>";
   h += "</div>";
   h += "<div id='s-plist' class='s-plist'></div>";
-  h += "<div id='mjlist-section' style='margin-top:24px;'>";
-  h += "  <div class='dv' style='margin-bottom:20px;'></div>";
-  h += "  <div class='card-title' style='margin-bottom:12px;'>Comptes Staff</div>";
-  h += "  <div id='mjlist'></div>";
-  h += "</div>";
   root.innerHTML = h;
+}
+
+function _accountForPlayer(pid,accounts){
+  return (accounts||getAccounts()).find(function(a){return a&&a.pid===pid;})||null;
+}
+
+function _playerAccountAdminBlock(p,accounts){
+  if(!isAdminRole(CU)||!can("manage_mjs")) return "";
+  accounts=accounts||getAccounts();
+  var linked=_accountForPlayer(p.id,accounts);
+  var admins=accounts.filter(function(a){return a&&a.role==="admin";});
+  var roleCols={admin:"var(--red)",mj:"var(--gold)",designer:"var(--purple)",joueur:"var(--glacier-dim)"};
+  var role=linked?(linked.role||"joueur"):"";
+  var isLastAdmin=linked&&role==="admin"&&admins.length<=1;
+  var choices=accounts.filter(function(a){return a&&(!a.pid||a.pid===p.id);});
+  choices.sort(function(a,b){return String(a.pseudo||"").localeCompare(String(b.pseudo||""),"fr");});
+  var sel='<select onchange="setPlayerAccountLink(\''+jsesc(p.id)+'\',this.value)" style="min-width:170px;max-width:230px;padding:6px 9px;font-size:12px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);">';
+  sel+='<option value="">'+(linked?'— Délier le compte —':'— Lier un compte —')+'</option>';
+  choices.forEach(function(a){
+    sel+='<option value="'+jsesc(a.id)+'"'+(linked&&linked.id===a.id?' selected':'')+'>'+esc(a.pseudo||"Compte")+(a.role&&a.role!=="joueur"?" · "+esc(ROLE_LABELS[a.role]||a.role):"")+'</option>';
+  });
+  sel+='</select>';
+  var roleSwitches=linked
+    ? (isLastAdmin
+      ? '<span style="font-size:11px;color:var(--faint);font-style:italic;">Admin principal</span>'
+      : ['joueur','mj','designer','admin'].map(function(r){
+          var active=role===r;
+          var rc=roleCols[r]||"var(--dim)";
+          var rLabel={joueur:"Joueur",mj:"MJ",designer:"Designer",admin:"Admin"}[r];
+          return '<button type="button" onclick="setPlayerAccountRole(\''+jsesc(p.id)+'\',\''+r+'\')" style="padding:5px 8px;font-family:var(--fd);font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:1px solid '+(active?rc:'var(--border2)')+';background:'+(active?'color-mix(in srgb, '+rc+' 16%, transparent)':'transparent')+';color:'+(active?rc:'var(--dim)')+';">'+rLabel+'</button>';
+        }).join(""))
+    : '<span style="font-size:11px;color:var(--faint);font-style:italic;">Aucun compte lié</span>';
+  return '<div class="player-account-tools" style="grid-column:1/-1;margin-top:8px;padding:9px 10px;border:1px solid var(--border);background:var(--bg3);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+    +'<span style="font-family:var(--fd);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);">Compte</span>'
+    +(linked?'<span style="font-family:var(--fd);font-size:11px;letter-spacing:1px;color:var(--text);">'+esc(linked.pseudo||"Compte")+'</span>':'')
+    +sel
+    +'<span style="font-family:var(--fd);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-left:auto;">Rôle</span>'
+    +'<div style="display:flex;gap:5px;flex-wrap:wrap;">'+roleSwitches+'</div>'
+  +'</div>';
 }
 
 function renderSPList(){
@@ -7869,6 +7903,7 @@ function renderSPList(){
   var canDel=can("delete_player");
   var plistEl=ge("s-plist"); if(!plistEl) return;
   var players = gp();
+  var accounts = getAccounts();
   if(!players.length){
     plistEl.innerHTML='<div class="empty-state"><div class="empty-state-icon">⚔</div><div class="empty-state-title">Aucun joueur</div><div class="empty-state-sub">Les personnages apparaîtront ici une fois créés.</div></div>';
     return;
@@ -7886,7 +7921,9 @@ function renderSPList(){
     return'<div class="prow'+(isCurrent?" sel":"")+'" id="pr-'+p.id+'">'
       +'<div>'+av+'</div>'
       +'<div><div class="pname">'+esc(p.name)+(isCurrent?' <span class="tag tgl" style="font-size:8px;padding:2px 6px;">Affiché</span>':'')+'</div><div class="pcls">'+esc(p.classe)+' — Niv. Serment '+p.sLevel+(p.createdAt?' <span style="color:var(--faint);font-size:10px;margin-left:6px;">· '+new Date(p.createdAt).toLocaleDateString("fr-FR")+'</span>':'')+'</div></div>'
-      +'<div class="fx" style="gap:6px;"><span class="plvl">Niv. '+p.level+'</span>'+btns+'</div></div>';
+      +'<div class="fx" style="gap:6px;"><span class="plvl">Niv. '+p.level+'</span>'+btns+'</div>'
+      +_playerAccountAdminBlock(p,accounts)
+    +'</div>';
   }).join("");
 }
 
@@ -8417,7 +8454,7 @@ function setMJRole(accountId,role){
   if(!can("manage_mjs")){notif("Réservé à l'Admin.","err");return;}
   _authCall({action:"admin_set_role", accountId:accountId, role:role}).then(function(r){
     if(!r||!r.ok){ notif((r&&r.error)||"Impossible de changer ce rôle.","err"); return; }
-    _refreshPrivateCaches().then(function(){ renderMJList(); notif("Rôle mis à jour.","ok"); });
+    _refreshPrivateCaches().then(function(){ renderMJList(); renderSPList(); notif("Rôle mis à jour.","ok"); });
   }).catch(function(){ notif("Erreur réseau.","err"); });
 }
 
@@ -8427,8 +8464,26 @@ function setMJPid(accountId,pid){
   if(!can("manage_mjs")){notif("Réservé à l'Admin.","err");return;}
   _authCall({action:"admin_set_pid", accountId:accountId, pid:pid||null}).then(function(r){
     if(!r||!r.ok){ notif((r&&r.error)||"Impossible de modifier la liaison.","err"); return; }
-    _refreshPrivateCaches().then(function(){ var p=pid?gpid(pid):null; var a=getAccounts().find(function(x){return x.id===accountId;}); notif((a?a.pseudo:'Compte')+(p?" lié à "+p.name:" délié."),"ok"); renderMJList(); });
+    _refreshPrivateCaches().then(function(){ var p=pid?gpid(pid):null; var a=getAccounts().find(function(x){return x.id===accountId;}); notif((a?a.pseudo:'Compte')+(p?" lié à "+p.name:" délié."),"ok"); renderMJList(); renderSPList(); renderPendingAccounts(); updatePendingBadge(); });
   }).catch(function(){ notif("Erreur réseau.","err"); });
+}
+
+function setPlayerAccountRole(pid,role){
+  if(!can("manage_mjs")){notif("Réservé à l'Admin.","err");return;}
+  var account=_accountForPlayer(pid,getAccounts());
+  if(!account){notif("Lie d'abord un compte à ce personnage.","err");return;}
+  setMJRole(account.id,role);
+}
+
+function setPlayerAccountLink(pid,accountId){
+  if(!can("manage_mjs")){notif("Réservé à l'Admin.","err");return;}
+  var linked=_accountForPlayer(pid,getAccounts());
+  if(!accountId){
+    if(!linked){renderSPList();return;}
+    setMJPid(linked.id,"");
+    return;
+  }
+  setMJPid(accountId,pid);
 }
 
 
