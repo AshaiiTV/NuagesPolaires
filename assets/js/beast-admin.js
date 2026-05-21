@@ -101,19 +101,13 @@
   function _beastAdminSummary(beasts, filtered){
     var all = Array.isArray(beasts)?beasts:[];
     var visible = Array.isArray(filtered)?filtered:[];
-    var archived = all.filter(function(b){ return !!b.archived; }).length;
-    var hidden = all.filter(function(b){ return !b.archived && !!b.hidden; }).length;
     var incomplete = all.filter(function(b){ return !_beastCompleteness(b).complete; }).length;
     var card = ge('beast-admin-adv-stats'); if(!card) return;
     card.innerHTML = ''
       +'<div class="adv-stat"><strong>'+all.length+'</strong><span>Total</span></div>'
       +'<div class="adv-stat"><strong>'+visible.length+'</strong><span>Affichées</span></div>'
-      +'<div class="adv-stat"><strong>'+hidden+'</strong><span>Masquées</span></div>'
-      +'<div class="adv-stat"><strong>'+archived+'</strong><span>Archivées</span></div>'
-      +'<div class="adv-stat"><strong>'+incomplete+'</strong><span>Incomplètes</span></div>'
-      +'<div class="adv-stat"><strong>'+all.filter(function(b){ return !!b.isBoss; }).length+'</strong><span>Boss</span></div>'
-      +'<div class="adv-stat"><strong>'+all.filter(function(b){ return _beastUsageFor(b.id).uses>0; }).length+'</strong><span>Déjà jouées</span></div>'
-      +'<div class="adv-stat"><strong>'+all.filter(function(b){ return String(b.img||'').trim(); }).length+'</strong><span>Avec image</span></div>';
+      +'<div class="adv-stat"><strong>'+incomplete+'</strong><span>À finir</span></div>'
+      +'<div class="adv-stat"><strong>'+all.filter(function(b){ return _beastUsageFor(b.id).uses>0; }).length+'</strong><span>Jouées</span></div>';
   }
   function _beastEnsureAdminUi(){
     var tab = ge('bestiaire'); if(!tab || !_staffCanManageBeasts()) return;
@@ -124,15 +118,21 @@
       wrap.className = 'bestiary-admin-adv';
       wrap.innerHTML = ''
         +'<div class="adv-head">'
-          +'<div><div class="adv-title">Pilotage du bestiaire</div><div class="adv-sub">Filtres cumulables, archivage, duplication, notes staff, usage en combat et passerelles directes vers le simulateur.</div></div>'
+          +'<div><div class="adv-title">Bestiaire</div><div class="adv-sub">Recherche, tri et édition rapide. Les outils lourds sont rangés pour garder la page lisible.</div></div>'
           +'<div class="adv-actions">'
-            +'<button class="btn btn-sm" onclick="beastImportJsonPrompt()"><span>Importer JSON</span></button>'
-            +'<button class="btn btn-sm" onclick="beastExportAllJson()"><span>Exporter tout</span></button>'
             +'<button class="btn btn-sm btn-grn" onclick="openModal(\'m-addb\')"><span>+ Nouvelle créature</span></button>'
+            +'<details class="beast-admin-tools"><summary>Outils</summary><div>'
+              +'<button class="btn btn-sm" onclick="beastImportJsonPrompt()"><span>Importer JSON</span></button>'
+              +'<button class="btn btn-sm" onclick="beastExportAllJson()"><span>Exporter tout</span></button>'
+              +'<button class="btn btn-sm" onclick="beastAdminResetFilters()"><span>Reset filtres</span></button>'
+            +'</div></details>'
           +'</div>'
         +'</div>'
-        +'<div class="adv-grid">'
+        +'<div class="adv-grid bestiary-admin-primary-filters">'
           +'<div class="adv-field"><label>Statut</label><select id="beast-admin-filter-status" onchange="beastAdminSetFilter(\'status\',this.value)"><option value="active">Actives</option><option value="all">Toutes</option><option value="published">Publiées</option><option value="hidden">Masquées</option><option value="archived">Archivées</option></select></div>'
+          +'<div class="adv-field"><label>Tri</label><select id="beast-admin-filter-sort" onchange="beastAdminSetFilter(\'sort\',this.value)"><option value="updated_desc">Modifiées récemment</option><option value="updated_asc">Plus anciennes</option><option value="name_asc">Nom A → Z</option><option value="name_desc">Nom Z → A</option><option value="level_desc">Niveau décroissant</option><option value="level_asc">Niveau croissant</option><option value="danger_desc">Dangerosité</option><option value="usage_desc">Usage combat</option><option value="published_first">Publiées d\'abord</option></select></div>'
+        +'</div>'
+        +'<details class="beast-admin-advanced-filters"><summary>Filtres avancés</summary><div class="adv-grid">'
           +'<div class="adv-field"><label>Image</label><select id="beast-admin-filter-image" onchange="beastAdminSetFilter(\'image\',this.value)"><option value="all">Toutes</option><option value="with">Avec image</option><option value="without">Sans image</option></select></div>'
           +'<div class="adv-field"><label>Usage en combat</label><select id="beast-admin-filter-usage" onchange="beastAdminSetFilter(\'usage\',this.value)"><option value="all">Toutes</option><option value="recent">Utilisées récemment</option><option value="used">Déjà utilisées</option><option value="never">Jamais utilisées</option></select></div>'
           +'<div class="adv-field"><label>Boss</label><select id="beast-admin-filter-boss" onchange="beastAdminSetFilter(\'boss\',this.value)"><option value="all">Tous</option><option value="boss">Boss</option><option value="normal">Normales</option></select></div>'
@@ -140,9 +140,7 @@
           +'<div class="adv-field"><label>Complétude</label><select id="beast-admin-filter-completeness" onchange="beastAdminSetFilter(\'completeness\',this.value)"><option value="all">Toutes</option><option value="complete">Complètes</option><option value="incomplete">À finir</option></select></div>'
           +'<div class="adv-field"><label>Niveau min.</label><input id="beast-admin-filter-minlvl" type="number" min="1" placeholder="1" oninput="beastAdminSetFilter(\'minLvl\',this.value)"></div>'
           +'<div class="adv-field"><label>Niveau max.</label><input id="beast-admin-filter-maxlvl" type="number" min="1" placeholder="30" oninput="beastAdminSetFilter(\'maxLvl\',this.value)"></div>'
-          +'<div class="adv-field"><label>Tri</label><select id="beast-admin-filter-sort" onchange="beastAdminSetFilter(\'sort\',this.value)"><option value="updated_desc">Modifiées récemment</option><option value="updated_asc">Plus anciennes</option><option value="name_asc">Nom A → Z</option><option value="name_desc">Nom Z → A</option><option value="level_desc">Niveau décroissant</option><option value="level_asc">Niveau croissant</option><option value="danger_desc">Dangerosité</option><option value="usage_desc">Usage combat</option><option value="published_first">Publiées d\'abord</option></select></div>'
-          +'<div class="adv-field"><label>Réinitialiser</label><button class="btn btn-sm" onclick="beastAdminResetFilters()"><span>Reset filtres</span></button></div>'
-        +'</div>'
+        +'</div></details>'
         +'<div class="adv-stats" id="beast-admin-adv-stats"></div>';
       filters.insertAdjacentElement('afterend', wrap);
     }
@@ -221,13 +219,10 @@
     if(isPublicView){
       return '<div class="bcrd">'+media+'<div class="bbody"><div class="bnm">'+esc(b.nom)+'</div><div class="bsub">'+esc(b.sub||'')+'</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">'+(lbl?window.cBehaviorTag(b.beh,{fontSize:8,padding:'2px 8px',letterSpacing:'1.5px',radius:'2px'}):'')+'<span style="color:var(--faint);font-size:10px;">Niv. '+esc(String(b.niv||1))+'</span></div><div class="bdesc">'+esc(_beastExtendedDesc(b)||b.desc||'')+'</div><table class="btbl"><tbody><tr><td>PV</td><td style="color:var(--green);font-family:var(--fm)">'+esc(String(b.pv||0))+'</td><td>EP</td><td style="color:var(--gold);font-family:var(--fm)">'+esc(String(b.ep||0))+'</td></tr><tr><td colspan="2">Frappe</td><td colspan="2" style="font-family:var(--fm);font-size:13px">'+esc(String(b.frappe||''))+'</td></tr></tbody></table><div class="bcomp"><span class="bclbl">COMPÉTENCE</span>'+esc(b.comp||'')+'</div><div class="bdrop"><span>BUTIN</span>'+esc(b.drops||'')+'</div><div class="bdrop"><span>DROP GEMME (D100)</span>'+esc(b.gem||'')+'</div></div></div>';
     }
-    var editBtn = canEdit ? '<button class="btn btn-sm" onclick="previewBeastAdmin(\''+jsesc(b.id)+'\')"><span>Aperçu</span></button><button class="btn btn-sm" onclick="openEditBeast(\''+jsesc(b.id)+'\')"><span>Éditer</span></button><button class="btn btn-sm" onclick="duplicateBeast(\''+jsesc(b.id)+'\')"><span>Dupliquer</span></button><button class="btn btn-sm" onclick="beastExportJson(\''+jsesc(b.id)+'\')"><span>JSON</span></button>' : '';
-    var archiveBtn = canEdit ? '<button class="btn btn-sm" onclick="toggleBeastArchived(\''+jsesc(b.id)+'\')"><span>'+(b.archived?'Restaurer':'Archiver')+'</span></button>' : '';
-    var purgeBtn = canDel ? '<button class="btn btn-sm btn-red" onclick="delBeast(\''+jsesc(b.id)+'\')"><span>Purger</span></button>' : '';
-    var quickBtns = canEdit ? '<button class="btn btn-sm btn-grn" onclick="bestiaryAddToCombat(\''+jsesc(b.id)+'\',1)"><span>+ Combat</span></button><button class="btn btn-sm" onclick="bestiaryAddToCombat(\''+jsesc(b.id)+'\',2)"><span>+ x2</span></button><button class="btn btn-sm" onclick="bestiaryAddToCombat(\''+jsesc(b.id)+'\',3)"><span>+ x3</span></button>' : '';
-    var noteBlock = b.adminNotes ? '<div class="beast-admin-note"><span class="ttl">Notes admin</span><div style="font-size:12px;color:var(--dim);line-height:1.55;">'+esc(b.adminNotes.length>220?b.adminNotes.slice(0,220)+'…':b.adminNotes)+'</div></div>' : '<div class="beast-admin-note"><span class="ttl">Notes admin</span><div style="font-size:12px;color:var(--faint);font-style:italic;">Aucune note staff.</div></div>';
-    var usageBlock = '<div class="beast-admin-usage"><span class="ttl">Historique d\'usage</span><div style="font-size:12px;color:var(--dim);line-height:1.55;">Apparitions : <strong style="color:var(--text);">'+(usage.uses||0)+'</strong> · Morts : <strong style="color:var(--text);">'+(usage.deaths||0)+'</strong> · Dernière sortie : <strong style="color:var(--text);">'+esc(_beastRelativeDate(usage.lastAt))+'</strong></div>'+(usage.combats&&usage.combats.length?'<div class="beast-admin-usage-list">'+usage.combats.map(function(name){ return '<span>'+esc(name)+'</span>'; }).join('')+'</div>':'')+'</div>';
-    return '<div class="bcrd beast-admin-card" style="'+(b.archived?'opacity:.86;':'')+'">'+media+'<div class="bbody"><div class="beast-admin-top"><div><div class="bnm">'+esc(b.nom)+'</div><div class="bsub">'+esc(b.sub||'')+'</div><div class="beast-admin-badges">'+(lbl?window.cBehaviorTag(b.beh,{fontSize:8,padding:'3px 9px',letterSpacing:'1.3px',radius:'999px'}):'')+_beastBossChip(b)+_beastStatusChip(b)+_beastUsageChip(usage)+_beastCompletenessChip(completeness)+'</div></div><div class="beast-admin-actions">'+editBtn+archiveBtn+purgeBtn+'</div></div><div class="bdesc">'+esc(_beastExtendedDesc(b)||b.desc||'')+'</div><div class="beast-admin-stats"><div class="beast-admin-stat"><span class="k">Niveau</span><span class="v">'+esc(String(b.niv||1))+'</span></div><div class="beast-admin-stat"><span class="k">PV</span><span class="v">'+esc(String(b.pv||0))+'</span></div><div class="beast-admin-stat"><span class="k">EP</span><span class="v">'+esc(String(b.ep||0))+'</span></div><div class="beast-admin-stat"><span class="k">Menace</span><span class="v" style="font-size:12px;">'+esc((_beastThreatBand&&_beastThreatBand(b))||'Modérée')+'</span></div></div><table class="btbl"><tbody><tr><td colspan="2">Frappe</td><td colspan="2" style="font-family:var(--fm);font-size:13px">'+esc(String(b.frappe||'—'))+'</td></tr></tbody></table><div class="bcomp"><span class="bclbl">COMPÉTENCE</span>'+esc(b.comp||'—')+'</div>'+(b.style?'<div class="bcomp" style="border-color:rgba(126,184,212,.15);"><span class="bclbl" style="color:var(--glacier);">STYLE DE COMBAT</span>'+esc(b.style)+'</div>':'')+'<div class="bdrop"><span>BUTIN</span>'+esc(b.drops||'—')+'</div><div class="bdrop"><span>DROP GEMME (D100)</span>'+esc(b.gem||'—')+'</div><div class="beast-admin-quick">'+quickBtns+'</div><div class="beast-admin-meta">'+noteBlock+usageBlock+'</div></div></div>';
+    var editBtn = canEdit ? '<button class="btn btn-sm" onclick="openEditBeast(\''+jsesc(b.id)+'\')"><span>Éditer</span></button>' : '';
+    var quickBtns = canEdit ? '<button class="btn btn-sm btn-grn" onclick="bestiaryAddToCombat(\''+jsesc(b.id)+'\',1)"><span>+ Combat</span></button>' : '';
+    var moreActions = canEdit ? '<details class="beast-card-more"><summary>Plus</summary><div><button class="btn btn-sm" onclick="previewBeastAdmin(\''+jsesc(b.id)+'\')"><span>Aperçu</span></button><button class="btn btn-sm" onclick="duplicateBeast(\''+jsesc(b.id)+'\')"><span>Dupliquer</span></button><button class="btn btn-sm" onclick="beastExportJson(\''+jsesc(b.id)+'\')"><span>JSON</span></button><button class="btn btn-sm" onclick="toggleBeastArchived(\''+jsesc(b.id)+'\')"><span>'+(b.archived?'Restaurer':'Archiver')+'</span></button>'+(canDel?'<button class="btn btn-sm btn-red" onclick="delBeast(\''+jsesc(b.id)+'\')"><span>Purger</span></button>':'')+'</div></details>' : '';
+    return '<div class="bcrd beast-admin-card" style="'+(b.archived?'opacity:.86;':'')+'">'+media+'<div class="bbody"><div class="beast-admin-top"><div><div class="bnm">'+esc(b.nom)+'</div><div class="bsub">'+esc(b.sub||'')+'</div><div class="beast-admin-badges">'+(lbl?window.cBehaviorTag(b.beh,{fontSize:8,padding:'3px 9px',letterSpacing:'1.3px',radius:'999px'}):'')+_beastStatusChip(b)+_beastCompletenessChip(completeness)+'</div></div><div class="beast-admin-actions">'+editBtn+quickBtns+moreActions+'</div></div><div class="bdesc">'+esc(_beastExtendedDesc(b)||b.desc||'')+'</div><div class="beast-admin-stats"><div class="beast-admin-stat"><span class="k">Niveau</span><span class="v">'+esc(String(b.niv||1))+'</span></div><div class="beast-admin-stat"><span class="k">PV</span><span class="v">'+esc(String(b.pv||0))+'</span></div><div class="beast-admin-stat"><span class="k">EP</span><span class="v">'+esc(String(b.ep||0))+'</span></div><div class="beast-admin-stat"><span class="k">Usage</span><span class="v">'+esc(String(usage.uses||0))+'</span></div></div><table class="btbl"><tbody><tr><td colspan="2">Frappe</td><td colspan="2" style="font-family:var(--fm);font-size:13px">'+esc(String(b.frappe||'—'))+'</td></tr></tbody></table><div class="bcomp"><span class="bclbl">COMPÉTENCE</span>'+esc(b.comp||'—')+'</div><details class="beast-card-details"><summary>Détails</summary><div>'+(b.style?'<div class="bcomp" style="border-color:rgba(126,184,212,.15);"><span class="bclbl" style="color:var(--glacier);">STYLE DE COMBAT</span>'+esc(b.style)+'</div>':'')+'<div class="bdrop"><span>BUTIN</span>'+esc(b.drops||'—')+'</div><div class="bdrop"><span>DROP GEMME (D100)</span>'+esc(b.gem||'—')+'</div></div></details></div></div>';
   };
 
   window.renderBGrid = function(tid,staff){

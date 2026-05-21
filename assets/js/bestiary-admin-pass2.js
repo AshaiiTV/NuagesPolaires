@@ -77,7 +77,7 @@
       + '#bestiaire .beast-admin-hero-title{font-family:var(--fd);font-size:24px;line-height:1.05;letter-spacing:1px;color:var(--text);margin:6px 0 4px;}'
       + '#bestiaire .beast-admin-hero-sub{font-size:12px;color:var(--dim);line-height:1.55;}'
       + '#bestiaire .beast-admin-detail-badges{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}'
-      + '#bestiaire .beast-admin-detail-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0 12px;}'
+      + '#bestiaire .beast-admin-detail-actions{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 12px;}'
       + '#bestiaire .beast-admin-detail-actions .btn,#bestiaire .beast-admin-detail-actions .btn-sm{justify-content:center;}'
       + '#bestiaire .beast-admin-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0 14px;}'
       + '#bestiaire .beast-admin-detail-stat{padding:10px 12px;border-radius:12px;border:1px solid rgba(126,184,212,.12);background:rgba(255,255,255,.03);}'
@@ -86,6 +86,16 @@
       + '#bestiaire .beast-admin-detail-block{padding:12px 13px;border-radius:14px;border:1px solid rgba(126,184,212,.1);background:rgba(255,255,255,.025);margin-top:10px;}'
       + '#bestiaire .beast-admin-detail-block .ttl{display:block;font-family:var(--fd);font-size:9px;letter-spacing:2.3px;text-transform:uppercase;color:var(--faint);margin-bottom:8px;}'
       + '#bestiaire .beast-admin-detail-block .txt{font-size:12px;line-height:1.68;color:var(--dim);}'
+      + '#bestiaire details.beast-admin-detail-block{cursor:default;}'
+      + '#bestiaire details.beast-admin-detail-block>summary{list-style:none;cursor:pointer;font-family:var(--fd);font-size:9px;letter-spacing:2.3px;text-transform:uppercase;color:var(--faint);}'
+      + '#bestiaire details.beast-admin-detail-block>summary::-webkit-details-marker{display:none;}'
+      + '#bestiaire details.beast-admin-detail-block>summary::after{content:"+";float:right;color:var(--glacier);font-family:var(--fm);font-size:13px;letter-spacing:0;}'
+      + '#bestiaire details.beast-admin-detail-block[open]>summary::after{content:"-";}'
+      + '#bestiaire .beast-admin-action-more{position:relative;display:inline-flex;}'
+      + '#bestiaire .beast-admin-action-more>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:0 13px;border:1px solid var(--border2);border-radius:999px;background:var(--bg3);font-family:var(--fd);font-size:10px;letter-spacing:1.6px;color:var(--text);}'
+      + '#bestiaire .beast-admin-action-more>summary::-webkit-details-marker{display:none;}'
+      + '#bestiaire .beast-admin-action-more>div{position:absolute;right:0;top:calc(100% + 8px);z-index:30;display:grid;gap:7px;min-width:170px;padding:10px;border:1px solid var(--border2);border-radius:14px;background:var(--bg2);box-shadow:0 16px 36px rgba(0,0,0,.28);}'
+      + '#bestiaire .beast-admin-action-more .btn{width:100%;}'
       + '#bestiaire .beast-admin-completeness{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}'
       + '#bestiaire .beast-admin-completeness span,#bestiaire .beast-admin-last-combats span{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;border:1px solid rgba(126,184,212,.12);background:rgba(255,255,255,.03);font-size:10px;color:var(--dim);}'
       + '#bestiaire .beast-admin-last-combats{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}'
@@ -98,7 +108,7 @@
       + 'body.light #bestiaire .beast-admin-detail-stat, body.light #bestiaire .beast-admin-detail-block, body.light #bestiaire .beast-admin-hero-media{background:rgba(255,255,255,.88);border-color:rgba(40,84,110,.12);}'
       + 'body.light #bestiaire .beast-admin-completeness span, body.light #bestiaire .beast-admin-last-combats span{background:rgba(255,255,255,.86);border-color:rgba(40,84,110,.12);color:#456070;}'
       + '@media (max-width: 1179px){#bestiaire .beast-admin-shell{grid-template-columns:1fr;}#bestiaire .beast-admin-detail{position:relative;top:auto;order:-1;}}'
-      + '@media (max-width: 640px){#bestiaire .beast-admin-hero{grid-template-columns:1fr;}#bestiaire .beast-admin-detail-actions,#bestiaire .beast-admin-detail-grid{grid-template-columns:1fr;}#bestiaire .beast-admin-detail{padding:14px;}}';
+      + '@media (max-width: 640px){#bestiaire .beast-admin-hero{grid-template-columns:1fr;}#bestiaire .beast-admin-detail-grid{grid-template-columns:1fr;}#bestiaire .beast-admin-detail{padding:14px;}#bestiaire .beast-admin-action-more>div{left:0;right:auto;}}';
     var style = document.createElement('style');
     style.id = 'beast-admin-pass2-style';
     style.textContent = css;
@@ -175,6 +185,9 @@
   function actionBtn(label, cls, onclick){
     return '<button class="'+cls+'" onclick="'+onclick+'"><span>'+label+'</span></button>';
   }
+  function actionMenu(items){
+    return '<details class="beast-admin-action-more"><summary>Plus</summary><div>'+items.join('')+'</div></details>';
+  }
   function renderDetail(){
     var panel = ge('beast-admin-detail'); if(!panel || !canManage()) return;
     var b = getBeast(state.selectedId);
@@ -207,11 +220,15 @@
           + '<div class="beast-admin-hero-sub">'+esc(b.sub||'Sans sous-titre')+'</div>'
           + '<div class="beast-admin-detail-actions">'
             + actionBtn('Éditer', 'btn btn-sm', 'openEditBeast(\''+jsesc(b.id)+'\')')
-            + actionBtn('Aperçu', 'btn btn-sm', 'previewBeastAdmin(\''+jsesc(b.id)+'\')')
             + actionBtn('+ Combat', 'btn btn-sm btn-grn', 'bestiaryAddToCombat(\''+jsesc(b.id)+'\',1)')
-            + actionBtn('Dupliquer', 'btn btn-sm', 'duplicateBeast(\''+jsesc(b.id)+'\')')
-            + actionBtn(b.archived ? 'Restaurer' : 'Archiver', 'btn btn-sm', 'toggleBeastArchived(\''+jsesc(b.id)+'\')')
-            + actionBtn('JSON', 'btn btn-sm', 'beastExportJson(\''+jsesc(b.id)+'\')')
+            + actionMenu([
+              actionBtn('Aperçu', 'btn btn-sm', 'previewBeastAdmin(\''+jsesc(b.id)+'\')'),
+              actionBtn('Dupliquer', 'btn btn-sm', 'duplicateBeast(\''+jsesc(b.id)+'\')'),
+              actionBtn('+ x2', 'btn btn-sm', 'bestiaryAddToCombat(\''+jsesc(b.id)+'\',2)'),
+              actionBtn('+ x3', 'btn btn-sm', 'bestiaryAddToCombat(\''+jsesc(b.id)+'\',3)'),
+              actionBtn(b.archived ? 'Restaurer' : 'Archiver', 'btn btn-sm', 'toggleBeastArchived(\''+jsesc(b.id)+'\')'),
+              actionBtn('JSON', 'btn btn-sm', 'beastExportJson(\''+jsesc(b.id)+'\')')
+            ])
           + '</div>'
         + '</div>'
       + '</div>'
@@ -222,16 +239,11 @@
         + '<div class="beast-admin-detail-stat"><span class="k">Apparitions</span><span class="v">'+esc(String(usage.uses||0))+'</span></div>'
       + '</div>'
       + '<div class="beast-admin-detail-block"><span class="ttl">Résumé staff</span><div class="txt">'+esc((typeof _beastExtendedDesc === 'function' ? (_beastExtendedDesc(b)||b.desc||'') : (b.desc||'')) || 'Aucune description pour le moment.')+'</div></div>'
-      + '<div class="beast-admin-detail-block"><span class="ttl">Complétude de la fiche</span><div class="txt">'+(comp.complete ? 'La fiche est prête à être jouée, publiée et injectée rapidement dans le simulateur.' : 'Cette fiche mérite encore une petite finition avant d’être considérée comme totalement prête.')+'</div><div class="beast-admin-completeness">'+completenessBadges+'</div></div>'
-      + '<div class="beast-admin-detail-block"><span class="ttl">Combat & simulateur</span><div class="txt">Morts enregistrées : <strong style="color:var(--text);">'+esc(String(usage.deaths||0))+'</strong><br>Dernière apparition : <strong style="color:var(--text);">'+esc(relDate(usage.lastAt))+'</strong><br>Frappe : <strong style="color:var(--text);">'+esc(b.frappe||'—')+'</strong><br>Compétence : <strong style="color:var(--text);">'+esc(b.comp||'—')+'</strong></div>'
-        + '<div class="beast-admin-detail-actions" style="margin-top:10px;">'
-          + actionBtn('+ x2', 'btn btn-sm', 'bestiaryAddToCombat(\''+jsesc(b.id)+'\',2)')
-          + actionBtn('+ x3', 'btn btn-sm', 'bestiaryAddToCombat(\''+jsesc(b.id)+'\',3)')
-        + '</div>'
-      + '</div>'
-      + '<div class="beast-admin-detail-block"><span class="ttl">Derniers combats liés</span><div class="txt">'+(usage.combats.length ? 'Retrouve immédiatement les dernières archives où cette créature a été utilisée.' : 'Cette créature n’a pas encore de trace dans les archives de combat.')+'</div><div class="beast-admin-last-combats">'+(usage.combats.length ? usage.combats.map(function(name){ return '<span>'+esc(name)+'</span>'; }).join('') : '<span>Aucune apparition</span>')+'</div></div>'
-      + '<div class="beast-admin-detail-block"><span class="ttl">Suivi staff</span><div class="txt">Créée : <strong style="color:var(--text);">'+esc(fmtDate(b.createdAt||0))+'</strong>' + (b.createdBy ? ' · par <strong style="color:var(--text);">'+esc(b.createdBy)+'</strong>' : '') + '<br>Modifiée : <strong style="color:var(--text);">'+esc(fmtDate(b.updatedAt||0))+'</strong>' + (b.updatedBy ? ' · par <strong style="color:var(--text);">'+esc(b.updatedBy)+'</strong>' : '') + '</div></div>'
-      + '<div class="beast-admin-detail-block"><span class="ttl">Notes admin</span><div class="txt">'+esc(String(b.adminNotes||'').trim() || 'Aucune note staff pour le moment.')+'</div></div>';
+      + '<details class="beast-admin-detail-block"><summary>Complétude</summary><div class="txt" style="margin-top:8px;">'+(comp.complete ? 'La fiche est prête à être jouée.' : 'Cette fiche mérite encore une petite finition.')+'</div><div class="beast-admin-completeness">'+completenessBadges+'</div></details>'
+      + '<details class="beast-admin-detail-block"><summary>Combat & simulateur</summary><div class="txt" style="margin-top:8px;">Morts enregistrées : <strong style="color:var(--text);">'+esc(String(usage.deaths||0))+'</strong><br>Dernière apparition : <strong style="color:var(--text);">'+esc(relDate(usage.lastAt))+'</strong><br>Frappe : <strong style="color:var(--text);">'+esc(b.frappe||'—')+'</strong><br>Compétence : <strong style="color:var(--text);">'+esc(b.comp||'—')+'</strong></div></details>'
+      + '<details class="beast-admin-detail-block"><summary>Historique</summary><div class="txt" style="margin-top:8px;">'+(usage.combats.length ? 'Dernières archives où cette créature a été utilisée.' : 'Cette créature n’a pas encore de trace dans les archives de combat.')+'</div><div class="beast-admin-last-combats">'+(usage.combats.length ? usage.combats.map(function(name){ return '<span>'+esc(name)+'</span>'; }).join('') : '<span>Aucune apparition</span>')+'</div></details>'
+      + '<details class="beast-admin-detail-block"><summary>Suivi staff</summary><div class="txt" style="margin-top:8px;">Créée : <strong style="color:var(--text);">'+esc(fmtDate(b.createdAt||0))+'</strong>' + (b.createdBy ? ' · par <strong style="color:var(--text);">'+esc(b.createdBy)+'</strong>' : '') + '<br>Modifiée : <strong style="color:var(--text);">'+esc(fmtDate(b.updatedAt||0))+'</strong>' + (b.updatedBy ? ' · par <strong style="color:var(--text);">'+esc(b.updatedBy)+'</strong>' : '') + '</div></details>'
+      + '<details class="beast-admin-detail-block"><summary>Notes admin</summary><div class="txt" style="margin-top:8px;">'+esc(String(b.adminNotes||'').trim() || 'Aucune note staff pour le moment.')+'</div></details>';
     syncSelectedClass();
   }
   function enhanceCards(){
