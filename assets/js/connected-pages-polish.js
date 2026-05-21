@@ -301,9 +301,14 @@ body[data-theme-active="light"] #app-root [style*="linear-gradient(180deg, rgba(
 #app-root :where(.modal,.tab-content.tab-popup-active,.branch-modal-shell,.cmdk,.account-dd,.branch-dd,.nav-dropdown-menu,.nav-group-menu){
   border-radius:20px !important;
   border-color:var(--np-readable-border) !important;
-  background:linear-gradient(180deg, rgba(18,25,42,.96), rgba(8,13,24,.94)) !important;
+  background:var(--np-ui-dropdown-bg,var(--tm-card-bg-strong,linear-gradient(180deg, rgba(18,25,42,.96), rgba(8,13,24,.94)))) !important;
   color:var(--tm-text,var(--text)) !important;
   box-shadow:0 28px 72px rgba(0,0,0,.46), inset 0 1px 0 rgba(255,255,255,.06) !important;
+}
+body[data-theme-engine] :where(#nav-dropdown-root .nav-dropdown-menu,#nav-dropdown-root .nav-group-menu,#mobile-drawer,.nav-dropdown-menu,.nav-group-menu,.nav-dd,.nav-dropdown,.account-dd,.branch-dd,.menu,.modal,.tab-content.tab-popup-active,.branch-modal-shell,.cmdk){
+  border-color:var(--np-ui-border-soft,var(--tm-border,var(--np-readable-border))) !important;
+  background:var(--np-ui-dropdown-bg,var(--tm-card-bg-strong)) !important;
+  color:var(--tm-text,var(--text)) !important;
 }
 body.light #app-root :where(.modal,.tab-content.tab-popup-active,.branch-modal-shell,.cmdk,.account-dd,.branch-dd,.nav-dropdown-menu,.nav-group-menu),
 body[data-theme-tone="light"] #app-root :where(.modal,.tab-content.tab-popup-active,.branch-modal-shell,.cmdk,.account-dd,.branch-dd,.nav-dropdown-menu,.nav-group-menu),
