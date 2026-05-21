@@ -12722,6 +12722,25 @@ function spawnLabTransferLastToSimulator(){
   var s=_spawnLabEnsure();
   var run=s.lastRuns&&s.lastRuns[0];
   if(!run || !Array.isArray(run.packs) || !run.packs.length){ notif('Aucun roll à transférer.','err'); return; }
+  try{
+    if(typeof combatHasMeaningfulState==='function' && combatHasMeaningfulState(_cs) && typeof combatPersistCurrentDraft==='function'){
+      combatPersistCurrentDraft('spawn-transfer');
+    }
+  }catch(_e){}
+  _cs=(typeof combatBlankState==='function') ? combatBlankState() : {active:false,round:1,initiative:0,fighters:[],log:[],id:null,name:'',order:[],turn:0,phase:'idle',_new:true,notes:'',_iv:{},decl:{},pendingDrops:[]};
+  _cs.id='c'+Date.now();
+  var rollDateLabel;
+  try{ rollDateLabel=new Date(parseInt(run.rolledAt,10)||Date.now()).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+  catch(_dateErr){ rollDateLabel=new Date().toLocaleString('fr-FR'); }
+  _cs.name='Apparition — '+String(run.zone||_spawnLabZoneLabel(run.zoneValue)||'Zone')+' — '+rollDateLabel+' — '+String(run.rolledBy||'Staff');
+  _cs.active=false;
+  _cs.phase='idle';
+  _cs.round=1;
+  _cs.log=[];
+  _cs.order=[];
+  _cs.turn=0;
+  _cs.initiative=0;
+  _cs._new=true;
   var added=0, missing=[];
   run.packs.forEach(function(pack){
     var beast=_spawnLabFindBeastForPack(pack);
@@ -12730,12 +12749,12 @@ function spawnLabTransferLastToSimulator(){
     for(var i=0;i<qty;i++){ if(_spawnLabPushBeastToCombat(beast)) added++; }
   });
   if(!added){ notif('Aucun mob transféré dans le simulateur.','err'); return; }
-  if(!_cs.name) _cs.name='Apparition — '+String(run.zone||_spawnLabZoneLabel(run.zoneValue)||'Zone');
-  if(typeof cLog==='function') cLog('Apparition transférée : '+run.packs.map(function(p){ return (p.qty||1)+'× '+(p.nom||'Mob'); }).join(' • '),'info');
+  if(_cs.fighters.length) _cs.initiative=0;
+  try{ if(typeof combatPersistCurrentDraft==='function') combatPersistCurrentDraft('spawn-precombat'); }catch(_e2){}
   if(typeof rCombat==='function') rCombat('p-combat-mj-c');
   if(typeof switchTab==='function') switchTab('combat-mj', null);
-  if(missing.length) notif(added+' mob(s) transféré(s). Introuvable : '+missing.join(', '),'err');
-  else notif(added+' mob(s) transféré(s) dans le simulateur.','ok');
+  if(missing.length) notif('Pré-combat créé avec '+added+' mob(s). Introuvable : '+missing.join(', '),'err');
+  else notif('Pré-combat créé avec '+added+' mob(s) du roll.','ok');
 }
 function spawnLabOpenZoneAdmin(){
   if(!can("manage_beasts")){ notif("Réservé à l’admin bestiaire.","err"); return; }
