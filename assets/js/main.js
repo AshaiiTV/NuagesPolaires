@@ -12808,66 +12808,61 @@ function renderSpawnLab(tid){
   var canSeeWeights=_spawnLabCanResetGlobal();
   var h='';
   h+='<style id="np-spawn-lab-style">';
-  h+='#p-apparitions-c .sl-wrap{max-width:1320px;margin:0 auto;padding:10px 0 38px;}';
-  h+='#p-apparitions-c .sl-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px;}';
+  h+='#p-apparitions-c .sl-wrap{max-width:1360px;margin:0 auto;padding:8px 0 38px;}';
+  h+='#p-apparitions-c .sl-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;}';
   h+='#p-apparitions-c .sl-title{font-family:var(--fd);font-size:24px;letter-spacing:2px;color:var(--text);}';
-  h+='#p-apparitions-c .sl-sub{color:var(--dim);font-size:13px;line-height:1.7;max-width:760px;}';
-  h+='#p-apparitions-c .sl-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;}';
-  h+='#p-apparitions-c .sl-card{background:linear-gradient(180deg,rgba(15,18,31,.96),rgba(8,10,18,.98));border:1px solid rgba(126,184,212,.14);box-shadow:0 18px 48px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.03);padding:16px;position:relative;overflow:hidden;}';
-  h+='#p-apparitions-c .sl-card::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.035),transparent 40%);opacity:.55;}';
+  h+='#p-apparitions-c .sl-sub{color:var(--dim);font-size:12px;line-height:1.55;max-width:760px;}';
+  h+='#p-apparitions-c .sl-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);gap:14px;align-items:start;}';
+  h+='#p-apparitions-c .sl-card{background:linear-gradient(180deg,rgba(15,18,31,.92),rgba(8,10,18,.96));border:1px solid rgba(126,184,212,.14);box-shadow:0 18px 44px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.035);padding:16px;position:relative;overflow:hidden;}';
   h+='#p-apparitions-c .sl-card>*{position:relative;z-index:1;}';
-  h+='#p-apparitions-c .sl-span-4{grid-column:span 4;} #p-apparitions-c .sl-span-8{grid-column:span 8;} #p-apparitions-c .sl-span-12{grid-column:span 12;}';
-  h+='#p-apparitions-c .sl-kicker{font-family:var(--fd);font-size:8px;letter-spacing:4px;color:rgba(126,184,212,.45);margin-bottom:10px;text-transform:uppercase;}';
-  h+='#p-apparitions-c .sl-fields{display:grid;grid-template-columns:minmax(220px,420px);gap:10px;}';
+  h+='#p-apparitions-c .sl-main{display:grid;grid-template-columns:minmax(240px,360px) minmax(0,1fr);gap:14px;}';
+  h+='#p-apparitions-c .sl-kicker{font-family:var(--fd);font-size:8px;letter-spacing:3.2px;color:rgba(126,184,212,.48);margin-bottom:9px;text-transform:uppercase;}';
   h+='#p-apparitions-c .sl-field label{display:block;font-size:11px;color:var(--faint);margin-bottom:5px;}';
-  h+='#p-apparitions-c .sl-field input,#p-apparitions-c .sl-field select{width:100%;padding:11px 12px;background:rgba(6,8,16,.9);border:1px solid rgba(126,184,212,.16);color:var(--text);outline:none;}';
-  h+='#p-apparitions-c .sl-field input:focus,#p-apparitions-c .sl-field select:focus{border-color:rgba(126,184,212,.42);}';
-  h+='#p-apparitions-c .sl-zone-vault{position:relative;margin-top:13px;padding:14px;border:1px solid rgba(126,184,212,.22);background:radial-gradient(circle at 12% 0%,rgba(126,184,212,.18),transparent 34%),radial-gradient(circle at 92% 100%,rgba(201,168,76,.12),transparent 30%),linear-gradient(145deg,rgba(16,25,48,.86),rgba(7,10,20,.96));box-shadow:0 18px 38px rgba(0,0,0,.25),0 0 0 1px rgba(126,184,212,.07) inset;overflow:hidden;}';
-  h+='#p-apparitions-c .sl-zone-vault::after{content:"";position:absolute;left:14px;right:14px;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(184,222,238,.82),rgba(201,168,76,.46),transparent);opacity:.84;}';
-  h+='#p-apparitions-c .sl-zone-vault-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:11px;}';
-  h+='#p-apparitions-c .sl-zone-vault-title{font-family:var(--fd);font-size:14px;letter-spacing:1.6px;color:var(--text);text-shadow:0 0 18px rgba(126,184,212,.18);}';
-  h+='#p-apparitions-c .sl-zone-vault-count{padding:5px 10px;border:1px solid rgba(201,168,76,.30);background:linear-gradient(90deg,rgba(201,168,76,.15),rgba(126,184,212,.08));font-family:var(--fd);font-size:9px;letter-spacing:1.4px;color:var(--gold);text-transform:uppercase;}';
-  h+='#p-apparitions-c .sl-zone-vault-sub{font-size:11px;line-height:1.55;color:var(--dim);margin-bottom:10px;}';
-  h+='#p-apparitions-c .sl-zone-reveal{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;}';
-  h+='#p-apparitions-c .sl-zone-token{position:relative;min-height:66px;padding:10px 11px;border:1px solid rgba(126,184,212,.18);background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.022));box-shadow:0 10px 25px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.06);overflow:hidden;}';
-  h+='#p-apparitions-c .sl-zone-token::before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 0%,rgba(184,222,238,.10) 38%,transparent 68%);transform:translateX(-70%);animation:slZoneGleam 5.8s ease-in-out infinite;}';
-  h+='#p-apparitions-c .sl-zone-token>*{position:relative;z-index:1;}';
-  h+='#p-apparitions-c .sl-zone-token-name{font-family:var(--fd);font-size:11px;letter-spacing:1px;color:var(--text);line-height:1.35;}';
-  h+='#p-apparitions-c .sl-zone-token-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px;font-size:10px;color:var(--dim);}';
-  h+='#p-apparitions-c .sl-zone-empty{padding:12px;border:1px dashed rgba(201,168,76,.24);background:rgba(201,168,76,.055);font-size:12px;line-height:1.6;color:var(--dim);}';
-  h+='@keyframes slZoneGleam{0%,68%{transform:translateX(-82%);opacity:0;}78%{opacity:1;}100%{transform:translateX(82%);opacity:0;}}';
-  h+='#p-apparitions-c .sl-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}';
-  h+='#p-apparitions-c .sl-btn{padding:10px 13px;border:1px solid rgba(126,184,212,.22);background:linear-gradient(180deg,rgba(24,34,58,.95),rgba(12,18,32,.95));color:var(--text);cursor:pointer;font-family:var(--fd);font-size:10px;letter-spacing:1.4px;text-transform:uppercase;transition:border-color .15s, transform .15s, filter .15s;}';
+  h+='#p-apparitions-c .sl-field input,#p-apparitions-c .sl-field select{width:100%;padding:12px 12px;background:rgba(6,8,16,.82);border:1px solid rgba(126,184,212,.18);color:var(--text);outline:none;}';
+  h+='#p-apparitions-c .sl-field input:focus,#p-apparitions-c .sl-field select:focus{border-color:rgba(126,184,212,.48);}';
+  h+='#p-apparitions-c .sl-actions{display:grid;gap:8px;margin-top:12px;}';
+  h+='#p-apparitions-c .sl-btn{padding:10px 13px;border:1px solid rgba(126,184,212,.22);background:linear-gradient(180deg,rgba(24,34,58,.95),rgba(12,18,32,.95));color:var(--text);cursor:pointer;font-family:var(--fd);font-size:10px;letter-spacing:1.35px;text-transform:uppercase;transition:border-color .15s,transform .15s,filter .15s;}';
   h+='#p-apparitions-c .sl-btn:hover{border-color:rgba(126,184,212,.44);transform:translateY(-1px);filter:brightness(1.06);}';
-  h+='#p-apparitions-c .sl-btn-gold{border-color:rgba(201,168,76,.28);color:var(--gold);}';
-  h+='#p-apparitions-c .sl-btn-red{border-color:rgba(201,74,74,.28);color:var(--red);}';
-  h+='#p-apparitions-c .sl-metric{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 13px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);margin-bottom:8px;}';
-  h+='#p-apparitions-c .sl-metric strong{font-family:var(--fd);font-size:10px;letter-spacing:1.2px;color:var(--text);}';
-  h+='#p-apparitions-c .sl-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);font-size:11px;color:var(--text);}';
-  h+='#p-apparitions-c .sl-pool-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;}';
-  h+='#p-apparitions-c .sl-pool{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;}';
-  h+='#p-apparitions-c .sl-beast{padding:12px;border:1px solid rgba(255,255,255,.07);background:linear-gradient(180deg,rgba(255,255,255,.028),rgba(255,255,255,.015));transition:border-color .15s,transform .15s, box-shadow .15s;}';
-  h+='#p-apparitions-c .sl-beast:hover{border-color:rgba(126,184,212,.28);transform:translateY(-1px);}';
-  h+='#p-apparitions-c .sl-beast.is-on{border-color:rgba(126,184,212,.4);box-shadow:0 0 0 1px rgba(126,184,212,.18), inset 0 1px 0 rgba(255,255,255,.04);}';
-  h+='#p-apparitions-c .sl-beast-name{font-family:var(--fd);font-size:12px;letter-spacing:1px;color:var(--text);}';
-  h+='#p-apparitions-c .sl-mini{font-size:10px;color:var(--faint);}';
-  h+='#p-apparitions-c .sl-run{padding:14px;border:1px solid rgba(255,255,255,.07);background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.014));margin-bottom:10px;}';
-  h+='#p-apparitions-c .sl-runhead{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}';
-  h+='#p-apparitions-c .sl-pack{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:10px 11px;border:1px solid rgba(255,255,255,.06);background:rgba(5,8,14,.55);margin-bottom:7px;}';
+  h+='#p-apparitions-c .sl-btn-gold{border-color:rgba(201,168,76,.30);color:var(--gold);}';
+  h+='#p-apparitions-c .sl-btn-red{border-color:rgba(201,74,74,.36);color:var(--red);}';
+  h+='#p-apparitions-c .sl-zone-summary{margin-top:12px;padding:12px;border:1px solid rgba(126,184,212,.18);background:linear-gradient(145deg,rgba(16,25,48,.72),rgba(7,10,20,.88));}';
+  h+='#p-apparitions-c .sl-zone-top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px;}';
+  h+='#p-apparitions-c .sl-zone-name{font-family:var(--fd);font-size:13px;letter-spacing:1.4px;color:var(--text);line-height:1.35;}';
+  h+='#p-apparitions-c .sl-count{padding:5px 9px;border:1px solid rgba(201,168,76,.28);background:rgba(201,168,76,.08);font-family:var(--fd);font-size:9px;letter-spacing:1.2px;color:var(--gold);white-space:nowrap;}';
+  h+='#p-apparitions-c .sl-zone-strip{display:flex;gap:7px;overflow:auto;padding-bottom:2px;scrollbar-width:thin;}';
+  h+='#p-apparitions-c .sl-token{flex:0 0 auto;max-width:220px;padding:8px 10px;border:1px solid rgba(126,184,212,.15);background:rgba(255,255,255,.035);font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}';
+  h+='#p-apparitions-c .sl-token-empty{font-size:12px;color:var(--dim);line-height:1.55;}';
+  h+='#p-apparitions-c .sl-run{min-height:100%;padding:16px;border:1px solid rgba(201,168,76,.18);background:radial-gradient(circle at 100% 0%,rgba(201,168,76,.10),transparent 36%),linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.015));}';
+  h+='#p-apparitions-c .sl-run-title{font-family:var(--fd);font-size:14px;letter-spacing:1.4px;color:var(--text);margin-bottom:11px;}';
+  h+='#p-apparitions-c .sl-pack{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:12px;border:1px solid rgba(255,255,255,.075);background:rgba(5,8,14,.52);margin-bottom:8px;}';
   h+='#p-apparitions-c .sl-pack:last-child{margin-bottom:0;}';
-  h+='#p-apparitions-c .sl-pack strong{font-family:var(--fd);font-size:11px;letter-spacing:1px;color:var(--text);}';
-  h+='#p-apparitions-c .sl-pack-right{text-align:right;min-width:110px;}';
-  h+='@media (max-width:1100px){#p-apparitions-c .sl-span-4,#p-apparitions-c .sl-span-8{grid-column:span 12;}#p-apparitions-c .sl-fields{grid-template-columns:repeat(2,minmax(0,1fr));}}';
-  h+='@media (max-width:720px){#p-apparitions-c .sl-fields{grid-template-columns:1fr;}#p-apparitions-c .sl-pack{flex-direction:column;}#p-apparitions-c .sl-pack-right{text-align:left;min-width:0;}}';
+  h+='#p-apparitions-c .sl-pack strong{font-family:var(--fd);font-size:13px;letter-spacing:1px;color:var(--text);}';
+  h+='#p-apparitions-c .sl-pack-right{text-align:right;min-width:96px;}';
+  h+='#p-apparitions-c .sl-mini{font-size:10px;color:var(--faint);}';
+  h+='#p-apparitions-c .sl-admin details{border:1px solid rgba(201,168,76,.20);background:rgba(201,168,76,.045);padding:0;}';
+  h+='#p-apparitions-c .sl-admin summary{list-style:none;cursor:pointer;padding:13px 14px;font-family:var(--fd);font-size:10px;letter-spacing:1.4px;color:var(--gold);text-transform:uppercase;}';
+  h+='#p-apparitions-c .sl-admin summary::-webkit-details-marker{display:none;}';
+  h+='#p-apparitions-c .sl-admin-body{padding:0 14px 14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;align-items:end;}';
+  h+='#p-apparitions-c .sl-section-title{display:flex;justify-content:space-between;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:10px;}';
+  h+='#p-apparitions-c .sl-pool{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;}';
+  h+='#p-apparitions-c .sl-beast{padding:10px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.025);min-height:58px;}';
+  h+='#p-apparitions-c .sl-beast-name{font-family:var(--fd);font-size:11px;letter-spacing:.9px;color:var(--text);line-height:1.35;}';
+  h+='#p-apparitions-c .sl-history{display:grid;gap:8px;max-height:560px;overflow:auto;padding-right:2px;}';
+  h+='#p-apparitions-c .sl-metric{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:11px 12px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);}';
+  h+='#p-apparitions-c .sl-metric strong{font-family:var(--fd);font-size:10px;letter-spacing:1.1px;color:var(--text);}';
+  h+='#p-apparitions-c .sl-empty{padding:16px;border:1px dashed rgba(255,255,255,.10);background:rgba(255,255,255,.022);font-size:12px;color:var(--dim);line-height:1.65;}';
+  h+='@media (max-width:1120px){#p-apparitions-c .sl-grid,#p-apparitions-c .sl-main{grid-template-columns:1fr;}}';
+  h+='@media (max-width:720px){#p-apparitions-c .sl-pack{flex-direction:column;}#p-apparitions-c .sl-pack-right{text-align:left;min-width:0;}#p-apparitions-c .sl-history{max-height:none;}}';
   h+='</style>';
   h+='<div class="sl-wrap">';
   h+='<div class="sl-head">';
   h+='<div><div class="sl-kicker">OUTIL STAFF — GÉNÉRATEUR D’APPARITIONS</div><div class="sl-title">Roll par zone</div><div class="sl-sub">Choisis une zone, lance le roll, et le résultat tombe parmi les mobs configurés dedans.'+(canSeeWeights?' Les poids restent globaux : un mob qui sort baisse, les autres remontent.':'')+'</div></div>';
   h+='</div>';
   h+='<div class="sl-grid">';
-  h+='<div class="sl-card sl-span-12">';
-  h+='<div class="sl-kicker">ZONE DU ROLL</div>';
-  h+='<div class="sl-fields">';
+  h+='<div class="sl-card">';
+  h+='<div class="sl-main">';
+  h+='<div>';
+  h+='<div class="sl-kicker">Zone du roll</div>';
   h+='<div class="sl-field"><label>Zone</label><select id="sl-zone" onchange="_spawnLabSyncInputs();renderSpawnLab(\'p-apparitions-c\')">';
   if(zoneOptions.length){
     zoneOptions.forEach(function(opt){ h+='<option value="'+escAttr(opt.value)+'"'+(zoneMeta.value===opt.value?' selected':'')+'>'+esc(opt.label)+'</option>'; });
@@ -12875,51 +12870,32 @@ function renderSpawnLab(tid){
     h+='<option value="__all__" selected>Toutes zones</option>';
   }
   h+='</select></div>';
-  h+='</div>';
-  h+='<div class="sl-zone-vault">';
-  h+='<div class="sl-zone-vault-head"><div class="sl-zone-vault-title">'+esc(zoneMeta.label)+'</div><div class="sl-zone-vault-count">'+zonePool.length+' mob'+(zonePool.length>1?'s':'')+' visible'+(zonePool.length>1?'s':'')+'</div></div>';
-  h+='<div class="sl-zone-vault-sub">Contenu sélectionné pour le prochain roll. Ces créatures sont mises en avant dès que tu changes de zone.</div>';
+  h+='<div class="sl-zone-summary">';
+  h+='<div class="sl-zone-top"><div class="sl-zone-name">'+esc(zoneMeta.label)+'</div><div class="sl-count">'+zonePool.length+' mob'+(zonePool.length>1?'s':'')+'</div></div>';
   if(zonePool.length){
-    h+='<div class="sl-zone-reveal">';
-    zonePool.forEach(function(b){
-      var previewBeh=cBehaviorLabel(b.beh||b.behavior||b.comportement)||'Neutre';
-      var previewRange=_spawnLabQtyRange(b);
-      h+='<div class="sl-zone-token">';
-      h+='<div class="sl-zone-token-name">'+esc(b.nom||'Créature')+'</div>';
-      h+='<div class="sl-zone-token-meta"><span>Niv. '+esc(b.niv||1)+'</span><span>•</span><span>'+esc(previewBeh)+'</span><span>•</span><span>Qté '+previewRange.min+'-'+previewRange.max+'</span></div>';
-      h+='</div>';
+    h+='<div class="sl-zone-strip">';
+    zonePool.slice(0,12).forEach(function(b){
+      h+='<span class="sl-token" title="'+escAttr(b.nom||'Créature')+'">'+esc(b.nom||'Créature')+'</span>';
     });
+    if(zonePool.length>12) h+='<span class="sl-token">+'+(zonePool.length-12)+' autres</span>';
     h+='</div>';
   }else{
-    h+='<div class="sl-zone-empty">Cette zone ne contient aucun mob visible. Gère les mobs de la zone avant de lancer un roll.</div>';
+    h+='<div class="sl-token-empty">Cette zone ne contient aucun mob visible.</div>';
   }
   h+='</div>';
   h+='<div class="sl-actions">';
   h+='<button class="sl-btn sl-btn-gold" onclick="spawnLabGenerate()">Roll</button>';
-  h+='<button class="sl-btn" onclick="spawnLabCopyLast()">Copier le récap</button>';
   if(s.lastRuns && s.lastRuns.length) h+='<button class="sl-btn sl-btn-gold" onclick="spawnLabTransferLastToSimulator()">Transférer dans le simulateur</button>';
+  h+='<button class="sl-btn" onclick="spawnLabCopyLast()">Copier le récap</button>';
   if(_spawnLabCanResetGlobal()) h+='<button class="sl-btn sl-btn-red" onclick="spawnLabResetHistory()">Réinitialiser le global</button>';
   h+='</div>';
   h+='</div>';
-  if(can("manage_beasts")){
-    h+='<div class="sl-card sl-span-12" style="border-color:rgba(201,168,76,.24);background:linear-gradient(180deg,rgba(34,27,11,.92),rgba(12,10,8,.96));">';
-    h+='<div class="sl-pool-head"><div><div class="sl-kicker" style="color:var(--gold);">ADMIN UNIQUEMENT — CRÉATION DE ZONES</div><div style="font-size:12px;color:var(--dim);line-height:1.55;">Cette section sert à créer une zone et à mettre les mobs dedans. Elle est réservée aux admins du bestiaire.</div></div></div>';
-    h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;align-items:end;">';
-    h+='<div class="sl-field"><label>Zone existante</label><select id="sl-admin-zone-select">';
-    if(zoneOptions.length){ zoneOptions.forEach(function(opt){ h+='<option value="'+escAttr(opt.label)+'"'+(zoneMeta.label===opt.label?' selected':'')+'>'+esc(opt.label)+'</option>'; }); }
-    else h+='<option value="">Aucune zone</option>';
-    h+='</select></div>';
-    h+='<div class="sl-field"><label>Créer / ouvrir une zone</label><input id="sl-admin-zone-name" type="text" placeholder="Nom de la nouvelle zone"></div>';
-    h+='<button class="sl-btn sl-btn-gold" style="min-height:42px;" onclick="spawnLabOpenZoneAdmin()">Gérer les mobs</button>';
-    h+='</div>';
-    h+='</div>';
-  }
-  h+='<div class="sl-card sl-span-8">';
-  h+='<div class="sl-kicker">RÉSULTAT DU ROLL</div>';
+  h+='<div>';
+  h+='<div class="sl-kicker">Résultat</div>';
   if(s.lastRuns && s.lastRuns.length){
     s.lastRuns.slice(0,1).forEach(function(run){
       h+='<div class="sl-run">';
-      h+='<div class="sl-runhead"><div style="font-family:var(--fd);font-size:12px;letter-spacing:1px;color:var(--text);">Dernier roll</div></div>';
+      h+='<div class="sl-run-title">Dernier roll</div>';
       run.packs.forEach(function(pack){
         var bcol=cBehaviorColor(pack.beh);
         h+='<div class="sl-pack">';
@@ -12944,14 +12920,30 @@ function renderSpawnLab(tid){
       h+='</div>';
     });
   } else {
-    h+='<div style="padding:18px;border:1px solid rgba(255,255,255,.06);background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.015));font-size:12px;color:rgba(255,255,255,.48);line-height:1.7;">Aucun tirage pour le moment. Choisis une zone, puis lance le générateur.</div>';
+    h+='<div class="sl-empty">Aucun tirage pour le moment. Choisis une zone, puis lance le générateur.</div>';
   }
   h+='</div>';
-  h+='<div class="sl-card sl-span-12">';
-  h+='<div class="sl-pool-head"><div><div class="sl-kicker">MOBS DE LA ZONE</div><div style="font-size:12px;color:var(--dim);line-height:1.55;">Le pool est automatique : tous les mobs visibles rattachés à <strong>'+esc(zoneMeta.label)+'</strong> peuvent tomber au tirage.</div></div></div>';
+  h+='</div>';
+  if(can("manage_beasts")){
+    h+='<div class="sl-admin" style="margin-top:14px;">';
+    h+='<details>';
+    h+='<summary>Admin uniquement · gérer les zones</summary>';
+    h+='<div class="sl-admin-body">';
+    h+='<div class="sl-field"><label>Zone existante</label><select id="sl-admin-zone-select">';
+    if(zoneOptions.length){ zoneOptions.forEach(function(opt){ h+='<option value="'+escAttr(opt.label)+'"'+(zoneMeta.label===opt.label?' selected':'')+'>'+esc(opt.label)+'</option>'; }); }
+    else h+='<option value="">Aucune zone</option>';
+    h+='</select></div>';
+    h+='<div class="sl-field"><label>Créer / ouvrir une zone</label><input id="sl-admin-zone-name" type="text" placeholder="Nom de la nouvelle zone"></div>';
+    h+='<button class="sl-btn sl-btn-gold" style="min-height:42px;" onclick="spawnLabOpenZoneAdmin()">Gérer les mobs</button>';
+    h+='</div>';
+    h+='</details>';
+    h+='</div>';
+  }
+  h+='<div style="margin-top:14px;">';
+  h+='<div class="sl-section-title"><div><div class="sl-kicker">Mobs de la zone</div><div style="font-size:12px;color:var(--dim);line-height:1.55;">Pool automatique de <strong>'+esc(zoneMeta.label)+'</strong>.</div></div></div>';
   h+='<div class="sl-pool">';
   if(!zonePool.length){
-    h+='<div style="grid-column:1/-1;padding:18px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);font-size:12px;color:rgba(255,255,255,.50);line-height:1.7;">Aucun mob visible dans cette zone. Ajoute une zone aux créatures dans le bestiaire, ou choisis une autre zone.</div>';
+    h+='<div class="sl-empty" style="grid-column:1/-1;">Aucun mob visible dans cette zone. Ajoute des mobs via le panneau admin.</div>';
   }
   zonePool.forEach(function(b){
     var weight=_spawnLabBaseWeight(b);
@@ -12973,8 +12965,10 @@ function renderSpawnLab(tid){
   });
   h+='</div>';
   h+='</div>';
-  h+='<div class="sl-card sl-span-4">';
-  h+='<div class="sl-kicker">HISTORIQUE DES ROLLS</div>';
+  h+='</div>';
+  h+='<div class="sl-card">';
+  h+='<div class="sl-section-title"><div><div class="sl-kicker">Historique</div><div style="font-size:12px;color:var(--dim);">Les derniers rolls conservés avec le profil qui a tiré.</div></div></div>';
+  h+='<div class="sl-history">';
   if(s.lastRuns && s.lastRuns.length){
     s.lastRuns.slice(0,12).forEach(function(run, idx){
       var packs=Array.isArray(run&&run.packs)?run.packs:[];
@@ -12992,7 +12986,7 @@ function renderSpawnLab(tid){
       h+='</div>';
     });
   } else {
-    h+='<div style="font-size:12px;color:rgba(255,255,255,.48);line-height:1.7;">Aucun roll enregistré pour le moment.</div>';
+    h+='<div class="sl-empty">Aucun roll enregistré pour le moment.</div>';
   }
   h+='</div>';
   h+='</div>';
