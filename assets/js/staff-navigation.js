@@ -290,6 +290,7 @@ body.np-is-admin #dd-staff-menu .perm-admin{
       ['joueurs','Joueurs'],
       ['combat-mj','Simulation'],
       ['apparitions','Apparitions'],
+      ['bestiaire-admin','Création bestiaire'],
       ['database','Administration']
     ];
 

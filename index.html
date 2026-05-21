@@ -5637,6 +5637,7 @@ body.theme-aquaris .home-title{
           <button class="nav-dropdown-item perm-mj" onclick="switchDropTab('joueurs',this,'dd-staff')"><span class="nav-item-icon">👥</span>Joueurs<span id="dd-joueurs-pending-badge" style="display:none;background:var(--red);color:#fff;font-size:8px;padding:1px 5px;border-radius:99px;margin-left:auto;font-family:var(--fd);"></span></button>
           <button class="nav-dropdown-item perm-mj" onclick="switchDropTab('combat-mj',this,'dd-staff')"><span class="nav-item-icon">⚔</span>Simulation</button>
           <button class="nav-dropdown-item perm-mj" onclick="switchDropTab('apparitions',this,'dd-staff')"><span class="nav-item-icon">🜂</span>Apparitions</button>
+          <button class="nav-dropdown-item perm-designer" onclick="switchDropTab('bestiaire-admin',this,'dd-staff')"><span class="nav-item-icon">✦</span>Création bestiaire</button>
           <div class="nav-divider perm-admin"></div>
           <div class="nav-section-header perm-admin" style="color:rgba(201,74,74,0.5);">ADMIN</div>
           <button class="nav-dropdown-item perm-admin" onclick="switchDropTab('database',this,'dd-staff')"><span class="nav-item-icon">🗄</span>Administration</button>
@@ -5690,6 +5691,7 @@ body.theme-aquaris .home-title{
       <button onclick="switchDropTab('joueurs',null,'dd-staff');closeMobileDrawer();" class="drawer-item">Joueurs</button>
       <button onclick="switchDropTab('combat-mj',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-mj">Simulation</button>
       <button onclick="switchDropTab('apparitions',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-mj">Apparitions</button>
+      <button onclick="switchDropTab('bestiaire-admin',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-designer">Création bestiaire</button>
       <button onclick="switchDropTab('database',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-admin">Administration</button>
     </div>
     <div style="margin-top:auto;padding:16px 20px;border-top:0.5px solid rgba(126,184,212,0.07);">
@@ -5840,16 +5842,10 @@ body.theme-aquaris .home-title{
 
     <!-- BESTIAIRE -->
     <div id="bestiaire" class="tab-content">
-      <!-- DESIGNER/ADMIN : gestion créatures -->
-      <div class="staff-panel panel-designer mb16">
-        <div class="staff-panel-title">⚙ Designer — Bestiaire</div>
-        <button class="btn btn-sm btn-grn" onclick="openModal('m-addb')"><span>+ Nouvelle créature</span></button>
-      </div>
       <!-- FILTRES COMPORTEMENT -->
       <div style="margin-bottom:10px;">
-        <input type="text" id="beast-search-input" placeholder="🔍  Rechercher une créature, une note admin, un niveau…" oninput="beastSearch(this.value)" autocomplete="off" style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--fb);font-size:13px;padding:8px 12px;outline:none;transition:border-color .2s;box-sizing:border-box;" onfocus="this.style.borderColor='var(--glacier-dim)'" onblur="this.style.borderColor='var(--border2)'">
+        <input type="text" id="beast-search-input" placeholder="🔍  Rechercher une créature, un niveau, une compétence…" oninput="beastSearch(this.value)" autocomplete="off" style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--fb);font-size:13px;padding:8px 12px;outline:none;transition:border-color .2s;box-sizing:border-box;" onfocus="this.style.borderColor='var(--glacier-dim)'" onblur="this.style.borderColor='var(--border2)'">
       </div>
-      <div id="beast-admin-toolbar"></div>
       <div id="beast-filters" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
         <button class="bfilt active" data-beh="all" onclick="setBeastFilter('all',this)">Tous</button>
         <button class="bfilt" data-beh="Gibier" onclick="setBeastFilter('Gibier',this)">🐇 Gibier</button>
@@ -5864,6 +5860,9 @@ body.theme-aquaris .home-title{
       </div>
       <div class="bgrd" id="p-bgrd"></div>
     </div>
+
+    <!-- CRÉATION BESTIAIRE (designer/admin) -->
+    <div id="bestiaire-admin" class="tab-content" data-private="true"><div id="p-bestiary-admin-c"></div></div>
 
     <!-- COMBAT -->
     <div id="combat" class="tab-content"><div id="p-combat-c"></div></div>

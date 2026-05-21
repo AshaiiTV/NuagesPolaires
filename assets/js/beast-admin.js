@@ -110,8 +110,8 @@
       +'<div class="adv-stat"><strong>'+all.filter(function(b){ return _beastUsageFor(b.id).uses>0; }).length+'</strong><span>Jouées</span></div>';
   }
   function _beastEnsureAdminUi(){
-    var tab = ge('bestiaire'); if(!tab || !_staffCanManageBeasts()) return;
-    var filters = ge('beast-filters'); if(!filters) return;
+    var tab = ge('bestiaire-admin'); if(!tab || !_staffCanManageBeasts()) return;
+    var filters = ge('beast-admin-filters'); if(!filters) return;
     if(!ge('beast-admin-adv')){
       var wrap = document.createElement('div');
       wrap.id = 'beast-admin-adv';
@@ -186,21 +186,89 @@
       document.body.appendChild(modal);
     }
   }
-  window.beastAdminSetFilter = function(key, value){ _beastAdminFilters[key]=value; renderBGrid('p-bgrd', !!(window.CU && window.CU.type==='staff')); };
+  function _beastAdminRenderTarget(){
+    var adminTab=ge('bestiaire-admin');
+    return (adminTab && adminTab.classList && adminTab.classList.contains('active') && ge('p-badmin-grd')) ? 'p-badmin-grd' : 'p-bgrd';
+  }
+  function _beastSyncSearchInputs(){
+    var publicSearch=ge('beast-search-input'), adminSearch=ge('beast-admin-search-input');
+    if(publicSearch) publicSearch.value=_beastSearch||'';
+    if(adminSearch) adminSearch.value=_beastSearch||'';
+  }
+  function _beastEnsureAdminPageStyles(){
+    if(ge('beast-admin-page-style')) return;
+    var style=document.createElement('style');
+    style.id='beast-admin-page-style';
+    style.textContent=''
+      +'#bestiaire-admin .beast-admin-page-head{margin-bottom:16px;padding:18px;border:1px solid rgba(201,168,76,.20);background:radial-gradient(circle at 0% 0%,rgba(201,168,76,.12),transparent 34%),linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.018));}'
+      +'#bestiaire-admin .beast-admin-page-title{font-family:var(--fd);font-size:24px;letter-spacing:2px;color:var(--text);}'
+      +'#bestiaire-admin .beast-admin-page-sub{font-size:13px;color:var(--dim);line-height:1.6;max-width:780px;margin-top:6px;}'
+      +'#bestiaire-admin .beast-admin-page-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}'
+      +'#bestiaire-admin #beast-admin-search-input{width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--fb);font-size:13px;padding:9px 12px;outline:none;box-sizing:border-box;}'
+      +'#bestiaire-admin #beast-admin-filters{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 14px;}'
+      +'#bestiaire-admin .bestiary-admin-adv{margin-bottom:14px;padding:14px 16px;border:1px solid rgba(126,184,212,.14);background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.018));}'
+      +'#bestiaire-admin .bestiary-admin-adv .adv-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px;}'
+      +'#bestiaire-admin .bestiary-admin-adv .adv-title{font-family:var(--fd);font-size:12px;letter-spacing:2px;color:var(--text);text-transform:uppercase;}'
+      +'#bestiaire-admin .bestiary-admin-adv .adv-sub{font-size:12px;color:var(--dim);max-width:720px;line-height:1.5;}'
+      +'#bestiaire-admin .bestiary-admin-adv .adv-actions,#bestiaire-admin .beast-admin-actions,#bestiaire-admin .beast-admin-badges{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}'
+      +'#bestiaire-admin .bestiary-admin-adv .adv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}'
+      +'#bestiaire-admin .bestiary-admin-adv .adv-field{display:flex;flex-direction:column;gap:6px;}'
+      +'#bestiaire-admin .bestiary-admin-adv .adv-field label{font-family:var(--fd);font-size:8px;letter-spacing:2px;color:var(--faint);text-transform:uppercase;}'
+      +'#bestiaire-admin .bestiary-admin-adv .adv-field select,#bestiaire-admin .bestiary-admin-adv .adv-field input{width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);}'
+      +'#bestiaire-admin .bestiary-admin-adv .adv-stats{display:grid;grid-template-columns:repeat(4,minmax(110px,1fr));gap:8px;margin-top:12px;}'
+      +'#bestiaire-admin .bestiary-admin-adv .adv-stat,#bestiaire-admin .beast-admin-stat{padding:10px 12px;border:1px solid rgba(126,184,212,.12);background:rgba(255,255,255,.025);border-radius:8px;}'
+      +'#bestiaire-admin .bestiary-admin-adv .adv-stat strong{display:block;font-family:var(--fd);font-size:18px;letter-spacing:1px;color:var(--text);margin-bottom:3px;}'
+      +'#bestiaire-admin .bestiary-admin-adv .adv-stat span{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:1.8px;}'
+      +'#bestiaire-admin .beast-admin-card{display:flex;flex-direction:column;gap:12px;}'
+      +'#bestiaire-admin .beast-admin-top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;margin-bottom:6px;}'
+      +'#bestiaire-admin .beast-admin-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;border:1px solid rgba(126,184,212,.18);background:rgba(255,255,255,.04);font-family:var(--fd);font-size:8px;letter-spacing:1.3px;color:var(--faint);text-transform:uppercase;white-space:nowrap;}'
+      +'#bestiaire-admin .beast-admin-chip.warn{border-color:rgba(201,168,76,.34);color:var(--gold);background:rgba(201,168,76,.08);}#bestiaire-admin .beast-admin-chip.good{border-color:rgba(123,207,155,.32);color:var(--green);background:rgba(123,207,155,.08);}#bestiaire-admin .beast-admin-chip.danger{border-color:rgba(201,74,74,.34);color:var(--red);background:rgba(201,74,74,.08);}'
+      +'#bestiaire-admin .beast-admin-stats{display:grid;grid-template-columns:repeat(4,minmax(80px,1fr));gap:8px;}'
+      +'#bestiaire-admin .beast-admin-stat .k{display:block;font-size:9px;color:var(--faint);letter-spacing:1.6px;text-transform:uppercase;margin-bottom:4px;}#bestiaire-admin .beast-admin-stat .v{display:block;font-family:var(--fd);font-size:15px;color:var(--text);}'
+      +'#bestiaire-admin .beast-card-more,#bestiaire-admin .beast-card-details,#bestiaire-admin .beast-admin-tools,#bestiaire-admin .beast-admin-advanced-filters{position:relative;}'
+      +'#bestiaire-admin .beast-card-more>summary,#bestiaire-admin .beast-card-details>summary,#bestiaire-admin .beast-admin-tools>summary,#bestiaire-admin .beast-admin-advanced-filters>summary{list-style:none;cursor:pointer;font-family:var(--fd);font-size:8px;letter-spacing:1.6px;color:var(--faint);text-transform:uppercase;}'
+      +'#bestiaire-admin .beast-card-more>summary::-webkit-details-marker,#bestiaire-admin .beast-card-details>summary::-webkit-details-marker,#bestiaire-admin .beast-admin-tools>summary::-webkit-details-marker,#bestiaire-admin .beast-admin-advanced-filters>summary::-webkit-details-marker{display:none;}'
+      +'#bestiaire-admin .beast-card-more>div,#bestiaire-admin .beast-admin-tools>div{position:absolute;right:0;top:calc(100% + 6px);z-index:30;display:grid;gap:6px;min-width:150px;padding:8px;border:1px solid var(--border2);background:var(--bg2);box-shadow:0 18px 40px rgba(0,0,0,.35);}'
+      +'#bestiaire-admin .beast-card-more .btn,#bestiaire-admin .beast-admin-tools .btn{width:100%;justify-content:center;}'
+      +'#bestiaire-admin .beast-card-details{margin-top:10px;padding-top:10px;border-top:1px solid rgba(126,184,212,.08);}#bestiaire-admin .beast-card-details>div{display:grid;gap:9px;margin-top:9px;}'
+      +'#bestiaire-admin .beast-admin-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;}#bestiaire-admin .beast-admin-note,#bestiaire-admin .beast-admin-usage{padding:10px 12px;border-radius:8px;background:rgba(255,255,255,.025);border:1px solid rgba(126,184,212,.08);}'
+      +'#bestiaire-admin .beast-admin-usage-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;}#bestiaire-admin .beast-admin-usage-list span{font-size:10px;color:var(--dim);padding:3px 7px;border-radius:999px;border:1px solid rgba(126,184,212,.08);background:rgba(255,255,255,.02);}'
+      +'#bestiaire-admin .beast-preview-shell{display:grid;grid-template-columns:220px 1fr;gap:18px;align-items:start;}#bestiaire-admin .beast-preview-media{border:1px solid rgba(126,184,212,.12);background:rgba(255,255,255,.03);border-radius:10px;overflow:hidden;min-height:220px;display:flex;align-items:center;justify-content:center;}#bestiaire-admin .beast-preview-media img{width:100%;height:100%;object-fit:cover;display:block;}#bestiaire-admin .beast-preview-grid{display:grid;grid-template-columns:repeat(4,minmax(90px,1fr));gap:10px;margin:12px 0;}#bestiaire-admin .beast-preview-grid>div{padding:10px 12px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid rgba(126,184,212,.08);}'
+      +'#bestiaire-admin .beast-admin-edit-extra{display:grid;grid-template-columns:1fr 1fr;gap:10px;}'
+      +'body.light #bestiaire-admin .bestiary-admin-adv,body.light #bestiaire-admin .beast-admin-card,body.light #bestiaire-admin .beast-admin-note,body.light #bestiaire-admin .beast-admin-usage,body.light #bestiaire-admin .beast-admin-stat,body.light #bestiaire-admin .adv-stat,body.light #bestiaire-admin .beast-preview-media,body.light #bestiaire-admin .beast-preview-grid>div{background:rgba(255,255,255,.76);border-color:rgba(40,84,110,.12);}'
+      +'@media(max-width:820px){#bestiaire-admin .bestiary-admin-adv .adv-stats,#bestiaire-admin .beast-admin-stats,#bestiaire-admin .beast-preview-grid,#bestiaire-admin .beast-admin-meta,#bestiaire-admin .beast-admin-edit-extra{grid-template-columns:1fr 1fr;}#bestiaire-admin .beast-preview-shell{grid-template-columns:1fr;}}@media(max-width:560px){#bestiaire-admin .bestiary-admin-adv .adv-stats,#bestiaire-admin .beast-admin-stats,#bestiaire-admin .beast-preview-grid,#bestiaire-admin .beast-admin-meta,#bestiaire-admin .beast-admin-edit-extra{grid-template-columns:1fr;}}';
+    document.head.appendChild(style);
+  }
+  window.renderBestiaryAdminPage = function(tid){
+    var el=ge(tid); if(!el) return;
+    if(!_staffCanManageBeasts()){
+      el.innerHTML='<div class="card"><div class="card-title">Accès réservé</div><p style="color:var(--dim);">Création bestiaire est réservée aux admins et designers.</p></div>';
+      return;
+    }
+    _beastEnsureAdminPageStyles();
+    el.innerHTML=''
+      +'<div class="beast-admin-page-head"><div class="beast-admin-page-title">Création bestiaire</div><div class="beast-admin-page-sub">Espace réservé admin/designer pour créer, corriger, archiver, importer et préparer les créatures. Le Bestiaire reste une page de consultation propre.</div><div class="beast-admin-page-actions"><button class="btn btn-sm btn-grn" onclick="openModal(\'m-addb\')"><span>+ Nouvelle créature</span></button><button class="btn btn-sm" onclick="openBeastZoneManager()"><span>Zones d’apparition</span></button></div></div>'
+      +'<div style="margin-bottom:10px;"><input type="text" id="beast-admin-search-input" placeholder="Rechercher une créature, note, niveau, compétence..." value="'+esc(_beastSearch||'')+'" oninput="beastSearch(this.value)" autocomplete="off"></div>'
+      +'<div id="beast-admin-filters"><button class="bfilt '+(_beastFilter==='all'?'active':'')+'" data-beh="all" onclick="setBeastFilter(\'all\',this)">Tous</button><button class="bfilt '+(_beastFilter==='Gibier'?'active':'')+'" data-beh="Gibier" onclick="setBeastFilter(\'Gibier\',this)">🐇 Gibier</button><button class="bfilt '+(_beastFilter==='Passif'?'active':'')+'" data-beh="Passif" onclick="setBeastFilter(\'Passif\',this)">😐 Passif</button><button class="bfilt '+(_beastFilter==='Neutre'?'active':'')+'" data-beh="Neutre" onclick="setBeastFilter(\'Neutre\',this)">⚖ Neutre</button><button class="bfilt '+(_beastFilter==='Agressif'?'active':'')+'" data-beh="Agressif" onclick="setBeastFilter(\'Agressif\',this)">⚠ Agressif</button><button class="bfilt '+(_beastFilter==='Très agressif'?'active':'')+'" data-beh="Très agressif" onclick="setBeastFilter(\'Très agressif\',this)">☠ Très agressif</button><div style="width:1px;background:var(--border2);margin:0 2px;"></div><button class="bfilt" onclick="toggleBeastPvSort(this)">PV ↕</button><button class="bfilt" onclick="toggleBeastNivSort(this)">Niv ↕</button><button class="bfilt" onclick="toggleBeastAlpha(this)">A→Z</button></div>'
+      +'<div class="bgrd" id="p-badmin-grd"></div>';
+    _beastEnsureAdminUi();
+    renderBGrid('p-badmin-grd', true);
+  };
+  window.beastAdminSetFilter = function(key, value){ _beastAdminFilters[key]=value; renderBGrid(_beastAdminRenderTarget(), true); };
   window.beastAdminResetFilters = function(){
     _beastAdminFilters.status='active'; _beastAdminFilters.image='all'; _beastAdminFilters.usage='all'; _beastAdminFilters.boss='all'; _beastAdminFilters.threat='all'; _beastAdminFilters.completeness='all'; _beastAdminFilters.sort='updated_desc'; _beastAdminFilters.minLvl=''; _beastAdminFilters.maxLvl='';
     _beastPvSort=null; _beastNivSort=null; _beastAlpha=null;
-    var s=ge('beast-search-input'); if(s){ s.value=''; }
     _beastSearch='';
+    _beastSyncSearchInputs();
     document.querySelectorAll('.bfilt[data-beh]').forEach(function(b){ b.classList.remove('active'); if(b.getAttribute('data-beh')==='all') b.classList.add('active'); });
     _beastFilter='all';
-    renderBGrid('p-bgrd', !!(window.CU && window.CU.type==='staff'));
+    renderBGrid(_beastAdminRenderTarget(), true);
   };
-  window.beastSearch = function(q){ _beastSearch=(q||'').toLowerCase().trim(); renderBGrid('p-bgrd',!!(window.CU&&window.CU.type==='staff')); };
-  window.setBeastFilter = function(beh,btn){ _beastFilter=beh; document.querySelectorAll('.bfilt[data-beh]').forEach(function(b){b.classList.remove('active');}); if(btn) btn.classList.add('active'); renderBGrid('p-bgrd',!!(window.CU&&window.CU.type==='staff')); };
-  window.toggleBeastPvSort = function(btn){ _beastNivSort=null; _beastAlpha=null; _clearSortBtns && _clearSortBtns('bfilt-pv'); var n=ge('bfilt-niv'), a=ge('bfilt-az'); if(n) n.textContent='Niv ↕'; if(a) a.textContent='A→Z'; _beastPvSort=(_beastPvSort===null||_beastPvSort==='desc')?'asc':'desc'; if(btn){ btn.textContent='PV '+(_beastPvSort==='asc'?'↑':'↓'); btn.classList.add('active'); } renderBGrid('p-bgrd',!!(window.CU&&window.CU.type==='staff')); };
-  window.toggleBeastNivSort = function(btn){ _beastPvSort=null; _beastAlpha=null; _clearSortBtns && _clearSortBtns('bfilt-niv'); var p=ge('bfilt-pv'), a=ge('bfilt-az'); if(p) p.textContent='PV ↕'; if(a) a.textContent='A→Z'; _beastNivSort=(_beastNivSort===null||_beastNivSort==='desc')?'asc':'desc'; if(btn){ btn.textContent='Niv '+(_beastNivSort==='asc'?'↑':'↓'); btn.classList.add('active'); } renderBGrid('p-bgrd',!!(window.CU&&window.CU.type==='staff')); };
-  window.toggleBeastAlpha = function(btn){ _beastPvSort=null; _beastNivSort=null; _clearSortBtns && _clearSortBtns('bfilt-az'); var p=ge('bfilt-pv'), n=ge('bfilt-niv'); if(p) p.textContent='PV ↕'; if(n) n.textContent='Niv ↕'; _beastAlpha=(_beastAlpha===null||_beastAlpha==='desc')?'asc':'desc'; if(btn){ btn.textContent=_beastAlpha==='asc'?'A→Z':'Z→A'; btn.classList.add('active'); } renderBGrid('p-bgrd',!!(window.CU&&window.CU.type==='staff')); };
+  window.beastSearch = function(q){ _beastSearch=(q||'').toLowerCase().trim(); _beastSyncSearchInputs(); renderBGrid(_beastAdminRenderTarget(), _beastAdminRenderTarget()!=='p-bgrd'); };
+  window.setBeastFilter = function(beh,btn){ _beastFilter=beh; document.querySelectorAll('.bfilt[data-beh]').forEach(function(b){b.classList.remove('active');}); if(btn) btn.classList.add('active'); renderBGrid(_beastAdminRenderTarget(), _beastAdminRenderTarget()!=='p-bgrd'); };
+  window.toggleBeastPvSort = function(btn){ _beastNivSort=null; _beastAlpha=null; _clearSortBtns && _clearSortBtns('bfilt-pv'); var n=ge('bfilt-niv'), a=ge('bfilt-az'); if(n) n.textContent='Niv ↕'; if(a) a.textContent='A→Z'; _beastPvSort=(_beastPvSort===null||_beastPvSort==='desc')?'asc':'desc'; if(btn){ btn.textContent='PV '+(_beastPvSort==='asc'?'↑':'↓'); btn.classList.add('active'); } renderBGrid(_beastAdminRenderTarget(), _beastAdminRenderTarget()!=='p-bgrd'); };
+  window.toggleBeastNivSort = function(btn){ _beastPvSort=null; _beastAlpha=null; _clearSortBtns && _clearSortBtns('bfilt-niv'); var p=ge('bfilt-pv'), a=ge('bfilt-az'); if(p) p.textContent='PV ↕'; if(a) a.textContent='A→Z'; _beastNivSort=(_beastNivSort===null||_beastNivSort==='desc')?'asc':'desc'; if(btn){ btn.textContent='Niv '+(_beastNivSort==='asc'?'↑':'↓'); btn.classList.add('active'); } renderBGrid(_beastAdminRenderTarget(), _beastAdminRenderTarget()!=='p-bgrd'); };
+  window.toggleBeastAlpha = function(btn){ _beastPvSort=null; _beastNivSort=null; _clearSortBtns && _clearSortBtns('bfilt-az'); var p=ge('bfilt-pv'), n=ge('bfilt-niv'); if(p) p.textContent='PV ↕'; if(n) n.textContent='Niv ↕'; _beastAlpha=(_beastAlpha===null||_beastAlpha==='desc')?'asc':'desc'; if(btn){ btn.textContent=_beastAlpha==='asc'?'A→Z':'Z→A'; btn.classList.add('active'); } renderBGrid(_beastAdminRenderTarget(), _beastAdminRenderTarget()!=='p-bgrd'); };
 
   window.bCard = function(b,staff){
     _beastAdminNormalizeMeta(b);
@@ -230,48 +298,49 @@
     var beasts=_beastAdminNormalizeCollection(gb());
     var el=ge(tid); if(!el) return;
     var shouldRefocus = tid==='p-bgrd' && !!(ge('bestiaire') && ge('bestiaire').classList.contains('active'));
-    var staffRole=String((window.CU&&window.CU.role)||'').toLowerCase();
-    var isDesigner=!!(window.CU&&(staffRole==='admin'||staffRole==='designer'||staffRole==='mj'));
+    var adminMode=tid==='p-badmin-grd' && !!(staff&&_staffCanManageBeasts());
     var filtered=(_beastFilter==='all'?beasts.slice():beasts.filter(function(b){ return ((window.BHL&&BHL[b.beh])||String(b.beh||'').replace(/^./,function(m){return m.toUpperCase();}))===_beastFilter; }));
-    if(!isDesigner) filtered=filtered.filter(function(b){ return !b.hidden && !b.archived; });
+    if(!adminMode) filtered=filtered.filter(function(b){ return !b.hidden && !b.archived; });
     if(_beastSearch){ var q=_beastSearch; filtered=filtered.filter(function(b){ return [b.nom,b.sub,b.desc,b.comp,b.frappe,b.drops,b.gem,String(b.niv||'')].join(' ').toLowerCase().indexOf(q)>-1; }); }
-    filtered=filtered.filter(function(b){
-      var usage=_beastUsageFor(b.id), comp=_beastCompleteness(b), lvl=parseInt(b.niv,10)||0;
-      if(_beastAdminFilters.status==='published' && (b.hidden||b.archived)) return false;
-      if(_beastAdminFilters.status==='hidden' && (!b.hidden || b.archived)) return false;
-      if(_beastAdminFilters.status==='archived' && !b.archived) return false;
-      if(_beastAdminFilters.status==='active' && b.archived) return false;
-      if(_beastAdminFilters.image==='with' && !String(b.img||'').trim()) return false;
-      if(_beastAdminFilters.image==='without' && String(b.img||'').trim()) return false;
-      if(_beastAdminFilters.usage==='used' && !(usage.uses>0)) return false;
-      if(_beastAdminFilters.usage==='never' && usage.uses>0) return false;
-      if(_beastAdminFilters.usage==='recent' && !(usage.lastAt && (_beastNow()-usage.lastAt)<=30*86400000)) return false;
-      if(_beastAdminFilters.boss==='boss' && !b.isBoss) return false;
-      if(_beastAdminFilters.boss==='normal' && b.isBoss) return false;
-      if(_beastAdminFilters.threat!=='all' && _beastThreatKey(b)!==_beastAdminFilters.threat) return false;
-      if(_beastAdminFilters.completeness==='complete' && !comp.complete) return false;
-      if(_beastAdminFilters.completeness==='incomplete' && comp.complete) return false;
-      if(_beastAdminFilters.minLvl!=='' && lvl < (parseInt(_beastAdminFilters.minLvl,10)||0)) return false;
-      if(_beastAdminFilters.maxLvl!=='' && lvl > (parseInt(_beastAdminFilters.maxLvl,10)||999)) return false;
-      return true;
-    });
-    switch(_beastAdminFilters.sort){
-      case 'updated_desc': filtered.sort(function(a,b){ return (b.updatedAt||b.createdAt||0) - (a.updatedAt||a.createdAt||0); }); break;
-      case 'updated_asc': filtered.sort(function(a,b){ return (a.updatedAt||a.createdAt||0) - (b.updatedAt||b.createdAt||0); }); break;
-      case 'name_asc': filtered.sort(function(a,b){ return String(a.nom||'').localeCompare(String(b.nom||''),'fr'); }); break;
-      case 'name_desc': filtered.sort(function(a,b){ return String(b.nom||'').localeCompare(String(a.nom||''),'fr'); }); break;
-      case 'level_desc': filtered.sort(function(a,b){ return (b.niv||0)-(a.niv||0); }); break;
-      case 'level_asc': filtered.sort(function(a,b){ return (a.niv||0)-(b.niv||0); }); break;
-      case 'danger_desc': filtered.sort(function(a,b){ return _beastDangerScore(b)-_beastDangerScore(a); }); break;
-      case 'usage_desc': filtered.sort(function(a,b){ return _beastUsageFor(b.id).uses - _beastUsageFor(a.id).uses; }); break;
-      case 'published_first': filtered.sort(function(a,b){ var av=(a.archived?2:(a.hidden?1:0)), bv=(b.archived?2:(b.hidden?1:0)); return av-bv || String(a.nom||'').localeCompare(String(b.nom||''),'fr'); }); break;
+    if(adminMode){
+      filtered=filtered.filter(function(b){
+        var usage=_beastUsageFor(b.id), comp=_beastCompleteness(b), lvl=parseInt(b.niv,10)||0;
+        if(_beastAdminFilters.status==='published' && (b.hidden||b.archived)) return false;
+        if(_beastAdminFilters.status==='hidden' && (!b.hidden || b.archived)) return false;
+        if(_beastAdminFilters.status==='archived' && !b.archived) return false;
+        if(_beastAdminFilters.status==='active' && b.archived) return false;
+        if(_beastAdminFilters.image==='with' && !String(b.img||'').trim()) return false;
+        if(_beastAdminFilters.image==='without' && String(b.img||'').trim()) return false;
+        if(_beastAdminFilters.usage==='used' && !(usage.uses>0)) return false;
+        if(_beastAdminFilters.usage==='never' && usage.uses>0) return false;
+        if(_beastAdminFilters.usage==='recent' && !(usage.lastAt && (_beastNow()-usage.lastAt)<=30*86400000)) return false;
+        if(_beastAdminFilters.boss==='boss' && !b.isBoss) return false;
+        if(_beastAdminFilters.boss==='normal' && b.isBoss) return false;
+        if(_beastAdminFilters.threat!=='all' && _beastThreatKey(b)!==_beastAdminFilters.threat) return false;
+        if(_beastAdminFilters.completeness==='complete' && !comp.complete) return false;
+        if(_beastAdminFilters.completeness==='incomplete' && comp.complete) return false;
+        if(_beastAdminFilters.minLvl!=='' && lvl < (parseInt(_beastAdminFilters.minLvl,10)||0)) return false;
+        if(_beastAdminFilters.maxLvl!=='' && lvl > (parseInt(_beastAdminFilters.maxLvl,10)||999)) return false;
+        return true;
+      });
+      switch(_beastAdminFilters.sort){
+        case 'updated_desc': filtered.sort(function(a,b){ return (b.updatedAt||b.createdAt||0) - (a.updatedAt||a.createdAt||0); }); break;
+        case 'updated_asc': filtered.sort(function(a,b){ return (a.updatedAt||a.createdAt||0) - (b.updatedAt||b.createdAt||0); }); break;
+        case 'name_asc': filtered.sort(function(a,b){ return String(a.nom||'').localeCompare(String(b.nom||''),'fr'); }); break;
+        case 'name_desc': filtered.sort(function(a,b){ return String(b.nom||'').localeCompare(String(a.nom||''),'fr'); }); break;
+        case 'level_desc': filtered.sort(function(a,b){ return (b.niv||0)-(a.niv||0); }); break;
+        case 'level_asc': filtered.sort(function(a,b){ return (a.niv||0)-(b.niv||0); }); break;
+        case 'danger_desc': filtered.sort(function(a,b){ return _beastDangerScore(b)-_beastDangerScore(a); }); break;
+        case 'usage_desc': filtered.sort(function(a,b){ return _beastUsageFor(b.id).uses - _beastUsageFor(a.id).uses; }); break;
+        case 'published_first': filtered.sort(function(a,b){ var av=(a.archived?2:(a.hidden?1:0)), bv=(b.archived?2:(b.hidden?1:0)); return av-bv || String(a.nom||'').localeCompare(String(b.nom||''),'fr'); }); break;
+      }
     }
     if(_beastPvSort) filtered.sort(function(a,b){ return _beastPvSort==='asc' ? ((a.pv||0)-(b.pv||0)) : ((b.pv||0)-(a.pv||0)); });
     if(_beastNivSort) filtered.sort(function(a,b){ return _beastNivSort==='asc' ? ((a.niv||0)-(b.niv||0)) : ((b.niv||0)-(a.niv||0)); });
     if(_beastAlpha) filtered.sort(function(a,b){ var r=String(a.nom||'').localeCompare(String(b.nom||''),'fr'); return _beastAlpha==='asc'?r:-r; });
-    _beastAdminSummary(beasts, filtered);
+    if(adminMode) _beastAdminSummary(beasts, filtered);
     if(!filtered.length){ el.innerHTML='<p style="color:var(--faint);font-style:italic;padding:20px 0;">Aucune créature pour ces filtres.</p>'; if(shouldRefocus){ setTimeout(function(){ try{ _focusOnScreen(ge('bestiaire'),'auto'); }catch(_e){} },0);} return; }
-    el.innerHTML=filtered.map(function(b){ return window.bCard(b,staff); }).join('');
+    el.innerHTML=filtered.map(function(b){ return window.bCard(b,adminMode); }).join('');
     if(shouldRefocus){ setTimeout(function(){ try{ _focusOnScreen(ge('bestiaire'),'auto'); }catch(_e){} },0); }
   };
 
@@ -280,41 +349,43 @@
     _beastEnsureModalEnhancements();
     var b=_beastAdminNormalizeMeta((gb()||[]).find(function(x){ return x.id===id; })); if(!b) return;
     var behMap={'Gibier':'1','Passif':'2','Neutre':'3','Agressif':'4','Très agressif':'5','Boss':'3'};
-    ge('eb-id').value=b.id; ge('eb-n').value=b.nom||''; ge('eb-sub').value=b.sub||''; ge('eb-beh').value=behMap[b.beh]||'3'; ge('eb-niv').value=b.niv||1; ge('eb-pv').value=b.pv||''; ge('eb-ep').value=b.ep||''; ge('eb-fr').value=b.frappe||''; ge('eb-co').value=b.comp||''; ge('eb-dr').value=b.drops||''; ge('eb-gm').value=b.gem||''; ge('eb-de').value=b.desc||''; ge('eb-img').value=b.img||''; if(ge('eb-notes')) ge('eb-notes').value=b.adminNotes||''; if(ge('eb-boss')) ge('eb-boss').checked=!!b.isBoss; ge('eb-err').textContent=''; var modalEl=ge('m-editb'); if(modalEl) _hoistModalToRoot(modalEl); openModal('m-editb');
+    ge('eb-id').value=b.id; ge('eb-n').value=b.nom||''; ge('eb-sub').value=b.sub||''; ge('eb-beh').value=behMap[b.beh]||'3'; ge('eb-niv').value=b.niv||1; ge('eb-pv').value=b.pv||''; ge('eb-ep').value=b.ep||''; ge('eb-fr').value=b.frappe||''; ge('eb-co').value=b.comp||''; ge('eb-dr').value=b.drops||''; ge('eb-gm').value=b.gem||''; ge('eb-de').value=b.desc||''; ge('eb-img').value=b.img||''; if(ge('eb-zones')) ge('eb-zones').value=(Array.isArray(b.zones)?b.zones:[]).join(', '); if(ge('eb-note')) ge('eb-note').value=b.adminNote||b.adminNotes||''; if(ge('eb-hidden')) ge('eb-hidden').checked=!!b.hidden; if(ge('eb-archived')) ge('eb-archived').checked=!!b.archived; if(ge('eb-notes')) ge('eb-notes').value=b.adminNotes||b.adminNote||''; if(ge('eb-boss')) ge('eb-boss').checked=!!b.isBoss; ge('eb-err').textContent=''; var modalEl=ge('m-editb'); if(modalEl) _hoistModalToRoot(modalEl); openModal('m-editb');
   };
   window.addBeast = function(){
     if(!_staffCanManageBeasts()){ notif('Permission insuffisante.','err'); return; }
     var n=(ge('ab-n').value||'').trim(); if(!n){ notif('Nom requis.','err'); return; }
     var behArr=['','Gibier','Passif','Neutre','Agressif','Très agressif'];
     var now=_beastNow();
-    var b={ id:'b'+now, nom:n, sub:(ge('ab-sub')?ge('ab-sub').value.trim():'') , beh:behArr[parseInt(ge('ab-beh').value,10)]||'Neutre', niv:(parseInt(ge('ab-niv').value,10)||1), pv:(parseInt(ge('ab-pv').value,10)||20), ep:(parseInt(ge('ab-ep').value,10)||20), img:(ge('ab-img').value||'').trim(), frappe:(ge('ab-fr').value||'').trim(), comp:(ge('ab-co').value||'').trim(), drops:(ge('ab-dr').value||'').trim(), gem:(ge('ab-gm').value||'').trim(), desc:(ge('ab-de').value||'').trim(), isBoss:!!(ge('ab-boss')&&ge('ab-boss').checked), adminNotes:(ge('ab-notes')?ge('ab-notes').value.trim():'') , hidden:false, archived:false, createdAt:now, updatedAt:now, createdBy:(window.CU&&CU.name)||'', updatedBy:(window.CU&&CU.name)||'' };
-    var bs=gb(); bs.push(_beastAdminNormalizeMeta(b)); sb(bs); closeModal('m-addb'); ['ab-n','ab-sub','ab-fr','ab-co','ab-dr','ab-gm','ab-de','ab-img'].forEach(function(id){ if(ge(id)) ge(id).value=''; }); if(ge('ab-niv')) ge('ab-niv').value=1; if(ge('ab-pv')) ge('ab-pv').value=20; if(ge('ab-ep')) ge('ab-ep').value=20; if(ge('ab-notes')) ge('ab-notes').value=''; if(ge('ab-boss')) ge('ab-boss').checked=false; renderBGrid('p-bgrd',true); notif(n+' ajouté.','ok');
+    var adminNote=(ge('ab-note')?ge('ab-note').value.trim():'') || (ge('ab-notes')?ge('ab-notes').value.trim():'');
+    var b={ id:'b'+now, nom:n, sub:(ge('ab-sub')?ge('ab-sub').value.trim():'') , beh:behArr[parseInt(ge('ab-beh').value,10)]||'Neutre', niv:(parseInt(ge('ab-niv').value,10)||1), pv:(parseInt(ge('ab-pv').value,10)||20), ep:(parseInt(ge('ab-ep').value,10)||20), img:(ge('ab-img').value||'').trim(), zones:(typeof _beastZoneInputValues==='function'?_beastZoneInputValues('ab-zones'):[]), frappe:(ge('ab-fr').value||'').trim(), comp:(ge('ab-co').value||'').trim(), drops:(ge('ab-dr').value||'').trim(), gem:(ge('ab-gm').value||'').trim(), desc:(ge('ab-de').value||'').trim(), isBoss:!!(ge('ab-boss')&&ge('ab-boss').checked), adminNote:adminNote, adminNotes:adminNote, hidden:!!(ge('ab-hidden')&&ge('ab-hidden').checked), archived:!!(ge('ab-archived')&&ge('ab-archived').checked), createdAt:now, updatedAt:now, createdBy:(window.CU&&CU.name)||'', updatedBy:(window.CU&&CU.name)||'' };
+    var bs=gb(); bs.push(_beastAdminNormalizeMeta(b)); sb(bs); closeModal('m-addb'); ['ab-n','ab-sub','ab-fr','ab-co','ab-dr','ab-gm','ab-de','ab-img','ab-zones','ab-note'].forEach(function(id){ if(ge(id)) ge(id).value=''; }); if(ge('ab-niv')) ge('ab-niv').value=1; if(ge('ab-pv')) ge('ab-pv').value=20; if(ge('ab-ep')) ge('ab-ep').value=20; if(ge('ab-notes')) ge('ab-notes').value=''; if(ge('ab-boss')) ge('ab-boss').checked=false; if(ge('ab-hidden')) ge('ab-hidden').checked=false; if(ge('ab-archived')) ge('ab-archived').checked=false; renderBGrid(_beastAdminRenderTarget(), _beastAdminRenderTarget()!=='p-bgrd'); notif(n+' ajouté.','ok');
   };
   window.saveEditBeast = function(){
     if(!_staffCanManageBeasts()) return;
     var id=ge('eb-id').value, beasts=gb(), b=beasts.find(function(x){ return x.id===id; });
     if(!b){ ge('eb-err').textContent='Créature introuvable.'; return; }
     var behArr=['','Gibier','Passif','Neutre','Agressif','Très agressif'];
-    b.nom=(ge('eb-n').value||'').trim()||b.nom; b.sub=(ge('eb-sub').value||'').trim(); b.beh=behArr[parseInt(ge('eb-beh').value,10)]||b.beh; b.niv=parseInt(ge('eb-niv').value,10)||b.niv; b.pv=parseInt(ge('eb-pv').value,10)||b.pv; b.ep=parseInt(ge('eb-ep').value,10)||b.ep; b.frappe=(ge('eb-fr').value||'').trim()||b.frappe; b.comp=(ge('eb-co').value||'').trim(); b.drops=(ge('eb-dr').value||'').trim(); b.gem=(ge('eb-gm').value||'').trim(); b.desc=(ge('eb-de').value||'').trim(); b.img=(ge('eb-img').value||'').trim(); b.isBoss=!!(ge('eb-boss')&&ge('eb-boss').checked); b.adminNotes=(ge('eb-notes')?ge('eb-notes').value.trim():''); b.updatedAt=_beastNow(); b.updatedBy=(window.CU&&CU.name)||''; _beastAdminNormalizeMeta(b); sb(beasts); closeModal('m-editb'); renderBGrid('p-bgrd',true); notif(b.nom+' mis à jour.','ok');
+    var editAdminNote=(ge('eb-note')?ge('eb-note').value.trim():'') || (ge('eb-notes')?ge('eb-notes').value.trim():'');
+    b.nom=(ge('eb-n').value||'').trim()||b.nom; b.sub=(ge('eb-sub').value||'').trim(); b.beh=behArr[parseInt(ge('eb-beh').value,10)]||b.beh; b.niv=parseInt(ge('eb-niv').value,10)||b.niv; b.pv=parseInt(ge('eb-pv').value,10)||b.pv; b.ep=parseInt(ge('eb-ep').value,10)||b.ep; b.frappe=(ge('eb-fr').value||'').trim()||b.frappe; b.comp=(ge('eb-co').value||'').trim(); b.drops=(ge('eb-dr').value||'').trim(); b.gem=(ge('eb-gm').value||'').trim(); b.desc=(ge('eb-de').value||'').trim(); b.img=(ge('eb-img').value||'').trim(); b.zones=(typeof _beastZoneInputValues==='function'?_beastZoneInputValues('eb-zones'):(Array.isArray(b.zones)?b.zones:[])); b.hidden=!!(ge('eb-hidden')&&ge('eb-hidden').checked); b.archived=!!(ge('eb-archived')&&ge('eb-archived').checked); b.isBoss=!!(ge('eb-boss')&&ge('eb-boss').checked); b.adminNote=editAdminNote; b.adminNotes=editAdminNote; b.updatedAt=_beastNow(); b.updatedBy=(window.CU&&CU.name)||''; _beastAdminNormalizeMeta(b); sb(beasts); closeModal('m-editb'); renderBGrid(_beastAdminRenderTarget(), _beastAdminRenderTarget()!=='p-bgrd'); notif(b.nom+' mis à jour.','ok');
   };
   window.delBeast = function(id){
     if(!can('delete_beast')){ notif('Permission insuffisante.','err'); return; }
     var b=(gb()||[]).find(function(x){ return x.id===id; });
     if(!b) return;
     if(!confirm('Purger définitivement "'+(b.nom||'cette créature')+'" ? L\'archive et l\'historique d\'usage ne seront pas supprimés des combats déjà joués.')) return;
-    sb(gb().filter(function(x){ return x.id!==id; })); renderBGrid('p-bgrd', !!(window.CU && can('manage_beasts'))); notif('Créature supprimée.','inf');
+    sb(gb().filter(function(x){ return x.id!==id; })); renderBGrid(_beastAdminRenderTarget(), _beastAdminRenderTarget()!=='p-bgrd'); notif('Créature supprimée.','inf');
   };
   window.toggleBeastArchived = function(id){
     if(!_staffCanManageBeasts()) return;
     var beasts=gb(), b=beasts.find(function(x){ return x.id===id; }); if(!b) return;
-    b.archived=!b.archived; b.updatedAt=_beastNow(); b.updatedBy=(window.CU&&CU.name)||''; _beastAdminNormalizeMeta(b); sb(beasts); renderBGrid('p-bgrd',true); notif(b.nom+(b.archived?' archivée.':' restaurée.'),'ok');
+    b.archived=!b.archived; b.updatedAt=_beastNow(); b.updatedBy=(window.CU&&CU.name)||''; _beastAdminNormalizeMeta(b); sb(beasts); renderBGrid(_beastAdminRenderTarget(), _beastAdminRenderTarget()!=='p-bgrd'); notif(b.nom+(b.archived?' archivée.':' restaurée.'),'ok');
   };
   window.duplicateBeast = function(id){
     if(!_staffCanManageBeasts()) return;
     var src=(gb()||[]).find(function(x){ return x.id===id; }); if(!src) return;
     var copy=JSON.parse(JSON.stringify(src)); var now=_beastNow();
     copy.id='b'+now; copy.nom=(copy.nom||'Créature')+' (copie)'; copy.createdAt=now; copy.updatedAt=now; copy.createdBy=(window.CU&&CU.name)||''; copy.updatedBy=(window.CU&&CU.name)||''; copy.archived=false; _beastAdminNormalizeMeta(copy);
-    var beasts=gb(); beasts.unshift(copy); sb(beasts); renderBGrid('p-bgrd',true); notif(copy.nom+' créée.','ok');
+    var beasts=gb(); beasts.unshift(copy); sb(beasts); renderBGrid(_beastAdminRenderTarget(), _beastAdminRenderTarget()!=='p-bgrd'); notif(copy.nom+' créée.','ok');
   };
   window.previewBeastAdmin = function(id){
     _beastEnsureModalEnhancements();
@@ -372,7 +443,7 @@
           copy.createdAt=parseInt(copy.createdAt,10)||_beastNow(); copy.updatedAt=_beastNow(); copy.createdBy=copy.createdBy||((window.CU&&CU.name)||''); copy.updatedBy=(window.CU&&CU.name)||'';
           beasts.unshift(_beastAdminNormalizeMeta(copy));
         });
-        sb(beasts); renderBGrid('p-bgrd',true); notif('Import JSON terminé.','ok');
+        sb(beasts); renderBGrid(_beastAdminRenderTarget(), _beastAdminRenderTarget()!=='p-bgrd'); notif('Import JSON terminé.','ok');
       }catch(err){ console.error(err); notif('JSON invalide.','err'); }
     };
     fr.readAsText(file, 'utf-8');
@@ -391,7 +462,7 @@
     else {
       var beasts=gb(), b=beasts.find(function(x){return x.id===id;}); if(!b) return; b.hidden=!b.hidden; b.updatedAt=_beastNow(); b.updatedBy=(window.CU&&CU.name)||''; sb(beasts);
     }
-    renderBGrid('p-bgrd', !!(window.CU && window.CU.type==='staff'));
+    renderBGrid(_beastAdminRenderTarget(), _beastAdminRenderTarget()!=='p-bgrd');
   };
   document.addEventListener('DOMContentLoaded', function(){ setTimeout(_beastEnsureAdminUi, 0); });
 })();

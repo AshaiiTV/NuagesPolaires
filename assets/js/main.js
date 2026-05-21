@@ -4870,7 +4870,7 @@ function historyBack(){
   _updateBackBtn();
 }
 
-var TAB_POPUP_IDS=['synopsis','serments','bestiaire','combat','reglement','profil','fiche','joueurs','gestion-mj','en-attente','combat-mj','apparitions','stats','evenements','carte','database'];
+var TAB_POPUP_IDS=['synopsis','serments','bestiaire','bestiaire-admin','combat','reglement','profil','fiche','joueurs','gestion-mj','en-attente','combat-mj','apparitions','stats','evenements','carte','database'];
 var _popupReturnTab='accueil';
 var _activePopupTab=null;
 function _isTabPopup(id){ return !!id && TAB_POPUP_IDS.indexOf(id)>=0; }
@@ -4948,12 +4948,14 @@ function switchTab(id, btn, _isBack){
     if(!window._dbTab) window._dbTab='dashboard';
   }
   // ── SECURITY GUARDS ─────────────────────────────────────
-  var STAFF_TABS=["joueurs","gestion-mj","en-attente","combat-mj","apparitions","stats","database"];
+  var STAFF_TABS=["joueurs","gestion-mj","en-attente","combat-mj","apparitions","bestiaire-admin","stats","database"];
   var ADMIN_TABS=["stats","database","gestion-mj","en-attente"];
   var isStaffUser = !!(CU && ((CU.type==="staff") || ["admin","mj","designer"].indexOf((CU.role||"").toLowerCase())>=0));
   if(STAFF_TABS.indexOf(id)>=0){
     if(!isStaffUser){
       // Accès non autorisé — silently redirect to accueil
+      id="accueil"; btn=null;
+    } else if(id==="bestiaire-admin" && !(CU&&can("manage_beasts"))){
       id="accueil"; btn=null;
     } else if(ADMIN_TABS.indexOf(id)>=0&&String(CU.role||"").toLowerCase()!=="admin"){
       id="accueil"; btn=null;
@@ -5005,7 +5007,10 @@ function switchTab(id, btn, _isBack){
   }
   if(id==="bestiaire"){
     var c=ge("p-bgrd");
-    if(c&&!c.innerHTML.trim()) renderBGrid("p-bgrd",CU&&CU.type==="staff");
+    if(c&&!c.innerHTML.trim()) renderBGrid("p-bgrd",false);
+  }
+  if(id==="bestiaire-admin"){
+    if(typeof renderBestiaryAdminPage==="function") renderBestiaryAdminPage("p-bestiary-admin-c");
   }
   if(id==="combat"){
     var c=ge("p-combat-c");
@@ -14523,6 +14528,7 @@ function _runtimeViewLabel(id){
     "synopsis":"Synopsis",
     "serments":"Serments",
     "bestiaire":"Bestiaire",
+    "bestiaire-admin":"Création bestiaire",
     "evenements":"Événements",
     "reglement":"Règlement",
     "profil":"Profil",
@@ -14769,6 +14775,9 @@ function getCommandItems(){
   if(["admin","mj","designer"].indexOf(role)>=0){
     push("joueurs","Joueurs","Annuaire et comptes liés",function(){ switchTab("joueurs",null); },"J");
     push("combat-mj","Simulation","Outils de combat",function(){ switchTab("combat-mj",null); },"C");
+  }
+  if(CU&&can("manage_beasts")){
+    push("bestiaire-admin","Création bestiaire","Créer, corriger et organiser les créatures",function(){ switchTab("bestiaire-admin",null); },"CB");
   }
   if(role==="admin"){
     push("database","Administration","Vue d’ensemble, comptes, thèmes, logs et sécurité",function(){ switchTab("database",null); },"ADM");
