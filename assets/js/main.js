@@ -7928,7 +7928,7 @@ function _playerAccountAdminBlock(p,accounts){
           var active=role===r;
           var rc=roleCols[r]||"var(--dim)";
           var rLabel={joueur:"Joueur",mj:"MJ",designer:"Designer",admin:"Admin"}[r];
-          return '<button type="button" class="player-role-chip'+(active?' active':'')+'" onclick="setPlayerAccountRole(\''+jsesc(p.id)+'\',\''+r+'\')" style="--role-col:'+rc+';">'+rLabel+'</button>';
+          return '<button type="button" class="player-role-chip role-'+r+(active?' active':'')+'" aria-pressed="'+(active?'true':'false')+'" onclick="setPlayerAccountRole(\''+jsesc(p.id)+'\',\''+r+'\')" style="--role-col:'+rc+';">'+rLabel+'</button>';
         }).join(""))
     : '<span style="font-size:11px;color:var(--faint);font-style:italic;">Aucun compte lié</span>';
   return '<div class="player-account-tools">'
@@ -7987,6 +7987,7 @@ function renderSPList(){
     var linked=_accountForPlayer(p.id,accounts);
     var role=linked?(linked.role||"joueur"):"";
     var roleLabel=role?(ROLE_LABELS[role]||role):"Non lié";
+    var roleClass=role||"unlinked";
     return'<div class="prow player-card'+(isCurrent?" sel":"")+'" id="pr-'+p.id+'">'
       +'<div class="player-avatar-wrap">'+av+'</div>'
       +'<div class="player-main">'
@@ -7995,7 +7996,7 @@ function renderSPList(){
             +'<div class="pname">'+esc(p.name)+(isCurrent?' <span class="tag tgl player-active-tag">Affiché</span>':'')+'</div>'
             +'<div class="pcls">'+esc(p.classe)+' — Serment niv. '+p.sLevel+(p.createdAt?' <span class="player-date">· '+new Date(p.createdAt).toLocaleDateString("fr-FR")+'</span>':'')+'</div>'
           +'</div>'
-          +'<div class="player-mini-badges"><span class="plvl">Niv. '+p.level+'</span><span class="player-role-badge">'+esc(roleLabel)+'</span></div>'
+          +'<div class="player-mini-badges"><span class="plvl">Niv. '+p.level+'</span><span class="player-role-badge role-'+esc(roleClass)+'">'+esc(roleLabel)+'</span></div>'
         +'</div>'
         +'<div class="player-vitals">'
           +'<span><b>'+p.pvCur+'/'+p.pvMax+'</b> PV</span>'
