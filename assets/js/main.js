@@ -1,4 +1,84 @@
 function ge(id){return document.getElementById(id);}
+function npUnifiedCompassSvg(opts){
+  opts = opts || {};
+  var id = opts.id ? ' id="'+esc(opts.id)+'"' : '';
+  var cls = opts.cls ? ' class="'+esc(opts.cls)+'"' : '';
+  var width = opts.width ? ' width="'+esc(opts.width)+'"' : '';
+  var height = opts.height ? ' height="'+esc(opts.height)+'"' : '';
+  var style = opts.style ? ' style="'+esc(opts.style)+'"' : '';
+  var attrs = opts.attrs ? ' '+opts.attrs : '';
+  var uid = String(opts.uid || ('npc'+Math.random().toString(36).slice(2))).replace(/[^a-zA-Z0-9_-]/g,'');
+  return '<svg'+id+cls+width+height+' viewBox="0 0 340 320" xmlns="http://www.w3.org/2000/svg"'+style+attrs+' data-np-unified-compass="1">'
+    +'<defs>'
+      +'<linearGradient id="'+uid+'-s" x1="0" y1="0" x2="0" y2="1">'
+        +'<stop offset="0%" stop-color="var(--glacier-bright,#d4eef8)"/>'
+        +'<stop offset="100%" stop-color="var(--glacier,#7eb8d4)"/>'
+      +'</linearGradient>'
+      +'<linearGradient id="'+uid+'-r" x1="0" y1="0" x2="1" y2="1">'
+        +'<stop offset="0%" stop-color="var(--glacier,#7eb8d4)" stop-opacity=".9"/>'
+        +'<stop offset="50%" stop-color="var(--glacier-dim,#4a7d96)" stop-opacity=".3"/>'
+        +'<stop offset="100%" stop-color="var(--glacier,#7eb8d4)" stop-opacity=".9"/>'
+      +'</linearGradient>'
+    +'</defs>'
+    +'<g transform="translate(170,155)">'
+      +'<circle cx="0" cy="0" r="110" fill="none" stroke="url(#'+uid+'-r)" stroke-width=".8" opacity=".5"/>'
+      +'<circle cx="0" cy="0" r="115" fill="none" stroke="var(--glacier,#7eb8d4)" stroke-width=".3" stroke-dasharray="4 10" opacity=".3"/>'
+      +'<line x1="0" y1="-115" x2="0" y2="-155" stroke="var(--glacier,#7eb8d4)" stroke-width=".6" opacity=".45"/>'
+      +'<line x1="81" y1="-81" x2="110" y2="-110" stroke="var(--glacier,#7eb8d4)" stroke-width=".5" opacity=".35"/>'
+      +'<line x1="115" y1="0" x2="155" y2="0" stroke="var(--glacier,#7eb8d4)" stroke-width=".6" opacity=".45"/>'
+      +'<line x1="81" y1="81" x2="110" y2="110" stroke="var(--glacier,#7eb8d4)" stroke-width=".5" opacity=".35"/>'
+      +'<line x1="0" y1="115" x2="0" y2="155" stroke="var(--glacier,#7eb8d4)" stroke-width=".6" opacity=".45"/>'
+      +'<line x1="-81" y1="81" x2="-110" y2="110" stroke="var(--glacier,#7eb8d4)" stroke-width=".5" opacity=".35"/>'
+      +'<line x1="-115" y1="0" x2="-155" y2="0" stroke="var(--glacier,#7eb8d4)" stroke-width=".6" opacity=".45"/>'
+      +'<line x1="-81" y1="-81" x2="-110" y2="-110" stroke="var(--glacier,#7eb8d4)" stroke-width=".5" opacity=".35"/>'
+      +'<polygon points="0,-88 10,-34 0,-22 -10,-34" fill="url(#'+uid+'-s)" opacity=".95"/>'
+      +'<polygon points="88,0 34,10 22,0 34,-10" fill="url(#'+uid+'-s)" opacity=".95"/>'
+      +'<polygon points="0,88 10,34 0,22 -10,34" fill="url(#'+uid+'-s)" opacity=".95"/>'
+      +'<polygon points="-88,0 -34,10 -22,0 -34,-10" fill="url(#'+uid+'-s)" opacity=".95"/>'
+      +'<polygon points="62,-62 17,-27 10,-10 27,-17" fill="var(--glacier-bright,#b0d8ee)" opacity=".8"/>'
+      +'<polygon points="62,62 27,17 10,10 17,27" fill="var(--glacier-bright,#b0d8ee)" opacity=".8"/>'
+      +'<polygon points="-62,62 -17,27 -10,10 -27,17" fill="var(--glacier-bright,#b0d8ee)" opacity=".8"/>'
+      +'<polygon points="-62,-62 -27,-17 -10,-10 -17,-27" fill="var(--glacier-bright,#b0d8ee)" opacity=".8"/>'
+      +'<rect x="-16" y="-16" width="32" height="32" fill="var(--bg,#09090f)" stroke="var(--glacier,#7eb8d4)" stroke-width="1.2" transform="rotate(45)"/>'
+      +'<rect x="-9" y="-9" width="18" height="18" fill="url(#'+uid+'-s)" transform="rotate(45)" opacity=".9"/>'
+      +'<polygon points="46,-64 76,-46 58,-34 37,-49" fill="var(--glacier,#7eb8d4)" opacity=".25"/>'
+      +'<line x1="46" y1="-64" x2="76" y2="-46" stroke="var(--glacier-bright,#d4eef8)" stroke-width=".8" opacity=".5"/>'
+    +'</g>'
+    +'<g transform="translate(170,278)" opacity=".7">'
+      +'<path d="M-140,0 Q-140,-20 -120,-20 Q-116,-34 -98,-34 Q-84,-48 -64,-40 Q-52,-56 -30,-50 Q-16,-64 6,-54 Q20,-66 40,-56 Q56,-70 76,-58 Q90,-68 106,-56 Q120,-64 136,-50 Q148,-36 140,-20 Q150,-14 148,0 Z" fill="var(--glacier-dim,#4a7d96)" opacity=".15"/>'
+      +'<path d="M-140,0 Q-140,-20 -120,-20 Q-116,-34 -98,-34 Q-84,-48 -64,-40 Q-52,-56 -30,-50 Q-16,-64 6,-54 Q20,-66 40,-56 Q56,-70 76,-58 Q90,-68 106,-56 Q120,-64 136,-50 Q148,-36 140,-20 Q150,-14 148,0" fill="none" stroke="var(--glacier,#7eb8d4)" stroke-width=".8" opacity=".5"/>'
+      +'<line x1="-64" y1="0" x2="-80" y2="-38" stroke="var(--glacier,#7eb8d4)" stroke-width=".4" opacity=".25"/>'
+      +'<line x1="6" y1="0" x2="-6" y2="-52" stroke="var(--glacier,#7eb8d4)" stroke-width=".4" opacity=".25"/>'
+      +'<line x1="76" y1="0" x2="58" y2="-56" stroke="var(--glacier,#7eb8d4)" stroke-width=".4" opacity=".25"/>'
+    +'</g>'
+  +'</svg>';
+}
+function installUnifiedCompasses(){
+  var hdr=ge('hdr-logo-svg');
+  if(hdr && hdr.getAttribute('data-np-unified-compass') !== '1'){
+    hdr.outerHTML=npUnifiedCompassSvg({id:'hdr-logo-svg',uid:'hdr-logo',width:38,height:38,style:'flex-shrink:0;cursor:pointer;',attrs:'onclick="logoClick(this)" title="Nuages Polaires"'});
+  }
+  document.querySelectorAll('svg.login-emblem').forEach(function(svg,idx){
+    if(svg.getAttribute('data-np-unified-compass') === '1') return;
+    var style=svg.getAttribute('style')||'width:80px;height:76px;margin:0 auto 6px;display:block;opacity:0;animation:fadeIn .8s ease .1s forwards;';
+    svg.outerHTML=npUnifiedCompassSvg({cls:'login-emblem',uid:'login-emblem-'+idx,width:80,height:76,style:style});
+  });
+  var lto=document.querySelector('#lto-logo svg');
+  if(lto && lto.getAttribute('data-np-unified-compass') !== '1'){
+    lto.outerHTML=npUnifiedCompassSvg({uid:'lto-logo',width:88,height:84});
+  }
+}
+function scheduleUnifiedCompasses(){
+  var attempts=0;
+  function tick(){
+    attempts++;
+    installUnifiedCompasses();
+    if(attempts<16) setTimeout(tick,120);
+  }
+  tick();
+}
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scheduleUnifiedCompasses, {once:true});
+else scheduleUnifiedCompasses();
 function togglePasswordVisibility(inputId, btn){
   var input=ge(inputId);
   if(!input) return;
@@ -52,10 +132,10 @@ async function verifyPass(input, stored){
 (function(){
   try{
     var t=localStorage.getItem("np_theme")||"dark";
-    var themeMap={violet:"theme-violet",red:"theme-red",green:"theme-green",easter:"theme-easter",halloween:"theme-halloween",noel:"theme-noel",bloodmoon:"theme-bloodmoon",aquaris:"theme-aquaris"};
+    var themeMap={violet:"theme-violet",green:"theme-green",easter:"theme-easter",halloween:"theme-halloween",noel:"theme-noel",bloodmoon:"theme-bloodmoon",aquaris:"theme-aquaris"};
     if(themeMap[t]) t=themeMap[t];
     // Appliquer thèmes de base sans vérification auth (événements vérifiés après)
-    var baseOk=["dark","light","theme-violet","theme-red","theme-green"];
+    var baseOk=["dark","light","theme-violet","theme-green"];
     var eventThemes=["theme-easter","theme-halloween","theme-noel","theme-bloodmoon","theme-aquaris"];
     if(t==="light"){ document.body.classList.add("light"); }
     else if(t.indexOf("theme-")===0){
@@ -289,8 +369,7 @@ var THEMES_BASE = [
   { id:"dark",        name:"Nuages Polaires", cls:"",              preview:["#0d0e18","#7eb8d4","#c9a84c"], desc:"Le thème original.", event:false },
   { id:"light",       name:"Brume Claire",    cls:"light",         preview:["#f4f5fa","#3a8fba","#9a7020"], desc:"Mode clair.",        event:false },
   { id:"violet",      name:"Galactique",      cls:"theme-violet",  preview:["#03020b","#9b7cff","#73d8ff"], desc:"Constellations, nébuleuses et verre cosmique.", event:false },
-  { id:"red",         name:"Écarlate",        cls:"theme-red",     preview:["#160d0d","#d45050","#c9a84c"], desc:"Rouge sang.",        event:false },
-  { id:"green",       name:"Sylvan",          cls:"theme-green",   preview:["#06130b","#39b66b","#d5b75d"], desc:"Canopée profonde, mousse vivante et lianes anciennes.", event:false },
+  { id:"green",       name:"Sylvan",          cls:"theme-green",   preview:["#031108","#51c56d","#d8c16a"], desc:"Jungle dense, canopée humide, lianes vivantes et lumière de sous-bois.", event:false },
 ];
 
 // Thèmes événement — chargés depuis la DB (clé "event_themes")
@@ -302,6 +381,7 @@ function normalizeThemeId(themeId){
   if(!id || id === 'theme-default') return 'dark';
   if(id.indexOf('theme-') === 0) id = id.replace(/^theme-/, '');
   if(id === 'default') return 'dark';
+  if(id === 'red' || id === 'ecarlate' || id === 'écarlate') return 'dark';
   return id;
 }
 async function _jsonPost(url, payload, opts){
@@ -640,7 +720,7 @@ async function _loadSessionBundle(){
   });
 }
 
-const BUILTIN_THEME_IDS = ['dark','light','violet','red','green'].map(normalizeThemeId);
+const BUILTIN_THEME_IDS = ['dark','light','violet','green'].map(normalizeThemeId);
 const ALWAYS_GRANTED_THEME_IDS = ['dark','light'].map(normalizeThemeId);
 function isBaseTheme(themeId){ return BUILTIN_THEME_IDS.includes(normalizeThemeId(themeId)); }
 function isAlwaysGrantedTheme(themeId){ return ALWAYS_GRANTED_THEME_IDS.includes(normalizeThemeId(themeId)); }
@@ -3416,7 +3496,7 @@ function renderThemeGrid(containerId){
   function themeRarity(t){
     if(t.id === "bloodmoon") return "Fondateur";
     if(t.id === "aquaris") return "Rare";
-    if(t.id === "violet" || t.id === "red" || t.id === "green") return "Rare";
+    if(t.id === "violet" || t.id === "green") return "Rare";
     if(t.event) return "Saisonnier";
     if(t.id === "dark" || t.id === "light") return "Base";
     return "Classique";
@@ -3425,7 +3505,7 @@ function renderThemeGrid(containerId){
   function themeCategory(t){
     if(t.id === "bloodmoon") return "Fondateur";
     if(t.id === "aquaris") return "Rares";
-    if(t.id === "violet" || t.id === "red" || t.id === "green") return "Rares";
+    if(t.id === "violet" || t.id === "green") return "Rares";
     if(t.event) return "Événement";
     if(t.id === "dark" || t.id === "light") return "Base";
     return "Classique";
@@ -3526,7 +3606,7 @@ function renderAdminThemes(targetId){
   var playerAccounts = getAccounts().filter(function(a){ return String(a.role||"joueur").toLowerCase()==="joueur"; });
   function adminThemeRarity(t){
     if(t.id === "bloodmoon") return "Fondateur";
-    if(t.id === "aquaris" || t.id === "violet" || t.id === "red" || t.id === "green" || t.id === "sylvan" || t.id === "galactic") return "Rare";
+    if(t.id === "aquaris" || t.id === "violet" || t.id === "green" || t.id === "sylvan" || t.id === "galactic") return "Rare";
     if(t.event) return "Saisonnier";
     if(t.id === "dark" || t.id === "light") return "Base";
     return "Classique";
@@ -3975,7 +4055,7 @@ function launchApp(){
     try{
       var saved = getPreferredThemeForCurrentUser();
       if(saved.indexOf("theme-")===0) saved=saved.replace(/^theme-/,"");
-      var baseThemes=["dark","light","violet","red","green"];
+      var baseThemes=["dark","light","violet","green"];
       if(baseThemes.indexOf(saved)<0){
         if(!isThemeVisibleForPlayer(saved) || !hasUnlocked(saved)){ applyTheme("dark",true); }
         else { _currentTheme=saved; applyTheme(saved,false); }
@@ -8828,23 +8908,7 @@ _loaderEl.style.cssText="position:fixed;inset:0;display:flex;align-items:center;
 _loaderEl.innerHTML='<div class="np-loader-bg" aria-hidden="true"><span></span><span></span><span></span></div>'
   +'<div class="np-loader-panel" role="status" aria-live="polite">'
     +'<div class="np-loader-mark" aria-hidden="true">'
-      +'<svg viewBox="0 0 100 100" width="82" height="82" xmlns="http://www.w3.org/2000/svg">'
-        +'<defs><linearGradient id="np-loader-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#d4eef8"/><stop offset="100%" stop-color="#7eb8d4"/></linearGradient></defs>'
-        +'<circle class="np-loader-orbit orbit-a" cx="50" cy="50" r="44" fill="none"/>'
-        +'<circle class="np-loader-orbit orbit-b" cx="50" cy="50" r="31" fill="none"/>'
-        +'<g class="np-loader-compass">'
-          +'<polygon points="50,6 56,38 50,44 44,38" fill="url(#np-loader-g)"/>'
-          +'<polygon points="94,50 62,56 56,50 62,44" fill="url(#np-loader-g)"/>'
-          +'<polygon points="50,94 56,62 50,56 44,62" fill="url(#np-loader-g)"/>'
-          +'<polygon points="6,50 38,56 44,50 38,44" fill="url(#np-loader-g)"/>'
-          +'<polygon points="73,27 58,42 52,38 60,26" fill="#b0d8ee" opacity="0.8"/>'
-          +'<polygon points="73,73 60,74 52,62 58,58" fill="#b0d8ee" opacity="0.8"/>'
-          +'<polygon points="27,73 26,60 38,52 42,58" fill="#b0d8ee" opacity="0.8"/>'
-          +'<polygon points="27,27 40,26 48,38 42,42" fill="#b0d8ee" opacity="0.8"/>'
-          +'<rect x="41" y="41" width="18" height="18" fill="#09090f" stroke="#7eb8d4" stroke-width="1" transform="rotate(45,50,50)"/>'
-          +'<rect x="45" y="45" width="10" height="10" fill="#7eb8d4" transform="rotate(45,50,50)" opacity="0.9"/>'
-        +'</g>'
-      +'</svg>'
+      +npUnifiedCompassSvg({cls:'np-loader-compass',uid:'np-loader',width:82,height:82})
     +'</div>'
     +'<div class="np-loader-brand">Nuages Polaires</div>'
     +'<div class="np-loader-status">Connexion...</div>'
@@ -14896,7 +14960,7 @@ var APP_BUILD="np_v18";
       localStorage.setItem("np_app_build", APP_BUILD);
       ["np_runtime_guard","np_cmdk_recent"].forEach(function(k){ try{ localStorage.removeItem(k); }catch(e){} });
       var t=localStorage.getItem("np_theme");
-      var themeMap={violet:"theme-violet",red:"theme-red",green:"theme-green",easter:"theme-easter",halloween:"theme-halloween",noel:"theme-noel",bloodmoon:"theme-bloodmoon",aquaris:"theme-aquaris"};
+      var themeMap={violet:"theme-violet",green:"theme-green",easter:"theme-easter",halloween:"theme-halloween",noel:"theme-noel",bloodmoon:"theme-bloodmoon",aquaris:"theme-aquaris"};
       if(themeMap[t]) localStorage.setItem("np_theme", themeMap[t]);
     }
   }catch(e){}

@@ -12,7 +12,6 @@
     {id:'dark', label:'Base'},
     {id:'light', label:'Clair'},
     {id:'violet', label:'Galactique'},
-    {id:'red', label:'Écarlate'},
     {id:'green', label:'Sylvan'},
     {id:'easter', label:'Pâques'},
     {id:'halloween', label:'Halloween'},

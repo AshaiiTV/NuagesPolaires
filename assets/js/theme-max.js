@@ -57,32 +57,18 @@
         pageBg:'radial-gradient(ellipse at 50% -12%,rgba(203,194,255,.32),transparent 31rem),radial-gradient(circle at 14% 18%,rgba(124,84,255,.34),transparent 26rem),radial-gradient(circle at 86% 18%,rgba(71,206,255,.24),transparent 24rem),radial-gradient(ellipse at 74% 86%,rgba(220,92,255,.20),transparent 32rem),linear-gradient(180deg,#020108 0%,#07041b 34%,#100830 62%,#020108 100%)'
       }
     },
-    red: {
-      id:'red', label:'Écarlate', cls:'theme-red', rarity:'Rare', category:'Rares',
-      tagline:'Écarlate, chaud et affirmé.',
-      desc:'Rouge profond, chaleur et tension élégante.',
-      colors:['#180b0d','#e35f5f','#d7a04b'],
-      tone:'dark',
-      vars:{
-        bg:'#180b0d', bg2:'#241011', bg3:'#341719', bg4:'#4a2023',
-        text:'#fff6f4', dim:'#ecc7c1', faint:'#b28b85',
-        accent:'#e35f5f', accentDim:'#9a2f32', accentBright:'#d7a04b',
-        accentRgb:'227,95,95', accent2Rgb:'215,160,75',
-        pageBg:'radial-gradient(circle at 18% 14%, rgba(227,95,95,.15), transparent 24rem),radial-gradient(circle at 84% 82%, rgba(215,160,75,.10), transparent 26rem),linear-gradient(180deg,#180b0d 0%,#241011 52%,#090405 100%)'
-      }
-    },
     green: {
       id:'green', label:'Sylvan', cls:'theme-green', rarity:'Rare', category:'Rares',
-      tagline:'Canopée profonde, mousse vivante et lianes anciennes.',
-      desc:'Un thème jungle organique : sous-bois dense, feuillage humide, sève dorée et lumière filtrée par la canopée.',
-      colors:['#06130b','#39b66b','#d5b75d'],
+      tagline:'Jungle dense, canopée vivante et sève lumineuse.',
+      desc:'Un thème jungle organique : feuillage humide, lianes mouvantes, mousse profonde et lumière dorée filtrée par la canopée.',
+      colors:['#031108','#51c56d','#d8c16a'],
       tone:'dark',
       vars:{
-        bg:'#06130b', bg2:'#0b2212', bg3:'#12351d', bg4:'#1c4b2a',
-        text:'#f1fff4', dim:'#c1e5c5', faint:'#82aa89',
-        accent:'#39b66b', accentDim:'#1d7543', accentBright:'#d5b75d',
-        accentRgb:'57,182,107', accent2Rgb:'213,183,93',
-        pageBg:'radial-gradient(circle at 14% 12%, rgba(57,182,107,.24), transparent 22rem),radial-gradient(circle at 82% 18%, rgba(213,183,93,.13), transparent 18rem),radial-gradient(ellipse at 50% 105%, rgba(14,78,35,.62), transparent 42rem),linear-gradient(180deg,#06130b 0%,#0b2212 46%,#031008 100%)'
+        bg:'#031108', bg2:'#082111', bg3:'#12381d', bg4:'#1e552d',
+        text:'#f3fff0', dim:'#c9edbf', faint:'#8db883',
+        accent:'#51c56d', accentDim:'#1f7d40', accentBright:'#d8c16a',
+        accentRgb:'81,197,109', accent2Rgb:'216,193,106',
+        pageBg:'radial-gradient(ellipse at 12% -8%, rgba(118,229,133,.30), transparent 27rem),radial-gradient(circle at 82% 8%, rgba(216,193,106,.16), transparent 22rem),radial-gradient(ellipse at 44% 112%, rgba(8,73,28,.82), transparent 45rem),repeating-linear-gradient(108deg, rgba(129,229,118,.055) 0 2px, transparent 2px 42px),linear-gradient(180deg,#031108 0%,#082111 42%,#031008 100%)'
       }
     },
     easter: {
@@ -158,7 +144,7 @@
     }
   };
 
-  var ORDER = ['dark','light','violet','red','green','easter','halloween','noel','aquaris','bloodmoon'];
+  var ORDER = ['dark','light','violet','green','easter','halloween','noel','aquaris','bloodmoon'];
   var RARITY_ORDER = { 'Base':0, 'Classique':1, 'Saisonnier':2, 'Rare':3, 'Premium':3, 'Fondateur':4, 'Mythique':5 };
 
   var CSS = `
@@ -623,24 +609,62 @@ body[data-theme-engine="v257"].theme-violet :where(.card,.panel,.staff-panel,.su
 body[data-theme-engine="v257"].theme-green::before{
   inset:0;
   z-index:0;
-  opacity:.72;
+  opacity:.90;
   background:
-    radial-gradient(ellipse at 16% 2%,rgba(84,210,117,.24),transparent 28rem),
-    radial-gradient(ellipse at 88% 18%,rgba(213,183,93,.12),transparent 18rem),
-    repeating-linear-gradient(118deg,rgba(90,190,98,.075) 0 2px,transparent 2px 34px),
-    repeating-linear-gradient(62deg,rgba(213,183,93,.050) 0 1px,transparent 1px 42px);
+    radial-gradient(ellipse at 16% -4%,rgba(118,229,133,.34),transparent 30rem),
+    radial-gradient(ellipse at 88% 12%,rgba(216,193,106,.16),transparent 22rem),
+    radial-gradient(ellipse at 42% 58%,rgba(22,105,45,.30),transparent 38rem),
+    linear-gradient(132deg,transparent 0 18%,rgba(151,232,126,.12) 18.5% 19.5%,transparent 20% 100%),
+    linear-gradient(54deg,transparent 0 36%,rgba(216,193,106,.08) 36.4% 37.2%,transparent 37.8% 100%),
+    repeating-linear-gradient(118deg,rgba(81,197,109,.080) 0 2px,transparent 2px 34px),
+    repeating-linear-gradient(62deg,rgba(216,193,106,.055) 0 1px,transparent 1px 42px);
 }
 body[data-theme-engine="v257"].theme-green::after{
   left:0;
   right:0;
   bottom:0;
-  height:330px;
+  height:390px;
   z-index:0;
-  opacity:.86;
+  opacity:.95;
   background:
-    radial-gradient(ellipse at 8% 100%,rgba(25,126,55,.48),transparent 32rem),
-    radial-gradient(ellipse at 94% 100%,rgba(13,88,45,.44),transparent 30rem),
-    linear-gradient(180deg,rgba(6,19,11,0),rgba(5,23,10,.42) 42%,rgba(2,11,5,.90) 100%);
+    radial-gradient(ellipse at 8% 100%,rgba(35,145,62,.58),transparent 34rem),
+    radial-gradient(ellipse at 94% 100%,rgba(13,95,49,.52),transparent 32rem),
+    radial-gradient(ellipse at 50% 88%,rgba(216,193,106,.10),transparent 24rem),
+    linear-gradient(180deg,rgba(3,17,8,0),rgba(5,29,11,.50) 38%,rgba(2,11,5,.92) 100%);
+}
+body[data-theme-engine="v257"].theme-green #s-app::before,
+body[data-theme-engine="v257"].theme-green #s-app::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  display:block;
+}
+body[data-theme-engine="v257"].theme-green #s-app::before{
+  opacity:.46;
+  background:
+    radial-gradient(ellipse at 12% 22%,rgba(185,255,170,.24),transparent 8rem),
+    radial-gradient(ellipse at 82% 16%,rgba(216,193,106,.15),transparent 10rem),
+    linear-gradient(118deg,transparent 0 22%,rgba(123,229,111,.13) 22.3% 23.4%,transparent 23.8% 100%),
+    linear-gradient(72deg,transparent 0 61%,rgba(123,229,111,.10) 61.3% 62.2%,transparent 62.8% 100%);
+  filter:blur(.1px);
+}
+body[data-theme-engine="v257"].theme-green #s-app::after{
+  opacity:.36;
+  background:
+    radial-gradient(ellipse at 16% 82%,rgba(87,186,80,.30),transparent 11rem),
+    radial-gradient(ellipse at 76% 78%,rgba(124,221,112,.20),transparent 12rem),
+    repeating-linear-gradient(96deg,transparent 0 76px,rgba(216,193,106,.055) 78px 80px,transparent 82px 132px);
+  animation:tmSylvanBreath 9s ease-in-out infinite alternate;
+}
+body[data-theme-engine="v257"].theme-green #s-app{
+  position:relative !important;
+  isolation:isolate !important;
+}
+body[data-theme-engine="v257"].theme-green :where(.np-wrap,.app-header,#app-root,.app-body,.screen,.tab-content,.tab-content.tab-popup-active,#s-app > *){
+  position:relative !important;
+  z-index:2 !important;
 }
 body[data-theme-engine="v257"].theme-aquaris::before{
   inset:0;z-index:-1;
@@ -694,11 +718,16 @@ body[data-theme-engine="v257"].theme-noel::after{
   0%{transform:translate3d(-2%,-1%,0) scale(1.03);opacity:.66;}
   100%{transform:translate3d(2%,1.4%,0) scale(1.08);opacity:.96;}
 }
+@keyframes tmSylvanBreath{
+  0%{transform:translate3d(-.8%,0,0) scale(1);opacity:.26;}
+  100%{transform:translate3d(.8%,-.6%,0) scale(1.035);opacity:.48;}
+}
 @media (prefers-reduced-motion:reduce){
   body[data-theme-engine="v257"].theme-violet::before,
   body[data-theme-engine="v257"].theme-violet::after,
   body[data-theme-engine="v257"].theme-violet #s-app::before,
-  body[data-theme-engine="v257"].theme-violet #s-app::after{
+  body[data-theme-engine="v257"].theme-violet #s-app::after,
+  body[data-theme-engine="v257"].theme-green #s-app::after{
     animation:none !important;
   }
 }
@@ -1321,6 +1350,7 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
     id = String(id || '').trim().toLowerCase();
     if(!id || id === 'theme-default' || id === 'default') return 'dark';
     if(id.indexOf('theme-') === 0) id = id.replace(/^theme-/, '');
+    if(id === 'red' || id === 'ecarlate' || id === 'écarlate') return 'dark';
     if(id === 'aquarius') id = 'aquaris';
     if(id === 'blood-moon' || id === 'lune-de-sang') id = 'bloodmoon';
     return id;
@@ -1624,7 +1654,7 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
     if(txt.indexOf('noël') >= 0 || txt.indexOf('noel') >= 0 || txt.indexOf('hivernale') >= 0) return 'noel';
     if(txt.indexOf('halloween') >= 0 || txt.indexOf('âmes') >= 0 || txt.indexOf('citrouille') >= 0) return 'halloween';
     if(txt.indexOf('galactique') >= 0 || txt.indexOf('abyssal') >= 0 || txt.indexOf('violet') >= 0) return 'violet';
-    if(txt.indexOf('écarlate') >= 0 || txt.indexOf('ecarlate') >= 0) return 'red';
+    if(txt.indexOf('écarlate') >= 0 || txt.indexOf('ecarlate') >= 0) return 'dark';
     if(txt.indexOf('sylvan') >= 0 || txt.indexOf('vert') >= 0) return 'green';
     if(txt.indexOf('claire') >= 0 || txt.indexOf('light') >= 0) return 'light';
     return 'dark';
