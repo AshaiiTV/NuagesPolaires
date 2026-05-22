@@ -4345,6 +4345,40 @@ body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);bord
 
 
 /* === PATCH v67 — lisibilité home / docs premium / modales centrées === */
+.home-duo-row{
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  align-items:stretch !important;
+}
+.home-duo-card{
+  min-height:270px;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  box-sizing:border-box;
+}
+.home-duo-card>.card-title{
+  flex:0 0 auto;
+}
+.home-duo-card>.empty-state{
+  flex:1 1 auto;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+.home-duo-card>.btn{
+  align-self:flex-start;
+  margin-top:auto;
+}
+@media(max-width:760px){
+  .home-duo-row{
+    grid-template-columns:1fr !important;
+  }
+  .home-duo-card{
+    min-height:0;
+  }
+}
+
 .home-footer{
   width:min(1120px, calc(100vw - 40px));
   margin:0 auto;

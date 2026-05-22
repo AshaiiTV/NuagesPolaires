@@ -7084,9 +7084,9 @@ function renderAccueil(tid){
   });
   h+='</div>';
 
-  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:20px;">';
+  h+='<div class="home-duo-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:20px;align-items:stretch;">';
 
-  h+='<div class="card">';
+  h+='<div class="card home-duo-card">';
   h+='<div class="card-title">Prochain événement</div>';
   if(prochainEvent){
     var etype=EV_TYPES&&EV_TYPES[prochainEvent.type]?EV_TYPES[prochainEvent.type]:{icon:"☁",col:"var(--glacier)",label:"Événement"};
@@ -7104,7 +7104,7 @@ function renderAccueil(tid){
   }
   h+='</div>';
 
-  h+='<div class="card">';
+  h+='<div class="card home-duo-card">';
   h+='<div class="card-title">Derniers combats</div>';
   if(derniersCombats.length){
     derniersCombats.forEach(function(arc){
