@@ -924,12 +924,12 @@ body[data-theme-engine="v257"] .np-theme-vault-card .theme-preview-mini[data-pre
 }
 body[data-theme-engine="v257"] .profile-collection-shell .np-theme-vault-card .theme-preview-mini[data-preview-theme]{
   width:100% !important;
-  height:112px !important;
-  min-height:112px !important;
-  max-height:112px !important;
-  flex:0 0 112px !important;
+  height:120px !important;
+  min-height:120px !important;
+  max-height:120px !important;
+  flex:0 0 120px !important;
   align-self:stretch !important;
-  margin:2px 0 0 !important;
+  margin:0 !important;
   padding:10px !important;
   box-sizing:border-box !important;
   display:flex !important;
@@ -950,28 +950,32 @@ body[data-theme-engine="v257"] .profile-collection-shell .np-theme-vault-card .t
   flex:0 0 auto !important;
 }
 body[data-theme-engine="v257"] .profile-collection-shell .theme-collection-grid{
-  grid-auto-rows:340px !important;
+  grid-auto-rows:380px !important;
   align-items:stretch !important;
 }
 body[data-theme-engine="v257"] .profile-collection-shell .np-theme-vault-card,
 body[data-theme-engine="v257"] .profile-collection-shell .np-theme-vault-card.is-featured{
-  height:100% !important;
-  max-height:340px !important;
-  min-height:0 !important;
+  height:380px !important;
+  max-height:380px !important;
+  min-height:380px !important;
   display:grid !important;
-  grid-template-rows:22px 112px minmax(58px,70px) 24px 46px !important;
-  align-content:start !important;
+  grid-template-rows:26px 120px 88px 24px 50px !important;
+  align-content:stretch !important;
   gap:10px !important;
+  transform:none !important;
+}
+body[data-theme-engine="v257"] .profile-collection-shell .np-theme-vault-card + .np-theme-vault-card{
+  margin-top:0 !important;
 }
 body[data-theme-engine="v257"] .profile-collection-shell .theme-topline{
-  height:22px !important;
-  min-height:22px !important;
-  max-height:22px !important;
+  height:26px !important;
+  min-height:26px !important;
+  max-height:26px !important;
 }
 body[data-theme-engine="v257"] .profile-collection-shell .theme-card-body{
-  height:70px !important;
-  min-height:70px !important;
-  max-height:70px !important;
+  height:88px !important;
+  min-height:88px !important;
+  max-height:88px !important;
   overflow:hidden !important;
 }
 body[data-theme-engine="v257"] .profile-collection-shell .theme-meta-row{
@@ -981,19 +985,39 @@ body[data-theme-engine="v257"] .profile-collection-shell .theme-meta-row{
   margin-top:0 !important;
 }
 body[data-theme-engine="v257"] .profile-collection-shell .theme-card-action{
-  height:46px !important;
-  min-height:46px !important;
-  max-height:46px !important;
+  height:50px !important;
+  min-height:50px !important;
+  max-height:50px !important;
   margin-top:0 !important;
+  align-self:end !important;
+  width:100% !important;
 }
 @media(max-width:760px){
   body[data-theme-engine="v257"] .profile-collection-shell .theme-collection-grid{
-    grid-auto-rows:318px !important;
+    grid-auto-rows:340px !important;
   }
   body[data-theme-engine="v257"] .profile-collection-shell .np-theme-vault-card,
   body[data-theme-engine="v257"] .profile-collection-shell .np-theme-vault-card.is-featured{
-    max-height:318px !important;
-    grid-template-rows:22px 100px minmax(58px,70px) 24px 46px !important;
+    height:340px !important;
+    min-height:340px !important;
+    max-height:340px !important;
+    grid-template-rows:24px 104px 72px 22px 46px !important;
+  }
+  body[data-theme-engine="v257"] .profile-collection-shell .theme-card-body{
+    height:72px !important;
+    min-height:72px !important;
+    max-height:72px !important;
+  }
+  body[data-theme-engine="v257"] .profile-collection-shell .theme-card-action{
+    height:46px !important;
+    min-height:46px !important;
+    max-height:46px !important;
+  }
+  body[data-theme-engine="v257"] .profile-collection-shell .np-theme-vault-card .theme-preview-mini[data-preview-theme]{
+    height:104px !important;
+    min-height:104px !important;
+    max-height:104px !important;
+    flex-basis:104px !important;
   }
 }
 body[data-theme-engine="v257"] [data-theme-id="aquaris"]{border-color:rgba(72,214,239,.28) !important;box-shadow:0 22px 52px rgba(0,7,12,.28),0 0 0 1px rgba(229,200,120,.08) inset !important;}
