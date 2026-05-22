@@ -12986,6 +12986,8 @@ function spawnLabGenerate(){
 }
 function spawnLabDeleteHistory(id){
   if(!can("manage_beasts")){ notif("Réservé à l’admin.","err"); return; }
+  id=String(id||'');
+  if(!id){ notif("Entrée introuvable.","err"); return; }
   var s=_spawnLabEnsure();
   var global=_spawnLabGlobal();
   var runs=Array.isArray(global.lastRuns)?global.lastRuns.slice():[];
@@ -13002,6 +13004,22 @@ function spawnLabDeleteHistory(id){
   });
   renderSpawnLab('p-apparitions-c');
   notif("Roll supprimé de l’historique.","ok");
+}
+function spawnLabDeleteHistoryClick(ev,id){
+  try{ if(ev&&ev.stopPropagation) ev.stopPropagation(); }catch(_e){}
+  try{ if(ev&&ev.preventDefault) ev.preventDefault(); }catch(_e2){}
+  spawnLabDeleteHistory(id);
+  return false;
+}
+if(!window.__spawnLabHistoryDeleteBound){
+  window.__spawnLabHistoryDeleteBound=true;
+  document.addEventListener('click',function(ev){
+    var btn=null;
+    try{ btn=ev.target&&ev.target.closest?ev.target.closest('.sl-history-delete'):null; }catch(_e){}
+    if(!btn) return;
+    var id=btn.getAttribute('data-roll-id')||'';
+    spawnLabDeleteHistoryClick(ev,id);
+  },true);
 }
 function spawnLabResetHistory(){
   if(!_spawnLabCanResetGlobal()){ notif("Réservé au fondateur.","err"); return; }
@@ -13330,7 +13348,7 @@ function renderSpawnLab(tid){
       h+='<div class="sl-mini" style="margin-top:5px;color:var(--dim);line-height:1.45;">'+esc(zone)+' · '+esc(_spawnLabRunTimeLabel(run&&run.rolledAt))+'</div>';
       h+='<div class="sl-mini" style="margin-top:3px;color:var(--faint);">Roll par '+esc(by)+'</div>';
       h+='</div>';
-      if(can("manage_beasts")) h+='<button class="sl-btn sl-btn-red" style="padding:6px 8px;font-size:8px;flex-shrink:0;" onclick="spawnLabDeleteHistory(\''+jsesc(rid)+'\')">Supprimer</button>';
+      if(can("manage_beasts")) h+='<button type="button" class="sl-btn sl-btn-red sl-history-delete" data-roll-id="'+escAttr(rid)+'" style="padding:6px 8px;font-size:8px;flex-shrink:0;" onclick="return spawnLabDeleteHistoryClick(event,\''+jsesc(rid)+'\')">Supprimer</button>';
       h+='</div>';
     });
   } else {
