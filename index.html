@@ -3914,14 +3914,14 @@ body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);bord
 
 /* Synopsis */
 .synopsis-shell{
-  max-width:1160px;
+  max-width:980px;
   margin:0 auto;
   display:grid;
-  gap:18px;
+  gap:22px;
 }
 .synopsis-hero{
   position:relative;
-  min-height:430px;
+  min-height:390px;
   overflow:hidden;
   border:1px solid var(--border);
   background:
@@ -3929,10 +3929,9 @@ body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);bord
     linear-gradient(135deg, color-mix(in srgb, var(--glacier) 18%, transparent), transparent 42%),
     var(--bg2);
   display:grid;
-  grid-template-columns:minmax(0,1fr) 320px;
+  grid-template-columns:1fr;
   align-items:end;
-  gap:24px;
-  padding:42px;
+  padding:46px;
   box-shadow:0 24px 70px rgba(0,0,0,.34);
 }
 .synopsis-hero::before{
@@ -3986,7 +3985,7 @@ body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);bord
   max-width:760px;
 }
 .synopsis-hero p{
-  max-width:720px;
+  max-width:760px;
   font-size:17px;
   line-height:1.82;
   color:var(--dim);
@@ -4030,6 +4029,97 @@ body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);bord
   color:var(--dim);
   font-size:13px;
   line-height:1.7;
+}
+.synopsis-story{
+  position:relative;
+  overflow:hidden;
+  border:1px solid var(--border);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.012)),
+    var(--bg3);
+}
+.synopsis-story::before{
+  content:"";
+  position:absolute;
+  left:62px;
+  top:30px;
+  bottom:30px;
+  width:1px;
+  background:linear-gradient(180deg,var(--glacier),color-mix(in srgb,var(--glacier) 20%,transparent),transparent);
+  opacity:.58;
+}
+.synopsis-chapter{
+  position:relative;
+  z-index:1;
+  display:grid;
+  grid-template-columns:72px 1fr;
+  gap:20px;
+  padding:30px 34px;
+  border-bottom:1px solid color-mix(in srgb,var(--border) 72%, transparent);
+}
+.synopsis-chapter:last-child{
+  border-bottom:0;
+}
+.synopsis-step{
+  width:56px;
+  height:56px;
+  display:grid;
+  place-items:center;
+  border:1px solid color-mix(in srgb,var(--glacier) 62%, transparent);
+  background:var(--bg2);
+  color:var(--glacier-bright);
+  font-family:var(--fm);
+  font-size:22px;
+  box-shadow:0 0 24px color-mix(in srgb,var(--glacier) 22%, transparent);
+}
+.synopsis-chapter h2,
+.synopsis-stay h2{
+  margin:0 0 10px;
+  font-family:var(--fd);
+  letter-spacing:3px;
+  color:var(--text);
+}
+.synopsis-chapter h2{
+  font-size:24px;
+}
+.synopsis-chapter p,
+.synopsis-stay p{
+  margin:0;
+  color:var(--dim);
+  line-height:1.85;
+  font-size:15px;
+}
+.synopsis-stay{
+  display:grid;
+  grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);
+  gap:28px;
+  align-items:center;
+  border:1px solid var(--border);
+  background:
+    linear-gradient(135deg, color-mix(in srgb,var(--gold) 12%, transparent), transparent 42%),
+    linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.014)),
+    var(--bg2);
+  padding:30px 34px;
+}
+.synopsis-stay h2{
+  margin-top:10px;
+  font-size:28px;
+  line-height:1.2;
+}
+.synopsis-stay-list{
+  display:grid;
+  gap:10px;
+}
+.synopsis-stay-list span{
+  display:block;
+  border:1px solid color-mix(in srgb,var(--glacier) 45%, transparent);
+  background:color-mix(in srgb,var(--bg3) 74%, transparent);
+  color:var(--text);
+  font-family:var(--fd);
+  font-size:11px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  padding:12px 14px;
 }
 .synopsis-promise,
 .synopsis-timeline{
@@ -4124,9 +4214,11 @@ body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);bord
   margin-bottom:10px;
 }
 .synopsis-final h2{
-  margin:18px 0 8px;
+  max-width:780px;
+  margin:18px auto 8px;
   font-family:var(--fd);
-  font-size:clamp(24px,4vw,42px);
+  font-size:clamp(24px,4vw,38px);
+  line-height:1.25;
   letter-spacing:4px;
   color:var(--text);
 }
@@ -4137,7 +4229,8 @@ body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);bord
 }
 @media(max-width:900px){
   .synopsis-hero,
-  .synopsis-grid{
+  .synopsis-grid,
+  .synopsis-stay{
     grid-template-columns:1fr;
   }
   .synopsis-hero{
@@ -4154,6 +4247,21 @@ body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);bord
 @media(max-width:560px){
   .synopsis-hero h1{
     letter-spacing:2px;
+  }
+  .synopsis-story::before{
+    left:28px;
+  }
+  .synopsis-chapter{
+    grid-template-columns:1fr;
+    padding:24px 20px;
+  }
+  .synopsis-step{
+    width:48px;
+    height:48px;
+    font-size:18px;
+  }
+  .synopsis-stay{
+    padding:24px 20px;
   }
   .synopsis-actions .btn{
     width:100%;
