@@ -13111,6 +13111,11 @@ function renderSpawnLab(tid){
   h+='#p-apparitions-c .sl-zone-strip{display:flex;gap:7px;overflow:auto;padding-bottom:2px;scrollbar-width:thin;}';
   h+='#p-apparitions-c .sl-token{flex:0 0 auto;max-width:220px;padding:8px 10px;border:1px solid rgba(126,184,212,.15);background:rgba(255,255,255,.035);font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}';
   h+='#p-apparitions-c .sl-token-empty{font-size:12px;color:var(--dim);line-height:1.55;}';
+  h+='#p-apparitions-c .sl-legend{margin-top:12px;padding:12px;border:1px solid rgba(201,168,76,.18);background:linear-gradient(145deg,rgba(201,168,76,.08),rgba(255,255,255,.018));}';
+  h+='#p-apparitions-c .sl-legend-title{font-family:var(--fd);font-size:9px;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;margin-bottom:8px;}';
+  h+='#p-apparitions-c .sl-legend-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:7px;}';
+  h+='#p-apparitions-c .sl-legend-item{padding:8px;border:1px solid rgba(255,255,255,.065);background:rgba(5,8,14,.28);font-size:10px;color:var(--dim);line-height:1.45;}';
+  h+='#p-apparitions-c .sl-legend-item strong{display:block;font-family:var(--fd);font-size:8px;letter-spacing:1.1px;color:var(--text);text-transform:uppercase;margin-bottom:3px;}';
   h+='#p-apparitions-c .sl-run{min-height:100%;padding:16px;border:1px solid rgba(201,168,76,.18);background:radial-gradient(circle at 100% 0%,rgba(201,168,76,.10),transparent 36%),linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.015));}';
   h+='#p-apparitions-c .sl-run-title{font-family:var(--fd);font-size:14px;letter-spacing:1.4px;color:var(--text);margin-bottom:11px;}';
   h+='#p-apparitions-c .sl-pack{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:12px;border:1px solid rgba(255,255,255,.075);background:rgba(5,8,14,.52);margin-bottom:8px;}';
@@ -13176,6 +13181,19 @@ function renderSpawnLab(tid){
   h+='<button class="sl-btn" onclick="spawnLabCopyLast()">Copier le récap</button>';
   if(_spawnLabCanResetGlobal()) h+='<button class="sl-btn sl-btn-red" onclick="spawnLabResetHistory()">Réinitialiser le global</button>';
   h+='</div>';
+  if(canSeeWeights){
+    h+='<div class="sl-legend">';
+    h+='<div class="sl-legend-title">Légende des poids</div>';
+    h+='<div class="sl-legend-grid">';
+    h+='<div class="sl-legend-item"><strong>Base</strong>Poids naturel du mob avant historique.</div>';
+    h+='<div class="sl-legend-item"><strong>Poids dynamique</strong>Valeur réellement utilisée par le roll maintenant.</div>';
+    h+='<div class="sl-legend-item"><strong>Sorties</strong>Nombre global d’apparitions déjà enregistrées.</div>';
+    h+='<div class="sl-legend-item"><strong>Fatigue</strong>Plus le mob est sorti, plus ce coefficient baisse ses chances.</div>';
+    h+='<div class="sl-legend-item"><strong>Rattrapage</strong>Bonus donné aux mobs moins sortis que la moyenne.</div>';
+    h+='<div class="sl-legend-item"><strong>Réduit / Boost</strong>Indique si le poids actuel est sous ou au-dessus de sa base.</div>';
+    h+='</div>';
+    h+='</div>';
+  }
   h+='</div>';
   h+='<div>';
   h+='<div class="sl-kicker">Résultat</div>';
