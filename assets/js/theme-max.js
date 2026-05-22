@@ -949,6 +949,53 @@ body[data-theme-engine="v257"] .profile-collection-shell .np-theme-vault-card .t
   gap:6px !important;
   flex:0 0 auto !important;
 }
+body[data-theme-engine="v257"] .profile-collection-shell .theme-collection-grid{
+  grid-auto-rows:340px !important;
+  align-items:stretch !important;
+}
+body[data-theme-engine="v257"] .profile-collection-shell .np-theme-vault-card,
+body[data-theme-engine="v257"] .profile-collection-shell .np-theme-vault-card.is-featured{
+  height:100% !important;
+  max-height:340px !important;
+  min-height:0 !important;
+  display:grid !important;
+  grid-template-rows:22px 112px minmax(58px,70px) 24px 46px !important;
+  align-content:start !important;
+  gap:10px !important;
+}
+body[data-theme-engine="v257"] .profile-collection-shell .theme-topline{
+  height:22px !important;
+  min-height:22px !important;
+  max-height:22px !important;
+}
+body[data-theme-engine="v257"] .profile-collection-shell .theme-card-body{
+  height:70px !important;
+  min-height:70px !important;
+  max-height:70px !important;
+  overflow:hidden !important;
+}
+body[data-theme-engine="v257"] .profile-collection-shell .theme-meta-row{
+  height:24px !important;
+  min-height:24px !important;
+  max-height:24px !important;
+  margin-top:0 !important;
+}
+body[data-theme-engine="v257"] .profile-collection-shell .theme-card-action{
+  height:46px !important;
+  min-height:46px !important;
+  max-height:46px !important;
+  margin-top:0 !important;
+}
+@media(max-width:760px){
+  body[data-theme-engine="v257"] .profile-collection-shell .theme-collection-grid{
+    grid-auto-rows:318px !important;
+  }
+  body[data-theme-engine="v257"] .profile-collection-shell .np-theme-vault-card,
+  body[data-theme-engine="v257"] .profile-collection-shell .np-theme-vault-card.is-featured{
+    max-height:318px !important;
+    grid-template-rows:22px 100px minmax(58px,70px) 24px 46px !important;
+  }
+}
 body[data-theme-engine="v257"] [data-theme-id="aquaris"]{border-color:rgba(72,214,239,.28) !important;box-shadow:0 22px 52px rgba(0,7,12,.28),0 0 0 1px rgba(229,200,120,.08) inset !important;}
 body[data-theme-engine="v257"] [data-theme-id="bloodmoon"]{border-color:rgba(227,19,63,.34) !important;box-shadow:0 22px 52px rgba(0,0,0,.34),0 0 0 1px rgba(240,199,111,.08) inset !important;}
 body[data-theme-engine="v257"] .theme-meta-row{display:flex !important;flex-wrap:wrap !important;gap:8px !important;margin-top:auto !important;}
