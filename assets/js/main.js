@@ -13554,6 +13554,37 @@ function _arcDeleteClick(ev,id){
   _arcDeleteWithConfirm(id);
   return false;
 }
+function _arcArchiveActionClick(btn, action, id){
+  var ev=null;
+  try{ ev=window.event||null; }catch(_e){}
+  try{ if(ev&&ev.stopPropagation) ev.stopPropagation(); }catch(_e2){}
+  try{ if(ev&&ev.preventDefault) ev.preventDefault(); }catch(_e3){}
+  id=String(id || (btn&&btn.getAttribute&&btn.getAttribute('data-archive-id')) || '').trim();
+  action=String(action||'').trim();
+  if(!id){ notif('Archive introuvable.','err'); return false; }
+  function run(promise, errMsg){
+    if(btn&&btn.disabled!=null) btn.disabled=true;
+    Promise.resolve(promise).catch(function(err){
+      console.warn('archive action failed', action, id, err);
+      notif(errMsg||'Action impossible sur cette archive.','err');
+    }).then(function(){
+      if(btn&&btn.disabled!=null) btn.disabled=false;
+    });
+  }
+  if(action==='load'){
+    run(combatLoadArchive(id), 'Impossible de reprendre cette archive.');
+    return false;
+  }
+  if(action==='export'){
+    run(combatExportDiscordFromArc(id), 'Export impossible pour cette archive.');
+    return false;
+  }
+  if(action==='delete'){
+    _arcDeleteWithConfirm(id);
+    return false;
+  }
+  return false;
+}
 function _arcRenderPlayerChips(options){
   var wrap=ge('arc-player-chip-wrap'); if(!wrap) return;
   options=Array.isArray(options)?options:[];
@@ -13708,9 +13739,9 @@ function renderArcFiltered(){
       h+='</div>';
     }
     h+='<div class="arc-card-actions">';
-    h+='<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();combatLoadArchive('+JSON.stringify(String(arc.id||''))+')"><span>'+(arc&&arc._draft?'Reprendre':'Charger')+'</span></button>';
-    h+='<button class="btn btn-sm" onclick="event.stopPropagation();combatExportDiscordFromArc('+JSON.stringify(String(arc.id||''))+')"><span>Exporter</span></button>';
-    h+='<button class="btn btn-sm btn-red" onclick="return _arcDeleteClick(event,'+JSON.stringify(String(arc.id||''))+')"><span>Supprimer</span></button>';
+    h+='<button type="button" class="btn btn-sm btn-primary" data-archive-id="'+escAttr(String(arc.id||''))+'" onclick="return _arcArchiveActionClick(this,\'load\')"><span>'+(arc&&arc._draft?'Reprendre':'Charger')+'</span></button>';
+    h+='<button type="button" class="btn btn-sm" data-archive-id="'+escAttr(String(arc.id||''))+'" onclick="return _arcArchiveActionClick(this,\'export\')"><span>Exporter</span></button>';
+    h+='<button type="button" class="btn btn-sm btn-red" data-archive-id="'+escAttr(String(arc.id||''))+'" onclick="return _arcArchiveActionClick(this,\'delete\')"><span>Supprimer</span></button>';
     h+='</div>';
     h+='</div>';
   });
@@ -13728,9 +13759,9 @@ function renderArcFiltered(){
   h+='<div class="arc-detail-sub">Créé par <strong>'+esc(_archiveCreatorName(selectedArc))+'</strong> · '+selectedDate+' · Round '+(parseInt(selectedArc&&selectedArc.round,10)||1)+'</div>';
   h+='</div>';
   h+='<div class="arc-detail-actions">';
-  h+='<button class="btn btn-sm btn-primary" onclick="combatLoadArchive('+JSON.stringify(String(selectedArc.id||''))+')"><span>'+(selectedArc&&selectedArc._draft?'Reprendre le combat':'Charger le combat')+'</span></button>';
-  h+='<button class="btn btn-sm" onclick="combatExportDiscordFromArc('+JSON.stringify(String(selectedArc.id||''))+')"><span>Exporter Discord</span></button>';
-  h+='<button class="btn btn-sm btn-red" onclick="return _arcDeleteClick(event,'+JSON.stringify(String(selectedArc.id||''))+')"><span>Supprimer</span></button>';
+  h+='<button type="button" class="btn btn-sm btn-primary" data-archive-id="'+escAttr(String(selectedArc.id||''))+'" onclick="return _arcArchiveActionClick(this,\'load\')"><span>'+(selectedArc&&selectedArc._draft?'Reprendre le combat':'Charger le combat')+'</span></button>';
+  h+='<button type="button" class="btn btn-sm" data-archive-id="'+escAttr(String(selectedArc.id||''))+'" onclick="return _arcArchiveActionClick(this,\'export\')"><span>Exporter Discord</span></button>';
+  h+='<button type="button" class="btn btn-sm btn-red" data-archive-id="'+escAttr(String(selectedArc.id||''))+'" onclick="return _arcArchiveActionClick(this,\'delete\')"><span>Supprimer</span></button>';
   h+='</div>';
   h+='</div>';
   h+='<div class="arc-detail-metrics">';
