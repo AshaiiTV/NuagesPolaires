@@ -7154,12 +7154,10 @@ function renderSynopsis(tid){
   var el=ge(tid); if(!el) return;
   var h='<div class="synopsis-shell">';
   h+='<section class="synopsis-hero">';
-  h+='<div class="synopsis-sky" aria-hidden="true"><span></span><span></span><span></span></div>';
   h+='<div class="synopsis-hero-copy">';
   h+='<div class="synopsis-kicker">NUAGES POLAIRES</div>';
   h+='<h1>L\'Argonaute a chuté.</h1>';
   h+='<p>Tu ne rejoins pas un monde sauvé. Tu arrives après l\'échec du plus grand héros, dans un futur où chaque survivant peut devenir une légende ou disparaître dans le silence.</p>';
-  h+='<div class="synopsis-actions"><button class="btn btn-sm btn-gold" onclick="switchDropTab(\'serments\',null,\'dd-joueurs\')"><span>Voir les Serments</span></button><button class="btn btn-sm" onclick="switchDropTab(\'bestiaire\',null,\'dd-joueurs\')"><span>Voir les menaces</span></button></div>';
   h+='</div>';
   h+='</section>';
 
