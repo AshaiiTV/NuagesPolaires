@@ -932,7 +932,7 @@ var _logShowArchive=null;
 
 async function _dbBootstrap() {
   // Mettre à jour le message du loader
-  var loaderMsg = document.querySelector("#db-loader div");
+  var loaderMsg = document.querySelector("#db-loader .np-loader-status") || document.querySelector("#db-loader div");
   // Version du schéma — si changé, invalider le cache localStorage
   var CACHE_VERSION="np_v8"; // v22 data integrity & schema normalization
   var cacheOk=localStorage.getItem("np_cache_version")===CACHE_VERSION;
@@ -3957,8 +3957,7 @@ function launchApp(){
   })();
   updateLaunchTheme();
   // Retirer le loader immédiatement
-  var loader=document.getElementById("db-loader");
-  if(loader){ loader.style.display="none"; loader.remove(); }
+  _removeLoader();
   // initStorage() uniquement ici — après auth confirmée (CU est défini)
   if(!window._storageInitDone){ window._storageInitDone=true; _primeGlobalUiLayers();
 initStorage(); }
@@ -8786,15 +8785,30 @@ function renderMJList(){
 // ==========================================
 function _removeLoader(){
   var l=document.getElementById("db-loader");
-  if(l){ l.style.display="none"; try{l.remove();}catch(e){} }
+  if(l){
+    l.classList.add("is-done");
+    setTimeout(function(){ try{l.remove();}catch(e){} },260);
+  }
 }
 
 // Loader démarrage
 var _loaderEl=document.createElement("div");
 _loaderEl.id="db-loader";
-_loaderEl.style.cssText="position:fixed;inset:0;background:#09090f;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;";
-_loaderEl.innerHTML='<svg viewBox="0 0 100 100" width="48" height="48" style="margin-bottom:20px;opacity:.8;"><circle cx="50" cy="50" r="40" fill="none" stroke="#7eb8d4" stroke-width="1" opacity=".2"/><path d="M50,10 L55,38 L50,44 L45,38 Z" fill="#7eb8d4"/><path d="M90,50 L62,55 L56,50 L62,45 Z" fill="#7eb8d4"/><path d="M50,90 L55,62 L50,56 L45,62 Z" fill="#7eb8d4"/><path d="M10,50 L38,55 L44,50 L38,45 Z" fill="#7eb8d4"/><rect x="44" y="44" width="12" height="12" fill="#09090f" stroke="#7eb8d4" stroke-width="1" transform="rotate(45,50,50)"/><rect x="47" y="47" width="6" height="6" fill="#7eb8d4" transform="rotate(45,50,50)"/></svg>'
-  +'<div style="font-family:\'Cinzel\',serif;font-size:14px;letter-spacing:4px;color:#4a7d96;text-transform:uppercase;">Connexion...</div>';
+_loaderEl.style.cssText="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:9999;";
+_loaderEl.innerHTML='<div class="np-loader-bg" aria-hidden="true"><span></span><span></span><span></span></div>'
+  +'<div class="np-loader-panel" role="status" aria-live="polite">'
+    +'<div class="np-loader-mark" aria-hidden="true">'
+      +'<svg viewBox="0 0 120 120" width="82" height="82">'
+        +'<circle class="np-loader-orbit orbit-a" cx="60" cy="60" r="42" fill="none"/>'
+        +'<circle class="np-loader-orbit orbit-b" cx="60" cy="60" r="30" fill="none"/>'
+        +'<path class="np-loader-star" d="M60 14 66 49 102 60 66 71 60 106 54 71 18 60 54 49Z"/>'
+        +'<circle class="np-loader-core" cx="60" cy="60" r="8"/>'
+      +'</svg>'
+    +'</div>'
+    +'<div class="np-loader-brand">Nuages Polaires</div>'
+    +'<div class="np-loader-status">Connexion...</div>'
+    +'<div class="np-loader-line" aria-hidden="true"><span></span></div>'
+  +'</div>';
 document.body.appendChild(_loaderEl);
 
 // Masquage DOM préventif des éléments staff — supprimés si pas de token JWT
