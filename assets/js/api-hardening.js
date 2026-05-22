@@ -179,7 +179,19 @@
       var btn = e.target.closest('[data-api-action]');
       if(!btn) return;
       var action = btn.getAttribute('data-api-action');
-      if(action === 'retry') checkServices(true);
+      if(action === 'retry'){
+        try{
+          btn.disabled = true;
+          btn.textContent = 'Vérification…';
+          hideBanner();
+        }catch(_e){}
+        checkServices(true).finally(function(){
+          try{
+            btn.disabled = false;
+            btn.textContent = 'Réessayer';
+          }catch(_e2){}
+        });
+      }
       if(action === 'diag'){
         try{
           if(window.npDiagnostics && typeof window.npDiagnostics.open === 'function') window.npDiagnostics.open();

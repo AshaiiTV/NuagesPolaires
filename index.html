@@ -6726,7 +6726,7 @@ body.theme-aquaris .home-title{
       <span style="font-family:var(--fd);font-size:9px;letter-spacing:2px;color:var(--gold);">MODE HORS-LIGNE</span>
       <span style="font-size:12px;color:var(--dim);">Base de données indisponible — les données affichées viennent du cache local. Les modifications ne seront pas synchronisées.</span>
     </div>
-    <button onclick="location.reload()" style="background:none;border:1px solid rgba(201,160,76,.4);color:var(--gold);font-family:var(--fd);font-size:8px;letter-spacing:2px;padding:3px 10px;cursor:pointer;white-space:nowrap;transition:all .15s;" onmouseover="this.style.background='rgba(201,160,76,.1)'" onmouseout="this.style.background='none'">↺ RÉESSAYER</button>
+    <button onclick="this.disabled=true;this.textContent='VÉRIFICATION…';var b=document.getElementById('offline-banner');if(b)b.style.display='none';setTimeout(function(){location.reload();},60)" style="background:none;border:1px solid rgba(201,160,76,.4);color:var(--gold);font-family:var(--fd);font-size:8px;letter-spacing:2px;padding:3px 10px;cursor:pointer;white-space:nowrap;transition:all .15s;" onmouseover="this.style.background='rgba(201,160,76,.1)'" onmouseout="this.style.background='none'">↺ RÉESSAYER</button>
   </div>
 
   <div class="app-body" id="app-root">
