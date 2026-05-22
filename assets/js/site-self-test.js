@@ -264,8 +264,9 @@
   function testDiagnosticButton(){
     var btn = document.getElementById('np-diagnostics-button');
     var panel = document.getElementById(PANEL_ID);
+    if(panel && !btn) return result('Diagnostic UI', 'ok', 'Panel diagnostic chargé sans bouton flottant.');
     if(btn && panel) return result('Diagnostic UI', 'ok', 'Bouton et panel diagnostic présents.');
-    return result('Diagnostic UI', 'warn', 'Diagnostic chargé, mais bouton/panel pas encore injecté.', { button:!!btn, panel:!!panel });
+    return result('Diagnostic UI', 'warn', 'Diagnostic chargé, mais panel pas encore injecté.', { button:!!btn, panel:!!panel });
   }
 
   function testDomHealth(){

@@ -167,17 +167,9 @@
     document.head.appendChild(st);
   }
 
-  function ensureButton(){
+  function removeButton(){
     var btn = document.getElementById(BTN_ID);
-    if(btn) return btn;
-    btn = document.createElement('button');
-    btn.id = BTN_ID;
-    btn.type = 'button';
-    btn.title = 'Diagnostics Nuages Polaires — Ctrl+Alt+D';
-    btn.textContent = 'Diag';
-    btn.addEventListener('click', function(){ togglePanel(); });
-    document.body.appendChild(btn);
-    return btn;
+    if(btn) btn.remove();
   }
 
   function ensurePanel(){
@@ -288,7 +280,7 @@
   function openPanel(){
     visible = true;
     injectStyle();
-    ensureButton().classList.add('show');
+    removeButton();
     ensurePanel().classList.add('open');
     renderResults();
     renderEvents();
@@ -318,9 +310,8 @@
 
   function initVisibility(){
     injectStyle();
-    var btn = ensureButton();
+    removeButton();
     if(shouldShowButton()){
-      btn.classList.add('show');
       if(!autoOpened && /[?&](diag|debug)=1/.test(location.search || '')){
         autoOpened = true;
         setTimeout(openPanel, 200);
@@ -466,7 +457,7 @@
         line:e.lineno,
         column:e.colno
       });
-      ensureButton().classList.add('show');
+      removeButton();
     });
 
     window.addEventListener('unhandledrejection', function(e){
@@ -474,7 +465,7 @@
       addEvent('error', 'Promise rejetée : ' + (reason && (reason.message || reason.stack) ? (reason.message || reason.stack) : String(reason)), {
         reason: reason && reason.stack ? reason.stack : String(reason)
       });
-      ensureButton().classList.add('show');
+      removeButton();
     });
 
     if(window.fetch && !window.fetch.__npDiagWrapped){
@@ -485,7 +476,7 @@
           try{
             if(/\/\.netlify\/functions\//.test(String(url)) && res.status >= 500){
               addEvent('error', 'Erreur fonction Netlify ' + res.status + ' sur ' + url);
-              ensureButton().classList.add('show');
+              removeButton();
             }
           }catch(e){}
           return res;
@@ -493,7 +484,7 @@
           try{
             if(/\/\.netlify\/functions\//.test(String(url))){
               addEvent('error', 'Fetch échoué sur ' + url + ' : ' + (err && err.message ? err.message : String(err)));
-              ensureButton().classList.add('show');
+              removeButton();
             }
           }catch(e){}
           throw err;
@@ -506,7 +497,7 @@
 
   function boot(){
     injectStyle();
-    ensureButton();
+    removeButton();
     ensurePanel();
     installErrorHooks();
     initVisibility();
@@ -522,11 +513,11 @@
       last: function(){ return lastResults; },
       showButton: function(){
         try{ localStorage.setItem('np_diag_visible','1'); }catch(e){}
-        ensureButton().classList.add('show');
+        openPanel();
       },
       hideButton: function(){
         try{ localStorage.removeItem('np_diag_visible'); }catch(e){}
-        ensureButton().classList.remove('show');
+        removeButton();
         closePanel();
       }
     };
@@ -537,7 +528,6 @@
     if(e.ctrlKey && e.altKey && String(e.key || '').toLowerCase() === 'd'){
       e.preventDefault();
       try{ localStorage.setItem('np_diag_visible','1'); }catch(err){}
-      ensureButton().classList.add('show');
       togglePanel();
     }
   });
