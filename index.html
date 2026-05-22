@@ -1528,6 +1528,8 @@ select option { background: #0d0e18; color: var(--text); }
 .player-main {
   min-width: 0;
   width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 .player-card-top {
   display: grid;
@@ -1578,11 +1580,13 @@ select option { background: #0d0e18; color: var(--text); }
 }
 .player-vitals {
   display: grid;
-  grid-template-columns: repeat(4, minmax(92px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
   gap: 6px;
   margin-top: 12px;
+  min-width: 0;
 }
 .player-vitals span {
+  min-width: 0;
   padding: 7px 8px;
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg4) 78%, transparent);
@@ -1601,16 +1605,20 @@ select option { background: #0d0e18; color: var(--text); }
 }
 .player-actions {
   display: flex;
-  grid-column: 2;
   justify-content: flex-start;
   gap: 6px;
   flex-wrap: wrap;
   max-width: none;
   min-width: 0;
+  width: 100%;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
 }
 .player-actions .btn {
   white-space: nowrap;
   min-height: 32px;
+  flex: 0 0 auto;
 }
 .player-account-tools {
   grid-column: 1 / -1;
@@ -1697,7 +1705,6 @@ select option { background: #0d0e18; color: var(--text); }
     height: 54px;
   }
   .player-actions {
-    grid-column: 1 / -1;
     max-width: none;
     justify-content: flex-start;
   }

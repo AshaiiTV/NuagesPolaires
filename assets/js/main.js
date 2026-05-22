@@ -7955,8 +7955,8 @@ function renderSPList(){
           +'<span><b>'+p.emCur+'/'+p.emMax+'</b> EM</span>'
           +'<span><b>'+p.xp+'/'+p.xpMax+'</b> XP</span>'
         +'</div>'
+        +'<div class="player-actions">'+btns+'</div>'
       +'</div>'
-      +'<div class="player-actions">'+btns+'</div>'
       +_playerAccountAdminBlock(p,accounts)
     +'</div>';
   }).join("");
