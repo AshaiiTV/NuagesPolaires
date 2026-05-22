@@ -7244,7 +7244,7 @@ function renderSynopsis(tid){
   h+='<div class="synopsis-hero-copy">';
   h+='<div class="synopsis-kicker">NUAGES POLAIRES</div>';
   h+='<h1>L\'Argonaute a chuté.</h1>';
-  h+='<p>Tu ne rejoins pas un monde sauvé. Tu arrives après l\'échec du plus grand héros, dans un futur où chaque survivant peut devenir une légende ou disparaître dans le silence.</p>';
+  h+='<p>Ce monde n\'a pas été sauvé. Il commence après l\'échec du plus grand héros, dans un futur où chaque survivant peut devenir une légende ou disparaître dans le silence.</p>';
   h+='</div>';
   h+='</section>';
 
@@ -7258,7 +7258,6 @@ function renderSynopsis(tid){
   h+='<p><span class="synopsis-beat">Le réveil</span> L\'humanité fut projetée dans un futur lointain. Beaucoup n\'ont pas survécu au passage. Ceux qui ouvrent les yeux découvrent un monde trop propre, trop immobile, presque poli par l\'absence.</p>';
   h+='<p>Les villes, si elles existent encore, ne sont que silhouettes lointaines. Les routes ne mènent plus nulle part. Les bâtisses s\'ouvrent comme des crânes vides. Le monde n\'est pas mort : il attend.</p>';
   h+='<p>Et dans certains survivants, quelque chose répond. Une marque intérieure. Un serment muet. Une cicatrice qui ne se voit pas, mais qui grandit à chaque choix, à chaque sortie, à chaque combat.</p>';
-  h+='<div class="synopsis-callout"><strong>Ce que tu joues ici :</strong> un personnage qui progresse, laisse une trace, affronte des zones vivantes, croise un bestiaire qui évolue et participe à reconstruire du sens dans un futur qui n\'en offre plus.</div>';
   h+='<h2>Ce qui reste à écrire dépend de ceux qui se relèvent.</h2>';
   h+='</article>';
   h+='</div>';
