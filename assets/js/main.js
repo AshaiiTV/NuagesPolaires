@@ -7441,26 +7441,60 @@ function renderRegles(tid){
   h+='</div>';
 
 
+  // ── MENTIONS LÉGALES ──
+  h+='<div class="rsec">';
+  h+='<h2>Mentions légales et transparence du site</h2>';
+  h+='<div class="hlbox"><strong>Nuages Polaires est un site communautaire non commercial.</strong> Il sert à consulter l\'univers, gérer les comptes joueurs, suivre les personnages et administrer les outils de jeu liés au serveur Discord.</div>';
+  h+='<h3>Éditeur du site</h3>';
+  h+='<table><tbody>';
+  h+='<tr><td><strong>Nom du site</strong></td><td>Nuages Polaires</td></tr>';
+  h+='<tr><td><strong>Nature</strong></td><td>Projet communautaire de roleplay textuel, sans vente directe ni espace publicitaire.</td></tr>';
+  h+='<tr><td><strong>Responsable de publication</strong></td><td>Fondateur / administration de Nuages Polaires, joignable via les canaux officiels du serveur Discord ou par ticket staff.</td></tr>';
+  h+='<tr><td><strong>Contact</strong></td><td>Contacter le staff depuis le serveur Discord Nuages Polaires. Pour toute demande sensible, ouvrez un ticket afin de garder une trace datée.</td></tr>';
+  h+='</tbody></table>';
+  h+='<p class="muted">Si le projet venait à devenir professionnel, commercial, associatif déclaré ou rattaché à une structure juridique, ces informations seraient complétées avec l\'identité légale, l\'adresse, le numéro d\'immatriculation et les coordonnées obligatoires de la structure concernée.</p>';
+  h+='<h3>Hébergement</h3>';
+  h+='<table><tbody>';
+  h+='<tr><td><strong>Hébergeur</strong></td><td>Netlify, Inc.</td></tr>';
+  h+='<tr><td><strong>Adresse indiquée par Netlify</strong></td><td>101 2nd Street, San Francisco, CA 94105, États-Unis.</td></tr>';
+  h+='<tr><td><strong>Service</strong></td><td>Hébergement, déploiement et fonctions serveur nécessaires au fonctionnement du site.</td></tr>';
+  h+='</tbody></table>';
+  h+='<h3>Propriété intellectuelle</h3>';
+  h+='<p>L\'univers, les textes, les règles, les systèmes de progression, les Serments, les créatures, les visuels d\'interface et les outils propres à Nuages Polaires sont protégés par le droit d\'auteur dès leur création. Toute reprise substantielle, copie, adaptation, republication ou exploitation hors du serveur nécessite l\'accord explicite du staff.</p>';
+  h+='<p>Les contributions créatives des membres publiées dans le cadre du serveur restent attachées à leurs auteurs, tout en autorisant Nuages Polaires à les afficher, archiver, modérer et utiliser dans le cadre normal du jeu, de la continuité narrative et de l\'administration du serveur.</p>';
+  h+='<h3>Limitation de responsabilité</h3>';
+  h+='<ul><li>Le site est fourni comme outil communautaire ; il peut évoluer, être interrompu temporairement ou contenir des erreurs malgré les vérifications.</li><li>Les règles de jeu, équilibrages, contenus narratifs et fonctionnalités peuvent être modifiés pour préserver la cohérence et la stabilité du serveur.</li><li>Chaque membre reste responsable des contenus qu\'il publie, de la confidentialité de son compte et du respect du règlement.</li></ul>';
+  h+='</div>';
+
+
   // ── DONNÉES PERSO ──
   h+='<div class="rsec">';
-  h+='<h2>Protection des données personnelles</h2>';
+  h+='<h2>Politique de confidentialité</h2>';
   h+='<div class="warnbox" style="margin-bottom:16px;"><strong>Bon réflexe :</strong> utilisez un mot de passe unique pour Nuages Polaires, différent de vos autres services. Évitez aussi d\'utiliser comme identifiant un pseudo que vous employez partout ailleurs.</div>';
-  h+='<h3>Principe général</h3>';
-  h+='<p>Nuages Polaires applique un principe de minimisation : seules les données utiles au fonctionnement du site, du compte, du personnage et à la sécurité du service doivent être conservées. Aucune donnée d\'identité civile n\'est demandée pour jouer.</p>';
+  h+='<h3>Responsable du traitement</h3>';
+  h+='<p>Le responsable du traitement est l\'administration de Nuages Polaires, représentée par le fondateur et le staff habilité. Les demandes relatives aux données personnelles doivent être adressées via un ticket staff sur le serveur Discord afin de permettre un suivi daté.</p>';
+  h+='<h3>Principe général et base légale</h3>';
+  h+='<p>Nuages Polaires applique un principe de minimisation : seules les données utiles au fonctionnement du site, du compte, du personnage, de la modération et de la sécurité du service doivent être conservées. Aucune donnée d\'identité civile n\'est demandée pour jouer.</p>';
+  h+='<p>Les traitements reposent principalement sur l\'exécution du service demandé par le membre, l\'intérêt légitime de sécuriser et administrer la communauté, ainsi que le respect d\'obligations légales lorsqu\'une conservation est nécessaire.</p>';
   h+='<h3>Données collectées</h3>';
-  h+='<ul><li><strong>Pseudo de compte</strong> — identifiant de connexion et de gestion interne.</li><li><strong>Mot de passe</strong> — jamais stocké en clair ; il est d\'abord haché côté client puis renforcé côté serveur avant stockage. Le staff ne peut pas le lire.</li><li><strong>Données de personnage</strong> — niveau, statistiques, inventaire, historique, éléments utiles au jeu et au suivi.</li><li><strong>Données techniques de sécurité</strong> — journaux d\'authentification, horodatages, actions administratives et, si nécessaire, adresse IP ou informations techniques associées à une connexion.</li><li><strong>Session technique</strong> — cookie sécurisé strictement nécessaire au maintien de la connexion.</li></ul>';
+  h+='<ul><li><strong>Pseudo de compte</strong> — identifiant de connexion et de gestion interne.</li><li><strong>Mot de passe</strong> — jamais stocké en clair ; il est haché et renforcé avant stockage. Le staff ne peut pas le lire.</li><li><strong>Données de personnage</strong> — nom, avatar éventuel, classe, niveau, statistiques, inventaire, historique, progression, appartenance aux Serments et éléments utiles au jeu.</li><li><strong>Données de modération et d\'administration</strong> — rôles, décisions staff, actions sensibles, suppressions, transferts, historiques de roll ou de combat lorsque ces éléments sont nécessaires au suivi.</li><li><strong>Données techniques de sécurité</strong> — journaux d\'authentification, horodatages, erreurs, actions administratives et, si nécessaire, adresse IP ou informations techniques associées à une connexion.</li><li><strong>Session technique</strong> — cookie sécurisé strictement nécessaire au maintien de la connexion.</li></ul>';
   h+='<p>Aucun e-mail, nom réel, numéro de téléphone, adresse postale ou document d\'identité n\'est requis pour créer un compte joueur classique.</p>';
   h+='<h3>Finalités</h3>';
   h+='<ul><li>permettre la connexion au site et la gestion du compte ;</li><li>faire fonctionner les personnages, inventaires, progressions et sauvegardes ;</li><li>assurer la modération, la traçabilité des actions sensibles et la sécurité du service ;</li><li>prévenir les abus, intrusions, contournements de sanctions et utilisations malveillantes.</li></ul>';
   h+='<h3>Accès et confidentialité</h3>';
-  h+='<ul><li>Les accès sont limités selon le rôle et le besoin de gestion.</li><li>Les mots de passe ne sont pas lisibles par le staff.</li><li>Les données ne sont ni revendues, ni publiquement diffusées, ni utilisées à des fins commerciales externes.</li><li>Toute divulgation non autorisée d\'une donnée personnelle d\'un membre constitue une faute grave.</li></ul>';
+  h+='<ul><li>Les accès sont limités selon le rôle et le besoin de gestion.</li><li>Les mots de passe ne sont pas lisibles par le staff.</li><li>Les données ne sont ni revendues, ni publiquement diffusées, ni utilisées à des fins commerciales externes.</li><li>Les données peuvent être consultées par les administrateurs ou rôles habilités uniquement lorsque c\'est nécessaire à l\'administration, au support, à la modération ou à la sécurité.</li><li>Toute divulgation non autorisée d\'une donnée personnelle d\'un membre constitue une faute grave.</li></ul>';
+  h+='<h3>Cookies et stockage local</h3>';
+  h+='<ul><li><strong>Cookie de session</strong> — strictement nécessaire à l\'authentification ; il permet de rester connecté et n\'est pas utilisé pour de la publicité.</li><li><strong>Stockage local</strong> — utilisé pour mémoriser des préférences d\'interface, du cache technique et certains états d\'affichage afin d\'améliorer l\'expérience.</li><li><strong>Traceurs non essentiels</strong> — aucun traceur publicitaire ou de mesure marketing n\'est prévu. Si un outil soumis au consentement devait être ajouté, une information claire et un choix préalable seraient mis en place.</li></ul>';
   h+='<h3>Conservation</h3>';
-  h+='<p>Les données de compte et de personnage sont conservées tant que le compte reste actif ou nécessaire au fonctionnement normal du serveur. Les journaux techniques et de sécurité sont conservés de manière limitée et proportionnée pour l\'audit interne, la protection du service et le traitement d\'un incident.</p>';
+  h+='<p>Les données de compte et de personnage sont conservées tant que le compte reste actif ou nécessaire au fonctionnement normal du serveur. Les données utiles à la cohérence narrative peuvent être archivées ou anonymisées lorsqu\'un compte quitte le service. Les journaux techniques et de sécurité sont conservés de manière limitée et proportionnée pour l\'audit interne, la protection du service et le traitement d\'un incident.</p>';
+  h+='<h3>Sous-traitants et transferts</h3>';
+  h+='<p>Le site utilise notamment Netlify pour l\'hébergement, le déploiement et certaines fonctions serveur. Selon l\'architecture technique de ces services, des données techniques peuvent transiter ou être hébergées hors Union européenne. Le site limite les données transmises à ce qui est nécessaire au fonctionnement du service.</p>';
   h+='<h3>Vos droits</h3>';
-  h+='<ul><li><strong>Accès</strong> — demander la liste des données associées à votre compte.</li><li><strong>Rectification</strong> — demander la correction d\'une donnée inexacte.</li><li><strong>Effacement</strong> — supprimer votre compte depuis les paramètres ; les données de personnage liées au compte joueur sont alors retirées du service, sous réserve des traces techniques strictement nécessaires à la sécurité.</li><li><strong>Sécurisation</strong> — demander un reset de mot de passe ou signaler tout soupçon d\'accès non autorisé.</li></ul>';
+  h+='<ul><li><strong>Accès</strong> — demander la liste des données associées à votre compte.</li><li><strong>Rectification</strong> — demander la correction d\'une donnée inexacte.</li><li><strong>Effacement</strong> — demander la suppression du compte ; les données liées au compte joueur sont alors retirées, anonymisées ou conservées uniquement si une trace technique, de sécurité ou de modération reste strictement nécessaire.</li><li><strong>Opposition</strong> — s\'opposer à un traitement lorsque la situation le permet, notamment pour des éléments non indispensables au service.</li><li><strong>Limitation</strong> — demander le gel temporaire de certaines données pendant l\'examen d\'une demande.</li><li><strong>Sécurisation</strong> — demander un reset de mot de passe ou signaler tout soupçon d\'accès non autorisé.</li></ul>';
+  h+='<p>Une réponse sera apportée dans un délai raisonnable après vérification de l\'identité du compte demandeur. En cas de désaccord persistant sur le traitement d\'une donnée personnelle, le membre peut contacter l\'autorité de contrôle compétente.</p>';
   h+='<h3>Responsabilités du membre</h3>';
   h+='<ul><li>Ne partagez jamais votre mot de passe.</li><li>Utilisez un mot de passe fort et distinct.</li><li>Évitez d\'utiliser le même identifiant que sur vos autres services publics.</li><li>Prévenez le staff rapidement en cas de doute sur une compromission de compte.</li></ul>';
-  h+='<p style="color:var(--faint);font-style:italic;font-size:13px;margin-top:16px;">Dernière mise à jour : avril 2026.</p>';
+  h+='<p style="color:var(--faint);font-style:italic;font-size:13px;margin-top:16px;">Dernière mise à jour : mai 2026.</p>';
   h+='</div>';
 
 
