@@ -12817,6 +12817,31 @@ function _spawnLabAdjustedWeight(beast, pool, s, totalCounts, encounterCounts){
   if((encounterCounts[beast.id]||0)>0 && pool.length>1) weight*=0.55;
   return {weight:weight, base:base, count:count, avg:avg, catchup:catchup, fatigue:fatigue};
 }
+function _spawnLabWeightProof(data){
+  data=data||{};
+  var base=Math.max(1,Math.round(parseFloat(data.baseWeight!==undefined?data.baseWeight:data.base)||0));
+  var current=Math.max(1,Math.round(parseFloat(data.weightNow!==undefined?data.weightNow:data.weight)||0));
+  var count=parseInt(data.total!==undefined?data.total:data.count,10)||0;
+  var fatigue=parseFloat(data.fatigue)||1;
+  var catchup=parseFloat(data.catchup)||1;
+  var ratio=current/base;
+  var tone='Stable', col='var(--glacier)';
+  if(ratio<0.94){ tone='Réduit'; col='var(--red)'; }
+  else if(ratio>1.06){ tone='Boost'; col='var(--green)'; }
+  var pct=Math.max(6,Math.min(100,Math.round(ratio*100)));
+  var h='<div class="sl-weight-proof">';
+  h+='<div class="sl-weight-head"><span>Poids dynamique</span><strong style="color:'+col+';">'+current+'</strong></div>';
+  h+='<div class="sl-weight-meter"><span style="width:'+pct+'%;background:'+col+';"></span></div>';
+  h+='<div class="sl-weight-tags">';
+  h+='<span>Base '+base+'</span>';
+  h+='<span style="color:'+col+';">'+tone+'</span>';
+  h+='<span>Sorties × '+count+'</span>';
+  h+='<span>Fatigue x'+fatigue.toFixed(2)+'</span>';
+  h+='<span>Rattrapage x'+catchup.toFixed(2)+'</span>';
+  h+='</div>';
+  h+='</div>';
+  return h;
+}
 function _spawnLabRollQty(min, max){
   if(max<=min) return min;
   var span=max-min+1;
@@ -13101,6 +13126,14 @@ function renderSpawnLab(tid){
   h+='#p-apparitions-c .sl-pool{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;}';
   h+='#p-apparitions-c .sl-beast{padding:10px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.025);min-height:58px;}';
   h+='#p-apparitions-c .sl-beast-name{font-family:var(--fd);font-size:11px;letter-spacing:.9px;color:var(--text);line-height:1.35;}';
+  h+='#p-apparitions-c .sl-weight-proof{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07);display:grid;gap:7px;}';
+  h+='#p-apparitions-c .sl-weight-head{display:flex;justify-content:space-between;gap:10px;align-items:center;}';
+  h+='#p-apparitions-c .sl-weight-head span{font-family:var(--fd);font-size:8px;letter-spacing:1.25px;text-transform:uppercase;color:var(--faint);}';
+  h+='#p-apparitions-c .sl-weight-head strong{font-family:var(--fd);font-size:13px;letter-spacing:1px;}';
+  h+='#p-apparitions-c .sl-weight-meter{height:6px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.045);overflow:hidden;}';
+  h+='#p-apparitions-c .sl-weight-meter span{display:block;height:100%;box-shadow:0 0 14px currentColor;}';
+  h+='#p-apparitions-c .sl-weight-tags{display:flex;flex-wrap:wrap;gap:5px;}';
+  h+='#p-apparitions-c .sl-weight-tags span{font-size:9px;color:var(--dim);padding:3px 6px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.025);}';
   h+='#p-apparitions-c .sl-history{display:grid;gap:8px;max-height:560px;overflow:auto;padding-right:2px;}';
   h+='#p-apparitions-c .sl-metric{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:11px 12px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);}';
   h+='#p-apparitions-c .sl-metric strong{font-family:var(--fd);font-size:10px;letter-spacing:1.1px;color:var(--text);}';
@@ -13164,7 +13197,7 @@ function renderSpawnLab(tid){
         h+='<div class="sl-pack-right">';
         if(canSeeWeights){
           h+='<div style="font-family:var(--fd);font-size:10px;letter-spacing:1px;color:'+bcol+';">'+Math.round((pack.prob||0)*100)+'%</div>';
-          h+='<div class="sl-mini" style="margin-top:4px;">Poids actuel '+Math.round(pack.weightNow||0)+'</div>';
+          h+='<div class="sl-mini" style="margin-top:4px;">Poids dynamique '+Math.round(pack.weightNow||0)+' · base '+Math.round(pack.baseWeight||0)+'</div>';
         }
         h+='<div class="sl-mini">Fourchette '+pack.range.min+'-'+pack.range.max+'</div>';
         if(canSeeWeights && pack.total) h+='<div class="sl-mini" style="color:var(--gold);">Historique × '+pack.total+'</div>';
@@ -13200,7 +13233,6 @@ function renderSpawnLab(tid){
     h+='<div class="sl-empty" style="grid-column:1/-1;">Aucun mob visible dans cette zone. Ajoute des mobs via le panneau admin.</div>';
   }
   zonePool.forEach(function(b){
-    var weight=_spawnLabBaseWeight(b);
     var tuned=_spawnLabAdjustedWeight(b, zonePool.length?zonePool:beasts, s, recentCounts, {});
     var range=_spawnLabQtyRange(b);
     var beh=cBehaviorLabel(b.beh||b.behavior||b.comportement)||'Neutre';
@@ -13209,11 +13241,7 @@ function renderSpawnLab(tid){
     h+='<div class="sl-mini" style="margin-top:5px;color:var(--dim);line-height:1.5;">Niv. '+esc(b.niv||1)+' · '+esc(beh)+' · Qté '+range.min+'-'+range.max+'</div>';
     if(b.sub) h+='<div class="sl-mini" style="margin-top:6px;color:var(--dim);line-height:1.5;">'+esc(b.sub)+'</div>';
     if(canSeeWeights){
-      h+='<div class="sl-mini" style="display:flex;justify-content:space-between;gap:10px;margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.06);color:var(--faint);">';
-      h+='<span>Poids '+weight+' → '+Math.max(1,Math.round(tuned.weight))+'</span>';
-      if(recentCounts[b.id]) h+='<span>Sorties × '+recentCounts[b.id]+'</span>';
-      else h+='<span>Jamais sorti</span>';
-      h+='</div>';
+      h+=_spawnLabWeightProof(tuned);
     }
     h+='</div>';
   });
