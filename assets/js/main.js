@@ -6901,6 +6901,7 @@ function bCard(b,staff){
   if(notePreview.length>140) notePreview=notePreview.slice(0,137)+'…';
   var _nom=(b&&b.nom?String(b.nom):'Créature');
   var _sub=(b&&b.sub?String(b.sub):'Créature');
+  var _imgSrc=String((typeof _normalizeImageDataUrl==='function'?_normalizeImageDataUrl(b.img):(b.img||''))||'').trim();
   var placeholder='<div class="bimg-ph" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">'
     +'<div style="font-family:var(--fd);font-size:28px;color:var(--faint);letter-spacing:2px;">'+_nom.charAt(0).toUpperCase()+'</div>'
     +'<div style="font-family:var(--fd);font-size:7px;letter-spacing:3px;color:var(--faint);opacity:.6;">'+_sub.split(' — ')[0].toUpperCase()+'</div>'
@@ -6908,10 +6909,10 @@ function bCard(b,staff){
   var imgH;
   if(canEdit){
     imgH='<div class="bimg-wrap" onclick="openBeastImgCrop(\''+b.id+'\')" title="Importer / recadrer une image">'
-      +(b.img?'<img src="'+esc(b.img)+'" class="bimg" onerror="this.style.display=\'none\'">':placeholder)
+      +(_imgSrc?'<img src="'+esc(_imgSrc)+'" class="bimg" onerror="this.style.display=\'none\'">':placeholder)
       +'<div class="bimg-edit-ov">✎</div></div>';
   } else {
-    imgH=b.img?'<img src="'+esc(b.img)+'" class="bimg" onerror="this.style.display=\'none\';this.nextSibling&&(this.nextSibling.style.display=\'flex\');">'+placeholder:placeholder;
+    imgH=_imgSrc?'<img src="'+esc(_imgSrc)+'" class="bimg" onerror="this.remove();">':placeholder;
   }
   var badges='';
   if(isHidden&&canToggle) badges+='<span style="font-family:var(--fd);font-size:8px;letter-spacing:1.5px;padding:3px 8px;border:1px solid rgba(201,160,76,.45);color:var(--gold);background:rgba(201,160,76,.10);">Masquée</span>';

@@ -279,11 +279,12 @@
     var canDel=staff&&can('delete_beast');
     var isPublicView=!canEdit;
     var _imgSrc=(typeof _normalizeImageDataUrl==='function'?_normalizeImageDataUrl(b.img):String(b.img||'').trim());
-    var img=_imgSrc ? '<img src="'+esc(_imgSrc)+'" class="bimg" onerror="this.style.display=\'none\';this.nextSibling&&(this.nextSibling.style.display=\'flex\');">' : '';
     var placeholder='<div class="bimg-ph" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;"><div style="font-family:var(--fd);font-size:28px;color:var(--faint);letter-spacing:2px;">'+esc(String((b.nom||'C').charAt(0).toUpperCase()))+'</div><div style="font-family:var(--fd);font-size:7px;letter-spacing:3px;color:var(--faint);opacity:.6;">'+esc(String((b.sub||'Créature').split(' — ')[0]).toUpperCase())+'</div></div>';
+    var img=_imgSrc ? '<img src="'+esc(_imgSrc)+'" class="bimg" onerror="this.remove();">' : '';
+    var mediaInner=_imgSrc ? img : placeholder;
     var media = canEdit
-      ? '<div class="bimg-wrap" onclick="openBeastImgCrop(\''+jsesc(b.id)+'\')" title="Importer / recadrer une image">'+img+placeholder+'<div class="bimg-edit-ov">✎</div></div>'
-      : img + placeholder;
+      ? '<div class="bimg-wrap" onclick="openBeastImgCrop(\''+jsesc(b.id)+'\')" title="Importer / recadrer une image">'+mediaInner+'<div class="bimg-edit-ov">✎</div></div>'
+      : mediaInner;
     if(isPublicView){
       return '<div class="bcrd">'+media+'<div class="bbody"><div class="bnm">'+esc(b.nom)+'</div><div class="bsub">'+esc(b.sub||'')+'</div><div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">'+(lbl?window.cBehaviorTag(b.beh,{fontSize:8,padding:'2px 8px',letterSpacing:'1.5px',radius:'2px'}):'')+'<span style="color:var(--faint);font-size:10px;">Niv. '+esc(String(b.niv||1))+'</span></div><div class="bdesc">'+esc(_beastExtendedDesc(b)||b.desc||'')+'</div><table class="btbl"><tbody><tr><td>PV</td><td style="color:var(--green);font-family:var(--fm)">'+esc(String(b.pv||0))+'</td><td>EP</td><td style="color:var(--gold);font-family:var(--fm)">'+esc(String(b.ep||0))+'</td></tr><tr><td colspan="2">Frappe</td><td colspan="2" style="font-family:var(--fm);font-size:13px">'+esc(String(b.frappe||''))+'</td></tr></tbody></table><div class="bcomp"><span class="bclbl">COMPÉTENCE</span>'+esc(b.comp||'')+'</div><div class="bdrop"><span>BUTIN</span>'+esc(b.drops||'')+'</div><div class="bdrop"><span>DROP GEMME (D100)</span>'+esc(b.gem||'')+'</div></div></div>';
     }
