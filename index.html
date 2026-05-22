@@ -2207,8 +2207,9 @@ textarea {
   stroke: rgba(126,184,212,0.95);
   stroke-width: 1.2;
   filter: drop-shadow(0 0 14px rgba(126,184,212,0.42));
+  transform-box: view-box;
   transform-origin: 60px 60px;
-  animation: loaderPulse 2.4s ease-in-out infinite;
+  animation: loaderCompass 5.4s linear infinite, loaderPulse 2.4s ease-in-out infinite;
 }
 #db-loader .np-loader-core {
   fill: #c9a84c;
@@ -2245,6 +2246,9 @@ textarea {
 }
 @keyframes loaderSpin {
   to { transform: rotate(360deg); }
+}
+@keyframes loaderCompass {
+  to { rotate: 360deg; }
 }
 @keyframes loaderPulse {
   0%, 100% { transform: scale(0.96); opacity: 0.82; }
