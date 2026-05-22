@@ -2520,10 +2520,9 @@ function openSettings(tab){
   _rememberAppSubState();
   renderProfil();
   setTimeout(function(){
-    var target = _settingsTab==="collection" ? ge("appearance-section") : ge("mp-old");
+    var target = _settingsTab==="collection" ? ge("appearance-section") : ge("p-profil-c");
     if(target){
       target.scrollIntoView({behavior:"smooth",block:"start"});
-      if(target.focus && _settingsTab!=="collection") target.focus();
     }
   }, 100);
 }
@@ -2596,64 +2595,94 @@ function renderProfil(){
   var col=roleCols[role]||"var(--glacier)";
 
   var isCollectionTab = (_settingsTab === "collection");
-  var h='<div class="'+(isCollectionTab?'profile-collection-shell':'')+'" style="max-width:'+(isCollectionTab?'1320px':'560px')+';">';
+  var h='<div class="'+(isCollectionTab?'profile-collection-shell':'np-account-shell')+'" style="max-width:'+(isCollectionTab?'1320px':'1120px')+';">';
+  h+='<style id="np-account-layout-polish">'
+      +'.np-account-shell{width:min(100%,1120px);}'
+      +'.np-account-shell .settings-tabs{margin-bottom:18px;}'
+      +'.np-account-top{display:grid;grid-template-columns:minmax(300px,1fr) minmax(320px,520px);gap:16px;align-items:stretch;margin-bottom:16px;}'
+      +'.np-account-top-solo{grid-template-columns:1fr;}'
+      +'.np-account-identity{display:flex;align-items:center;gap:18px;min-width:0;padding:8px 0;}'
+      +'.np-account-avatar{width:96px;height:96px;background:var(--bg4);border:1px solid var(--border2);flex-shrink:0;overflow:hidden;position:relative;}'
+      +'.np-account-name{font-family:var(--fd);font-size:24px;letter-spacing:2px;margin-bottom:10px;line-height:1.05;}'
+      +'.np-account-hint{font-size:12px;color:var(--dim);margin-top:8px;cursor:pointer;line-height:1.4;}'
+      +'.np-account-export{min-height:112px;display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 !important;}'
+      +'.np-account-export-title{font-family:var(--fd);font-size:13px;letter-spacing:1.8px;text-transform:uppercase;margin-bottom:5px;}'
+      +'.np-account-card{margin-top:0 !important;}'
+      +'.np-account-password-card{padding:20px !important;}'
+      +'.np-account-password-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px;}'
+      +'.np-account-password-grid .frow{margin:0 !important;}'
+      +'.np-account-password-grid input{height:46px;}'
+      +'.np-account-password-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:14px;}'
+      +'.np-account-password-footer .errmsg{margin:0;flex:1;min-height:18px;}'
+      +'.np-account-actions-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;align-items:stretch;}'
+      +'.np-account-session-card,.np-account-danger-card{margin:0 !important;}'
+      +'.np-account-session-row{display:flex;align-items:center;justify-content:space-between;gap:18px;}'
+      +'.np-account-danger-card{border-color:rgba(201,74,74,.25) !important;background:rgba(201,74,74,.03) !important;}'
+      +'.np-account-danger-title{font-family:var(--fd);font-size:9px;letter-spacing:3px;color:var(--red);margin-bottom:8px;text-transform:uppercase;}'
+      +'.np-account-danger-sub{font-size:12px;color:var(--dim);line-height:1.45;margin-bottom:10px;}'
+      +'@media(max-width:980px){.np-account-top,.np-account-actions-grid{grid-template-columns:1fr;}.np-account-password-grid{grid-template-columns:1fr;}.np-account-export{min-height:auto;}.np-account-avatar{width:78px;height:78px;}.np-account-name{font-size:22px;}}'
+      +'@media(max-width:560px){.np-account-identity{align-items:flex-start;}.np-account-export,.np-account-session-row,.np-account-password-footer{flex-direction:column;align-items:stretch;}.np-account-export .btn,.np-account-password-footer .btn{width:100%;}.np-account-avatar{width:68px;height:68px;}}'
+      +'</style>';
   h+='<div class="settings-tabs">';
   h+='<button type="button" class="settings-tab'+(!isCollectionTab?' active':'')+'" onclick="switchSettingsTab(\'compte\')">Compte</button>';
   h+='<button type="button" class="settings-tab'+(isCollectionTab?' active':'')+'" onclick="switchSettingsTab(\'collection\')">Collection</button>';
   h+='</div>';
 
-  // En-tête
-  // En-tête avec avatar cliquable
-  h+='<div style="display:flex;align-items:center;gap:20px;margin-bottom:28px;">';
   var hasPerso=!!CU.pid;
   var p2=hasPerso?gpid(CU.pid):null;
   var avInner=p2&&p2.avatar
     ?'<img src="'+p2.avatar+'" style="width:100%;height:100%;object-fit:cover;">'
     :'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:28px;color:var(--dim);">'+(CU.name[0]||"?").toUpperCase()+'</div>';
+  if(!isCollectionTab) h+='<div class="np-account-top'+((hasPerso&&p2)?'':' np-account-top-solo')+'">';
+  h+='<div class="np-account-identity">';
   if(hasPerso){
-    h+='<div onclick="openAvatarCrop()" title="Recadrer l\'avatar" style="width:72px;height:72px;background:var(--bg4);border:1px solid var(--border2);cursor:pointer;position:relative;flex-shrink:0;overflow:hidden;transition:border-color .2s;" onmouseover="this.querySelector(\'.av-overlay\').style.opacity=1" onmouseout="this.querySelector(\'.av-overlay\').style.opacity=0">'
+    h+='<div class="np-account-avatar" onclick="openAvatarCrop()" title="Recadrer l\'avatar" style="cursor:pointer;transition:border-color .2s;" onmouseover="this.querySelector(\'.av-overlay\').style.opacity=1" onmouseout="this.querySelector(\'.av-overlay\').style.opacity=0">'
       +avInner
       +'<div class="av-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;font-size:20px;">✎</div>'
       +'</div>';
   } else {
-    h+='<div style="width:72px;height:72px;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:28px;color:var(--dim);">'+(CU.name[0]||"?").toUpperCase()+'</div>';
+    h+='<div class="np-account-avatar" style="display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:28px;color:var(--dim);">'+(CU.name[0]||"?").toUpperCase()+'</div>';
   }
   h+='<div>';
-  h+='<div style="font-family:var(--fd);font-size:20px;letter-spacing:2px;margin-bottom:6px;">'+esc(CU.name)+'</div>';
+  h+='<div class="np-account-name">'+esc(CU.name)+'</div>';
   h+='<span style="font-family:var(--fd);font-size:10px;letter-spacing:2px;padding:3px 10px;border:1px solid '+col+';color:'+col+';">'+(roleLabels[role]||role)+'</span>';
-  if(hasPerso) h+='<div style="font-size:12px;color:var(--dim);margin-top:6px;cursor:pointer;" onclick="openAvatarCrop()">Cliquer sur l\'avatar pour l\'importer ou le recadrer</div>';
+  if(hasPerso) h+='<div class="np-account-hint" onclick="openAvatarCrop()">Cliquer sur l\'avatar pour l\'importer ou le recadrer</div>';
   h+='</div></div>';
 
   if(!isCollectionTab){
   // Export PDF — uniquement si personnage lié
   if(hasPerso&&p2){
-    h+='<div class="card" style="margin-bottom:16px;">';
-    h+='<div style="display:flex;align-items:center;justify-content:space-between;">';
+    h+='<div class="card np-account-export">';
     h+='<div>';
-    h+='<div style="font-family:var(--fd);font-size:13px;letter-spacing:1px;margin-bottom:3px;">Exporter mon personnage</div>';
+    h+='<div class="np-account-export-title">Exporter mon personnage</div>';
     h+='<div style="font-size:12px;color:var(--dim);">Télécharge la fiche complète en PDF</div>';
     h+='</div>';
     h+='<button class="btn btn-sm" style="border-color:var(--glacier-dim);color:var(--glacier);flex-shrink:0;" onclick="exportFichePDF()"><span>↓ PDF</span></button>';
     h+='</div>';
-    h+='</div>';
   }
+  h+='</div>';
 
   // Modifier mot de passe
-  h+='<div class="card">';
+  h+='<div class="card np-account-card np-account-password-card">';
   h+='<div class="card-title">Modifier mon mot de passe</div>';
+  h+='<div class="np-account-password-grid">';
   h+='<div class="frow"><label class="flbl">Mot de passe actuel</label><input type="password" id="mp-old" placeholder="••••••••"></div>';
   h+='<div class="frow"><label class="flbl">Nouveau mot de passe</label><input type="password" id="mp-new" placeholder="••••••••"></div>';
   h+='<div class="frow"><label class="flbl">Confirmer</label><input type="password" id="mp-new2" placeholder="••••••••" onkeydown="if(event.key===\'Enter\')saveMyPass()"></div>';
+  h+='</div>';
+  h+='<div class="np-account-password-footer">';
   h+='<p class="errmsg" id="mp-err"></p>';
-  h+='<button class="btn btn-sm btn-grn" style="margin-top:8px;" onclick="saveMyPass()"><span>Enregistrer</span></button>';
+  h+='<button class="btn btn-sm btn-grn" onclick="saveMyPass()"><span>Enregistrer</span></button>';
+  h+='</div>';
   h+='</div>';
 
+  h+='<div class="np-account-actions-grid">';
   // Rester connecté
   var hasSession=false;
   try{ hasSession=!!localStorage.getItem("np_session_flag"); }catch(e){}
-  h+='<div class="card" style="margin-top:16px;">';
+  h+='<div class="card np-account-session-card">';
   h+='<div class="card-title">Session</div>';
-  h+='<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;">';
+  h+='<div class="np-account-session-row">';
   h+='<div>';
   h+='<div style="font-family:var(--fd);font-size:13px;letter-spacing:1px;margin-bottom:3px;">Rester connecté</div>';
   h+='<div style="font-size:13px;color:var(--dim);">Se souvenir de moi pendant 30 jours</div>';
@@ -2662,20 +2691,16 @@ function renderProfil(){
   h+='</div>';
   h+='</div>';
 
-  h+='<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">';
-  h+='<button class="btn btn-full" style="border-color:rgba(201,74,74,0.4);color:rgba(201,74,74,0.75);letter-spacing:3px;" onclick="logout()"><span>Déconnexion</span></button>';
-  h+='</div>';
-
   // Zone de danger — suppression de compte (masquée pour l'admin)
   if(isAdminRole(CU)){
-    h+='<div style="margin-top:24px;padding:16px;border:1px solid var(--border);background:var(--bg3);">';
-    h+='<div style="font-family:var(--fd);font-size:9px;letter-spacing:3px;color:var(--faint);margin-bottom:8px;">SUPPRESSION DE COMPTE</div>';
+    h+='<div class="card np-account-danger-card">';
+    h+='<div class="np-account-danger-title" style="color:var(--faint);">Suppression de compte</div>';
     h+='<div style="font-size:12px;color:var(--faint);font-style:italic;">Le compte administrateur ne peut pas être supprimé.</div>';
     h+='</div>';
   } else {
-    h+='<div style="margin-top:24px;padding:16px;border:0.5px solid rgba(201,74,74,.25);background:rgba(201,74,74,.03);border-radius:2px;">';
-    h+='<div style="font-family:var(--fd);font-size:9px;letter-spacing:3px;color:var(--red);margin-bottom:10px;">SUPPRESSION DE COMPTE</div>';
-    h+='<div style="font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5;">La suppression de ton compte est <strong style="color:var(--red);">irréversible</strong>. Ton personnage lié et tout ton historique seront définitivement perdus.</div>';
+    h+='<div class="card np-account-danger-card">';
+    h+='<div class="np-account-danger-title">Suppression de compte</div>';
+    h+='<div class="np-account-danger-sub">La suppression de ton compte est <strong style="color:var(--red);">irréversible</strong>. Ton personnage lié et tout ton historique seront définitivement perdus.</div>';
     h+='<button class="btn btn-sm" id="del-account-open" style="border-color:rgba(201,74,74,.5);color:var(--red);font-size:11px;width:100%;" onclick="toggleDeleteAccount()"><span>Supprimer mon compte</span></button>';
     h+='<div id="del-account-form" style="display:none;margin-top:12px;">';
     h+='<div style="font-size:12px;color:var(--dim);margin-bottom:8px;">Entre ton mot de passe pour confirmer :</div>';
@@ -2685,6 +2710,10 @@ function renderProfil(){
     h+='</div>';
     h+='</div>';
   }
+  h+='</div>';
+  h+='<div style="margin-top:16px;">';
+  h+='<button class="btn btn-full" style="border-color:rgba(201,74,74,0.4);color:rgba(201,74,74,0.75);letter-spacing:3px;" onclick="logout()"><span>Déconnexion</span></button>';
+  h+='</div>';
   } else {
     h+='<div class="card" style="margin-bottom:16px;">';
     h+='<div id="appearance-section"></div>';
