@@ -4496,6 +4496,7 @@ body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);bord
 .home-duo-row{
   grid-template-columns:repeat(2,minmax(0,1fr)) !important;
   align-items:stretch !important;
+  grid-auto-rows:1fr;
 }
 .home-duo-card{
   min-height:270px;
@@ -4503,6 +4504,9 @@ body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);bord
   display:flex;
   flex-direction:column;
   box-sizing:border-box;
+}
+.home-duo-card + .home-duo-card{
+  margin-top:0 !important;
 }
 .home-duo-card>.card-title{
   flex:0 0 auto;
