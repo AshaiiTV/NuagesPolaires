@@ -7161,39 +7161,19 @@ function renderSynopsis(tid){
   h+='</div>';
   h+='</section>';
 
-  h+='<section class="synopsis-story" aria-label="Histoire principale">';
-  h+='<article class="synopsis-chapter">';
-  h+='<span class="synopsis-step">01</span>';
-  h+='<div><h2>La chute</h2><p>L\'avant-garde n\'était qu\'un seuil. Derrière elle attendait quelque chose de plus froid, plus patient, plus vaste. L\'Argonaute a perdu. Sa relique, le Dimenséa, a changé de mains.</p></div>';
-  h+='</article>';
-  h+='<article class="synopsis-chapter">';
-  h+='<span class="synopsis-step">02</span>';
-  h+='<div><h2>Le basculement</h2><p>D\'immenses nuages blancs couvrent le monde. Pas de tonnerre, pas d\'incendie. Juste une pression derrière les yeux, un souffle coupé, puis la réalité qui se plie.</p></div>';
-  h+='</article>';
-  h+='<article class="synopsis-chapter">';
-  h+='<span class="synopsis-step">03</span>';
-  h+='<div><h2>Le réveil</h2><p>L\'humanité est projetée dans un futur lointain. Les villes sont vides, les routes muettes, les survivants rares. Ceux qui se relèvent portent une marque intérieure : un Serment.</p></div>';
-  h+='</article>';
-  h+='</section>';
-
-  h+='<section class="synopsis-stay">';
-  h+='<div>';
-  h+='<div class="synopsis-kicker">Pourquoi rester</div>';
-  h+='<h2>Parce que ton personnage laisse une trace.</h2>';
-  h+='<p>Nuages Polaires n\'est pas juste un décor : les Serments progressent, les sorties ont un risque, les combats créent un historique et le monde garde la mémoire de ce que les joueurs tentent.</p>';
-  h+='</div>';
-  h+='<div class="synopsis-stay-list" aria-label="Promesses de jeu">';
-  h+='<span>Serment évolutif</span>';
-  h+='<span>Exploration dangereuse</span>';
-  h+='<span>Bestiaire vivant</span>';
-  h+='<span>Progression visible</span>';
-  h+='</div>';
-  h+='</section>';
-
-  h+='<section class="synopsis-final">';
-  h+='<p>Les pierres se dressent sans voix. Les bâtisses s\'ouvrent comme des crânes vides.</p>';
+  h+='<article class="synopsis-manuscript" aria-label="Histoire principale">';
+  h+='<p><span class="synopsis-beat">La chute</span> L\'Argonaute pensait avoir atteint le cœur des ténèbres. Il avait traversé les ruines, les guerres, les monstres et les silences. Il croyait affronter la source. Il n\'avait trouvé qu\'une avant-garde.</p>';
+  h+='<p>Derrière elle attendait quelque chose de plus froid, plus patient, plus vaste. Une puissance qui ne rugissait pas, qui ne menaçait pas, qui se contentait d\'avancer. L\'Argonaute a perdu. Et avec lui, le monde a perdu son dernier point d\'équilibre.</p>';
+  h+='<p class="synopsis-line">Le Dimenséa, sa relique, a changé de mains.</p>';
+  h+='<p><span class="synopsis-beat">Le basculement</span> Alors les nuages sont venus. Pas une tempête. Pas une fin spectaculaire. D\'immenses masses blanches ont couvert le ciel, étouffant la lumière jusqu\'à rendre l\'air irréel.</p>';
+  h+='<p>Il n\'y eut ni incendie, ni tonnerre. Juste une pression derrière les yeux, dans la gorge, dans les os. Le cœur rata une seconde. Les voix se coupèrent. Les distances cessèrent d\'avoir un sens.</p>';
+  h+='<p class="synopsis-line">Puis la réalité s\'est pliée.</p>';
+  h+='<p><span class="synopsis-beat">Le réveil</span> L\'humanité fut projetée dans un futur lointain. Beaucoup n\'ont pas survécu au passage. Ceux qui ouvrent les yeux découvrent un monde trop propre, trop immobile, presque poli par l\'absence.</p>';
+  h+='<p>Les villes, si elles existent encore, ne sont que silhouettes lointaines. Les routes ne mènent plus nulle part. Les bâtisses s\'ouvrent comme des crânes vides. Le monde n\'est pas mort : il attend.</p>';
+  h+='<p>Et dans certains survivants, quelque chose répond. Une marque intérieure. Un serment muet. Une cicatrice qui ne se voit pas, mais qui grandit à chaque choix, à chaque sortie, à chaque combat.</p>';
+  h+='<div class="synopsis-callout"><strong>Ce que tu joues ici :</strong> un personnage qui progresse, laisse une trace, affronte des zones vivantes, croise un bestiaire qui évolue et participe à reconstruire du sens dans un futur qui n\'en offre plus.</div>';
   h+='<h2>Ce qui reste à écrire dépend de ceux qui se relèvent.</h2>';
-  h+='</section>';
+  h+='</article>';
   h+='</div>';
   el.innerHTML=h;
 }
