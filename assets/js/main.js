@@ -2504,6 +2504,7 @@ function cropApply(){
 var _settingsTab="compte";
 function switchSettingsTab(tab){
   _settingsTab=(tab==="collection"?"collection":"compte");
+  _rememberAppSubState();
   renderProfil();
   setTimeout(function(){
     var target = _settingsTab==="collection" ? ge("appearance-section") : ge("profil");
@@ -2516,6 +2517,7 @@ function openSettings(tab){
   _restorePrivateShell("profil");
   if(tab) _settingsTab=(tab==="collection"?"collection":"compte");
   switchTab("profil", null);
+  _rememberAppSubState();
   renderProfil();
   setTimeout(function(){
     var target = _settingsTab==="collection" ? ge("appearance-section") : ge("mp-old");
@@ -3861,6 +3863,82 @@ function saveTheme(){
   notif("Thème « "+name+" » enregistré.", "ok");
 }
 
+var _lastAppTabKey="np_last_app_tab";
+var _tabMemorySuspended=false;
+
+function _tabDropIdFor(id){
+  var staffTabs=["joueurs","combat-mj","apparitions","bestiaire-admin","database"];
+  return staffTabs.indexOf(id)>=0 ? "dd-staff" : "dd-joueurs";
+}
+
+function _canUseTabNow(id){
+  id=String(id||"").trim();
+  if(!id) return false;
+  var baseTabs=["accueil","synopsis","serments","bestiaire","combat","evenements","reglement"];
+  var authTabs=["fiche","profil"];
+  var staffTabs=["joueurs","gestion-mj","en-attente","combat-mj","apparitions","bestiaire-admin","stats","database"];
+  var adminTabs=["stats","database","gestion-mj","en-attente"];
+  if(baseTabs.indexOf(id)>=0) return !!CU;
+  if(authTabs.indexOf(id)>=0) return !!CU;
+  if(staffTabs.indexOf(id)<0) return false;
+  if(!CU) return false;
+  var role=roleKey(CU);
+  var isStaffUser=!!(CU.type==="staff"||["admin","mj","designer"].indexOf(role)>=0);
+  if(!isStaffUser) return false;
+  if(id==="bestiaire-admin" && !can("manage_beasts")) return false;
+  if(adminTabs.indexOf(id)>=0 && role!=="admin") return false;
+  return true;
+}
+
+function _rememberAppTab(id){
+  if(_tabMemorySuspended) return;
+  if(!_canUseTabNow(id)) return;
+  try{
+    localStorage.setItem(_lastAppTabKey, JSON.stringify({
+      id:String(id||""),
+      settingsTab:_settingsTab==="collection"?"collection":"compte",
+      at:Date.now()
+    }));
+  }catch(e){}
+}
+
+function _rememberAppSubState(){
+  try{
+    var raw=localStorage.getItem(_lastAppTabKey);
+    var data=raw?JSON.parse(raw):{};
+    if(!data || typeof data!=="object") data={};
+    data.id=data.id||(_navCurrent||"profil");
+    data.settingsTab=_settingsTab==="collection"?"collection":"compte";
+    data.at=Date.now();
+    localStorage.setItem(_lastAppTabKey, JSON.stringify(data));
+  }catch(e){}
+}
+
+function _readLastAppTab(){
+  var hash="";
+  try{ hash=String(window.location.hash||"").replace(/^#/,"").trim(); }catch(e){}
+  if(hash && _canUseTabNow(hash)) return {id:hash, fromHash:true};
+  try{
+    var raw=localStorage.getItem(_lastAppTabKey);
+    var data=raw?JSON.parse(raw):null;
+    if(data && _canUseTabNow(data.id)) return data;
+  }catch(e){}
+  return null;
+}
+
+function _restoreRememberedAppTab(saved){
+  if(!saved || !_canUseTabNow(saved.id)) return false;
+  var id=String(saved.id||"");
+  if(id==="profil"){
+    _settingsTab=saved.settingsTab==="collection"?"collection":"compte";
+    switchTab("profil",null,true);
+    renderProfil();
+    return true;
+  }
+  switchDropTab(id,null,_tabDropIdFor(id));
+  return true;
+}
+
 function launchApp(){
   // Revalider le thème — priorité au thème du compte si défini et possédé
   (function(){
@@ -3935,6 +4013,7 @@ initStorage(); }
     root.classList.add("is-player");
     CU.type="player";
   }
+  var rememberedTab=_readLastAppTab();
   // Afficher les onglets personnage si perso lié
   if(CU.pid){
     sapp.classList.add("has-character");
@@ -3971,6 +4050,7 @@ initStorage(); }
 
   showScreen("s-app");
 
+  _tabMemorySuspended=true;
   if(isStaff){
     if(role==="designer"){
       switchDropTab("bestiaire",null,"dd-joueurs");
@@ -4019,6 +4099,10 @@ initStorage(); }
   setTimeout(function(){ updateNotifBadge(); }, 500);
   if(!isStaff&&!isPending){
     switchDropTab("synopsis",null,"dd-joueurs");
+  }
+  _tabMemorySuspended=false;
+  if(rememberedTab && !isPending){
+    setTimeout(function(){ _restoreRememberedAppTab(rememberedTab); }, 0);
   }
 }
 
@@ -4738,6 +4822,7 @@ async function logout(){
     _PRIVATE_KEYS.forEach(function(k){
       try{ localStorage.removeItem("np_"+k); }catch(e){}
     });
+    try{ localStorage.removeItem(_lastAppTabKey); }catch(e){}
     _dbSetToken(null);
     _dbCache = Object.create(null);
     window._storageInitDone = false;
@@ -4973,6 +5058,7 @@ function switchTab(id, btn, _isBack){
     if(_navHistory.length > 20) _navHistory.shift();
   }
   _navCurrent = id;
+  _rememberAppTab(id);
   _updateBackBtn();
 
   // Mettre à jour l'URL pour le bouton retour du navigateur
