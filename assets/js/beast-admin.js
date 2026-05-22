@@ -335,6 +335,9 @@
         case 'published_first': filtered.sort(function(a,b){ var av=(a.archived?2:(a.hidden?1:0)), bv=(b.archived?2:(b.hidden?1:0)); return av-bv || String(a.nom||'').localeCompare(String(b.nom||''),'fr'); }); break;
       }
     }
+    if(!adminMode && !_beastPvSort && !_beastNivSort && !_beastAlpha){
+      filtered.sort(function(a,b){ return String(a.nom||'').localeCompare(String(b.nom||''),'fr',{sensitivity:'base'}); });
+    }
     if(_beastPvSort) filtered.sort(function(a,b){ return _beastPvSort==='asc' ? ((a.pv||0)-(b.pv||0)) : ((b.pv||0)-(a.pv||0)); });
     if(_beastNivSort) filtered.sort(function(a,b){ return _beastNivSort==='asc' ? ((a.niv||0)-(b.niv||0)) : ((b.niv||0)-(a.niv||0)); });
     if(_beastAlpha) filtered.sort(function(a,b){ var r=String(a.nom||'').localeCompare(String(b.nom||''),'fr'); return _beastAlpha==='asc'?r:-r; });

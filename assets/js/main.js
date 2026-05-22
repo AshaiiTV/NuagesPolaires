@@ -6249,6 +6249,9 @@ function renderBGrid(tid,staff){
       return true;
     });
   }
+  if(tid==="p-bgrd" && !_beastPvSort && !_beastNivSort && !_beastAlpha){
+    filtered.sort(function(a,b){return String(a.nom||'').localeCompare(String(b.nom||''),'fr',{sensitivity:'base'});});
+  }
   if(_beastPvSort)  filtered.sort(function(a,b){return _beastPvSort==='asc'?(a.pv-b.pv):(b.pv-a.pv);});
   if(_beastNivSort) filtered.sort(function(a,b){return _beastNivSort==='asc'?(a.niv-b.niv):(b.niv-a.niv);});
   if(_beastAlpha)   filtered.sort(function(a,b){var r=(a.nom||'').localeCompare((b.nom||''),'fr');return _beastAlpha==='asc'?r:-r;});
