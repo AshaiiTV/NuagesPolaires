@@ -5163,7 +5163,7 @@ function renderView(){
     var adminBtnsEl=ge("shero-admin-btns");
     if(adminBtnsEl){
       if(can("manage_stats")){
-        adminBtnsEl.style.display="flex";
+        adminBtnsEl.style.display="";
         adminBtnsEl.style.position="relative";
         adminBtnsEl.style.zIndex="2";
         adminBtnsEl.innerHTML=''

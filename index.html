@@ -299,11 +299,15 @@ button:focus-visible{outline:1px solid rgba(126,184,212,0.4);outline-offset:2px;
 .shero{display:flex;gap:24px;align-items:flex-start;margin-bottom:24px;}
 .sav{width:160px;height:160px;object-fit:cover;border:1px solid var(--border2);flex-shrink:0;}
 .savph{width:160px;height:160px;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:56px;color:var(--dim);flex-shrink:0;}
-.sinfo{padding-top:8px;}
-.sinfo h2{font-family:var(--fd);font-size:26px;letter-spacing:3px;}
-.sicls{color:var(--glacier);font-style:italic;font-size:13px;margin-top:6px;}
-.siwpn{color:var(--dim);font-size:12px;margin-top:4px;}
-.brbox{background:var(--glow2);border:1px solid var(--glacier-dim);padding:9px 14px;font-size:12px;margin-top:10px;color:var(--glacier-bright);}
+.sinfo{padding-top:8px;min-width:0;width:100%;}
+.sheet-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start;width:100%;}
+.sheet-identity{min-width:0;max-width:100%;}
+.sinfo h2{font-family:var(--fd);font-size:26px;letter-spacing:3px;line-height:1.18;margin:0;overflow-wrap:anywhere;}
+.sicls{color:var(--glacier);font-style:italic;font-size:13px;margin-top:6px;line-height:1.55;overflow-wrap:anywhere;}
+.siwpn{color:var(--dim);font-size:12px;margin-top:4px;line-height:1.55;overflow-wrap:anywhere;}
+.brbox{background:var(--glow2);border:1px solid var(--glacier-dim);padding:9px 14px;font-size:12px;margin-top:10px;color:var(--glacier-bright);line-height:1.55;overflow-wrap:anywhere;max-width:100%;box-sizing:border-box;}
+.sheet-admin-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0;margin-top:4px;max-width:100%;}
+.sheet-admin-actions .btn{justify-content:center;}
 
 /* EQUIP */
 .ewrap{display:flex;gap:24px;align-items:flex-start;}
@@ -554,6 +558,8 @@ button:focus-visible{outline:1px solid rgba(126,184,212,0.4);outline-offset:2px;
   .sav,.savph{width:120px;height:120px;}
   .savph{font-size:42px;}
   .sinfo h2{font-size:22px;}
+  .sheet-head{grid-template-columns:1fr;}
+  .sheet-admin-actions{flex-direction:row;flex-wrap:wrap;margin-top:0;}
   .rtbl{font-size:12px;}
   .rtbl th,.rtbl td{padding:7px 10px;}
 }
@@ -607,6 +613,9 @@ button:focus-visible{outline:1px solid rgba(126,184,212,0.4);outline-offset:2px;
   .sinfo{padding-top:0;}
   .sinfo h2{font-size:20px;letter-spacing:2px;}
   .sicls{font-size:15px;}
+  .sheet-head{text-align:center;}
+  .sheet-admin-actions{justify-content:center;width:100%;}
+  .sheet-admin-actions .btn{flex:1 1 130px;}
   .sstats{grid-template-columns:1fr 1fr;}
 
   /* ÉQUIPEMENT */
@@ -6089,16 +6098,16 @@ body.theme-aquaris .home-title{
         <div id="p-av" style="position:relative;">
           <!-- Bouton recadrage avatar (molette uniquement) -->
         </div>
-        <div class="sinfo" style="flex:1;">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
-            <div>
+        <div class="sinfo">
+          <div class="sheet-head">
+            <div class="sheet-identity">
               <h2 id="p-nom"></h2>
               <div class="sicls" id="p-cls"></div>
               <div class="siwpn" id="p-wpn"></div>
               <div id="p-br"></div>
             </div>
             <!-- Boutons admin — visibles uniquement en mode admin -->
-            <div id="shero-admin-btns" class="panel-admin" style="display:none;flex-direction:column;gap:6px;flex-shrink:0;margin-top:4px;"></div>
+            <div id="shero-admin-btns" class="panel-admin sheet-admin-actions" style="display:none;"></div>
           </div>
         </div>
       </div>
