@@ -11467,14 +11467,37 @@ async function combatLoadArchive(id){
   try{ combatQueueAutosave('load_archive', 60); }catch(_e){}
 }
 async function combatDeleteArchive(id){
+  id=String(id||'');
+  if(!id) return false;
   var source=(can("manage_mjs")?getAllCombatArchives():getCombatArchives());
-  var arc=source.find(function(a){return a.id===id;});
-  if(!arc) return;
-  var owner = combatArchiveOwnerKey((arc&&arc._owner) || (_cs&&_cs._owner) || combatArchiveCurrentOwner());
-  var remaining = getCombatArchivesForOwner(owner).filter(function(a){return a.id!==id;});
-  saveCombatArchives(remaining, owner).catch(function(){});
-  if(_cs.id===id) combatNewFromArchive();
-  else{notif("Supprimé.","inf"); rCombat("p-combat-mj-c");}
+  var arc=source.find(function(a){return String(a&&a.id||'')===id;});
+  var owner = combatArchiveOwnerKey((arc&&arc._owner) || '');
+  if(!owner){
+    var owners=can("manage_mjs")?_combatArchiveKnownOwners():combatArchiveCurrentOwners();
+    for(var oi=0;oi<owners.length;oi++){
+      var candidate=combatArchiveOwnerKey(owners[oi]);
+      if(getCombatArchivesForOwner(candidate).some(function(a){return String(a&&a.id||'')===id;})){ owner=candidate; break; }
+    }
+  }
+  owner = combatArchiveOwnerKey(owner || (_cs&&_cs._owner) || combatArchiveCurrentOwner());
+  if(!owner){ notif("Archive introuvable.","err"); return false; }
+  var before=getCombatArchivesForOwner(owner);
+  var remaining=before.filter(function(a){return String(a&&a.id||'')!==id;});
+  if(remaining.length===before.length){ notif("Archive introuvable.","err"); return false; }
+  try{
+    try{ localStorage.removeItem("np_"+combatArchiveRecordKey(owner,id)); }catch(_e){}
+    await saveCombatArchives(remaining, owner);
+    if(String(_arcSelectedId||'')===id) _arcSelectedId='';
+    if(_cs&&String(_cs.id||'')===id) combatNewFromArchive({skipRender:true});
+    notif("Archive supprimée.","inf");
+    if(ge('arc-list')) renderArcFiltered();
+    else rCombat("p-combat-mj-c");
+    return true;
+  }catch(e){
+    console.warn("combatDeleteArchive failed", e);
+    notif("Suppression impossible.","err");
+    return false;
+  }
 }
 
 // ── Statuts IRP fiche ─────────────────────────────────────────────────────────
@@ -13402,6 +13425,12 @@ function _arcDeleteWithConfirm(id){
   if(!confirm('Supprimer cette archive de combat ?')) return;
   combatDeleteArchive(String(id||''));
 }
+function _arcDeleteClick(ev,id){
+  try{ if(ev&&ev.stopPropagation) ev.stopPropagation(); }catch(_e){}
+  try{ if(ev&&ev.preventDefault) ev.preventDefault(); }catch(_e2){}
+  _arcDeleteWithConfirm(id);
+  return false;
+}
 function _arcRenderPlayerChips(options){
   var wrap=ge('arc-player-chip-wrap'); if(!wrap) return;
   options=Array.isArray(options)?options:[];
@@ -13558,7 +13587,7 @@ function renderArcFiltered(){
     h+='<div class="arc-card-actions">';
     h+='<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();combatLoadArchive('+JSON.stringify(String(arc.id||''))+')"><span>'+(arc&&arc._draft?'Reprendre':'Charger')+'</span></button>';
     h+='<button class="btn btn-sm" onclick="event.stopPropagation();combatExportDiscordFromArc('+JSON.stringify(String(arc.id||''))+')"><span>Exporter</span></button>';
-    h+='<button class="btn btn-sm btn-red" onclick="event.stopPropagation();_arcDeleteWithConfirm('+JSON.stringify(String(arc.id||''))+')"><span>Supprimer</span></button>';
+    h+='<button class="btn btn-sm btn-red" onclick="return _arcDeleteClick(event,'+JSON.stringify(String(arc.id||''))+')"><span>Supprimer</span></button>';
     h+='</div>';
     h+='</div>';
   });
@@ -13578,7 +13607,7 @@ function renderArcFiltered(){
   h+='<div class="arc-detail-actions">';
   h+='<button class="btn btn-sm btn-primary" onclick="combatLoadArchive('+JSON.stringify(String(selectedArc.id||''))+')"><span>'+(selectedArc&&selectedArc._draft?'Reprendre le combat':'Charger le combat')+'</span></button>';
   h+='<button class="btn btn-sm" onclick="combatExportDiscordFromArc('+JSON.stringify(String(selectedArc.id||''))+')"><span>Exporter Discord</span></button>';
-  h+='<button class="btn btn-sm btn-red" onclick="_arcDeleteWithConfirm('+JSON.stringify(String(selectedArc.id||''))+')"><span>Supprimer</span></button>';
+  h+='<button class="btn btn-sm btn-red" onclick="return _arcDeleteClick(event,'+JSON.stringify(String(selectedArc.id||''))+')"><span>Supprimer</span></button>';
   h+='</div>';
   h+='</div>';
   h+='<div class="arc-detail-metrics">';
