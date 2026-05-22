@@ -1474,6 +1474,51 @@ select option { background: #0d0e18; color: var(--text); }
 .players-add-btn {
   justify-self: end;
 }
+.players-searchbar {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  margin: -4px 0 16px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg3) 86%, transparent);
+}
+.players-search-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 0 12px;
+  border: 1px solid var(--border2);
+  background: color-mix(in srgb, var(--bg1) 72%, transparent);
+}
+.players-search-field span {
+  font-family: var(--fd);
+  color: var(--glacier);
+  opacity: .9;
+  flex: 0 0 auto;
+}
+.players-search-field input {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+}
+.players-search-field input::placeholder {
+  color: var(--faint);
+}
+.players-search-meta {
+  min-width: 88px;
+  color: var(--dim);
+  font-family: var(--fm);
+  font-size: 12px;
+  text-align: right;
+}
 .s-plist {
   display: grid;
   grid-template-columns: 1fr;
@@ -1694,6 +1739,13 @@ select option { background: #0d0e18; color: var(--text); }
   .players-add-btn {
     justify-self: stretch;
     justify-content: center;
+  }
+  .players-searchbar {
+    grid-template-columns: 1fr;
+  }
+  .players-search-meta {
+    min-width: 0;
+    text-align: left;
   }
   .prow {
     grid-template-columns: 54px 1fr;

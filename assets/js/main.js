@@ -7844,6 +7844,14 @@ function _buildJoueursTab(){
   h += "  <div id='players-hero-stats' class='players-hero-stats'></div>";
   h += "  <button class='btn btn-sm btn-grn players-add-btn' onclick=\"openModal('m-addp');setTimeout(renderNewPlayerAvatarDraft,0)\"><span>+ Nouveau joueur</span></button>";
   h += "</div>";
+  h += "<div class='players-searchbar'>";
+  h += "  <div class='players-search-field'>";
+  h += "    <span>⌕</span>";
+  h += "    <input id='players-search-input' type='search' placeholder='Rechercher un profil, un serment, un compte ou un rôle...' oninput='setPlayersSearch(this.value)' autocomplete='off'>";
+  h += "  </div>";
+  h += "  <button id='players-search-clear' class='btn btn-sm' style='display:none;' onclick='setPlayersSearch(\"\")'><span>Effacer</span></button>";
+  h += "  <div id='players-search-meta' class='players-search-meta'></div>";
+  h += "</div>";
   h += "<div id='pending-accounts-section' style='display:none;margin-bottom:16px;'>";
   h += "  <div class='card' style='border-color:var(--gold);background:rgba(201,168,76,.03);'>";
   h += "    <div style='display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:2px 0;' onclick='_togglePending()'>";
@@ -7860,6 +7868,15 @@ function _buildJoueursTab(){
   root.innerHTML = h;
 }
 
+var _playersSearch="";
+
+function setPlayersSearch(v){
+  _playersSearch=String(v||"");
+  var input=ge("players-search-input");
+  if(input&&input.value!==_playersSearch) input.value=_playersSearch;
+  renderSPList();
+}
+
 function _renderPlayersHeroStats(players,accounts){
   var el=ge("players-hero-stats");
   if(!el) return;
@@ -7871,6 +7888,17 @@ function _renderPlayersHeroStats(players,accounts){
     +'<span><strong>'+linked+'</strong> comptes liés</span>'
     +'<span><strong>'+staff+'</strong> staff</span>'
     +'<span><strong>'+avg+'</strong> niv. moyen</span>';
+}
+
+function _renderPlayersSearchMeta(total,shown){
+  var meta=ge("players-search-meta");
+  var clear=ge("players-search-clear");
+  var input=ge("players-search-input");
+  var q=String(_playersSearch||"").trim();
+  if(input&&input.value!==_playersSearch) input.value=_playersSearch;
+  if(clear) clear.style.display=q?"":"none";
+  if(!meta) return;
+  meta.textContent=q?(shown+" / "+total+" profils"):"";
 }
 
 function _accountForPlayer(pid,accounts){
@@ -7922,8 +7950,28 @@ function renderSPList(){
   var players = gp();
   var accounts = getAccounts();
   _renderPlayersHeroStats(players,accounts);
+  var q=String(_playersSearch||"").trim().toLowerCase();
+  var totalPlayers=players.length;
+  if(q){
+    players=players.filter(function(p){
+      var linked=_accountForPlayer(p.id,accounts);
+      var role=linked?(linked.role||"joueur"):"";
+      var hay=[
+        p.name,
+        p.classe,
+        p.branch,
+        linked&&linked.pseudo,
+        role,
+        ROLE_LABELS[role]
+      ].join(" ").toLowerCase();
+      return hay.indexOf(q)>=0;
+    });
+  }
+  _renderPlayersSearchMeta(totalPlayers,players.length);
   if(!players.length){
-    plistEl.innerHTML='<div class="empty-state"><div class="empty-state-icon">⚔</div><div class="empty-state-title">Aucun joueur</div><div class="empty-state-sub">Les personnages apparaîtront ici une fois créés.</div></div>';
+    plistEl.innerHTML=q
+      ?'<div class="empty-state"><div class="empty-state-icon">⌕</div><div class="empty-state-title">Aucun profil trouvé</div><div class="empty-state-sub">Essaie un nom, un serment, un pseudo de compte ou un rôle.</div></div>'
+      :'<div class="empty-state"><div class="empty-state-icon">⚔</div><div class="empty-state-title">Aucun joueur</div><div class="empty-state-sub">Les personnages apparaîtront ici une fois créés.</div></div>';
     return;
   }
   plistEl.innerHTML=players.map(function(p){
