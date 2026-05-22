@@ -2193,7 +2193,8 @@ textarea {
   stroke: rgba(126,184,212,0.38);
   stroke-width: 1;
   stroke-dasharray: 18 12;
-  transform-origin: 60px 60px;
+  transform-box: view-box;
+  transform-origin: 50px 50px;
   animation: loaderSpin 4.8s linear infinite;
 }
 #db-loader .np-loader-orbit.orbit-b {
@@ -2202,18 +2203,11 @@ textarea {
   animation-duration: 3.6s;
   animation-direction: reverse;
 }
-#db-loader .np-loader-star {
-  fill: rgba(126,184,212,0.18);
-  stroke: rgba(126,184,212,0.95);
-  stroke-width: 1.2;
+#db-loader .np-loader-compass {
   filter: drop-shadow(0 0 14px rgba(126,184,212,0.42));
   transform-box: view-box;
-  transform-origin: 60px 60px;
+  transform-origin: 50px 50px;
   animation: loaderCompass 5.4s linear infinite, loaderPulse 2.4s ease-in-out infinite;
-}
-#db-loader .np-loader-core {
-  fill: #c9a84c;
-  filter: drop-shadow(0 0 16px rgba(201,168,76,0.68));
 }
 #db-loader .np-loader-brand {
   font-family: var(--fd);
