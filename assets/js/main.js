@@ -7152,42 +7152,61 @@ function renderAccueil(tid){
 
 function renderSynopsis(tid){
   var el=ge(tid); if(!el) return;
-  var h='<div style="display:flex;justify-content:center;"><div class="rsec" style="max-width:760px;width:100%;">';
-
-  // En-tête cinématique
-  h+='<div style="text-align:center;padding:32px 0 24px;">';
-  h+='<div style="font-family:var(--fd);font-size:12px;letter-spacing:5px;text-transform:uppercase;color:var(--glacier-dim);margin-bottom:16px;">NUAGES POLAIRES</div>';
-  h+='<div style="width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--glacier),transparent);margin:0 auto 20px;"></div>';
+  var h='<div class="synopsis-shell">';
+  h+='<section class="synopsis-hero">';
+  h+='<div class="synopsis-sky" aria-hidden="true"><span></span><span></span><span></span></div>';
+  h+='<div class="synopsis-hero-copy">';
+  h+='<div class="synopsis-kicker">NUAGES POLAIRES</div>';
+  h+='<h1>L\'Argonaute a chuté.</h1>';
+  h+='<p>Tu ne rejoins pas un monde sauvé. Tu rejoins ce qui reste après l\'échec du plus grand héros, là où chaque survivant peut devenir une légende ou disparaître dans le silence.</p>';
+  h+='<div class="synopsis-actions"><button class="btn btn-sm btn-gold" onclick="switchDropTab(\'serments\',null,\'dd-joueurs\')"><span>Voir les Serments</span></button><button class="btn btn-sm" onclick="switchDropTab(\'bestiaire\',null,\'dd-joueurs\')"><span>Voir les menaces</span></button></div>';
   h+='</div>';
-
-  // Texte du synopsis
-  h+='<div style="max-width:680px;margin:0 auto;padding:0 20px;">';
-
-  h+='<p style="font-family:var(--fd);font-size:18px;letter-spacing:2px;color:var(--glacier);margin-bottom:24px;line-height:1.4;">L\'Argonaute a chuté.</p>';
-
-  h+='<p style="margin-bottom:20px;line-height:1.9;font-size:15px;">Aucun chant, aucun éclat. Une défaite sèche, sans beauté, qui a arraché au plus grand héros sa certitude. Ceux qu\'il croyait être le sommet des ténèbres n\'étaient qu\'une avant-garde. La vraie puissance demeurait derrière, froide, innombrable, patiente.</p>';
-
-  h+='<p style="margin-bottom:20px;line-height:1.9;font-size:15px;color:var(--dim);">Le Dimenséa, sa relique, a changé de mains.</p>';
-
-  h+='<div style="border-left:2px solid var(--glacier-dim);padding:16px 20px;margin:28px 0;background:rgba(126,184,212,0.03);">';
-  h+='<p style="line-height:1.9;font-size:15px;font-style:italic;color:var(--dim);">Alors un champ dimensionnel s\'est levé sur la planète entière, d\'immenses nuages blancs couvrirent le monde en une seconde. Ni incendie, ni tonnerre. Une pression derrière les yeux, dans la gorge. Un souffle coupé. Une seconde trop longue, comme si le cœur refusait de battre au même rythme que le monde. Puis la réalité s\'est pliée.</p>';
+  h+='<div class="synopsis-signal">';
+  h+='<div class="synopsis-signal-label">Dernier signal connu</div>';
+  h+='<div class="synopsis-signal-value">Dimenséa</div>';
+  h+='<div class="synopsis-signal-line"></div>';
+  h+='<div class="synopsis-signal-note">Relique perdue · champ dimensionnel global · humanité déplacée</div>';
   h+='</div>';
+  h+='</section>';
 
-  h+='<p style="margin-bottom:20px;line-height:1.9;font-size:15px;font-family:var(--fd);letter-spacing:1px;color:var(--glacier);">Le Dimenséa a projeté l\'humanité dans un futur lointain.</p>';
+  h+='<section class="synopsis-promise">';
+  h+='<div><span>Progression</span><strong>Ton Serment évolue</strong><p>Chaque palier ouvre une manière différente d\'exister en combat et en narration.</p></div>';
+  h+='<div><span>Survie</span><strong>Le monde résiste</strong><p>Les créatures, les zones et les apparitions donnent un vrai poids aux sorties.</p></div>';
+  h+='<div><span>Identité</span><strong>Ton personnage compte</strong><p>Fiche, historique, inventaire et traces de combat construisent une continuité.</p></div>';
+  h+='</section>';
 
-  h+='<p style="margin-bottom:20px;line-height:1.9;font-size:15px;">Beaucoup n\'ont pas survécu. Ceux qui restent portent une marque intérieure : un serment muet, une cicatrice qui ne se voit pas mais qui répond, parfois, au vide. Le Dimenséa a fait d\'eux des Élèves du Serment — de donner des capacités à ceux qui ne pouvaient le faire, de rendre possible, l\'impossible.</p>';
+  h+='<section class="synopsis-timeline" aria-label="Repères du synopsis">';
+  h+='<div><strong>01</strong><span>Chute</span><p>L\'avant-garde n\'était qu\'un seuil. Derrière elle attendait quelque chose de plus froid, plus patient.</p></div>';
+  h+='<div><strong>02</strong><span>Projection</span><p>D\'immenses nuages blancs couvrent le monde. Le cœur rate une seconde. La réalité se plie.</p></div>';
+  h+='<div><strong>03</strong><span>Réveil</span><p>Un futur trop propre, trop silencieux. Des villes vides. Des survivants marqués par un Serment.</p></div>';
+  h+='</section>';
 
-  h+='<div style="border:1px solid var(--border2);padding:24px;margin:28px 0;background:var(--bg3);">';
-  h+='<p style="line-height:1.9;font-size:14px;color:var(--dim);">Puis vient le réveil. Les paupières se soulèvent. L\'air paraît trop propre, trop immobile. Autour, il n\'y a plus d\'armée, plus de frontières, plus de routes habitées, plus de fumées au-dessus des toits. Les villes, si elles existent encore, ne sont que silhouettes lointaines. Les pierres se dressent sans voix. Les bâtisses s\'ouvrent comme des crânes vides. Tout semble à la fois intact et mort, neuf et abandonné, comme si le monde avait continué sans l\'humanité, puis s\'était arrêté pour attendre.</p>';
+  h+='<section class="synopsis-grid">';
+  h+='<article class="synopsis-panel synopsis-panel-main">';
+  h+='<div class="synopsis-panel-kicker">Après la défaite</div>';
+  h+='<p>Ceux qu\'il croyait être le sommet des ténèbres n\'étaient qu\'une avant-garde. La vraie puissance demeurait derrière, froide, innombrable, patiente.</p>';
+  h+='<p class="muted">Le Dimenséa, sa relique, a changé de mains.</p>';
+  h+='</article>';
+  h+='<article class="synopsis-panel synopsis-quote">';
+  h+='<p>Ni incendie, ni tonnerre. Une pression derrière les yeux, dans la gorge. Un souffle coupé.</p>';
+  h+='</article>';
+  h+='<article class="synopsis-panel">';
+  h+='<div class="synopsis-panel-kicker">Le saut</div>';
+  h+='<p>Le Dimenséa a projeté l\'humanité dans un futur lointain. Beaucoup n\'ont pas survécu. Ceux qui restent portent une marque intérieure : un serment muet, une cicatrice qui ne se voit pas mais qui répond, parfois, au vide.</p>';
+  h+='</article>';
+  h+='<article class="synopsis-panel">';
+  h+='<div class="synopsis-panel-kicker">Le réveil</div>';
+  h+='<p>Les paupières se soulèvent. L\'air paraît trop propre, trop immobile. Autour, il n\'y a plus d\'armée, plus de frontières, plus de routes habitées, plus de fumées au-dessus des toits.</p>';
+  h+='</article>';
+  h+='</section>';
+
+  h+='<section class="synopsis-final">';
+  h+='<div class="synopsis-final-mark">✦</div>';
+  h+='<p>Les villes, si elles existent encore, ne sont que silhouettes lointaines. Les pierres se dressent sans voix. Les bâtisses s\'ouvrent comme des crânes vides.</p>';
+  h+='<h2>L\'humanité a disparu.</h2>';
+  h+='<div class="synopsis-final-sub">Ce qui reste à écrire dépend de ceux qui se relèvent.</div>';
+  h+='</section>';
   h+='</div>';
-
-  h+='<p style="line-height:1.9;font-size:15px;margin-bottom:32px;">Et dans cette première seconde de lucidité, une vérité tombe, lourde, irrévocable.</p>';
-
-  h+='<p style="font-family:var(--fd);font-size:20px;letter-spacing:3px;text-align:center;color:var(--text);padding:16px 0;">L\'humanité a disparu.</p>';
-
-  h+='<div style="width:40px;height:1px;background:linear-gradient(90deg,transparent,var(--glacier),transparent);margin:32px auto 0;"></div>';
-
-  h+='</div></div></div>';
   el.innerHTML=h;
 }
 
