@@ -1,44 +1,37 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 320" role="img" aria-label="Nuages Polaires">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 340" role="img" aria-label="Nuages Polaires">
   <defs>
-    <radialGradient id="np-favicon-bg" cx="50%" cy="46%" r="62%">
-      <stop offset="0" stop-color="#173626"/>
-      <stop offset="0.62" stop-color="#0b2418"/>
-      <stop offset="1" stop-color="#06130b"/>
+    <radialGradient id="np-favicon-halo" cx="50%" cy="50%" r="54%">
+      <stop offset="0" stop-color="#7eb8d4" stop-opacity=".24"/>
+      <stop offset=".62" stop-color="#4a7d96" stop-opacity=".1"/>
+      <stop offset="1" stop-color="#09090f" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="np-favicon-needle" x1="86" y1="45" x2="256" y2="267" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#e2f6ff"/>
-      <stop offset="0.55" stop-color="#a7d7ec"/>
-      <stop offset="1" stop-color="#6aa6c4"/>
+    <linearGradient id="np-favicon-needle" x1="82" y1="58" x2="258" y2="282" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e7f7ff"/>
+      <stop offset=".52" stop-color="#b8dfef"/>
+      <stop offset="1" stop-color="#7eb8d4"/>
     </linearGradient>
-    <linearGradient id="np-favicon-cloud" x1="15" y1="244" x2="321" y2="315" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#226f42"/>
-      <stop offset="1" stop-color="#123b26"/>
+    <linearGradient id="np-favicon-ring" x1="52" y1="52" x2="288" y2="288" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d4eef8" stop-opacity=".72"/>
+      <stop offset=".5" stop-color="#4a7d96" stop-opacity=".2"/>
+      <stop offset="1" stop-color="#7eb8d4" stop-opacity=".72"/>
     </linearGradient>
-    <filter id="np-favicon-glow" x="-35%" y="-35%" width="170%" height="170%">
-      <feGaussianBlur stdDeviation="4" result="blur"/>
-      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.25 0 0 0 0 0.74 0 0 0 0 0.62 0 0 0 .7 0" result="glow"/>
-      <feMerge>
-        <feMergeNode in="glow"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
+    <filter id="np-favicon-shadow" x="-24%" y="-24%" width="148%" height="148%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#02040a" flood-opacity=".42"/>
     </filter>
   </defs>
-  <rect width="340" height="320" fill="url(#np-favicon-bg)"/>
-  <g fill="none" stroke="#2f8e5c" stroke-opacity=".38" stroke-width="1.5">
-    <path d="M5 152h58M277 152h58M170 6v58M170 256v58"/>
-    <circle cx="170" cy="152" r="132"/>
-    <circle cx="170" cy="152" r="118" stroke-dasharray="9 14"/>
-    <path d="M48 28l52 52M292 28l-52 52M48 276l52-52M292 276l-52-52"/>
+  <circle cx="170" cy="170" r="148" fill="url(#np-favicon-halo)"/>
+  <g transform="translate(170 170)" fill="none" stroke="#7eb8d4" stroke-linecap="round">
+    <circle r="116" stroke="url(#np-favicon-ring)" stroke-width="2" opacity=".78"/>
+    <circle r="128" stroke-width="1.2" stroke-dasharray="8 14" opacity=".34"/>
+    <path d="M0-132v-34M94-94l24-24M132 0h34M94 94l24 24M0 132v34M-94 94l-24 24M-132 0h-34M-94-94l-24-24" stroke-width="1.6" opacity=".52"/>
   </g>
-  <path d="M0 320v-34c15-13 38-12 51-5 11-20 43-22 61-10 19-18 47-17 67 2 22-18 49-19 73-3 17-13 43-11 58 7 14-8 24-6 30 2v41z" fill="url(#np-favicon-cloud)" opacity=".9"/>
-  <g transform="translate(170 152)" filter="url(#np-favicon-glow)">
-    <path d="M0-118 21-26 0-8-21-26z" fill="url(#np-favicon-needle)"/>
-    <path d="M0 118 21 26 0 8-21 26z" fill="url(#np-favicon-needle)" opacity=".86"/>
-    <path d="M118 0 26 21 8 0 26-21z" fill="url(#np-favicon-needle)" opacity=".92"/>
-    <path d="M-118 0-26 21-8 0-26-21z" fill="url(#np-favicon-needle)" opacity=".92"/>
-    <path d="M82-82 28-16 14-30zM82 82 16 28 30 14zM-82 82-28 16-14 30zM-82-82-16-28-30-14z" fill="#b9e2f3" opacity=".9"/>
-    <rect x="-24" y="-24" width="48" height="48" rx="3" transform="rotate(45)" fill="#081018" stroke="#24c978" stroke-width="4"/>
-    <rect x="-13" y="-13" width="26" height="26" rx="2" transform="rotate(45)" fill="#eaf8ff"/>
+  <g transform="translate(170 170)" filter="url(#np-favicon-shadow)">
+    <path d="M0-118 20-34 0-16-20-34z" fill="url(#np-favicon-needle)"/>
+    <path d="M118 0 34 20 16 0 34-20z" fill="url(#np-favicon-needle)" opacity=".95"/>
+    <path d="M0 118 20 34 0 16-20 34z" fill="url(#np-favicon-needle)" opacity=".88"/>
+    <path d="M-118 0-34 20-16 0-34-20z" fill="url(#np-favicon-needle)" opacity=".95"/>
+    <path d="M82-82 27-17 12-12 17-27zM82 82 17 27 12 12 27 17zM-82 82-27 17-12 12-17 27zM-82-82-17-27-12-12-27-17z" fill="#d4eef8" opacity=".82"/>
+    <rect x="-22" y="-22" width="44" height="44" rx="2" transform="rotate(45)" fill="#09090f" stroke="#7eb8d4" stroke-width="4"/>
+    <rect x="-11" y="-11" width="22" height="22" rx="2" transform="rotate(45)" fill="#e7f7ff"/>
   </g>
-  <path d="M220 54l35 20-24 17-34-20z" fill="#44b76d" opacity=".55"/>
 </svg>
