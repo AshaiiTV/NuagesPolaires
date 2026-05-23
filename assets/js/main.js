@@ -5806,12 +5806,18 @@ function renderAllSerments(tid){
   html+='</div>';
   html+='</section>';
   html+='<div class="serm-toolbar">';
-  html+='<div class="serm-filter" id="serm-filter">';
+  html+='<div class="serm-filter-block"><span>Type</span><div class="serm-filter" id="serm-filter">';
   html+='<button class="btn btn-sm active" onclick="filterSerments(null,this)"><span>Tous</span></button>';
   ["melee","distance","magie","soutien"].forEach(function(c){
     html+='<button class="btn btn-sm" onclick="filterSerments(this.dataset.c,this)" data-c="'+c+'"><span>'+({"melee":"Mêlée","distance":"Distance","magie":"Magie","soutien":"Soutien"}[c]||c.charAt(0).toUpperCase()+c.slice(1))+'</span></button>';
   });
-  html+='</div>';
+  html+='</div></div>';
+  html+='<div class="serm-filter-block"><span>Rareté</span><div class="serm-filter" id="serm-level-filter">';
+  html+='<button class="btn btn-sm active" onclick="filterSermentLevel(null,this)"><span>Toutes</span></button>';
+  ["basic","seasoned","emeritus","singular","transcended","corrupted"].forEach(function(level){
+    html+='<button class="btn btn-sm" onclick="filterSermentLevel(this.dataset.level,this)" data-level="'+level+'"><span>'+esc(SERM_LEVELS[level])+'</span></button>';
+  });
+  html+='</div></div>';
   if(isAdmin) html+='<button class="btn btn-sm btn-grn serm-create-btn" onclick="openCreateSerm()"><span>+ Nouveau Serment</span></button>';
   html+='</div>';
   html+='<div id="serments-grid" class="serm-grid">';
@@ -5824,11 +5830,12 @@ function renderAllSerments(tid){
 function renderSermCard(nom,s,isAdmin){
   var icon=WEAPON_ICONS[nom]||"✦";
   var cat=SERM_CATS[nom]||s.cat||"melee";
+  var sermLevelKey=getSermLevelKey(nom,s);
   var sermLevel=getSermLevelLabel(nom,s);
   var isCustom=!SD[nom];
   var branches=getBranches(nom,s);
   var enc=encodeURIComponent(nom);
-  var h='<article class="scrd serm-card-premium'+(isAdmin?' has-admin-actions':'')+'" data-cat="'+cat+'">';
+  var h='<article class="scrd serm-card-premium'+(isAdmin?' has-admin-actions':'')+'" data-cat="'+cat+'" data-level="'+sermLevelKey+'">';
   if(isCustom) h+='<div class="serm-badge-new'+(isAdmin?' has-admin':'')+'">Nouveau</div>';
   if(isAdmin){
     h+='<div class="serm-admin-actions">';
@@ -5911,16 +5918,27 @@ function renderSermCard(nom,s,isAdmin){
   return h;
 }
 
-var _sermFilter=null;
+var _sermFilter=null,_sermLevelFilter=null;
 function filterSerments(cat,btn){
   // Normaliser — undefined (pas de data-c) ou chaîne vide = "Tous"
   if(!cat||cat==="undefined") cat=null;
   _sermFilter=cat;
   document.querySelectorAll("#serm-filter .btn").forEach(function(b){b.classList.remove("active");b.style.borderColor="";});
   if(btn) btn.classList.add("active");
+  applySermentFilters();
+}
+function filterSermentLevel(level,btn){
+  if(!level||level==="undefined") level=null;
+  _sermLevelFilter=level;
+  document.querySelectorAll("#serm-level-filter .btn").forEach(function(b){b.classList.remove("active");b.style.borderColor="";});
+  if(btn) btn.classList.add("active");
+  applySermentFilters();
+}
+function applySermentFilters(){
   document.querySelectorAll("#serments-grid .scrd").forEach(function(card){
     var cardCat=card.getAttribute("data-cat")||"";
-    var show=!cat||cardCat===cat;
+    var cardLevel=card.getAttribute("data-level")||"";
+    var show=(!_sermFilter||cardCat===_sermFilter)&&(!_sermLevelFilter||cardLevel===_sermLevelFilter);
     card.style.display=show?"block":"none";
   });
 }
