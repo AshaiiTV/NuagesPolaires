@@ -3300,6 +3300,18 @@ function _buildStaffModals(){
   +'</div>'
   +'</div></div>'
 
+  // ══ GESTION DES PALIERS (m-palier-list) ═══════════════
+  +'<div id="m-palier-list" class="moverlay">'
+  +'<div class="modal" style="max-width:760px;">'
+  +'<button class="mclose" onclick="closeModal(\'m-palier-list\')">✕</button>'
+  +'<div class="mtit" id="mpallist-title">Gérer les paliers</div>'
+  +'<div id="mpallist-c"></div>'
+  +'<div class="factions">'
+    +'<button class="btn btn-sm" onclick="closeModal(\'m-palier-list\')"><span>Fermer</span></button>'
+    +'<button class="btn btn-sm btn-grn" id="mpallist-add" onclick=""><span>+ Ajouter un palier</span></button>'
+  +'</div>'
+  +'</div></div>'
+
   // ══ ÉVÉNEMENT (m-event) ════════════════════════════════
   +'<div id="m-event" class="moverlay">'
   +'<div class="modal" style="max-width:460px;">'
@@ -5837,22 +5849,17 @@ function renderSermCard(nom,s,isAdmin){
           h+='<span class="serm-palier-chip" title="'+escAttr((group.desc||group.nom||"").slice(0,180))+'">';
           h+='<b>Niv. '+levels+'</b><em>'+esc(group.nom)+'</em>';
           if(group.cout) h+='<small>'+esc(group.cout)+'</small>';
-          if(isAdmin){
-            h+='<span class="serm-palier-actions" onclick="event.stopPropagation()">';
-            group.items.forEach(function(it){
-              h+='<span class="serm-palier-admin-level"><strong>'+it.niv+'</strong>';
-              h+='<button class="btn btn-sm btn-gold" title="Modifier niv. '+it.niv+'" onclick="openEditPalier(this.dataset.n,'+bi+','+it.idx+')" data-n="'+enc+'"><span>✎</span></button>';
-              h+='<button class="btn btn-sm btn-red" title="Supprimer niv. '+it.niv+'" onclick="delPalier(this.dataset.n,'+bi+','+it.idx+')" data-n="'+enc+'"><span>×</span></button>';
-              h+='</span>';
-            });
-            h+='</span>';
-          }
           h+='</span>';
         });
         h+='</div>';
         h+='</details>';
       }
-      if(isAdmin) h+='<button class="btn btn-sm btn-grn" style="margin-top:10px;width:100%;" onclick="openAddPalier(this.dataset.n,'+bi+')" data-n="'+enc+'"><span>+ Ajouter un palier</span></button>';
+      if(isAdmin){
+        h+='<div class="serm-palier-adminbar">';
+        if(pals.length) h+='<button class="btn btn-sm" onclick="openManagePaliers(this.dataset.n,'+bi+')" data-n="'+enc+'"><span>Gérer les paliers</span></button>';
+        h+='<button class="btn btn-sm btn-grn" onclick="openAddPalier(this.dataset.n,'+bi+')" data-n="'+enc+'"><span>+ Ajouter</span></button>';
+        h+='</div>';
+      }
       h+='</section>';
     });
     h+='</div>';
@@ -6111,6 +6118,45 @@ function delBranch(nomEnc,idx){
 }
 
 var _palierSermNom=null,_palierBrIdx=-1;
+function openManagePaliers(nomEnc,brIdx){
+  if(!CU||!can("manage_beasts")){ return; }
+  if(!can("manage_stats")){notif("Admin uniquement.","err");return;}
+  var nom=decodeURIComponent(nomEnc);
+  var all=getAllSD(); var s=all[nom];
+  var branches=getBranches(nom,s);
+  var br=branches[brIdx]; if(!br){notif("Branche introuvable.","err");return;}
+  var pals=(br.paliers||[]).slice().sort(function(a,b){return (a.niv||0)-(b.niv||0);});
+  var c=ge("mpallist-c"); if(!c) return;
+  ge("mpallist-title").textContent="Paliers — "+br.nom;
+  var h='<div class="serm-admin-palier-list">';
+  if(!pals.length){
+    h+='<p style="color:var(--dim);line-height:1.7;margin:0;">Aucun palier défini pour cette branche.</p>';
+  } else {
+    pals.forEach(function(pal){
+      var originalIdx=(br.paliers||[]).indexOf(pal);
+      h+='<div class="serm-admin-palier-row">';
+      h+='<div class="serm-admin-palier-main">';
+      h+='<span class="serm-admin-palier-level">Niv. '+esc(pal.niv||"")+'</span>';
+      h+='<strong>'+esc(pal.nom||"Palier")+'</strong>';
+      if(pal.cout) h+='<em>'+esc(pal.cout)+'</em>';
+      if(pal.desc) h+='<p>'+esc(pal.desc)+'</p>';
+      h+='</div>';
+      h+='<div class="serm-admin-palier-row-actions">';
+      h+='<button class="btn btn-sm btn-gold" onclick="closeModal(\'m-palier-list\');openEditPalier(this.dataset.n,'+brIdx+','+originalIdx+')" data-n="'+nomEnc+'"><span>Modifier</span></button>';
+      h+='<button class="btn btn-sm btn-red" onclick="closeModal(\'m-palier-list\');delPalier(this.dataset.n,'+brIdx+','+originalIdx+')" data-n="'+nomEnc+'"><span>Supprimer</span></button>';
+      h+='</div>';
+      h+='</div>';
+    });
+  }
+  h+='</div>';
+  c.innerHTML=h;
+  var add=ge("mpallist-add");
+  if(add){
+    add.setAttribute("onclick","closeModal('m-palier-list');openAddPalier(this.dataset.n,"+brIdx+")");
+    add.setAttribute("data-n",nomEnc);
+  }
+  openModal("m-palier-list");
+}
 function openAddPalier(nomEnc,brIdx){
   if(!CU||!can("manage_beasts")){ return; }
   if(!can("manage_stats")){notif("Admin uniquement.","err");return;}
