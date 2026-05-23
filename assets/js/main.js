@@ -1469,8 +1469,53 @@ function openModal(id){
     document.body.classList.add('modal-open');
   }catch(_e){}
   el.classList.add("open");
+  try{ _reconcileScrollLocks(); }catch(_e){}
 }
-function closeModal(id){var el=ge(id);if(el){el.classList.remove("open");try{el.style.zIndex='';var md=el.querySelector('.modal');if(md) md.style.zIndex='';}catch(_e){}}if(!document.querySelector('.moverlay.open')){try{document.body.classList.remove('modal-open');}catch(_e){}}}
+function closeModal(id){var el=ge(id);if(el){el.classList.remove("open");try{el.style.zIndex='';var md=el.querySelector('.modal');if(md) md.style.zIndex='';}catch(_e){}}try{ _reconcileScrollLocks(); }catch(_e){}}
+function _isElementActuallyOpen(el){
+  if(!el) return false;
+  try{
+    if(el.hidden) return false;
+    var cs=getComputedStyle(el);
+    return cs.display!=="none" && cs.visibility!=="hidden" && cs.opacity!=="0";
+  }catch(_e){ return true; }
+}
+function _reconcileScrollLocks(){
+  if(!document.body) return;
+  var modalOpen=!!document.querySelector('.moverlay.open');
+  var cmdk=ge('cmdk');
+  var cmdkOpen=!!(cmdk && cmdk.classList.contains('open') && _isElementActuallyOpen(cmdk));
+  var popupOpen=!!document.querySelector('.tab-content.tab-popup-active');
+  var drawer=ge('mobile-drawer');
+  var drawerOpen=!!(drawer && drawer.style.left==="0px");
+  document.body.classList.toggle('modal-open', modalOpen);
+  document.body.classList.toggle('cmdk-open', cmdkOpen);
+  document.body.classList.toggle('tab-popup-open', popupOpen);
+  if(!popupOpen){
+    var bg=ge('tab-popup-backdrop');
+    if(bg) bg.classList.remove('open');
+    _activePopupTab=null;
+  }
+  if(!modalOpen && !cmdkOpen && !popupOpen && !drawerOpen){
+    document.body.style.overflow='';
+    document.documentElement.style.overflow='';
+  }
+}
+function _installScrollLockWatchdog(){
+  if(window.__npScrollLockWatchdog) return;
+  window.__npScrollLockWatchdog=true;
+  ["focus","pageshow","resize","visibilitychange"].forEach(function(evt){
+    window.addEventListener(evt, function(){ setTimeout(_reconcileScrollLocks, 0); }, {passive:true});
+  });
+  window.addEventListener("wheel", function(){
+    if(!document.body) return;
+    if(document.body.classList.contains("modal-open")||document.body.classList.contains("cmdk-open")||document.body.classList.contains("tab-popup-open")){
+      _reconcileScrollLocks();
+    }
+  }, {passive:true,capture:true});
+  setInterval(_reconcileScrollLocks, 1800);
+}
+_installScrollLockWatchdog();
 function gc(name){if(name.indexOf("Blanche")>-1)return"gb";if(name.indexOf("Incarnate")>-1)return"gi";if(name.indexOf("carlate")>-1)return"ge";return"";}
 
 function _primeGlobalUiLayers(){
@@ -5180,6 +5225,7 @@ function _applyTabPopupState(id, prevId){
     try{ el.scrollTop=0; }catch(_e){}
     try{ window.scrollTo({top:0,left:0,behavior:'auto'}); }catch(_e){ try{ window.scrollTo(0,0); }catch(__e){} }
   }
+  try{ _reconcileScrollLocks(); }catch(_e){}
 }
 function _ensurePopupCloseButton(el){
   if(!el) return;
@@ -9051,7 +9097,7 @@ document.querySelectorAll(".moverlay").forEach(function(o){
       _editsBackdropWarning();
       return;
     }
-    o.classList.remove("open");
+    closeModal(o.id);
   });
 });
 
@@ -10019,7 +10065,7 @@ document.addEventListener("keydown",function(e){
   // Échap — ferme la modale ouverte
   if(e.key==="Escape"){
     var open=document.querySelector(".moverlay.open");
-    if(open) open.classList.remove("open");
+    if(open) closeModal(open.id);
     return;
   }
 
