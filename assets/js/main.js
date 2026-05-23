@@ -5817,13 +5817,12 @@ function renderSermCard(nom,s,isAdmin){
       if(br.descPhys) h+='<p class="serm-branch-phys">'+esc(br.descPhys)+'</p>';
       // Description narrative joueur
       if(br.desc) h+='<p class="serm-branch-desc" style="border-left-color:'+col+';">'+esc(br.desc)+'</p>';
-      // Paliers
+      // Paliers : compacts par défaut, détaillés à la demande
       if(pals.length){
         h+='<div class="serm-paliers">';
         pals.forEach(function(p,pi){
-          var palId='pal-'+enc+'-'+bi+'-'+pi;
-          h+='<div class="serm-palier">';
-          h+='<div class="serm-palier-top">';
+          h+='<details class="serm-palier">';
+          h+='<summary class="serm-palier-top">';
           h+='<span style="font-family:var(--fm);color:var(--glacier);font-size:10px;font-weight:700;min-width:44px;">Niv.'+p.niv+'</span>';
           h+='<span style="font-family:var(--fd);font-size:12px;color:var(--text);letter-spacing:.5px;">'+p.nom+'</span>';
           if(p.cout) h+='<span class="serm-palier-cost" style="font-family:var(--fm);font-size:10px;color:var(--faint);white-space:nowrap;margin-left:auto;">'+p.cout+'</span>';
@@ -5833,13 +5832,13 @@ function renderSermCard(nom,s,isAdmin){
             h+='<button class="btn btn-sm btn-red" style="padding:2px 7px;font-size:10px;" onclick="delPalier(this.dataset.n,'+bi+','+pi+')" data-n="'+enc+'"><span>×</span></button>';
             h+='</div>';
           }
-          h+='</div>';
+          h+='</summary>';
           if(p.desc){
             h+='<div class="serm-palier-body">';
             h+='<div style="font-size:12px;color:var(--dim);line-height:1.6;">'+p.desc+'</div>';
             h+='</div>';
           }
-          h+='</div>';
+          h+='</details>';
         });
         h+='</div>';
       }
@@ -6316,24 +6315,35 @@ function renderSerm(p){
     if(br.flavor) html+='<p style="font-size:13px;color:var(--dim);font-style:italic;margin-bottom:12px;line-height:1.6;border-left:2px solid '+col+';padding-left:10px;opacity:.85;">'+esc(br.flavor)+'</p>';
     else if(br.desc) html+='<p style="font-size:13px;color:var(--dim);font-style:italic;margin-bottom:12px;line-height:1.6;border-left:2px solid '+col+';padding-left:10px;opacity:.8;">'+esc(br.desc)+'</p>';
 
-    // Paliers
+    // Paliers : progression lisible + focus sur l'actuel/prochain
     var pals=br.paliers||[];
     if(pals.length){
-      html+='<div style="display:flex;flex-direction:column;gap:3px;">';
+      var currentPal=null,nextPal=null;
+      pals.forEach(function(pal){
+        if((p.sLevel||0)>=pal.niv) currentPal=pal;
+        else if(!nextPal) nextPal=pal;
+      });
+      html+='<div class="serm-mini-progress">';
       pals.forEach(function(pal){
         var unlocked=p.sLevel>=pal.niv;
-        var locked=!unlocked;
-        html+='<div style="border:1px solid '+(unlocked&&isChosen?'var(--glacier-dim)':(unlocked?'var(--border2)':'var(--border)'))+';background:'+(unlocked?'var(--bg3)':'var(--bg)')+';padding:8px 12px;'+(locked?'opacity:.4;':'')+'">';
-        html+='<div style="display:flex;align-items:center;gap:10px;">';
-        html+='<span style="font-family:var(--fm);color:'+(unlocked&&isChosen?'var(--glacier)':'var(--glacier-dim)')+';font-size:10px;min-width:44px;font-weight:600;">Niv.'+pal.niv+'</span>';
-        html+='<span style="font-family:var(--fd);font-size:12px;color:'+(unlocked?'var(--text)':'var(--faint)')+';">'+esc(pal.nom)+'</span>';
-        if(pal.cout) html+='<span style="font-family:var(--fm);font-size:10px;color:var(--faint);margin-left:auto;">'+esc(pal.cout)+'</span>';
-        if(locked) html+='<span style="font-size:10px;color:var(--faint);margin-left:4px;">🔒</span>';
-        html+='</div>';
-        if(pal.desc&&unlocked) html+='<div style="font-size:12px;color:var(--dim);font-style:italic;padding:4px 0 0 54px;">'+esc(pal.desc)+'</div>';
+        var isCurrent=currentPal&&currentPal.niv===pal.niv&&isChosen;
+        html+='<div class="serm-mini-step '+(unlocked?'is-unlocked':'is-locked')+(isCurrent?' is-current':'')+'">';
+        html+='<span class="serm-mini-level">Niv. '+pal.niv+'</span>';
+        html+='<span class="serm-mini-name">'+esc(pal.nom)+'</span>';
         html+='</div>';
       });
       html+='</div>';
+      if(isChosen){
+        html+='<div class="serm-palier-focus">';
+        if(currentPal){
+          html+='<div class="serm-palier-focus-top"><span>Palier actif</span><strong>'+esc(currentPal.nom)+'</strong>'+(currentPal.cout?'<em>'+esc(currentPal.cout)+'</em>':'')+'</div>';
+          if(currentPal.desc) html+='<p>'+esc(currentPal.desc)+'</p>';
+        } else {
+          html+='<div class="serm-palier-focus-top"><span>Départ</span><strong>Aucun palier débloqué</strong></div>';
+        }
+        if(nextPal) html+='<div class="serm-palier-next">Prochain : Niv. '+nextPal.niv+' · '+esc(nextPal.nom)+(nextPal.cout?' · '+esc(nextPal.cout):'')+'</div>';
+        html+='</div>';
+      }
     }
     html+='</div>';
   });
