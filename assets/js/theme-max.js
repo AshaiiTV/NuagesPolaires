@@ -144,7 +144,7 @@
     }
   };
 
-  var ORDER = ['dark','light','violet','green','easter','halloween','noel','aquaris','bloodmoon'];
+  var ORDER = ['dark','light','violet','green','aquaris','easter','halloween','noel','bloodmoon'];
   var RARITY_ORDER = { 'Base':0, 'Classique':1, 'Saisonnier':2, 'Rare':3, 'Premium':3, 'Fondateur':4, 'Mythique':5 };
 
   var CSS = `
@@ -1554,6 +1554,7 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
           t.description = c.desc;
           t.rarity = c.rarity;
           t.category = c.category;
+          t.event = c.rarity === 'Saisonnier';
           t.tagline = c.tagline;
         });
       });

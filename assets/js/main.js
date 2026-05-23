@@ -444,7 +444,22 @@ function normalizeThemeId(themeId){
   if(id.indexOf('theme-') === 0) id = id.replace(/^theme-/, '');
   if(id === 'default') return 'dark';
   if(id === 'red' || id === 'ecarlate' || id === 'écarlate') return 'dark';
+  if(id === 'aquarius') return 'aquaris';
   return id;
+}
+var THEME_CANON_META = {
+  dark:{rarity:"Base",category:"Base",event:false},
+  light:{rarity:"Base",category:"Base",event:false},
+  violet:{rarity:"Rare",category:"Rares",event:false},
+  green:{rarity:"Rare",category:"Rares",event:false},
+  aquaris:{rarity:"Rare",category:"Rares",event:false},
+  easter:{rarity:"Saisonnier",category:"Événement",event:true},
+  halloween:{rarity:"Saisonnier",category:"Événement",event:true},
+  noel:{rarity:"Saisonnier",category:"Événement",event:true},
+  bloodmoon:{rarity:"Fondateur",category:"Fondateur",event:false}
+};
+function getThemeCanonMeta(themeId){
+  return THEME_CANON_META[normalizeThemeId(themeId)] || null;
 }
 async function _jsonPost(url, payload, opts){
   opts = opts || {};
@@ -800,6 +815,12 @@ function _normalizeThemeEntryRecord(entry, fallbackId){
   var id = normalizeThemeId((raw && raw.id) || fallbackId);
   if(!id) return null;
   raw.id = id;
+  var canon = getThemeCanonMeta(id);
+  if(canon){
+    raw.rarity = canon.rarity;
+    raw.category = canon.category;
+    raw.event = canon.event;
+  }
   return raw;
 }
 function _getDbThemeEntries(){
@@ -3576,20 +3597,16 @@ function renderThemeGrid(containerId){
   var cur = _currentTheme;
 
   function themeRarity(t){
-    if(t.id === "bloodmoon") return "Fondateur";
-    if(t.id === "aquaris") return "Rare";
-    if(t.id === "violet" || t.id === "green") return "Rare";
+    var canon = getThemeCanonMeta(t && t.id);
+    if(canon) return canon.rarity;
     if(t.event) return "Saisonnier";
-    if(t.id === "dark" || t.id === "light") return "Base";
     return "Classique";
   }
 
   function themeCategory(t){
-    if(t.id === "bloodmoon") return "Fondateur";
-    if(t.id === "aquaris") return "Rares";
-    if(t.id === "violet" || t.id === "green") return "Rares";
+    var canon = getThemeCanonMeta(t && t.id);
+    if(canon) return canon.category;
     if(t.event) return "Événement";
-    if(t.id === "dark" || t.id === "light") return "Base";
     return "Classique";
   }
 
@@ -3687,17 +3704,17 @@ function renderAdminThemes(targetId){
   var allThemes = getAllThemes();
   var playerAccounts = getAccounts().filter(function(a){ return String(a.role||"joueur").toLowerCase()==="joueur"; });
   function adminThemeRarity(t){
-    if(t.id === "bloodmoon") return "Fondateur";
-    if(t.id === "aquaris" || t.id === "violet" || t.id === "green" || t.id === "sylvan" || t.id === "galactic") return "Rare";
+    var canon = getThemeCanonMeta(t && t.id);
+    if(canon) return canon.rarity;
+    if(t.id === "sylvan" || t.id === "galactic") return "Rare";
     if(t.event) return "Saisonnier";
-    if(t.id === "dark" || t.id === "light") return "Base";
     return "Classique";
   }
   function adminThemeCategory(t){
-    if(t.id === "bloodmoon") return "Fondateur";
+    var canon = getThemeCanonMeta(t && t.id);
+    if(canon) return canon.category;
     if(adminThemeRarity(t) === "Rare") return "Rares";
     if(t.event) return "Événement";
-    if(t.id === "dark" || t.id === "light") return "Base";
     return "Classique";
   }
   function adminSwatch(c){ return '<span class="theme-swatch" style="background:'+esc(c)+';"></span>'; }
