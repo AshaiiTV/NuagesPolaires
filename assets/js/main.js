@@ -5817,28 +5817,20 @@ function renderSermCard(nom,s,isAdmin){
       if(br.descPhys) h+='<p class="serm-branch-phys">'+esc(br.descPhys)+'</p>';
       // Description narrative joueur
       if(br.desc) h+='<p class="serm-branch-desc" style="border-left-color:'+col+';">'+esc(br.desc)+'</p>';
-      // Paliers : compacts par défaut, détaillés à la demande
+      // Paliers : une seule frise compacte, sans répéter des cartes identiques
       if(pals.length){
-        h+='<div class="serm-paliers">';
+        h+='<div class="serm-palier-rail">';
         pals.forEach(function(p,pi){
-          h+='<details class="serm-palier">';
-          h+='<summary class="serm-palier-top">';
-          h+='<span style="font-family:var(--fm);color:var(--glacier);font-size:10px;font-weight:700;min-width:44px;">Niv.'+p.niv+'</span>';
-          h+='<span style="font-family:var(--fd);font-size:12px;color:var(--text);letter-spacing:.5px;">'+p.nom+'</span>';
-          if(p.cout) h+='<span class="serm-palier-cost" style="font-family:var(--fm);font-size:10px;color:var(--faint);white-space:nowrap;margin-left:auto;">'+p.cout+'</span>';
+          h+='<span class="serm-palier-chip" title="'+escAttr((p.desc||p.nom||"").slice(0,180))+'">';
+          h+='<b>Niv. '+p.niv+'</b><em>'+esc(p.nom)+'</em>';
+          if(p.cout) h+='<small>'+esc(p.cout)+'</small>';
           if(isAdmin){
-            h+='<div class="serm-palier-actions" style="display:flex;gap:3px;flex-shrink:0;'+(p.cout?'':'margin-left:auto;')+'" onclick="event.stopPropagation()">';
+            h+='<span class="serm-palier-actions" onclick="event.stopPropagation()">';
             h+='<button class="btn btn-sm btn-gold" style="padding:2px 7px;font-size:10px;" onclick="openEditPalier(this.dataset.n,'+bi+','+pi+')" data-n="'+enc+'"><span>✎</span></button>';
             h+='<button class="btn btn-sm btn-red" style="padding:2px 7px;font-size:10px;" onclick="delPalier(this.dataset.n,'+bi+','+pi+')" data-n="'+enc+'"><span>×</span></button>';
-            h+='</div>';
+            h+='</span>';
           }
-          h+='</summary>';
-          if(p.desc){
-            h+='<div class="serm-palier-body">';
-            h+='<div style="font-size:12px;color:var(--dim);line-height:1.6;">'+p.desc+'</div>';
-            h+='</div>';
-          }
-          h+='</details>';
+          h+='</span>';
         });
         h+='</div>';
       }
@@ -6328,8 +6320,8 @@ function renderSerm(p){
         var unlocked=p.sLevel>=pal.niv;
         var isCurrent=currentPal&&currentPal.niv===pal.niv&&isChosen;
         html+='<div class="serm-mini-step '+(unlocked?'is-unlocked':'is-locked')+(isCurrent?' is-current':'')+'">';
+        html+='<span class="serm-mini-dot"></span>';
         html+='<span class="serm-mini-level">Niv. '+pal.niv+'</span>';
-        html+='<span class="serm-mini-name">'+esc(pal.nom)+'</span>';
         html+='</div>';
       });
       html+='</div>';
