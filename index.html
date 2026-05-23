@@ -4929,6 +4929,7 @@ body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);bord
 #serments-grid .serm-palier-chip{
   display:inline-flex;
   align-items:center;
+  flex-wrap:wrap;
   gap:7px;
   min-height:30px;
   max-width:100%;
@@ -4960,8 +4961,29 @@ body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);bord
 }
 #serments-grid .serm-palier-actions{
   display:inline-flex;
+  flex-wrap:wrap;
   gap:3px;
   margin-left:2px;
+}
+#serments-grid .serm-palier-admin-level{
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  padding:2px 3px 2px 6px;
+  border:1px solid rgba(126,184,212,.14);
+  border-radius:999px;
+  background:rgba(255,255,255,.035);
+}
+#serments-grid .serm-palier-admin-level strong{
+  font-family:var(--fm);
+  font-size:9px;
+  color:var(--glacier-dim);
+}
+#serments-grid .serm-palier-admin-level .btn{
+  min-width:24px;
+  min-height:24px;
+  padding:0 !important;
+  font-size:10px !important;
 }
 #serments-grid .serm-card-premium .btn{
   box-shadow:none;

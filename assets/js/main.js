@@ -5819,15 +5819,30 @@ function renderSermCard(nom,s,isAdmin){
       if(br.desc) h+='<p class="serm-branch-desc" style="border-left-color:'+col+';">'+esc(br.desc)+'</p>';
       // Paliers : une seule frise compacte, sans répéter des cartes identiques
       if(pals.length){
+        var palierGroups=[],palierMap={};
+        pals.forEach(function(pal,pi){
+          var key=String(pal.nom||"")+"|"+String(pal.cout||"");
+          if(!palierMap[key]){
+            palierMap[key]={nom:pal.nom||"Palier",cout:pal.cout||"",desc:pal.desc||"",items:[]};
+            palierGroups.push(palierMap[key]);
+          }
+          if(pal.desc&&!palierMap[key].desc) palierMap[key].desc=pal.desc;
+          palierMap[key].items.push({niv:pal.niv,idx:pi});
+        });
         h+='<div class="serm-palier-rail">';
-        pals.forEach(function(p,pi){
-          h+='<span class="serm-palier-chip" title="'+escAttr((p.desc||p.nom||"").slice(0,180))+'">';
-          h+='<b>Niv. '+p.niv+'</b><em>'+esc(p.nom)+'</em>';
-          if(p.cout) h+='<small>'+esc(p.cout)+'</small>';
+        palierGroups.forEach(function(group){
+          var levels=group.items.map(function(it){return it.niv;}).join(" / ");
+          h+='<span class="serm-palier-chip" title="'+escAttr((group.desc||group.nom||"").slice(0,180))+'">';
+          h+='<b>Niv. '+levels+'</b><em>'+esc(group.nom)+'</em>';
+          if(group.cout) h+='<small>'+esc(group.cout)+'</small>';
           if(isAdmin){
             h+='<span class="serm-palier-actions" onclick="event.stopPropagation()">';
-            h+='<button class="btn btn-sm btn-gold" style="padding:2px 7px;font-size:10px;" onclick="openEditPalier(this.dataset.n,'+bi+','+pi+')" data-n="'+enc+'"><span>✎</span></button>';
-            h+='<button class="btn btn-sm btn-red" style="padding:2px 7px;font-size:10px;" onclick="delPalier(this.dataset.n,'+bi+','+pi+')" data-n="'+enc+'"><span>×</span></button>';
+            group.items.forEach(function(it){
+              h+='<span class="serm-palier-admin-level"><strong>'+it.niv+'</strong>';
+              h+='<button class="btn btn-sm btn-gold" title="Modifier niv. '+it.niv+'" onclick="openEditPalier(this.dataset.n,'+bi+','+it.idx+')" data-n="'+enc+'"><span>✎</span></button>';
+              h+='<button class="btn btn-sm btn-red" title="Supprimer niv. '+it.niv+'" onclick="delPalier(this.dataset.n,'+bi+','+it.idx+')" data-n="'+enc+'"><span>×</span></button>';
+              h+='</span>';
+            });
             h+='</span>';
           }
           h+='</span>';
