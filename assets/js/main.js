@@ -232,6 +232,69 @@ var SD={
         {niv:10,nom:"Taille Double",cout:"5 EM — 1 action",desc:"14+Niv par frappe (total : 28+Niv×2)."}
       ]}},
 
+  "Bretteur":{arme:"Épée fine du serment",pvN:5,epN:7,emN:3,dmg:12,type:"Tranchant",sermLevel:"seasoned",hidden:true,evolvesFrom:"Duelliste",
+    lore:"Le Bretteur naît lorsque le Duelliste cesse de chercher seulement le bon coup, et commence à contrôler tout ce qui l'annonce. Son serment reconnaît les porteurs qui ont compris que la victoire n'appartient pas toujours à celui qui frappe le plus fort, mais à celui qui impose le rythme, casse la lecture adverse et fait naître l'ouverture avant même que la lame parte. Son épée fine du serment est plus nerveuse que l'arme du Duelliste originel. Elle demande une main sûre, une posture vivante, une attention constante aux appuis. Le Bretteur ressemble à un combattant mobile, précis, difficile à fixer. Il avance, recule, provoque, efface son intention, puis frappe dans l'espace qu'il vient lui-même de créer.",
+    bA:{nom:"Branche A — Feinte de Fer",style:"Précision",
+      descPhys:"La lame part trop tôt, trop visible — presque volontairement. L'adversaire réagit, et c'est là que le vrai coup arrive, décalé d'un souffle, porté dans l'angle que la défense vient d'abandonner.",
+      flavor:"Le Bretteur ne trompe pas par magie. Il trompe par lecture, par tempo, par petites fautes offertes à l'adversaire. La cible croit répondre au danger. Elle répond seulement à l'appât.",
+      paliers:[
+        {niv:2,nom:"Feinte de Fer",cout:"6 EM — 1 action",desc:"Frappe 8+Niv. Si la cible utilise une défense, elle dépense 2 EP supplémentaires. Si elle ne défend pas, la frappe gagne +4 dégâts."},
+        {niv:5,nom:"Feinte de Fer",cout:"6 EM — 1 action",desc:"Frappe 12+Niv. Défense adverse : +3 EP dépensés. Sans défense : +6 dégâts."},
+        {niv:7,nom:"Feinte de Fer",cout:"6 EM — 1 action",desc:"Frappe 16+Niv. Défense adverse : +4 EP dépensés. Sans défense : +8 dégâts."},
+        {niv:10,nom:"Feinte de Fer",cout:"6 EM — 1 action",desc:"Frappe 20+Niv. Défense adverse : +5 EP dépensés. Sans défense : +10 dégâts."}
+      ]},
+    bB:{nom:"Branche B — Pas Rompu",style:"Fluidité",
+      descPhys:"Le Bretteur pivote au dernier instant. Le corps se décale, la lame accompagne le mouvement, et l'attaque adverse glisse dans le vide pendant qu'une ligne nette apparaît en retour.",
+      flavor:"Cette branche récompense les porteurs qui jouent avec la distance courte. Le Bretteur ne fuit pas : il se décale juste assez pour que l'attaque perde son centre, puis transforme l'esquive en réponse immédiate.",
+      paliers:[
+        {niv:2,nom:"Pas Rompu",cout:"5 EM — réaction",desc:"Lorsqu'une attaque ciblée est esquivée, le Bretteur peut riposter : 5+Niv dégâts. Utilisable 1 fois par tour."},
+        {niv:5,nom:"Pas Rompu",cout:"5 EM — réaction",desc:"Riposte après esquive : 8+Niv dégâts. Le Bretteur peut aussi se replacer à distance courte."},
+        {niv:7,nom:"Pas Rompu",cout:"5 EM — réaction",desc:"Riposte après esquive : 11+Niv dégâts. La prochaine attaque du Bretteur contre cette cible coûte -1 EP."},
+        {niv:10,nom:"Pas Rompu",cout:"5 EM — réaction",desc:"Riposte après esquive : 14+Niv dégâts. Si la cible a raté son attaque, elle perd 1 action de déplacement ce tour."}
+      ]}},
+
+  "Lame d'Honneur":{arme:"Épée claire du serment",pvN:7,epN:5,emN:3,dmg:10,type:"Tranchant",sermLevel:"seasoned",hidden:true,evolvesFrom:"Duelliste",
+    lore:"La Lame d'Honneur apparaît chez les Duellistes qui ont cessé de combattre pour la seule perfection du geste. Leur lame ne défend plus seulement leur vie : elle défend une parole, une présence, parfois un nom ou une promesse. Ce serment ne rend pas son porteur plus doux. Il le rend plus difficile à détourner de ce qu'il a choisi de protéger. Son épée claire du serment semble plus lumineuse dans les moments de tension, comme si elle rappelait au porteur la forme exacte de son engagement. La Lame d'Honneur ressemble à un combattant droit, stable, presque cérémoniel, capable de prendre un coup sans perdre sa ligne et de rendre une frappe sans céder à la colère.",
+    bA:{nom:"Branche A — Riposte d'Honneur",style:"Équilibre offensif",
+      descPhys:"La lame se lève pour recevoir l'impact. Le choc remonte dans le bras, mais le porteur ne rompt pas. Dans le même mouvement, l'épée descend, propre, contenue, comme une réponse obligatoire.",
+      flavor:"La Lame d'Honneur ne cherche pas l'ouverture par ruse. Elle accepte le danger, tient sa posture, et répond à ce qui vient d'être tenté contre elle.",
+      paliers:[
+        {niv:2,nom:"Riposte d'Honneur",cout:"6 EM — réaction",desc:"Après une parade réussie, contre-attaque 6+Niv dégâts. Utilisable 1 fois par tour."},
+        {niv:5,nom:"Riposte d'Honneur",cout:"6 EM — réaction",desc:"Après parade réussie : 10+Niv dégâts. La parade réduit 35% des dégâts au lieu de 25%."},
+        {niv:7,nom:"Riposte d'Honneur",cout:"6 EM — réaction",desc:"Après parade réussie : 14+Niv dégâts. Si la cible attaque un allié au tour suivant, elle dépense +2 EP."},
+        {niv:10,nom:"Riposte d'Honneur",cout:"6 EM — réaction",desc:"Après parade réussie : 18+Niv dégâts. La prochaine défense contre cette cible coûte -1 action si elle vise le porteur."}
+      ]},
+    bB:{nom:"Branche B — Ligne Jurée",style:"Tank",
+      descPhys:"Le porteur plante ses appuis. La lame se place entre l'ennemi et ce qui doit être gardé. Rien de spectaculaire : seulement une certitude visible, presque pesante.",
+      flavor:"Cette branche transforme l'engagement en terrain. Tant que la Lame d'Honneur tient sa ligne, ses alliés ont un repère, et les ennemis doivent payer le prix de la franchir.",
+      paliers:[
+        {niv:2,nom:"Ligne Jurée",cout:"7 EM — 1 action",desc:"Désigne un allié à portée. Jusqu'au prochain tour, la première attaque qui le cible peut être interceptée par le porteur."},
+        {niv:5,nom:"Ligne Jurée",cout:"7 EM — 1 action",desc:"Interception possible sur 2 attaques. Chaque interception donne +3 PV temporaires jusqu'à la fin du tour."},
+        {niv:7,nom:"Ligne Jurée",cout:"7 EM — 1 action",desc:"Interception possible sur 2 attaques. Après interception, le porteur peut avancer ou reculer d'un cran sans action."},
+        {niv:10,nom:"Ligne Jurée",cout:"7 EM — 1 action",desc:"Interception possible sur 3 attaques. Les attaques interceptées infligent -20% dégâts au porteur."}
+      ]}},
+
+  "Maître d'Armes":{arme:"Épée modulée du serment",pvN:6,epN:6,emN:3,dmg:11,type:"Tranchant",sermLevel:"seasoned",hidden:true,evolvesFrom:"Duelliste",
+    lore:"Le Maître d'Armes naît chez les Duellistes qui ne se contentent plus d'exceller dans une seule manière de combattre. Ils apprennent les distances, les gardes, les angles et les rythmes comme d'autres apprennent une langue. Leur serment ne récompense pas la spécialisation pure : il récompense la lecture, l'adaptation et la capacité à changer de réponse avant que l'adversaire ait compris la question. Son épée modulée du serment paraît classique au premier regard, mais son équilibre change subtilement selon la posture du porteur. Le Maître d'Armes ressemble à un combattant complet, patient, presque professoral dans sa cruauté calme : il ne cherche pas seulement à gagner, il cherche à comprendre comment l'autre perd.",
+    bA:{nom:"Branche A — Lecture d'Armes",style:"Contrôle",
+      descPhys:"Le Maître d'Armes observe une fraction de seconde de trop. Puis sa lame se place exactement là où l'attaque adverse devait passer, comme s'il avait lu le mouvement avant sa naissance.",
+      flavor:"Cette branche récompense la compréhension du combat. Plus l'adversaire répète son style, plus le Maître d'Armes devient difficile à surprendre.",
+      paliers:[
+        {niv:2,nom:"Lecture d'Armes",cout:"5 EM — 1 action",desc:"Marque une cible observée. Jusqu'au prochain tour, la première attaque de cette cible contre le porteur coûte +2 EP."},
+        {niv:5,nom:"Lecture d'Armes",cout:"5 EM — 1 action",desc:"La cible marquée coûte +3 EP sur sa première attaque contre le porteur. Le porteur gagne +2 dégâts contre elle."},
+        {niv:7,nom:"Lecture d'Armes",cout:"5 EM — 1 action",desc:"La cible marquée coûte +4 EP. Si elle répète la même action offensive, le porteur gagne une défense allégée contre elle."},
+        {niv:10,nom:"Lecture d'Armes",cout:"5 EM — 1 action",desc:"La cible marquée coûte +5 EP. La première défense du porteur contre elle ne consomme qu'une demi-réaction narrative, à arbitrer staff."}
+      ]},
+    bB:{nom:"Branche B — Arsenal Lié",style:"Adaptation",
+      descPhys:"L'épée change de prise, de poids, presque de silhouette. Rien ne se transforme vraiment, et pourtant tout dans la posture du porteur indique une autre façon de frapper.",
+      flavor:"Le Maître d'Armes ne possède pas mille armes. Il possède mille manières d'utiliser la sienne. Cette branche lui permet d'adapter son rôle selon le besoin immédiat du combat.",
+      paliers:[
+        {niv:2,nom:"Arsenal Lié",cout:"6 EM — 1 action",desc:"Choisit une posture jusqu'au prochain tour : Précision (+3 dégâts cible seule), Garde (+3 PV temporaires), Mobilité (-1 EP sur déplacement)."},
+        {niv:5,nom:"Arsenal Lié",cout:"6 EM — 1 action",desc:"Posture améliorée : Précision +5 dégâts, Garde +5 PV temporaires, Mobilité -2 EP sur déplacement."},
+        {niv:7,nom:"Arsenal Lié",cout:"6 EM — 1 action",desc:"Le porteur peut changer de posture une fois sans action après avoir touché ou défendu."},
+        {niv:10,nom:"Arsenal Lié",cout:"6 EM — 1 action",desc:"Le porteur conserve deux bénéfices mineurs de posture à la fois, mais un seul effet principal reste actif."}
+      ]}},
+
   "Sauvageon":{arme:"Hache à deux mains du serment",pvN:5,epN:8,emN:1,dmg:14,type:"Tranchant",
     lore:"Le Serment du Sauvageon s'attache à ceux dont la force naît des entrailles mêmes de l'instinct. Il reconnaît les êtres farouches, ceux qui ne se contentent pas de survivre, mais qui opposent leur existence entière à ce qui menace les leurs. Là où d'autres apprennent la guerre, le sauvageon semble l'avoir toujours portée en lui, brute, rugissante, impossible à contenir tout à fait. Sa hache à deux mains du serment est massive, lourde, presque primitive dans son évidence. Elle n'a pas vocation à séduire, mais à s'imposer. Elle est le prolongement d'un engagement ancien : employer sa puissance pour abattre l'opposant. Le Sauvageon ressemble à une force que le monde a à peine civilisée. Sa carrure, son allure, son regard ou sa manière d'entrer dans l'espace inspirent la rudesse, la rage contenue, l'endurance. Il évoque le berserker, le brutal, celui qui avance malgré les coups.",
     bA:{nom:"Branche A — Spirale Brisante",style:"AOE",
@@ -3278,6 +3341,7 @@ function _buildStaffModals(){
     +'<div class="frow"><label class="flbl">Dégâts base</label><input type="number" id="mserm-dmg" value="8" min="1"></div>'
   +'</div>'
   +'<div class="frow" style="margin-top:4px;"><label class="flbl">Lore</label><textarea id="mserm-lore" style="min-height:80px;" placeholder="Texte narratif..."></textarea></div>'
+  +'<label style="display:flex;align-items:center;gap:8px;margin-top:10px;"><input type="checkbox" id="mserm-hidden"> <span>Masqué côté joueurs</span></label>'
   +'<div class="factions">'
     +'<button class="btn btn-sm" onclick="closeModal(\'m-serm\')"><span>Annuler</span></button>'
     +'<button class="btn btn-sm btn-grn" onclick="saveSerm()"><span>Enregistrer</span></button>'
@@ -5816,7 +5880,10 @@ function renderAllSerments(tid){
   if(isAdmin) html+='<button class="btn btn-sm btn-grn serm-create-btn" onclick="openCreateSerm()"><span>+ Nouveau Serment</span></button>';
   html+='</div>';
   html+='<div id="serments-grid" class="serm-grid">';
-  Object.keys(all).forEach(function(nom){ html+=renderSermCard(nom,all[nom],isAdmin); });
+  Object.keys(all).forEach(function(nom){
+    if(all[nom]&&all[nom].hidden&&!isAdmin) return;
+    html+=renderSermCard(nom,all[nom],isAdmin);
+  });
   html+='</div>';
   html+='</div>';
   el.innerHTML=html;
@@ -5831,7 +5898,8 @@ function renderSermCard(nom,s,isAdmin){
   var branches=getBranches(nom,s);
   var enc=encodeURIComponent(nom);
   var h='<article class="scrd serm-card-premium'+(isAdmin?' has-admin-actions':'')+'" data-cat="'+cat+'" data-level="'+sermLevelKey+'">';
-  if(isCustom) h+='<div class="serm-badge-new'+(isAdmin?' has-admin':'')+'">Nouveau</div>';
+  if(s.hidden&&isAdmin) h+='<div class="serm-badge-new'+(isAdmin?' has-admin':'')+'">Masqué</div>';
+  else if(isCustom) h+='<div class="serm-badge-new'+(isAdmin?' has-admin':'')+'">Nouveau</div>';
   if(isAdmin){
     h+='<div class="serm-admin-actions">';
     h+='<button class="btn btn-sm btn-gold" onclick="openEditSerm(this.dataset.n)" data-n="'+enc+'"><span>✎</span></button>';
@@ -6012,6 +6080,7 @@ function openCreateSerm(){
   ge("mserm-pvN").value="3"; ge("mserm-epN").value="5"; ge("mserm-emN").value="2"; ge("mserm-dmg").value="8";
   ge("mserm-cat").value="mêlée"; ge("mserm-icon").value="✦";
   ge("mserm-level").value="singular";
+  ge("mserm-hidden").checked=false;
   openModal("m-serm");
 }
 function openEditSerm(nomEnc){
@@ -6033,6 +6102,7 @@ function openEditSerm(nomEnc){
   ge("mserm-cat").value=catSlug;
   ge("mserm-icon").value=WEAPON_ICONS[nom]||"✦";
   ge("mserm-level").value=getSermLevelKey(nom,s);
+  ge("mserm-hidden").checked=!!s.hidden;
   openModal("m-serm");
 }
 function saveSerm(){
@@ -6054,6 +6124,7 @@ function saveSerm(){
     pvN:newPvN, epN:newEpN, emN:newEmN, dmg:newDmg,
     cat:ge("mserm-cat").value,
     sermLevel:ge("mserm-level").value||getSermLevelKey(nom,existing),
+    hidden:!!(ge("mserm-hidden")&&ge("mserm-hidden").checked),
     icon:icon,
     branches:existingBranches
   };
@@ -8756,14 +8827,18 @@ function adjVal(pid,field,delta){
 function popSSelects(){
   var nc=ge("np-c");if(!nc)return;
   nc.innerHTML='<option value="">— Choisir —</option>';
-  Object.keys(SD).forEach(function(k){nc.innerHTML+='<option value="'+k+'">'+k+'</option>';});
+  var all=getAllSD();
+  Object.keys(all).forEach(function(k){
+    if(all[k]&&all[k].hidden&&!isAdminRole(CU)) return;
+    nc.innerHTML+='<option value="'+k+'">'+k+'</option>';
+  });
 }
 
 async function addPlayer(){
   if(!CU||!can("manage_players")){ return; }
   var n=ge("np-n").value.trim();var c=ge("np-c").value;var av=ge("np-av").value.trim();
   if(!n||!c){ge("np-err").textContent="Nom et Serment obligatoires.";return;}
-  var s=SD[c];
+  var s=getAllSD()[c]||SD[c];
   var p={id:"p"+Date.now(),name:n,classe:c,level:1,xp:0,xpMax:30,pvCur:30,pvMax:30,epCur:50,epMax:50,emCur:20,emMax:20,avatar:av||"",arme:s?s.arme:"",sLevel:1,sXp:0,sXpMax:10,branch:"Aucune",equipment:{helmet:null,chest:null,legs:null},inventory:[],history:[]};
   var prev=gp().slice();
   var next=prev.concat([p]);
