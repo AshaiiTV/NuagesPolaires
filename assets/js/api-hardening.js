@@ -11,6 +11,7 @@
   var CHECK_TIMER = null;
   var WRAP_TIMER = null;
   var LAST_WARN_AT = {};
+  var LAST_TOAST_AT = {};
   var STATE = {
     online: true,
     db: 'unknown',
@@ -146,10 +147,19 @@
     if(!document.body) return;
     kind = kind || 'warn';
     ttl = ttl || 5200;
+    var text = String(message || '');
+    var key = kind + ':' + text;
+    var now = Date.now();
+    var delay = kind === 'bad' ? 18000 : 9000;
+    if(LAST_TOAST_AT[key] && now - LAST_TOAST_AT[key] < delay) return;
+    LAST_TOAST_AT[key] = now;
     var stack = ensureToastStack();
+    while(stack.children && stack.children.length >= 2){
+      try{ stack.removeChild(stack.firstElementChild); }catch(e){ break; }
+    }
     var el = document.createElement('div');
     el.className = 'np-api-toast ' + kind;
-    el.textContent = String(message || '');
+    el.textContent = text;
     stack.appendChild(el);
     setTimeout(function(){
       try{
@@ -263,7 +273,7 @@
     var msg = human + (status ? ' — HTTP ' + status : '') + '. Le site reste ouvert, mais certaines données peuvent ne pas se sauvegarder.';
     if(notify) showBanner(msg, status >= 500 || !status ? 'bad' : 'warn');
 
-    if(notify && throttle(service + ':' + status + ':' + message, 7000)){
+    if(notify && throttle(service + ':' + status + ':' + message, 30000)){
       toast(msg, status >= 500 || !status ? 'bad' : 'warn');
     }
 

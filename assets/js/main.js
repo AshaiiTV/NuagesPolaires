@@ -1390,7 +1390,28 @@ function getViewPid(){
 }
 function pct(a,b){return b>0?Math.round(Math.max(0,Math.min(100,(a/b)*100)))+"%":"0%";}
 function fdt(ts){var d=new Date(ts);return d.toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit"})+" "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});}
-function notif(msg,t){var n=ge("notif");n.textContent=msg;n.className="notif show "+t;setTimeout(function(){n.className="notif";},3200);}
+var _notifState={key:"",type:"",at:0,timer:null};
+function notif(msg,t){
+  var n=ge("notif");
+  if(!n) return;
+  msg=String(msg||"");
+  t=t||"inf";
+  var now=Date.now();
+  var key=t+"|"+msg;
+  var noisy=(t==="err"||t==="inf"||t==="warn");
+  if(noisy && _notifState.key===key && now-_notifState.at<9000) return;
+  if(t==="err" && _notifState.type==="err" && now-_notifState.at<2200) return;
+  _notifState.key=key;
+  _notifState.type=t;
+  _notifState.at=now;
+  n.textContent=msg;
+  n.className="notif show "+t;
+  if(_notifState.timer) clearTimeout(_notifState.timer);
+  _notifState.timer=setTimeout(function(){
+    n.className="notif";
+    _notifState.timer=null;
+  }, t==="err" ? 3600 : 3000);
+}
 function _ensureGlobalModalRoot(){
   var host=ge('modal-root');
   if(host) return host;
@@ -15072,6 +15093,7 @@ var APP_BUILD="np_v18";
 })();
 
 var _runtimeGuardTimer=null;
+var _runtimeIssueToastState={key:"",at:0};
 function _runtimeEscapeHtml(s){
   return String(s==null?"":s)
     .replace(/&/g,"&amp;")
@@ -15251,6 +15273,11 @@ function reportRuntimeIssue(msg, detail, opts){
     try{ console.warn("[runtime guarded]", info.shortLabel+" · "+info.title, {message:msg, detail:detail, context:opts.context||"", viewId:opts.viewId||""}); }catch(_){}
     return;
   }
+  var issueKey=[info.code, info.title, opts.context||"", opts.viewId||"", String(detail||"").slice(0,160)].join("|");
+  var now=Date.now();
+  if(!opts.force && _runtimeIssueToastState.key===issueKey && now-_runtimeIssueToastState.at<15000) return;
+  _runtimeIssueToastState.key=issueKey;
+  _runtimeIssueToastState.at=now;
   var box=ge("runtime-guard"), body=ge("runtime-guard-msg"), title=ge("runtime-guard-title") || (box ? box.querySelector('.runtime-guard-title') : null);
   if(!box||!body) return;
   if(title) title.textContent=info.shortLabel+" · "+info.title;
