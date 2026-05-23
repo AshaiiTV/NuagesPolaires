@@ -8,6 +8,11 @@ function npUnifiedCompassSvg(opts){
   var style = opts.style ? ' style="'+esc(opts.style)+'"' : '';
   var attrs = opts.attrs ? ' '+opts.attrs : '';
   var uid = String(opts.uid || ('npc'+Math.random().toString(36).slice(2))).replace(/[^a-zA-Z0-9_-]/g,'');
+  var showMarker = opts.marker !== false;
+  var markerHtml = showMarker
+    ? '<polygon points="46,-64 76,-46 58,-34 37,-49" fill="var(--glacier,#7eb8d4)" opacity=".25"/>'
+      +'<line x1="46" y1="-64" x2="76" y2="-46" stroke="var(--glacier-bright,#d4eef8)" stroke-width=".8" opacity=".5"/>'
+    : '';
   return '<svg'+id+cls+width+height+' viewBox="0 0 340 320" xmlns="http://www.w3.org/2000/svg"'+style+attrs+' data-np-unified-compass="1">'
     +'<defs>'
       +'<linearGradient id="'+uid+'-s" x1="0" y1="0" x2="0" y2="1">'
@@ -42,8 +47,7 @@ function npUnifiedCompassSvg(opts){
         +'<polygon points="-62,-62 -27,-17 -10,-10 -17,-27" fill="var(--glacier-bright,#b0d8ee)" opacity=".8"/>'
         +'<rect x="-16" y="-16" width="32" height="32" fill="var(--bg,#09090f)" stroke="var(--glacier,#7eb8d4)" stroke-width="1.2" transform="rotate(45)"/>'
         +'<rect x="-9" y="-9" width="18" height="18" fill="url(#'+uid+'-s)" transform="rotate(45)" opacity=".9"/>'
-        +'<polygon points="46,-64 76,-46 58,-34 37,-49" fill="var(--glacier,#7eb8d4)" opacity=".25"/>'
-        +'<line x1="46" y1="-64" x2="76" y2="-46" stroke="var(--glacier-bright,#d4eef8)" stroke-width=".8" opacity=".5"/>'
+        +markerHtml
       +'</g>'
     +'</g>'
     +'<g transform="translate(170,278)" opacity=".7">'
@@ -113,7 +117,7 @@ function npLoaderCompassSvg(opts){
 function installUnifiedCompasses(){
   var hdr=ge('hdr-logo-svg');
   if(hdr && hdr.getAttribute('data-np-unified-compass') !== '1'){
-    hdr.outerHTML=npUnifiedCompassSvg({id:'hdr-logo-svg',uid:'hdr-logo',width:38,height:38,style:'flex-shrink:0;cursor:pointer;',attrs:'onclick="logoClick(this)" title="Nuages Polaires"'});
+    hdr.outerHTML=npUnifiedCompassSvg({id:'hdr-logo-svg',uid:'hdr-logo',width:38,height:38,style:'flex-shrink:0;cursor:pointer;',attrs:'onclick="logoClick(this)" title="Nuages Polaires"',marker:false});
   }
   document.querySelectorAll('svg.login-emblem').forEach(function(svg,idx){
     if(svg.getAttribute('data-np-unified-compass') === '1') return;
