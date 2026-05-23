@@ -427,6 +427,7 @@ var THEMES_BASE = [
   { id:"light",       name:"Brume Claire",    cls:"light",         preview:["#f4f5fa","#3a8fba","#9a7020"], desc:"Mode clair.",        event:false },
   { id:"violet",      name:"Galactique",      cls:"theme-violet",  preview:["#03020b","#9b7cff","#73d8ff"], desc:"Constellations, nébuleuses et verre cosmique.", event:false },
   { id:"green",       name:"Sylvan",          cls:"theme-green",   preview:["#031108","#51c56d","#d8c16a"], desc:"Jungle dense, canopée humide, lianes vivantes et lumière de sous-bois.", event:false },
+  { id:"aquaris",     name:"Aquaris",         cls:"theme-aquaris", preview:["#020c13","#57dfff","#88ffe7"], desc:"Un royaume englouti s’abat sur l’interface : bulles, lueurs océaniques, verre abyssal et profondeur aquatique partout.", event:false },
 ];
 
 // Thèmes événement — chargés depuis la DB (clé "event_themes")
@@ -786,7 +787,6 @@ var THEMES_EVENT_BUILTIN = [
   { id:"halloween",  name:"Nuit des Âmes",     cls:"theme-halloween", preview:["#0a0806","#e07820","#c040e0"], desc:"Thème Halloween.", event:true, availableUntil:1793577600000 },
   { id:"noel",       name:"Veillée Hivernale", cls:"theme-noel",      preview:["#090f0a","#70c060","#f0d060"], desc:"Thème Noël.",     event:true, availableUntil:1799193600000 },
   { id:"bloodmoon",  name:"Lune de Sang",      cls:"theme-bloodmoon", preview:["#040205","#ff5a73","#f4c670"], desc:"Un ciel noir, une lune rouge souveraine et une lumière d'or funèbre. Un thème fondateur, noble et menaçant.", event:true, availableUntil:0 },
-  { id:"aquaris",   name:"Aquaris",           cls:"theme-aquaris",   preview:["#020c13","#57dfff","#88ffe7"], desc:"Un royaume englouti s’abat sur l’interface : bulles, lueurs océaniques, verre abyssal et profondeur aquatique partout.", event:true, availableUntil:0 },
 ];
 function _cloneThemeEntry(entry){
   try{ return JSON.parse(JSON.stringify(entry)); }catch(e){ return entry; }
