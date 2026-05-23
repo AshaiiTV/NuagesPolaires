@@ -5794,6 +5794,17 @@ function renderAllSerments(tid){
   var isAdmin=can("manage_stats");
   var all=getAllSD();
   var html='<div class="serm-shell">';
+  html+='<section class="serm-rarity-guide">';
+  html+='<div class="serm-rarity-copy">';
+  html+='<span>Progression des Serments</span>';
+  html+='<p>Les Serments du départ sont <strong>Basiques</strong>. Ils peuvent se renforcer en <strong>Aguerris</strong>, puis devenir <strong>Émérites</strong>. Certains Serments sortent de cette voie : les <strong>Singuliers</strong> ouvrent des trajectoires plus rares, capables de tendre vers le <strong>Transcendé</strong> ou le <strong>Corrompu</strong>.</p>';
+  html+='</div>';
+  html+='<div class="serm-rarity-track">';
+  ["Basique","Aguerri","Émérite","Singulier","Transcendé","Corrompu"].forEach(function(label,i){
+    html+='<span class="serm-rarity-token rarity-'+i+'">'+label+'</span>';
+  });
+  html+='</div>';
+  html+='</section>';
   html+='<div class="serm-toolbar">';
   html+='<div class="serm-filter" id="serm-filter">';
   html+='<button class="btn btn-sm active" onclick="filterSerments(null,this)"><span>Tous</span></button>';
