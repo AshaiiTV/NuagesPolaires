@@ -7345,7 +7345,7 @@ function renderAccueil(tid){
   var stats=[
     {val:joueurTotal,lbl:"Élèves du Serment",col:"var(--glacier)"},
     {val:actifsS||"—",lbl:"Actifs cette semaine",col:"var(--green)"},
-    {val:combatCount,lbl:"Combats archivés",col:"var(--gold)"},
+    {val:combatCount,lbl:"Combats réalisés",col:"var(--gold)"},
     {val:gemTotal||"—",lbl:"Gemmes distribuées",col:"var(--purple)"},
   ];
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:24px;">';
