@@ -4884,11 +4884,11 @@ body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);bord
 #serments-grid .sstl{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(223,232,239,.62);}
 #serments-grid .serm-branch{
   margin-top:12px;
-  border-radius:22px;
+  border-radius:18px;
   border:1px solid rgba(126,184,212,.14);
-  background:linear-gradient(180deg, rgba(15,19,33,.94), rgba(8,11,21,.97));
-  box-shadow:0 14px 32px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.035);
-  padding:18px;
+  background:linear-gradient(180deg, rgba(17,22,36,.72), rgba(10,14,24,.88));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+  padding:16px;
 }
 #serments-grid .serm-branch-head{
   display:flex;
@@ -4913,18 +4913,58 @@ body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);bord
   padding-left:12px;
   border-left:2px solid var(--glacier);
   font-size:13px;
-  color:rgba(230,238,245,.72);
+  color:rgba(235,243,249,.82);
   font-style:italic;
+}
+#serments-grid .serm-branch-progress{
+  margin-top:10px;
+  border-top:1px solid rgba(126,184,212,.10);
+}
+#serments-grid .serm-branch-progress > summary{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  min-height:38px;
+  cursor:pointer;
+  list-style:none;
+  color:rgba(220,233,242,.78);
+}
+#serments-grid .serm-branch-progress > summary::-webkit-details-marker{
+  display:none;
+}
+#serments-grid .serm-branch-progress > summary span{
+  font-family:var(--fd);
+  font-size:11px;
+  letter-spacing:1.8px;
+  text-transform:uppercase;
+}
+#serments-grid .serm-branch-progress > summary strong{
+  font-family:var(--fm);
+  font-size:10px;
+  font-weight:700;
+  color:var(--glacier-dim);
+}
+#serments-grid .serm-branch-progress > summary::after{
+  content:"+";
+  flex:0 0 auto;
+  width:22px;
+  height:22px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(126,184,212,.16);
+  border-radius:999px;
+  color:var(--glacier);
+}
+#serments-grid .serm-branch-progress[open] > summary::after{
+  content:"-";
 }
 #serments-grid .serm-palier-rail{
   display:flex;
   flex-wrap:wrap;
   align-items:center;
   gap:7px;
-  padding:10px;
-  border:1px solid rgba(126,184,212,.12);
-  background:linear-gradient(180deg, rgba(126,184,212,.055), rgba(255,255,255,.025));
-  border-radius:16px;
+  padding:4px 0 0;
 }
 #serments-grid .serm-palier-chip{
   display:inline-flex;
@@ -4933,10 +4973,10 @@ body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);bord
   gap:7px;
   min-height:30px;
   max-width:100%;
-  padding:5px 9px;
-  border:1px solid rgba(126,184,212,.16);
-  border-radius:999px;
-  background:rgba(9,14,26,.44);
+  padding:4px 0;
+  border:0;
+  border-radius:0;
+  background:transparent;
   color:var(--text);
 }
 #serments-grid .serm-palier-chip b{
@@ -4951,9 +4991,10 @@ body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);bord
   text-overflow:ellipsis;
   white-space:nowrap;
   font-family:var(--fd);
-  font-size:11px;
+  font-size:12px;
   font-style:normal;
   letter-spacing:.45px;
+  color:rgba(242,247,252,.90);
 }
 #serments-grid .serm-palier-chip small{
   color:var(--faint);
@@ -5145,7 +5186,7 @@ body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);bord
   #serments-grid .serm-branch{padding:14px; border-radius:18px;}
   #serments-grid .serm-branch-phys,
   #serments-grid .serm-branch-desc{font-size:12px;}
-  #serments-grid .serm-palier-rail{padding:9px; gap:6px;}
+  #serments-grid .serm-palier-rail{padding:4px 0 0; gap:6px;}
   #serments-grid .serm-palier-chip{width:100%; justify-content:flex-start;}
   #serments-grid .serm-admin-actions{top:8px;right:8px;gap:4px;}
   #serments-grid .serm-badge-new{top:8px;left:8px;right:auto;}
@@ -8303,10 +8344,6 @@ body.theme-aquaris .panel.empty{
     line-height:1.72;
     color:rgba(240,246,252,.88);
     font-style:normal;
-  }
-  #serments-grid .serm-palier-rail{
-    border-color:rgba(148,212,240,.16);
-    background:linear-gradient(180deg, rgba(126,184,212,.065), rgba(255,255,255,.028));
   }
   #serments-grid .serm-palier-chip em{
     color:#f7fbff;

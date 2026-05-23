@@ -5817,7 +5817,7 @@ function renderSermCard(nom,s,isAdmin){
       if(br.descPhys) h+='<p class="serm-branch-phys">'+esc(br.descPhys)+'</p>';
       // Description narrative joueur
       if(br.desc) h+='<p class="serm-branch-desc" style="border-left-color:'+col+';">'+esc(br.desc)+'</p>';
-      // Paliers : une seule frise compacte, sans répéter des cartes identiques
+      // Paliers : information secondaire, regroupée et repliable.
       if(pals.length){
         var palierGroups=[],palierMap={};
         pals.forEach(function(pal,pi){
@@ -5829,6 +5829,8 @@ function renderSermCard(nom,s,isAdmin){
           if(pal.desc&&!palierMap[key].desc) palierMap[key].desc=pal.desc;
           palierMap[key].items.push({niv:pal.niv,idx:pi});
         });
+        h+='<details class="serm-branch-progress">';
+        h+='<summary><span>Progression</span><strong>'+pals.length+' niveau'+(pals.length>1?'x':'')+'</strong></summary>';
         h+='<div class="serm-palier-rail">';
         palierGroups.forEach(function(group){
           var levels=group.items.map(function(it){return it.niv;}).join(" / ");
@@ -5848,6 +5850,7 @@ function renderSermCard(nom,s,isAdmin){
           h+='</span>';
         });
         h+='</div>';
+        h+='</details>';
       }
       if(isAdmin) h+='<button class="btn btn-sm btn-grn" style="margin-top:10px;width:100%;" onclick="openAddPalier(this.dataset.n,'+bi+')" data-n="'+enc+'"><span>+ Ajouter un palier</span></button>';
       h+='</section>';
