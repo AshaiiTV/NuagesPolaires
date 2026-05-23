@@ -4711,10 +4711,6 @@ body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);bord
 }
 #p-serments-c .serm-rarity-guide{
   position:relative;
-  display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
-  gap:18px;
-  align-items:center;
   padding:20px 22px;
   border-radius:24px;
   border:1px solid color-mix(in srgb, var(--glacier) 18%, rgba(255,255,255,.05));
@@ -4755,39 +4751,6 @@ body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);bord
 #p-serments-c .serm-rarity-copy strong{
   color:var(--glacier);
   font-weight:700;
-}
-#p-serments-c .serm-rarity-track{
-  position:relative;
-  z-index:1;
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:flex-end;
-  gap:7px;
-  max-width:360px;
-}
-#p-serments-c .serm-rarity-token{
-  display:inline-flex;
-  align-items:center;
-  min-height:30px;
-  padding:5px 10px;
-  border-radius:999px;
-  border:1px solid rgba(126,184,212,.18);
-  background:rgba(9,14,26,.48);
-  color:rgba(242,247,252,.90);
-  font-family:var(--fm);
-  font-size:10px;
-  font-weight:700;
-  letter-spacing:.7px;
-  text-transform:uppercase;
-}
-#p-serments-c .serm-rarity-token.rarity-2,
-#p-serments-c .serm-rarity-token.rarity-4{
-  border-color:rgba(201,168,76,.32);
-  color:#f0d57d;
-}
-#p-serments-c .serm-rarity-token.rarity-5{
-  border-color:rgba(201,74,74,.34);
-  color:#ff9a9a;
 }
 #p-serments-c .serm-toolbar{
   position:relative;
@@ -5281,13 +5244,6 @@ body.light #database .db-theme-admin-field{background:rgba(255,255,255,.70);bord
   letter-spacing:.2px;
 }
 @media(max-width:860px){
-  #p-serments-c .serm-rarity-guide{
-    grid-template-columns:1fr;
-  }
-  #p-serments-c .serm-rarity-track{
-    justify-content:flex-start;
-    max-width:none;
-  }
   #serments-grid .serm-stats{grid-template-columns:repeat(2, minmax(0,1fr));}
 }
 @media(max-width:760px){
