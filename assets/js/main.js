@@ -3271,6 +3271,7 @@ function _buildStaffModals(){
     +'<div class="frow"><label class="flbl">Icône</label><input type="text" id="mserm-icon" placeholder="✦"></div>'
     +'<div class="frow"><label class="flbl">Arme liée</label><input type="text" id="mserm-arme" placeholder="Épée du serment"></div>'
     +'<div class="frow"><label class="flbl">Catégorie</label><select id="mserm-cat"><option value="mêlée">Mêlée</option><option value="distance">Distance</option><option value="magie">Magie</option><option value="soutien">Soutien</option></select></div>'
+    +'<div class="frow"><label class="flbl">Niveau du Serment</label><select id="mserm-level"><option value="base">Serment de base</option><option value="found">Serment trouvé</option><option value="evolved">Serment évolué</option><option value="major">Serment majeur</option></select></div>'
     +'<div class="frow"><label class="flbl">PV/niv</label><input type="number" id="mserm-pvN" value="3" min="1"></div>'
     +'<div class="frow"><label class="flbl">EP/niv</label><input type="number" id="mserm-epN" value="5" min="1"></div>'
     +'<div class="frow"><label class="flbl">EM/niv</label><input type="number" id="mserm-emN" value="2" min="0"></div>'
@@ -5760,6 +5761,20 @@ var SERM_CATS={
   "Traqueur":"melee","Flécheur":"distance","Elementaliste":"melee",
   "Evocateur":"magie","Conjurateur":"soutien","Arcaniste":"magie"
 };
+var SERM_LEVELS={
+  base:"Serment de base",
+  found:"Serment trouvé",
+  evolved:"Serment évolué",
+  major:"Serment majeur"
+};
+function getSermLevelKey(nom,s){
+  var raw=s&&s.sermLevel;
+  if(raw&&SERM_LEVELS[raw]) return raw;
+  return SD[nom]?"base":"found";
+}
+function getSermLevelLabel(nom,s){
+  return SERM_LEVELS[getSermLevelKey(nom,s)]||SERM_LEVELS.base;
+}
 
 function renderAllSerments(tid){
   var el=ge(tid); if(!el) return;
@@ -5785,6 +5800,7 @@ function renderAllSerments(tid){
 function renderSermCard(nom,s,isAdmin){
   var icon=WEAPON_ICONS[nom]||"✦";
   var cat=SERM_CATS[nom]||s.cat||"melee";
+  var sermLevel=getSermLevelLabel(nom,s);
   var isCustom=!SD[nom];
   var branches=getBranches(nom,s);
   var enc=encodeURIComponent(nom);
@@ -5798,7 +5814,7 @@ function renderSermCard(nom,s,isAdmin){
   }
   h+='<div class="serm-head" style="padding-right:'+(isAdmin?'100px':'44px')+'">';
   h+='<div class="serm-icon">'+icon+'</div>';
-  h+='<div class="serm-head-copy"><div class="snm">'+esc(nom)+'</div><div class="swp">'+esc(s.arme)+'</div></div>';
+  h+='<div class="serm-head-copy"><div class="snm">'+esc(nom)+'</div><div class="swp">'+esc(s.arme)+'</div><div class="serm-level-pill">'+esc(sermLevel)+'</div></div>';
   h+='</div>';
   h+='<div class="serm-cat" style="right:'+(isAdmin?'110px':'14px')+';">'+cat+'</div>';
   h+='<p class="serm-lore">'+esc(s.lore)+'</p>';
@@ -5943,7 +5959,8 @@ function getPlayerSermentBundle(p){
     branch:chosen,
     weapon:s.arme||p.arme||"",
     icon:(s&&s.icon)||WEAPON_ICONS[p.classe]||"✦",
-    cat:(s&&s.cat)||SERM_CATS[p.classe]||"melee"
+    cat:(s&&s.cat)||SERM_CATS[p.classe]||"melee",
+    sermLevel:getSermLevelLabel(p.classe,s)
   };
 }
 
@@ -5957,6 +5974,7 @@ function openCreateSerm(){
   ge("mserm-arme").value=""; ge("mserm-lore").value="";
   ge("mserm-pvN").value="3"; ge("mserm-epN").value="5"; ge("mserm-emN").value="2"; ge("mserm-dmg").value="8";
   ge("mserm-cat").value="mêlée"; ge("mserm-icon").value="✦";
+  ge("mserm-level").value="found";
   openModal("m-serm");
 }
 function openEditSerm(nomEnc){
@@ -5977,6 +5995,7 @@ function openEditSerm(nomEnc){
   var catSlug=rawCat.replace(/mêlée/g,"melee").replace(/melee/g,"melee");
   ge("mserm-cat").value=catSlug;
   ge("mserm-icon").value=WEAPON_ICONS[nom]||"✦";
+  ge("mserm-level").value=getSermLevelKey(nom,s);
   openModal("m-serm");
 }
 function saveSerm(){
@@ -5997,6 +6016,7 @@ function saveSerm(){
     lore:ge("mserm-lore").value.trim(),
     pvN:newPvN, epN:newEpN, emN:newEmN, dmg:newDmg,
     cat:ge("mserm-cat").value,
+    sermLevel:ge("mserm-level").value||getSermLevelKey(nom,existing),
     icon:icon,
     branches:existingBranches
   };
@@ -6329,7 +6349,7 @@ function renderSerm(p){
   // En-tête
   html+='<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">';
   html+='<div style="font-size:28px;width:48px;height:48px;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+(bundle.icon||WEAPON_ICONS[p.classe]||"✦")+'</div>';
-  html+='<div><div class="snm">'+esc(p.classe)+'</div><div class="swp">'+esc(bundle.weapon||s.arme||p.arme||"")+'</div></div>';
+  html+='<div><div class="snm">'+esc(p.classe)+'</div><div class="swp">'+esc(bundle.weapon||s.arme||p.arme||"")+'</div><div class="serm-level-pill">'+esc(bundle.sermLevel||getSermLevelLabel(p.classe,s))+'</div></div>';
   html+='</div>';
   // Stats
   html+='<div class="sstats"><div class="sst"><div class="sstv">'+s.pvN+'</div><div class="sstl">PV/niv</div></div><div class="sst"><div class="sstv">'+s.epN+'</div><div class="sstl">EP/niv</div></div><div class="sst"><div class="sstv">'+s.emN+'</div><div class="sstl">EM/niv</div></div><div class="sst"><div class="sstv">'+s.dmg+'</div><div class="sstl">Dmg frappe</div></div></div>';
