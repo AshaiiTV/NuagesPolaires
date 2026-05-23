@@ -2231,6 +2231,9 @@ textarea {
   animation: loaderCompassOpacity 2.4s ease-in-out infinite;
 }
 #db-loader .np-loader-compass-spin {
+  transform: translate(170px, 155px);
+}
+#db-loader .np-loader-compass-needle {
   transform-box: fill-box;
   transform-origin: center;
   animation: loaderCompass 5.4s linear infinite;
@@ -2271,7 +2274,7 @@ textarea {
   to { transform: rotate(360deg); }
 }
 @keyframes loaderCompass {
-  to { rotate: 360deg; }
+  to { transform: rotate(360deg); }
 }
 @keyframes loaderCompassOpacity {
   0%, 100% { opacity: 0.86; }
