@@ -3271,7 +3271,7 @@ function _buildStaffModals(){
     +'<div class="frow"><label class="flbl">Icône</label><input type="text" id="mserm-icon" placeholder="✦"></div>'
     +'<div class="frow"><label class="flbl">Arme liée</label><input type="text" id="mserm-arme" placeholder="Épée du serment"></div>'
     +'<div class="frow"><label class="flbl">Catégorie</label><select id="mserm-cat"><option value="mêlée">Mêlée</option><option value="distance">Distance</option><option value="magie">Magie</option><option value="soutien">Soutien</option></select></div>'
-    +'<div class="frow"><label class="flbl">Niveau du Serment</label><select id="mserm-level"><option value="basic">Basique</option><option value="seasoned">Aguerri</option><option value="expert">Expert</option><option value="unique">Unique</option><option value="divine">Divin</option><option value="corrupted">Corrompu</option><option value="other">Autre</option></select></div>'
+    +'<div class="frow"><label class="flbl">Niveau du Serment</label><select id="mserm-level"><option value="basic">Basique</option><option value="seasoned">Aguerri</option><option value="emeritus">Émérite</option><option value="singular">Singulier</option><option value="transcended">Transcendé</option><option value="corrupted">Corrompu</option><option value="other">Autre</option></select></div>'
     +'<div class="frow"><label class="flbl">PV/niv</label><input type="number" id="mserm-pvN" value="3" min="1"></div>'
     +'<div class="frow"><label class="flbl">EP/niv</label><input type="number" id="mserm-epN" value="5" min="1"></div>'
     +'<div class="frow"><label class="flbl">EM/niv</label><input type="number" id="mserm-emN" value="2" min="0"></div>'
@@ -5764,23 +5764,26 @@ var SERM_CATS={
 var SERM_LEVELS={
   basic:"Basique",
   seasoned:"Aguerri",
-  expert:"Expert",
-  unique:"Unique",
-  divine:"Divin",
+  emeritus:"Émérite",
+  singular:"Singulier",
+  transcended:"Transcendé",
   corrupted:"Corrompu",
   other:"Autre"
 };
 var SERM_LEVEL_ALIASES={
   base:"basic",
-  found:"unique",
-  evolved:"expert",
-  major:"divine"
+  found:"singular",
+  unique:"singular",
+  evolved:"emeritus",
+  expert:"emeritus",
+  major:"transcended",
+  divine:"transcended"
 };
 function getSermLevelKey(nom,s){
   var raw=s&&s.sermLevel;
   if(raw&&SERM_LEVEL_ALIASES[raw]) return SERM_LEVEL_ALIASES[raw];
   if(raw&&SERM_LEVELS[raw]) return raw;
-  return SD[nom]?"basic":"unique";
+  return SD[nom]?"basic":"singular";
 }
 function getSermLevelLabel(nom,s){
   return SERM_LEVELS[getSermLevelKey(nom,s)]||SERM_LEVELS.basic;
@@ -5984,7 +5987,7 @@ function openCreateSerm(){
   ge("mserm-arme").value=""; ge("mserm-lore").value="";
   ge("mserm-pvN").value="3"; ge("mserm-epN").value="5"; ge("mserm-emN").value="2"; ge("mserm-dmg").value="8";
   ge("mserm-cat").value="mêlée"; ge("mserm-icon").value="✦";
-  ge("mserm-level").value="unique";
+  ge("mserm-level").value="singular";
   openModal("m-serm");
 }
 function openEditSerm(nomEnc){
