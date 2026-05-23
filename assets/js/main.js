@@ -14794,15 +14794,33 @@ function exportFichePDF(){
   var p=gpid(CU.pid); if(!p){ notif("Personnage introuvable.","err"); return; }
   notif("Génération du PDF…","inf");
 
-  // Charger jsPDF dynamiquement
-  if(window.jspdf&&window.jspdf.jsPDF){
-    _buildPDF(p);
-  } else {
-    var s=document.createElement("script");
-    s.src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
-    s.onerror=function(){ notif("Impossible de charger jsPDF.","err"); };
-    document.head.appendChild(s);
+  function build(){
+    try{ _buildPDF(p); }
+    catch(e){
+      console.error("exportFichePDF failed", e);
+      notif("Impossible de générer le PDF.","err");
+    }
   }
+  if(window.jspdf&&window.jspdf.jsPDF){ build(); return; }
+  if(window.__npJsPdfLoading){
+    window.__npJsPdfLoading.then(build).catch(function(){ notif("Impossible de charger jsPDF.","err"); });
+    return;
+  }
+  window.__npJsPdfLoading = new Promise(function(resolve, reject){
+    var s=document.createElement("script");
+    s.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+    s.async=true;
+    s.onload=function(){
+      if(window.jspdf&&window.jspdf.jsPDF) resolve();
+      else reject(new Error("jspdf_missing"));
+    };
+    s.onerror=function(){ reject(new Error("jspdf_load_failed")); };
+    document.head.appendChild(s);
+  });
+  window.__npJsPdfLoading.then(build).catch(function(err){
+    console.error("jsPDF load failed", err);
+    notif("Impossible de charger jsPDF.","err");
+  });
 }
 
 function _buildPDF(p){
