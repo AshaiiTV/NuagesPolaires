@@ -276,22 +276,9 @@
   }
 
   function ensureHero(root){
-    if(!root || root.querySelector('.np-db-admin-hero')) return;
-
-    var hero = document.createElement('section');
-    hero.className = 'np-db-admin-hero';
-    hero.innerHTML =
-      '<div class="np-db-admin-eyebrow">Admin · Database</div>'
-      + '<div class="np-db-admin-title">Centre de contrôle des données</div>'
-      + '<div class="np-db-admin-sub">Espace sensible réservé aux administrateurs. Les actions dangereuses sont mieux distinguées et les onglets internes restent accessibles rapidement.</div>'
-      + '<div class="np-db-admin-status-row">'
-        + '<div class="np-db-admin-status"><div class="np-db-admin-status-label">Onglet</div><div class="np-db-admin-status-value" data-db-status="tab">—</div></div>'
-        + '<div class="np-db-admin-status"><div class="np-db-admin-status-label">Comptes</div><div class="np-db-admin-status-value" data-db-status="accounts">—</div></div>'
-        + '<div class="np-db-admin-status"><div class="np-db-admin-status-label">Joueurs</div><div class="np-db-admin-status-value" data-db-status="players">—</div></div>'
-        + '<div class="np-db-admin-status"><div class="np-db-admin-status-label">DB</div><div class="np-db-admin-status-value" data-db-status="api">—</div></div>'
-      + '</div>';
-
-    root.insertBefore(hero, root.firstChild);
+    if(!root) return;
+    var hero = root.querySelector('.np-db-admin-hero');
+    if(hero) hero.remove();
   }
 
   function patchWarning(root){
