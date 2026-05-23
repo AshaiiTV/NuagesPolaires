@@ -21,28 +21,30 @@ function npUnifiedCompassSvg(opts){
       +'</linearGradient>'
     +'</defs>'
     +'<g transform="translate(170,155)">'
-      +'<circle cx="0" cy="0" r="110" fill="none" stroke="url(#'+uid+'-r)" stroke-width=".8" opacity=".5"/>'
-      +'<circle cx="0" cy="0" r="115" fill="none" stroke="var(--glacier,#7eb8d4)" stroke-width=".3" stroke-dasharray="4 10" opacity=".3"/>'
-      +'<line x1="0" y1="-115" x2="0" y2="-155" stroke="var(--glacier,#7eb8d4)" stroke-width=".6" opacity=".45"/>'
-      +'<line x1="81" y1="-81" x2="110" y2="-110" stroke="var(--glacier,#7eb8d4)" stroke-width=".5" opacity=".35"/>'
-      +'<line x1="115" y1="0" x2="155" y2="0" stroke="var(--glacier,#7eb8d4)" stroke-width=".6" opacity=".45"/>'
-      +'<line x1="81" y1="81" x2="110" y2="110" stroke="var(--glacier,#7eb8d4)" stroke-width=".5" opacity=".35"/>'
-      +'<line x1="0" y1="115" x2="0" y2="155" stroke="var(--glacier,#7eb8d4)" stroke-width=".6" opacity=".45"/>'
-      +'<line x1="-81" y1="81" x2="-110" y2="110" stroke="var(--glacier,#7eb8d4)" stroke-width=".5" opacity=".35"/>'
-      +'<line x1="-115" y1="0" x2="-155" y2="0" stroke="var(--glacier,#7eb8d4)" stroke-width=".6" opacity=".45"/>'
-      +'<line x1="-81" y1="-81" x2="-110" y2="-110" stroke="var(--glacier,#7eb8d4)" stroke-width=".5" opacity=".35"/>'
-      +'<polygon points="0,-88 10,-34 0,-22 -10,-34" fill="url(#'+uid+'-s)" opacity=".95"/>'
-      +'<polygon points="88,0 34,10 22,0 34,-10" fill="url(#'+uid+'-s)" opacity=".95"/>'
-      +'<polygon points="0,88 10,34 0,22 -10,34" fill="url(#'+uid+'-s)" opacity=".95"/>'
-      +'<polygon points="-88,0 -34,10 -22,0 -34,-10" fill="url(#'+uid+'-s)" opacity=".95"/>'
-      +'<polygon points="62,-62 17,-27 10,-10 27,-17" fill="var(--glacier-bright,#b0d8ee)" opacity=".8"/>'
-      +'<polygon points="62,62 27,17 10,10 17,27" fill="var(--glacier-bright,#b0d8ee)" opacity=".8"/>'
-      +'<polygon points="-62,62 -17,27 -10,10 -27,17" fill="var(--glacier-bright,#b0d8ee)" opacity=".8"/>'
-      +'<polygon points="-62,-62 -27,-17 -10,-10 -17,-27" fill="var(--glacier-bright,#b0d8ee)" opacity=".8"/>'
-      +'<rect x="-16" y="-16" width="32" height="32" fill="var(--bg,#09090f)" stroke="var(--glacier,#7eb8d4)" stroke-width="1.2" transform="rotate(45)"/>'
-      +'<rect x="-9" y="-9" width="18" height="18" fill="url(#'+uid+'-s)" transform="rotate(45)" opacity=".9"/>'
-      +'<polygon points="46,-64 76,-46 58,-34 37,-49" fill="var(--glacier,#7eb8d4)" opacity=".25"/>'
-      +'<line x1="46" y1="-64" x2="76" y2="-46" stroke="var(--glacier-bright,#d4eef8)" stroke-width=".8" opacity=".5"/>'
+      +'<g class="np-unified-compass-core">'
+        +'<circle cx="0" cy="0" r="110" fill="none" stroke="url(#'+uid+'-r)" stroke-width=".8" opacity=".5"/>'
+        +'<circle cx="0" cy="0" r="115" fill="none" stroke="var(--glacier,#7eb8d4)" stroke-width=".3" stroke-dasharray="4 10" opacity=".3"/>'
+        +'<line x1="0" y1="-115" x2="0" y2="-155" stroke="var(--glacier,#7eb8d4)" stroke-width=".6" opacity=".45"/>'
+        +'<line x1="81" y1="-81" x2="110" y2="-110" stroke="var(--glacier,#7eb8d4)" stroke-width=".5" opacity=".35"/>'
+        +'<line x1="115" y1="0" x2="155" y2="0" stroke="var(--glacier,#7eb8d4)" stroke-width=".6" opacity=".45"/>'
+        +'<line x1="81" y1="81" x2="110" y2="110" stroke="var(--glacier,#7eb8d4)" stroke-width=".5" opacity=".35"/>'
+        +'<line x1="0" y1="115" x2="0" y2="155" stroke="var(--glacier,#7eb8d4)" stroke-width=".6" opacity=".45"/>'
+        +'<line x1="-81" y1="81" x2="-110" y2="110" stroke="var(--glacier,#7eb8d4)" stroke-width=".5" opacity=".35"/>'
+        +'<line x1="-115" y1="0" x2="-155" y2="0" stroke="var(--glacier,#7eb8d4)" stroke-width=".6" opacity=".45"/>'
+        +'<line x1="-81" y1="-81" x2="-110" y2="-110" stroke="var(--glacier,#7eb8d4)" stroke-width=".5" opacity=".35"/>'
+        +'<polygon points="0,-88 10,-34 0,-22 -10,-34" fill="url(#'+uid+'-s)" opacity=".95"/>'
+        +'<polygon points="88,0 34,10 22,0 34,-10" fill="url(#'+uid+'-s)" opacity=".95"/>'
+        +'<polygon points="0,88 10,34 0,22 -10,34" fill="url(#'+uid+'-s)" opacity=".95"/>'
+        +'<polygon points="-88,0 -34,10 -22,0 -34,-10" fill="url(#'+uid+'-s)" opacity=".95"/>'
+        +'<polygon points="62,-62 17,-27 10,-10 27,-17" fill="var(--glacier-bright,#b0d8ee)" opacity=".8"/>'
+        +'<polygon points="62,62 27,17 10,10 17,27" fill="var(--glacier-bright,#b0d8ee)" opacity=".8"/>'
+        +'<polygon points="-62,62 -17,27 -10,10 -27,17" fill="var(--glacier-bright,#b0d8ee)" opacity=".8"/>'
+        +'<polygon points="-62,-62 -27,-17 -10,-10 -17,-27" fill="var(--glacier-bright,#b0d8ee)" opacity=".8"/>'
+        +'<rect x="-16" y="-16" width="32" height="32" fill="var(--bg,#09090f)" stroke="var(--glacier,#7eb8d4)" stroke-width="1.2" transform="rotate(45)"/>'
+        +'<rect x="-9" y="-9" width="18" height="18" fill="url(#'+uid+'-s)" transform="rotate(45)" opacity=".9"/>'
+        +'<polygon points="46,-64 76,-46 58,-34 37,-49" fill="var(--glacier,#7eb8d4)" opacity=".25"/>'
+        +'<line x1="46" y1="-64" x2="76" y2="-46" stroke="var(--glacier-bright,#d4eef8)" stroke-width=".8" opacity=".5"/>'
+      +'</g>'
     +'</g>'
     +'<g transform="translate(170,278)" opacity=".7">'
       +'<path d="M-140,0 Q-140,-20 -120,-20 Q-116,-34 -98,-34 Q-84,-48 -64,-40 Q-52,-56 -30,-50 Q-16,-64 6,-54 Q20,-66 40,-56 Q56,-70 76,-58 Q90,-68 106,-56 Q120,-64 136,-50 Q148,-36 140,-20 Q150,-14 148,0 Z" fill="var(--glacier-dim,#4a7d96)" opacity=".15"/>'
@@ -14549,8 +14551,18 @@ function logoClick(el){
   el.dataset.speed=speed; el.dataset.last=now;
   var rot=parseFloat(el.dataset.rot||0)+360;
   el.dataset.rot=rot;
-  el.style.transition="transform "+speed+"ms cubic-bezier(0.25,0.1,0.25,1)";
-  el.style.transform="rotate("+rot+"deg)";
+  var core=el.querySelector ? el.querySelector(".np-unified-compass-core") : null;
+  if(core){
+    core.style.transition="transform "+speed+"ms cubic-bezier(0.25,0.1,0.25,1)";
+    core.style.transformBox="fill-box";
+    core.style.transformOrigin="center";
+    core.style.transform="rotate("+rot+"deg)";
+  }else{
+    el.style.transition="transform "+speed+"ms cubic-bezier(0.25,0.1,0.25,1)";
+    el.style.transformOrigin="50% 50%";
+    el.style.transformBox="fill-box";
+    el.style.transform="rotate("+rot+"deg)";
+  }
 
   // Particules depuis le centre du logo
   var rect=el.getBoundingClientRect();
