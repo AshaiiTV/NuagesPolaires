@@ -305,7 +305,7 @@ body.np-is-admin #dd-staff-menu .perm-admin{
 
     var dashboard = menu.querySelector('[data-staff-tool="database"]');
     if(dashboard){
-      dashboard.setAttribute('title', 'Administration : tableau de bord, comptes, thèmes, logs et sécurité');
+      dashboard.setAttribute('title', 'Administration : tableau de bord, comptes, thèmes et logs');
     }
   }
 

@@ -271,7 +271,7 @@
 
   function activeTabLabel(){
     var key = window._dbTab || 'comptes';
-    var map = { comptes:'Comptes', themes:'Thèmes', historiques:'Log', audit:'Sécurité' };
+    var map = { comptes:'Comptes', themes:'Thèmes', historiques:'Log' };
     return map[key] || key;
   }
 
@@ -332,7 +332,7 @@
     if(!root || root.querySelector('.np-db-admin-footer-note')) return;
     var note = document.createElement('div');
     note.className = 'np-db-admin-footer-note';
-    note.textContent = 'Astuce : les onglets Comptes, Thèmes, Log et Sécurité sont des zones sensibles. Les boutons rouges ou destructifs doivent toujours être confirmés avant validation.';
+    note.textContent = 'Astuce : les onglets Comptes, Thèmes et Log sont des zones sensibles. Les boutons rouges ou destructifs doivent toujours être confirmés avant validation.';
     root.appendChild(note);
   }
 

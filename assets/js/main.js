@@ -4386,24 +4386,15 @@ async function loadAuditLogAdmin(force){
 }
 function openDatabaseInnerTab(tabKey){
   var next = tabKey || "dashboard";
+  if(next === "audit") next = "historiques";
   window._dbTab = next;
-  if(next === "audit"){
-    _auditPage = 0;
-    renderDatabase();
-    loadAuditLogAdmin(!_auditLoadedOnce).then(function(){
-      if(window._dbTab === "audit") renderDatabase();
-    }).catch(function(){
-      if(window._dbTab === "audit") renderDatabase();
-    });
-  } else {
-    renderDatabase();
-  }
+  renderDatabase();
   setTimeout(function(){
     if(typeof _focusOnScreen === 'function') _focusOnScreen('database','smooth');
   },10);
 }
 function openAuditLogAdmin(){
-  openDatabaseInnerTab("audit");
+  openDatabaseInnerTab("historiques");
 }
 function _renderAuditEntries(entries){
   var list = Array.isArray(entries)?entries.slice():[];
@@ -4553,7 +4544,8 @@ function renderDatabase(){
   var _tab=window._dbTab||"dashboard";
 
   // --- Onglets internes ---
-  var tabs=[{k:"dashboard",l:"Vue d'ensemble"},{k:"comptes",l:"Comptes"},{k:"themes",l:"Thèmes"},{k:"historiques",l:"Log"},{k:"audit",l:"Sécurité"}];
+  if(_tab === "audit") _tab = window._dbTab = "historiques";
+  var tabs=[{k:"dashboard",l:"Vue d'ensemble"},{k:"comptes",l:"Comptes"},{k:"themes",l:"Thèmes"},{k:"historiques",l:"Log"}];
   var html='<div class="warnbox" style="margin-bottom:16px;">⚠ Données confidentielles — Accès administrateur uniquement.</div>';
   html+='<div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border2);padding-bottom:0;">';
   tabs.forEach(function(t){
@@ -4735,28 +4727,6 @@ function renderDatabase(){
     }
     html+='</div>';
   }
-
-  else if(_tab==="audit"){
-    if(!_auditLoading && !_auditLoadedOnce){
-      loadAuditLogAdmin(true).then(function(){ if(window._dbTab==="audit") renderDatabase(); }).catch(function(){ if(window._dbTab==="audit") renderDatabase(); });
-    }
-    html+='<div class="card">';
-    html+='<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;">';
-    html+='<div><div class="card-title">Journal de sécurité</div><div style="font-size:12px;color:var(--faint);margin-top:4px;">Connexions, resets, rôles, liaisons et actions sensibles.</div></div>';
-    html+='<div style="display:flex;gap:8px;flex-wrap:wrap;">';
-    html+='<button class="btn btn-sm" onclick="runQaSmokeAndRefresh()"><span>QA rapide</span></button>';
-    html+='<button class="btn btn-sm btn-gold" onclick="loadAuditLogAdmin(true).then(function(){renderDatabase();})"><span>⟳ Recharger</span></button>';
-    html+='</div>';
-    html+='</div>';
-    html += renderQaReport();
-    if(_auditLoading && !(_auditLog&&_auditLog.length)) html+='<p class="iempty">Chargement du journal de sécurité…</p>';
-    else html+=_renderAuditEntries(_auditLog||[]);
-    html+='</div>';
-  }
-
-  // ================================================================
-
-
 
   el.innerHTML=html;
   if(_tab==="dashboard"){
@@ -15426,8 +15396,7 @@ function getCommandItems(){
     push("bestiaire-admin","Création bestiaire","Créer, corriger et organiser les créatures",function(){ switchTab("bestiaire-admin",null); },"CB");
   }
   if(role==="admin"){
-    push("database","Administration","Vue d’ensemble, comptes, thèmes, logs et sécurité",function(){ switchTab("database",null); },"ADM");
-    if(isAdminRole(CU)) push("audit","Journal sécurité","Logs d'authentification et actions sensibles",function(){ switchTab("database",null); openAuditLogAdmin(); },"SEC");
+    push("database","Administration","Vue d’ensemble, comptes, thèmes et logs",function(){ switchTab("database",null); },"ADM");
   }
   return items;
 }
