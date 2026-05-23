@@ -2228,9 +2228,15 @@ textarea {
 #db-loader .np-loader-compass {
   position: relative;
   z-index: 1;
-  transform-box: view-box;
-  transform-origin: 50% 50%;
-  animation: loaderCompass 5.4s linear infinite, loaderCompassOpacity 2.4s ease-in-out infinite;
+  animation: loaderCompassOpacity 2.4s ease-in-out infinite;
+}
+#db-loader .np-loader-compass-spin {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: loaderCompass 5.4s linear infinite;
+}
+#db-loader .np-loader-compass-static {
+  transform: none;
 }
 #db-loader .np-loader-brand {
   font-family: var(--fd);

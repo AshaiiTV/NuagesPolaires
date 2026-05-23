@@ -53,6 +53,59 @@ function npUnifiedCompassSvg(opts){
     +'</g>'
   +'</svg>';
 }
+function npLoaderCompassSvg(opts){
+  opts = opts || {};
+  var cls = opts.cls ? ' class="'+esc(opts.cls)+'"' : '';
+  var width = opts.width ? ' width="'+esc(opts.width)+'"' : '';
+  var height = opts.height ? ' height="'+esc(opts.height)+'"' : '';
+  var uid = String(opts.uid || 'np-loader-compass').replace(/[^a-zA-Z0-9_-]/g,'');
+  return '<svg'+cls+width+height+' viewBox="0 0 340 320" xmlns="http://www.w3.org/2000/svg" data-np-loader-compass="1">'
+    +'<defs>'
+      +'<linearGradient id="'+uid+'-s" x1="0" y1="0" x2="0" y2="1">'
+        +'<stop offset="0%" stop-color="var(--glacier-bright,#d4eef8)"/>'
+        +'<stop offset="100%" stop-color="var(--glacier,#7eb8d4)"/>'
+      +'</linearGradient>'
+      +'<linearGradient id="'+uid+'-r" x1="0" y1="0" x2="1" y2="1">'
+        +'<stop offset="0%" stop-color="var(--glacier,#7eb8d4)" stop-opacity=".9"/>'
+        +'<stop offset="50%" stop-color="var(--glacier-dim,#4a7d96)" stop-opacity=".3"/>'
+        +'<stop offset="100%" stop-color="var(--glacier,#7eb8d4)" stop-opacity=".9"/>'
+      +'</linearGradient>'
+    +'</defs>'
+    +'<g class="np-loader-compass-static" transform="translate(170,155)">'
+      +'<circle cx="0" cy="0" r="110" fill="none" stroke="url(#'+uid+'-r)" stroke-width=".8" opacity=".5"/>'
+      +'<circle cx="0" cy="0" r="115" fill="none" stroke="var(--glacier,#7eb8d4)" stroke-width=".3" stroke-dasharray="4 10" opacity=".3"/>'
+      +'<line x1="0" y1="-115" x2="0" y2="-155" stroke="var(--glacier,#7eb8d4)" stroke-width=".6" opacity=".45"/>'
+      +'<line x1="81" y1="-81" x2="110" y2="-110" stroke="var(--glacier,#7eb8d4)" stroke-width=".5" opacity=".35"/>'
+      +'<line x1="115" y1="0" x2="155" y2="0" stroke="var(--glacier,#7eb8d4)" stroke-width=".6" opacity=".45"/>'
+      +'<line x1="81" y1="81" x2="110" y2="110" stroke="var(--glacier,#7eb8d4)" stroke-width=".5" opacity=".35"/>'
+      +'<line x1="0" y1="115" x2="0" y2="155" stroke="var(--glacier,#7eb8d4)" stroke-width=".6" opacity=".45"/>'
+      +'<line x1="-81" y1="81" x2="-110" y2="110" stroke="var(--glacier,#7eb8d4)" stroke-width=".5" opacity=".35"/>'
+      +'<line x1="-115" y1="0" x2="-155" y2="0" stroke="var(--glacier,#7eb8d4)" stroke-width=".6" opacity=".45"/>'
+      +'<line x1="-81" y1="-81" x2="-110" y2="-110" stroke="var(--glacier,#7eb8d4)" stroke-width=".5" opacity=".35"/>'
+      +'<polygon points="46,-64 76,-46 58,-34 37,-49" fill="var(--glacier,#7eb8d4)" opacity=".25"/>'
+      +'<line x1="46" y1="-64" x2="76" y2="-46" stroke="var(--glacier-bright,#d4eef8)" stroke-width=".8" opacity=".5"/>'
+    +'</g>'
+    +'<g transform="translate(170,278)" opacity=".7">'
+      +'<path d="M-140,0 Q-140,-20 -120,-20 Q-116,-34 -98,-34 Q-84,-48 -64,-40 Q-52,-56 -30,-50 Q-16,-64 6,-54 Q20,-66 40,-56 Q56,-70 76,-58 Q90,-68 106,-56 Q120,-64 136,-50 Q148,-36 140,-20 Q150,-14 148,0 Z" fill="var(--glacier-dim,#4a7d96)" opacity=".15"/>'
+      +'<path d="M-140,0 Q-140,-20 -120,-20 Q-116,-34 -98,-34 Q-84,-48 -64,-40 Q-52,-56 -30,-50 Q-16,-64 6,-54 Q20,-66 40,-56 Q56,-70 76,-58 Q90,-68 106,-56 Q120,-64 136,-50 Q148,-36 140,-20 Q150,-14 148,0" fill="none" stroke="var(--glacier,#7eb8d4)" stroke-width=".8" opacity=".5"/>'
+      +'<line x1="-64" y1="0" x2="-80" y2="-38" stroke="var(--glacier,#7eb8d4)" stroke-width=".4" opacity=".25"/>'
+      +'<line x1="6" y1="0" x2="-6" y2="-52" stroke="var(--glacier,#7eb8d4)" stroke-width=".4" opacity=".25"/>'
+      +'<line x1="76" y1="0" x2="58" y2="-56" stroke="var(--glacier,#7eb8d4)" stroke-width=".4" opacity=".25"/>'
+    +'</g>'
+    +'<g class="np-loader-compass-spin" transform="translate(170,155)">'
+      +'<polygon points="0,-88 10,-34 0,-22 -10,-34" fill="url(#'+uid+'-s)" opacity=".95"/>'
+      +'<polygon points="88,0 34,10 22,0 34,-10" fill="url(#'+uid+'-s)" opacity=".95"/>'
+      +'<polygon points="0,88 10,34 0,22 -10,34" fill="url(#'+uid+'-s)" opacity=".95"/>'
+      +'<polygon points="-88,0 -34,10 -22,0 -34,-10" fill="url(#'+uid+'-s)" opacity=".95"/>'
+      +'<polygon points="62,-62 17,-27 10,-10 27,-17" fill="var(--glacier-bright,#b0d8ee)" opacity=".8"/>'
+      +'<polygon points="62,62 27,17 10,10 17,27" fill="var(--glacier-bright,#b0d8ee)" opacity=".8"/>'
+      +'<polygon points="-62,62 -17,27 -10,10 -27,17" fill="var(--glacier-bright,#b0d8ee)" opacity=".8"/>'
+      +'<polygon points="-62,-62 -27,-17 -10,-10 -17,-27" fill="var(--glacier-bright,#b0d8ee)" opacity=".8"/>'
+      +'<rect x="-16" y="-16" width="32" height="32" fill="var(--bg,#09090f)" stroke="var(--glacier,#7eb8d4)" stroke-width="1.2" transform="rotate(45)"/>'
+      +'<rect x="-9" y="-9" width="18" height="18" fill="url(#'+uid+'-s)" transform="rotate(45)" opacity=".9"/>'
+    +'</g>'
+  +'</svg>';
+}
 function installUnifiedCompasses(){
   var hdr=ge('hdr-logo-svg');
   if(hdr && hdr.getAttribute('data-np-unified-compass') !== '1'){
@@ -1118,7 +1171,7 @@ function _collectLegacyCombatArchivesFromLocalStorage(){
       var match = String(key||'').match(/^(?:np_)?combat_arc_(.+)$/i);
       if(!match) continue;
       var owner = String(match[1]||'').trim();
-      if(!owner) continue;
+      if(!owner || /^(idx_|rec_)/i.test(owner)) continue;
       var raw = localStorage.getItem(key);
       if(!raw) continue;
       var parsed = JSON.parse(raw);
@@ -8908,7 +8961,7 @@ _loaderEl.style.cssText="position:fixed;inset:0;display:flex;align-items:center;
 _loaderEl.innerHTML='<div class="np-loader-bg" aria-hidden="true"><span></span><span></span><span></span></div>'
   +'<div class="np-loader-panel" role="status" aria-live="polite">'
     +'<div class="np-loader-mark" aria-hidden="true">'
-      +npUnifiedCompassSvg({cls:'np-loader-compass',uid:'np-loader',width:82,height:82})
+      +npLoaderCompassSvg({cls:'np-loader-compass',uid:'np-loader',width:82,height:82})
     +'</div>'
     +'<div class="np-loader-brand">Nuages Polaires</div>'
     +'<div class="np-loader-status">Connexion...</div>'
@@ -10082,7 +10135,13 @@ function combatUndo(){
 
 // ── Archives ──────────────────────────────────────────────────────────────────
 function combatArchiveOwnerKey(owner){
-  return String(owner||'').trim();
+  var out = String(owner||'').trim();
+  out = out.replace(/^(?:np_)?combat_arc_rec_/i, '');
+  if(out.indexOf('__') >= 0) out = out.split('__')[0];
+  out = out.replace(/^(?:np_)?combat_arc_idx_/i, '');
+  out = out.replace(/^(?:np_)?combat_arc_/i, '');
+  while(/^(idx_|rec_)/i.test(out)) out = out.replace(/^(idx_|rec_)/i, '');
+  return out.trim();
 }
 function combatArchiveCurrentOwners(){
   var out=[];
@@ -10180,7 +10239,7 @@ function _combatArchiveKnownOwners(){
   try{ combatArchiveCurrentOwners().forEach(pushOwner); }catch(e){}
   try{ getAccounts().forEach(function(a){ if(!a) return; if(a.role!=="mj" && a.role!=="admin") return; pushOwner(a.pseudo); pushOwner(a.name); }); }catch(e){}
   try{ Object.keys(_dbCache||{}).forEach(function(key){ if(String(key||'').indexOf('combat_arc_idx_')===0) pushOwner(String(key).slice('combat_arc_idx_'.length)); else if(String(key||'').indexOf('combat_arc_')===0 && String(key||'').indexOf('combat_arc_rec_')!==0) pushOwner(String(key).slice('combat_arc_'.length)); }); }catch(e){}
-  try{ for(var i=0;i<localStorage.length;i++){ var key=localStorage.key(i); var match=String(key||'').match(/^(?:np_)?combat_arc_(.+)$/i); if(match) pushOwner(match[1]); } }catch(e){}
+  try{ for(var i=0;i<localStorage.length;i++){ var key=localStorage.key(i); var match=String(key||'').match(/^(?:np_)?combat_arc_(.+)$/i); if(match && !/^(idx_|rec_)/i.test(String(match[1]||''))) pushOwner(match[1]); } }catch(e){}
   return owners;
 }
 function combatArchiveGetIndex(owner){
@@ -11577,21 +11636,36 @@ async function combatDeleteArchive(id){
   var source=(can("manage_mjs")?getAllCombatArchives():getCombatArchives());
   var arc=source.find(function(a){return String(a&&a.id||'')===id;});
   var owner = combatArchiveOwnerKey((arc&&arc._owner) || '');
-  if(!owner){
-    var owners=can("manage_mjs")?_combatArchiveKnownOwners():combatArchiveCurrentOwners();
-    for(var oi=0;oi<owners.length;oi++){
-      var candidate=combatArchiveOwnerKey(owners[oi]);
-      if(getCombatArchivesForOwner(candidate).some(function(a){return String(a&&a.id||'')===id;})){ owner=candidate; break; }
-    }
-  }
-  owner = combatArchiveOwnerKey(owner || (_cs&&_cs._owner) || combatArchiveCurrentOwner());
-  if(!owner){ notif("Archive introuvable.","err"); return false; }
-  var before=getCombatArchivesForOwner(owner);
-  var remaining=before.filter(function(a){return String(a&&a.id||'')!==id;});
-  if(remaining.length===before.length){ notif("Archive introuvable.","err"); return false; }
+  var baseOwners=can("manage_mjs")?_combatArchiveKnownOwners():combatArchiveCurrentOwners();
+  if(owner && baseOwners.indexOf(owner)<0) baseOwners.unshift(owner);
+  var currentOwner=combatArchiveOwnerKey((_cs&&_cs._owner) || combatArchiveCurrentOwner());
+  if(currentOwner && baseOwners.indexOf(currentOwner)<0) baseOwners.push(currentOwner);
+  var owners=[];
+  baseOwners.forEach(function(raw){
+    var clean=combatArchiveOwnerKey(raw);
+    if(clean && owners.indexOf(clean)<0) owners.push(clean);
+  });
+  var touched=[];
+  owners.forEach(function(candidate){
+    var list=getCombatArchivesForOwner(candidate);
+    if(list.some(function(a){return String(a&&a.id||'')===id;})) touched.push(candidate);
+  });
+  if(!touched.length){ notif("Archive introuvable.","err"); return false; }
   try{
-    try{ localStorage.removeItem("np_"+combatArchiveRecordKey(owner,id)); }catch(_e){}
-    await saveCombatArchives(remaining, owner);
+    await Promise.all(touched.map(function(targetOwner){
+      var before=getCombatArchivesForOwner(targetOwner);
+      var remaining=before.filter(function(a){return String(a&&a.id||'')!==id;});
+      try{ localStorage.removeItem("np_"+combatArchiveRecordKey(targetOwner,id)); }catch(_e){}
+      delete _dbCache[combatArchiveRecordKey(targetOwner,id)];
+      return saveCombatArchives(remaining, targetOwner);
+    }));
+    if(_dbToken && !_dbOffline){
+      var directDeletes=[];
+      touched.forEach(function(targetOwner){
+        directDeletes.push(_dbCall({action:'delete', key:combatArchiveRecordKey(targetOwner,id)}, {silent:true}).catch(function(){ return null; }));
+      });
+      await Promise.all(directDeletes);
+    }
     if(String(_arcSelectedId||'')===id) _arcSelectedId='';
     if(_cs&&String(_cs.id||'')===id) combatNewFromArchive({skipRender:true});
     notif("Archive supprimée.","inf");
@@ -13459,7 +13533,7 @@ var _arcFilterPlayers=[];
 var _arcSelectedId='';
 function _archiveCreatorName(arc){
   var raw=arc&&(arc._owner||arc.owner||arc.createdBy||arc.creator||arc.author||arc.mj||arc.staff);
-  raw=String(raw||'').trim();
+  raw=combatArchiveOwnerKey(raw);
   return raw||'Inconnu';
 }
 function _archivePlayerEntries(arc){
