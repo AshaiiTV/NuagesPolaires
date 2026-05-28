@@ -12,6 +12,7 @@
   var ENGINE_VERSION = 'v257';
   var STYLE_ID = 'np-theme-engine-v257';
   var TIMER = null;
+  var METEOR_TIMER = null;
   var FILTER_STORAGE_KEY = 'np_theme_collection_filters_v257';
 
   var CONFIG = {
@@ -606,6 +607,64 @@ body[data-theme-engine="v257"].theme-violet :where(.card,.panel,.staff-panel,.su
     radial-gradient(ellipse at bottom right,rgba(115,216,255,.11),transparent 34%),
     var(--tm-card-bg) !important;
 }
+.tm-galaxy-meteor{
+  position:fixed;
+  left:var(--tm-meteor-x, 0px);
+  top:var(--tm-meteor-y, 0px);
+  width:clamp(320px, 34vw, 760px);
+  height:150px;
+  z-index:0;
+  pointer-events:none;
+  opacity:0;
+  transform:translate3d(0,0,0) rotate(var(--tm-meteor-rot, 18deg));
+  transform-origin:86% 50%;
+  mix-blend-mode:screen;
+  filter:drop-shadow(0 0 26px rgba(160,136,255,.58)) drop-shadow(0 0 54px rgba(115,216,255,.36));
+  animation:tmGalaxyMeteorFly var(--tm-meteor-dur, 2350ms) cubic-bezier(.08,.76,.16,1) forwards;
+}
+.tm-galaxy-meteor::before{
+  content:"";
+  position:absolute;
+  right:34px;
+  top:50%;
+  width:34px;
+  height:34px;
+  border-radius:999px;
+  transform:translateY(-50%);
+  background:
+    radial-gradient(circle,rgba(255,255,255,1) 0 18%,rgba(221,247,255,.96) 19% 34%,rgba(138,205,255,.62) 36% 52%,rgba(155,124,255,.24) 62%,transparent 74%);
+  box-shadow:
+    0 0 18px rgba(255,255,255,.98),
+    0 0 42px rgba(115,216,255,.82),
+    0 0 84px rgba(155,124,255,.62);
+}
+.tm-galaxy-meteor::after{
+  content:"";
+  position:absolute;
+  right:58px;
+  top:50%;
+  width:calc(100% - 70px);
+  height:18px;
+  border-radius:999px;
+  transform:translateY(-50%);
+  background:
+    radial-gradient(ellipse at 100% 50%,rgba(255,255,255,.88),rgba(115,216,255,.52) 18%,rgba(155,124,255,.28) 36%,transparent 72%),
+    linear-gradient(90deg,transparent,rgba(155,124,255,.08) 18%,rgba(115,216,255,.34) 62%,rgba(255,255,255,.82));
+  filter:blur(.4px);
+}
+.tm-galaxy-meteor span{
+  position:absolute;
+  right:calc(70px + var(--p-x, 0px));
+  top:calc(50% + var(--p-y, 0px));
+  width:var(--p-size, 4px);
+  height:var(--p-size, 4px);
+  border-radius:999px;
+  background:rgba(255,255,255,.92);
+  box-shadow:0 0 12px rgba(255,255,255,.88),0 0 24px rgba(115,216,255,.48);
+  opacity:0;
+  animation:tmGalaxyMeteorParticle var(--tm-meteor-dur, 2350ms) ease-out forwards;
+  animation-delay:var(--p-delay, 0ms);
+}
 body[data-theme-engine="v257"].theme-green::before{
   inset:0;
   z-index:0;
@@ -718,6 +777,17 @@ body[data-theme-engine="v257"].theme-noel::after{
   0%{transform:translate3d(-2%,-1%,0) scale(1.03);opacity:.66;}
   100%{transform:translate3d(2%,1.4%,0) scale(1.08);opacity:.96;}
 }
+@keyframes tmGalaxyMeteorFly{
+  0%{opacity:0;transform:translate3d(0,0,0) rotate(var(--tm-meteor-rot, 18deg)) scale(.78);}
+  8%{opacity:1;}
+  58%{opacity:1;filter:drop-shadow(0 0 34px rgba(255,255,255,.72)) drop-shadow(0 0 76px rgba(115,216,255,.54));}
+  100%{opacity:0;transform:translate3d(var(--tm-meteor-dx, 120vw),var(--tm-meteor-dy, 48vh),0) rotate(var(--tm-meteor-rot, 18deg)) scale(1.06);}
+}
+@keyframes tmGalaxyMeteorParticle{
+  0%,12%{opacity:0;transform:translate3d(0,0,0) scale(.6);}
+  24%{opacity:.95;}
+  100%{opacity:0;transform:translate3d(var(--p-dx, -80px),var(--p-dy, 24px),0) scale(.12);}
+}
 @keyframes tmSylvanBreath{
   0%{transform:translate3d(-.8%,0,0) scale(1);opacity:.26;}
   100%{transform:translate3d(.8%,-.6%,0) scale(1.035);opacity:.48;}
@@ -727,8 +797,11 @@ body[data-theme-engine="v257"].theme-noel::after{
   body[data-theme-engine="v257"].theme-violet::after,
   body[data-theme-engine="v257"].theme-violet #s-app::before,
   body[data-theme-engine="v257"].theme-violet #s-app::after,
-  body[data-theme-engine="v257"].theme-green #s-app::after{
+  body[data-theme-engine="v257"].theme-green #s-app::after,
+  .tm-galaxy-meteor,
+  .tm-galaxy-meteor span{
     animation:none !important;
+    display:none !important;
   }
 }
 
@@ -1535,6 +1608,82 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
     document.documentElement.setAttribute('data-theme-tone', c.tone || 'dark');
   }
 
+  function prefersReducedMotion(){
+    try{ return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+    catch(e){ return false; }
+  }
+
+  function stopGalaxyMeteors(){
+    if(METEOR_TIMER){
+      clearTimeout(METEOR_TIMER);
+      METEOR_TIMER = null;
+    }
+    try{
+      Array.prototype.forEach.call(document.querySelectorAll('.tm-galaxy-meteor'), function(el){
+        if(el && el.parentNode) el.parentNode.removeChild(el);
+      });
+    }catch(e){}
+  }
+
+  function rand(min,max){
+    return min + Math.random() * (max - min);
+  }
+
+  function spawnGalaxyMeteor(){
+    if(activeTheme() !== 'violet' || prefersReducedMotion() || !document.body) return;
+    var meteor = document.createElement('div');
+    meteor.className = 'tm-galaxy-meteor';
+    var fromLeft = Math.random() > .24;
+    var y = rand(-8, 42);
+    var x = fromLeft ? rand(-42, -18) : rand(104, 122);
+    var dx = fromLeft ? rand(122, 156) : -rand(122, 156);
+    var dy = rand(34, 68);
+    var rot = fromLeft ? rand(13, 24) : rand(156, 168);
+    var dur = Math.round(rand(2100, 2850));
+    meteor.style.setProperty('--tm-meteor-x', x.toFixed(1) + 'vw');
+    meteor.style.setProperty('--tm-meteor-y', y.toFixed(1) + 'vh');
+    meteor.style.setProperty('--tm-meteor-dx', dx.toFixed(1) + 'vw');
+    meteor.style.setProperty('--tm-meteor-dy', dy.toFixed(1) + 'vh');
+    meteor.style.setProperty('--tm-meteor-rot', rot.toFixed(1) + 'deg');
+    meteor.style.setProperty('--tm-meteor-dur', dur + 'ms');
+    for(var i=0;i<24;i++){
+      var p = document.createElement('span');
+      var spread = i / 23;
+      p.style.setProperty('--p-x', Math.round(rand(8, 420) * spread) + 'px');
+      p.style.setProperty('--p-y', Math.round(rand(-34, 34)) + 'px');
+      p.style.setProperty('--p-size', rand(2.4, 7.4).toFixed(1) + 'px');
+      p.style.setProperty('--p-delay', Math.round(rand(30, 520)) + 'ms');
+      p.style.setProperty('--p-dx', Math.round(rand(-70, -230)) + 'px');
+      p.style.setProperty('--p-dy', Math.round(rand(-70, 72)) + 'px');
+      meteor.appendChild(p);
+    }
+    document.body.appendChild(meteor);
+    setTimeout(function(){
+      if(meteor && meteor.parentNode) meteor.parentNode.removeChild(meteor);
+    }, dur + 900);
+  }
+
+  function scheduleGalaxyMeteor(initial){
+    if(METEOR_TIMER) clearTimeout(METEOR_TIMER);
+    if(activeTheme() !== 'violet' || prefersReducedMotion()){
+      METEOR_TIMER = null;
+      return;
+    }
+    var delay = initial ? rand(9000, 18000) : rand(26000, 56000);
+    METEOR_TIMER = setTimeout(function(){
+      METEOR_TIMER = null;
+      spawnGalaxyMeteor();
+      scheduleGalaxyMeteor(false);
+    }, delay);
+  }
+
+  function syncGalaxyMeteorLoop(id){
+    if(id === 'violet'){
+      if(!METEOR_TIMER) scheduleGalaxyMeteor(true);
+    }
+    else stopGalaxyMeteors();
+  }
+
   function patchThemeMetadata(){
     try{
       ['THEMES_BASE','THEMES_EVENT_BUILTIN','THEME_BASE_VISIBLE','THEME_SECRET_SLOTS'].forEach(function(key){
@@ -1979,6 +2128,7 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
   function refresh(){
     var id = activeTheme();
     applyVars(id);
+    syncGalaxyMeteorLoop(id);
     patchThemeMetadata();
     patchCards();
     ensureCollectionUx();
