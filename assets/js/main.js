@@ -5852,6 +5852,65 @@ function getSermLevelKey(nom,s){
 function getSermLevelLabel(nom,s){
   return SERM_LEVELS[getSermLevelKey(nom,s)]||SERM_LEVELS.basic;
 }
+function getSermCatLabel(cat){
+  return ({melee:"Mêlée",distance:"Distance",magie:"Magie",soutien:"Soutien"}[cat]||cat||"Mêlée");
+}
+function isSermVisibleInLibrary(nom,s){
+  var level=getSermLevelKey(nom,s);
+  if(level==="seasoned") return false;
+  if(s&&s.hidden) return false;
+  return true;
+}
+function getSermLorePreview(text){
+  var clean=String(text||"").replace(/\s+/g," ").trim();
+  if(clean.length<=260) return clean;
+  return clean.slice(0,257).replace(/\s+\S*$/,"")+"...";
+}
+function getPalierStageLabel(level,idx,total){
+  var map={2:"Débloqué",5:"Renforcé",7:"Maîtrisé",10:"Parachevé"};
+  if(map[level]) return map[level];
+  if(idx===0) return "Débloqué";
+  if(total&&idx===total-1) return "Parachevé";
+  return "Palier "+(idx+1);
+}
+function renderSermAdminWorkshop(all){
+  if(!can("manage_stats")) return "";
+  var keys=Object.keys(all).sort(function(a,b){
+    var la=getSermLevelKey(a,all[a]), lb=getSermLevelKey(b,all[b]);
+    if(la!==lb) return (SERM_LEVELS[la]||la).localeCompare(SERM_LEVELS[lb]||lb,"fr");
+    return a.localeCompare(b,"fr");
+  });
+  var h='<details class="serm-admin-workshop">';
+  h+='<summary><span>Atelier des Serments</span><strong>'+keys.length+' entrées</strong></summary>';
+  h+='<div class="serm-admin-workshop-top">';
+  h+='<p>Gestion réservée au staff : création, correction, branches et paliers restent ici pour garder la vitrine lisible côté joueurs.</p>';
+  h+='<button class="btn btn-sm btn-grn" onclick="openCreateSerm()"><span>+ Nouveau Serment</span></button>';
+  h+='</div>';
+  h+='<div class="serm-admin-workshop-grid">';
+  keys.forEach(function(nom){
+    var s=all[nom]||{};
+    var enc=encodeURIComponent(nom);
+    var level=getSermLevelKey(nom,s);
+    var isCustom=!SD[nom];
+    var branches=getBranches(nom,s);
+    h+='<article class="serm-admin-workshop-card">';
+    h+='<div class="serm-admin-workshop-head">';
+    h+='<div><strong>'+esc(nom)+'</strong><span>'+esc(getSermLevelLabel(nom,s))+(s.hidden?' · Masqué':'')+'</span></div>';
+    h+='<em>'+esc(getSermCatLabel(SERM_CATS[nom]||s.cat||"melee"))+'</em>';
+    h+='</div>';
+    h+='<p>'+esc(s.arme||"Arme non définie")+'</p>';
+    h+='<div class="serm-admin-workshop-actions">';
+    h+='<button class="btn btn-sm btn-gold" onclick="openEditSerm(this.dataset.n)" data-n="'+enc+'"><span>Modifier</span></button>';
+    h+='<button class="btn btn-sm" onclick="openAddBranch(this.dataset.n)" data-n="'+enc+'"><span>+ Branche</span></button>';
+    if(branches.length) h+='<button class="btn btn-sm" onclick="openManagePaliers(this.dataset.n,0)" data-n="'+enc+'"><span>Paliers</span></button>';
+    if(isCustom) h+='<button class="btn btn-sm btn-red" onclick="delSerm(this.dataset.n)" data-n="'+enc+'"><span>Supprimer</span></button>';
+    h+='</div>';
+    h+='</article>';
+  });
+  h+='</div>';
+  h+='</details>';
+  return h;
+}
 
 function renderAllSerments(tid){
   var el=ge(tid); if(!el) return;
@@ -5861,28 +5920,28 @@ function renderAllSerments(tid){
   html+='<section class="serm-rarity-guide">';
   html+='<div class="serm-rarity-copy">';
   html+='<span>Progression des Serments</span>';
-  html+='<p>Les Serments du départ sont <strong>Basiques</strong>. Ils peuvent se renforcer en <strong>Aguerris</strong>, puis devenir <strong>Émérites</strong>. Certains Serments sortent de cette voie : les <strong>Singuliers</strong> ouvrent des trajectoires plus rares, capables de tendre vers le <strong>Transcendé</strong> ou le <strong>Corrompu</strong>.</p>';
+  html+='<p>Les Serments du départ sont <strong>Basiques</strong>. Leur première évolution forme les <strong>Aguerris</strong>, actuellement gardés hors vitrine le temps d’être retravaillés. Plus loin, certains chemins deviennent <strong>Émérites</strong>, tandis que les voies <strong>Singulières</strong> peuvent tendre vers le <strong>Transcendé</strong> ou le <strong>Corrompu</strong>.</p>';
   html+='</div>';
   html+='</section>';
+  if(isAdmin) html+=renderSermAdminWorkshop(all);
   html+='<div class="serm-toolbar">';
   html+='<div class="serm-filter-block"><span>Type</span><div class="serm-filter" id="serm-filter">';
   html+='<button class="btn btn-sm active" onclick="filterSerments(null,this)"><span>Tous</span></button>';
   ["melee","distance","magie","soutien"].forEach(function(c){
-    html+='<button class="btn btn-sm" onclick="filterSerments(this.dataset.c,this)" data-c="'+c+'"><span>'+({"melee":"Mêlée","distance":"Distance","magie":"Magie","soutien":"Soutien"}[c]||c.charAt(0).toUpperCase()+c.slice(1))+'</span></button>';
+    html+='<button class="btn btn-sm" onclick="filterSerments(this.dataset.c,this)" data-c="'+c+'"><span>'+esc(getSermCatLabel(c))+'</span></button>';
   });
   html+='</div></div>';
-  html+='<div class="serm-filter-block"><span>Rareté</span><div class="serm-filter" id="serm-level-filter">';
+  html+='<div class="serm-filter-block"><span>Rang</span><div class="serm-filter" id="serm-level-filter">';
   html+='<button class="btn btn-sm active" onclick="filterSermentLevel(null,this)"><span>Toutes</span></button>';
-  ["basic","seasoned","emeritus","singular","transcended","corrupted"].forEach(function(level){
+  ["basic","emeritus","singular","transcended","corrupted"].forEach(function(level){
     html+='<button class="btn btn-sm" onclick="filterSermentLevel(this.dataset.level,this)" data-level="'+level+'"><span>'+esc(SERM_LEVELS[level])+'</span></button>';
   });
   html+='</div></div>';
-  if(isAdmin) html+='<button class="btn btn-sm btn-grn serm-create-btn" onclick="openCreateSerm()"><span>+ Nouveau Serment</span></button>';
   html+='</div>';
   html+='<div id="serments-grid" class="serm-grid">';
   Object.keys(all).forEach(function(nom){
-    if(all[nom]&&all[nom].hidden&&!isAdmin) return;
-    html+=renderSermCard(nom,all[nom],isAdmin);
+    if(!isSermVisibleInLibrary(nom,all[nom])) return;
+    html+=renderSermCard(nom,all[nom],false);
   });
   html+='</div>';
   html+='</div>';
@@ -5910,8 +5969,8 @@ function renderSermCard(nom,s,isAdmin){
   h+='<div class="serm-icon">'+icon+'</div>';
   h+='<div class="serm-head-copy"><div class="snm">'+esc(nom)+'</div><div class="swp">'+esc(s.arme)+'</div><div class="serm-level-pill">'+esc(sermLevel)+'</div></div>';
   h+='</div>';
-  h+='<div class="serm-cat" style="right:'+(isAdmin?'110px':'14px')+';">'+cat+'</div>';
-  h+='<p class="serm-lore">'+esc(s.lore)+'</p>';
+  h+='<div class="serm-cat" style="right:'+(isAdmin?'110px':'14px')+';">'+esc(getSermCatLabel(cat))+'</div>';
+  h+='<p class="serm-lore">'+esc(getSermLorePreview(s.lore))+'</p>';
   h+='<div class="serm-stats">';
   h+='<div class="sst"><div class="sstv">'+s.pvN+'</div><div class="sstl">PV/niv</div></div>';
   h+='<div class="sst"><div class="sstv">'+s.epN+'</div><div class="sstl">EP/niv</div></div>';
@@ -5919,22 +5978,22 @@ function renderSermCard(nom,s,isAdmin){
   h+='<div class="sst"><div class="sstv">'+s.dmg+'</div><div class="sstl">Dmg</div></div>';
   h+='</div>';
   if(branches.length>0){
-    h+='<div style="display:flex;flex-direction:column;gap:8px;">';
+    h+='<div class="serm-branch-list">';
     branches.forEach(function(br,bi){
       var col=STYLE_COLORS[br.style]||"var(--glacier)";
       var pals=br.paliers||[];
-      h+='<section class="serm-branch">';
+      h+='<details class="serm-branch">';
       // En-tête branche
-      h+='<div class="serm-branch-head" style="margin-bottom:'+(br.desc?'6px':'10px')+';">';
-      h+='<span style="font-family:var(--fd);font-size:14px;letter-spacing:1px;color:var(--text);">'+esc(br.nom)+'</span>';
-      h+='<span style="font-family:var(--fd);font-size:8px;letter-spacing:2px;text-transform:uppercase;padding:2px 8px;border:1px solid '+col+';color:'+col+';">'+esc(br.style)+'</span>';
+      h+='<summary class="serm-branch-head">';
+      h+='<span class="serm-branch-title">'+esc(br.nom)+'</span>';
+      h+='<span class="serm-branch-style" style="border-color:'+col+';color:'+col+';">'+esc(br.style)+'</span>';
       if(isAdmin){
         h+='<div class="serm-branch-actions" style="margin-left:auto;gap:4px;">';
         h+='<button class="btn btn-sm btn-gold" style="padding:3px 10px;" onclick="openEditBranch(this.dataset.n,'+bi+')" data-n="'+enc+'"><span>✎</span></button>';
         h+='<button class="btn btn-sm btn-red" style="padding:3px 10px;" onclick="delBranch(this.dataset.n,'+bi+')" data-n="'+enc+'"><span>×</span></button>';
         h+='</div>';
       }
-      h+='</div>';
+      h+='</summary>';
       // Description physique de la capacité (staff/lore visuel)
       if(br.descPhys) h+='<p class="serm-branch-phys">'+esc(br.descPhys)+'</p>';
       // Description narrative joueur
@@ -5952,12 +6011,12 @@ function renderSermCard(nom,s,isAdmin){
           palierMap[key].items.push({niv:pal.niv,idx:pi});
         });
         h+='<details class="serm-branch-progress">';
-        h+='<summary><span>Progression</span><strong>'+pals.length+' niveau'+(pals.length>1?'x':'')+'</strong></summary>';
+        h+='<summary><span>Montée en puissance</span><strong>'+pals.length+' étape'+(pals.length>1?'s':'')+'</strong></summary>';
         h+='<div class="serm-palier-rail">';
-        palierGroups.forEach(function(group){
+        palierGroups.forEach(function(group,gi){
           var levels=group.items.map(function(it){return it.niv;}).join(" / ");
           h+='<span class="serm-palier-chip" title="'+escAttr((group.desc||group.nom||"").slice(0,180))+'">';
-          h+='<b>Niv. '+levels+'</b><em>'+esc(group.nom)+'</em>';
+          h+='<b>'+esc(getPalierStageLabel(group.items[0]&&group.items[0].niv,gi,palierGroups.length))+' · Niv. '+levels+'</b><em>'+esc(group.nom)+'</em>';
           if(group.cout) h+='<small>'+esc(group.cout)+'</small>';
           h+='</span>';
         });
@@ -5970,7 +6029,7 @@ function renderSermCard(nom,s,isAdmin){
         h+='<button class="btn btn-sm btn-grn" onclick="openAddPalier(this.dataset.n,'+bi+')" data-n="'+enc+'"><span>+ Ajouter</span></button>';
         h+='</div>';
       }
-      h+='</section>';
+      h+='</details>';
     });
     h+='</div>';
   } else {
@@ -6423,7 +6482,10 @@ function openChangeSerm(pid){
   ge("mcs-cur").textContent=p.classe+" — "+(getPlayerSermentBundle(p).weapon||p.arme||"");
   var sel=ge("mcs-sel"); sel.innerHTML='<option value="">— Choisir —</option>';
   var all=getAllSD();
-  Object.keys(all).forEach(function(k){ sel.innerHTML+='<option value="'+k+'"'+(p.classe===k?' selected':'')+'>'+k+'</option>'; });
+  Object.keys(all).forEach(function(k){
+    if(k!==p.classe&&!isSermVisibleInLibrary(k,all[k])) return;
+    sel.innerHTML+='<option value="'+k+'"'+(p.classe===k?' selected':'')+'>'+k+'</option>';
+  });
   openModal("m-changeserm");
 }
 function saveChangeSerm(){
@@ -8829,7 +8891,7 @@ function popSSelects(){
   nc.innerHTML='<option value="">— Choisir —</option>';
   var all=getAllSD();
   Object.keys(all).forEach(function(k){
-    if(all[k]&&all[k].hidden&&!isAdminRole(CU)) return;
+    if(!isSermVisibleInLibrary(k,all[k])) return;
     nc.innerHTML+='<option value="'+k+'">'+k+'</option>';
   });
 }
