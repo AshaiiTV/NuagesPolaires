@@ -1264,9 +1264,9 @@ body[data-theme-engine="v257"] :where(
   .hdr-badge,.btn,.tgl,.plvl,.brbox,.quote,.bar,.prow,.ezon,.esl.hl,
   .sim-panel-player,#p-combat-mj-c .sim-panel-player,#p-combat-mj-c .arc-pill-soft,
   #p-apparitions-c .sl-card,#p-apparitions-c .sl-btn,#p-apparitions-c .sl-field input,
-  #p-apparitions-c .sl-field select,#bestiaire .beast-admin-detail,#bestiaire .beast-admin-hero-media,
-  #bestiaire .beast-admin-detail-stat,#bestiaire .beast-admin-detail-block,
-  #bestiaire .beast-admin-completeness span,#bestiaire .beast-admin-last-combats span
+  #p-apparitions-c .sl-field select,#bestiaire-admin .beast-admin-detail,#bestiaire-admin .beast-admin-hero-media,
+  #bestiaire-admin .beast-admin-detail-stat,#bestiaire-admin .beast-admin-detail-block,
+  #bestiaire-admin .beast-admin-completeness span,#bestiaire-admin .beast-admin-last-combats span
 ){
   border-color:rgba(var(--tm-accent-rgb),.18) !important;
 }
@@ -1324,13 +1324,13 @@ body[data-theme-engine="v257"] :where(.ezon:hover,.ezon.act){
   stroke:var(--tm-accent) !important;
 }
 body[data-theme-engine="v257"] :where(
-  #bestiaire .beast-admin-detail,
-  #bestiaire .beast-admin-hero-media,
-  #bestiaire .beast-admin-detail-stat,
-  #bestiaire .beast-admin-detail-block,
-  #bestiaire .beast-admin-completeness span,
-  #bestiaire .beast-admin-last-combats span,
-  #bestiaire .beast-admin-card.is-selected,
+  #bestiaire-admin .beast-admin-detail,
+  #bestiaire-admin .beast-admin-hero-media,
+  #bestiaire-admin .beast-admin-detail-stat,
+  #bestiaire-admin .beast-admin-detail-block,
+  #bestiaire-admin .beast-admin-completeness span,
+  #bestiaire-admin .beast-admin-last-combats span,
+  #bestiaire-admin .beast-admin-card.is-selected,
   #p-apparitions-c .sl-card,
   #p-apparitions-c .sl-btn,
   #p-apparitions-c .sl-field input,
@@ -1343,7 +1343,7 @@ body[data-theme-engine="v257"] :where(
 ){
   border-color:rgba(var(--tm-accent-rgb),.18) !important;
 }
-body[data-theme-engine="v257"] #bestiaire .beast-admin-detail::before,
+body[data-theme-engine="v257"] #bestiaire-admin .beast-admin-detail::before,
 body[data-theme-engine="v257"] .np-dashboard-console::before,
 body[data-theme-engine="v257"] .np-dashboard-card::before,
 body[data-theme-engine="v257"] .np-dashboard-panel::before{

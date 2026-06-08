@@ -301,15 +301,15 @@ html,body{
 
 /* === Bestiary mobile === */
 @media(max-width:900px){
-  #bestiaire .bestiary-admin-adv .adv-head,
-  #bestiaire .bestiary-admin-adv .adv-actions{
+  #bestiaire-admin .bestiary-admin-adv .adv-head,
+  #bestiaire-admin .bestiary-admin-adv .adv-actions{
     flex-direction:column !important;
     align-items:stretch !important;
   }
-  #bestiaire .bestiary-admin-adv .adv-grid{
+  #bestiaire-admin .bestiary-admin-adv .adv-grid{
     grid-template-columns:1fr !important;
   }
-  #bestiaire .bestiary-admin-adv .adv-actions .btn,
+  #bestiaire-admin .bestiary-admin-adv .adv-actions .btn,
   #bestiaire .bfilt{
     width:100% !important;
     justify-content:center !important;
@@ -318,8 +318,8 @@ html,body{
     display:grid !important;
     grid-template-columns:1fr !important;
   }
-  #bestiaire .bestiary-admin-detail,
-  #bestiaire .beast-admin-detail{
+  #bestiaire-admin .bestiary-admin-detail,
+  #bestiaire-admin .beast-admin-detail{
     max-width:100% !important;
     overflow-x:hidden !important;
   }

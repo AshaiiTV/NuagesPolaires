@@ -254,7 +254,7 @@ body[data-theme-active="light"] #app-root [style*="linear-gradient(180deg, rgba(
   color:var(--tm-text-muted,var(--dim)) !important;
 }
 #bestiaire #beast-filters,
-#bestiaire .bestiary-admin-adv .adv-actions{
+#bestiaire-admin .bestiary-admin-adv .adv-actions{
   gap:8px !important;
 }
 #bestiaire .bfilt{

@@ -1559,7 +1559,10 @@ function _reconcileScrollLocks(){
     if(bg) bg.classList.remove('open');
     _activePopupTab=null;
   }
-  if(!modalOpen && !cmdkOpen && !popupOpen && !drawerOpen){
+  if(popupOpen && !modalOpen && !cmdkOpen && !drawerOpen){
+    document.body.style.overflow='';
+    document.documentElement.style.overflow='';
+  } else if(!modalOpen && !cmdkOpen && !popupOpen && !drawerOpen){
     document.body.style.overflow='';
     document.documentElement.style.overflow='';
   }
@@ -4207,8 +4210,9 @@ function _canUseTabNow(id){
   if(!id) return false;
   var baseTabs=["accueil","synopsis","serments","bestiaire","combat","evenements","reglement"];
   var authTabs=["fiche","profil"];
-  var staffTabs=["joueurs","gestion-mj","en-attente","combat-mj","apparitions","bestiaire-admin","stats","database"];
-  var adminTabs=["stats","database","gestion-mj","en-attente"];
+  var staffTabs=["joueurs","combat-mj","apparitions","bestiaire-admin","database"];
+  var mjTabs=["joueurs","combat-mj","apparitions"];
+  var adminTabs=["database"];
   if(baseTabs.indexOf(id)>=0) return !!CU;
   if(authTabs.indexOf(id)>=0) return !!CU;
   if(staffTabs.indexOf(id)<0) return false;
@@ -4216,6 +4220,7 @@ function _canUseTabNow(id){
   var role=roleKey(CU);
   var isStaffUser=!!(CU.type==="staff"||["admin","mj","designer"].indexOf(role)>=0);
   if(!isStaffUser) return false;
+  if(mjTabs.indexOf(id)>=0 && ["admin","mj"].indexOf(role)<0) return false;
   if(id==="bestiaire-admin" && !can("manage_beasts")) return false;
   if(adminTabs.indexOf(id)>=0 && role!=="admin") return false;
   return true;
@@ -4760,7 +4765,7 @@ function renderDatabase(){
           +' <button class="btn btn-sm" style="margin-left:2px;border-color:rgba(201,160,76,.5);color:var(--gold);font-size:10px;" onclick="resetAccountPass(\''+a.id+'\')" title="Mot de passe oublié — le joueur pourra se reconnecter avec son pseudo seul et définir un nouveau mot de passe"><span>🔑 Reset</span></button>'
           +'</td>'
           +'<td>'+roleSel+'</td>'
-          +'<td>'+relink+(a.pid?'<button class="btn btn-sm" style="margin-left:4px;border-color:var(--faint);color:var(--faint);" onclick="unlinkAccount(\''+a.id+'\')"><span>✕</span></button>':'')+(a.pid?'<button class="btn btn-sm" style="margin-left:4px;border-color:var(--glacier-dim);color:var(--glacier);" onclick="loadPlayer(\''+a.pid+'\');switchTab(\'t-fiche\',null);" title="Aller à la fiche"><span>→</span></button>':'')+'</td>'
+          +'<td>'+relink+(a.pid?'<button class="btn btn-sm" style="margin-left:4px;border-color:var(--faint);color:var(--faint);" onclick="unlinkAccount(\''+a.id+'\')"><span>✕</span></button>':'')+(a.pid?'<button class="btn btn-sm" style="margin-left:4px;border-color:var(--glacier-dim);color:var(--glacier);" onclick="loadPlayer(\''+a.pid+'\');switchTab(\'fiche\',null);" title="Aller à la fiche"><span>→</span></button>':'')+'</td>'
           +'<td style="max-width:340px;">'+(role==="joueur"?_renderOwnedThemesDb(a):'<span style="color:var(--faint);">—</span>')+'</td>'
           +'<td>'+activite+'</td>'
           +'<td style="color:var(--dim);">'+date+'</td>'
@@ -5145,7 +5150,7 @@ async function logout(){
     if(ge("err-p"))ge("err-p").textContent="";
     if(ge("err-s"))ge("err-s").textContent="";
     ["t-database-c","p-admin-dashboard-c","p-joueurs-c","p-combat-mj-c","p-apparitions-c",
-     "p-gestion-mj-c","p-en-attente-c","p-profil-c","p-serm-c","p-hist",
+     "p-profil-c","p-serm-c","p-hist",
      "s-plist"].forEach(function(id){
       var el=document.getElementById(id); if(el) el.innerHTML="";
     });
@@ -5255,7 +5260,7 @@ function historyBack(){
   _updateBackBtn();
 }
 
-var TAB_POPUP_IDS=['synopsis','serments','bestiaire','bestiaire-admin','combat','reglement','profil','fiche','joueurs','gestion-mj','en-attente','combat-mj','apparitions','stats','evenements','carte','database'];
+var TAB_POPUP_IDS=['synopsis','serments','bestiaire','bestiaire-admin','combat','reglement','profil','fiche','joueurs','combat-mj','apparitions','evenements','carte','database'];
 var _popupReturnTab='accueil';
 var _activePopupTab=null;
 function _isTabPopup(id){ return !!id && TAB_POPUP_IDS.indexOf(id)>=0; }
@@ -5334,12 +5339,15 @@ function switchTab(id, btn, _isBack){
     if(!window._dbTab) window._dbTab='dashboard';
   }
   // ── SECURITY GUARDS ─────────────────────────────────────
-  var STAFF_TABS=["joueurs","gestion-mj","en-attente","combat-mj","apparitions","bestiaire-admin","stats","database"];
-  var ADMIN_TABS=["stats","database","gestion-mj","en-attente"];
+  var STAFF_TABS=["joueurs","combat-mj","apparitions","bestiaire-admin","database"];
+  var MJ_TABS=["joueurs","combat-mj","apparitions"];
+  var ADMIN_TABS=["database"];
   var isStaffUser = !!(CU && ((CU.type==="staff") || ["admin","mj","designer"].indexOf((CU.role||"").toLowerCase())>=0));
   if(STAFF_TABS.indexOf(id)>=0){
     if(!isStaffUser){
       // Accès non autorisé — silently redirect to accueil
+      id="accueil"; btn=null;
+    } else if(MJ_TABS.indexOf(id)>=0 && ["admin","mj"].indexOf(String(CU.role||"").toLowerCase())<0){
       id="accueil"; btn=null;
     } else if(id==="bestiaire-admin" && !(CU&&can("manage_beasts"))){
       id="accueil"; btn=null;
@@ -15635,7 +15643,7 @@ function getCommandItems(){
   if(CU) push("profil","Paramètres","Compte, collection et apparence",function(){ switchTab("profil",null); },"P");
   if(CU&&CU.pid) push("fiche","Ma fiche","Ouvrir la fiche du personnage",function(){ switchTab("fiche",null); },"F");
   var role=String((CU&&CU.role)||"").toLowerCase();
-  if(["admin","mj","designer"].indexOf(role)>=0){
+  if(["admin","mj"].indexOf(role)>=0){
     push("joueurs","Joueurs","Annuaire et comptes liés",function(){ switchTab("joueurs",null); },"J");
     push("combat-mj","Simulation","Outils de combat",function(){ switchTab("combat-mj",null); },"C");
   }
