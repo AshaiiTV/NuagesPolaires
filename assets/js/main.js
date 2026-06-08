@@ -5890,22 +5890,32 @@ function renderSermAdminWorkshop(all){
   keys.forEach(function(nom){
     var s=all[nom]||{};
     var enc=encodeURIComponent(nom);
-    var level=getSermLevelKey(nom,s);
     var isCustom=!SD[nom];
     var branches=getBranches(nom,s);
-    h+='<article class="serm-admin-workshop-card">';
-    h+='<div class="serm-admin-workshop-head">';
-    h+='<div><strong>'+esc(nom)+'</strong><span>'+esc(getSermLevelLabel(nom,s))+(s.hidden?' · Masqué':'')+'</span></div>';
+    h+='<details class="serm-admin-workshop-card">';
+    h+='<summary class="serm-admin-workshop-head">';
+    h+='<div><strong>'+esc(nom)+'</strong><span>'+esc(getSermLevelLabel(nom,s))+(s.hidden?' · Masqué':'')+' · '+branches.length+' branche'+(branches.length>1?'s':'')+'</span></div>';
     h+='<em>'+esc(getSermCatLabel(SERM_CATS[nom]||s.cat||"melee"))+'</em>';
-    h+='</div>';
+    h+='</summary>';
+    h+='<div class="serm-admin-workshop-body">';
     h+='<p>'+esc(s.arme||"Arme non définie")+'</p>';
+    if(branches.length){
+      h+='<div class="serm-admin-branch-list">';
+      branches.forEach(function(br,bi){
+        h+='<div class="serm-admin-branch-row">';
+        h+='<span>'+esc(br.nom||("Branche "+(bi+1)))+'</span>';
+        h+='<button class="btn btn-sm" onclick="openManagePaliers(this.dataset.n,'+bi+')" data-n="'+enc+'"><span>Paliers</span></button>';
+        h+='</div>';
+      });
+      h+='</div>';
+    }
     h+='<div class="serm-admin-workshop-actions">';
     h+='<button class="btn btn-sm btn-gold" onclick="openEditSerm(this.dataset.n)" data-n="'+enc+'"><span>Modifier</span></button>';
     h+='<button class="btn btn-sm" onclick="openAddBranch(this.dataset.n)" data-n="'+enc+'"><span>+ Branche</span></button>';
-    if(branches.length) h+='<button class="btn btn-sm" onclick="openManagePaliers(this.dataset.n,0)" data-n="'+enc+'"><span>Paliers</span></button>';
     if(isCustom) h+='<button class="btn btn-sm btn-red" onclick="delSerm(this.dataset.n)" data-n="'+enc+'"><span>Supprimer</span></button>';
     h+='</div>';
-    h+='</article>';
+    h+='</div>';
+    h+='</details>';
   });
   h+='</div>';
   h+='</details>';
