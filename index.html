@@ -415,6 +415,8 @@ button:focus-visible{outline:1px solid rgba(126,184,212,0.4);outline-offset:2px;
 .perm-designer-inline{display:none !important;}.is-designer .perm-designer-inline,.is-admin .perm-designer-inline{display:flex !important;}
 .perm-admin{display:none !important;}.is-admin .perm-admin{display:inline-block !important;}
 .perm-admin-inline{display:none !important;}.is-admin .perm-admin-inline{display:flex !important;}
+body.np-is-admin .perm-mj,body.np-is-admin .perm-designer,body.np-is-admin .perm-admin{display:inline-block !important;}
+body.np-is-admin .perm-mj-inline,body.np-is-admin .perm-designer-inline,body.np-is-admin .perm-admin-inline{display:flex !important;}
 /* Panneaux internes (pas des tabs) — utilisent des classes séparées */
 .panel-staff{display:none;}.is-staff .panel-staff{display:block;}
 .panel-mj{display:none;}.is-mj .panel-mj,.is-admin .panel-mj{display:block;}
@@ -6977,7 +6979,8 @@ body.theme-aquaris .home-title{
           <button class="nav-dropdown-item perm-mj" onclick="switchDropTab('joueurs',this,'dd-staff')"><span class="nav-item-icon">👥</span>Joueurs<span id="dd-joueurs-pending-badge" style="display:none;background:var(--red);color:#fff;font-size:8px;padding:1px 5px;border-radius:99px;margin-left:auto;font-family:var(--fd);"></span></button>
           <button class="nav-dropdown-item perm-mj" onclick="switchDropTab('combat-mj',this,'dd-staff')"><span class="nav-item-icon">⚔</span>Simulation</button>
           <button class="nav-dropdown-item perm-mj" onclick="switchDropTab('apparitions',this,'dd-staff')"><span class="nav-item-icon">🜂</span>Apparitions</button>
-          <button class="nav-dropdown-item perm-designer" onclick="switchDropTab('bestiaire-admin',this,'dd-staff')"><span class="nav-item-icon">✦</span>Création bestiaire</button>
+          <button class="nav-dropdown-item perm-designer" onclick="switchDropTab('bestiaire-admin',this,'dd-staff')"><span class="nav-item-icon">✦</span>Atelier bestiaire</button>
+          <button class="nav-dropdown-item perm-admin" onclick="switchDropTab('serments-admin',this,'dd-staff')"><span class="nav-item-icon">⚜</span>Atelier serments</button>
           <div class="nav-divider perm-admin"></div>
           <div class="nav-section-header perm-admin" style="color:rgba(201,74,74,0.5);">ADMIN</div>
           <button class="nav-dropdown-item perm-admin" onclick="switchDropTab('database',this,'dd-staff')"><span class="nav-item-icon">🗄</span>Administration</button>
@@ -7031,7 +7034,8 @@ body.theme-aquaris .home-title{
       <button onclick="switchDropTab('joueurs',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-mj">Joueurs</button>
       <button onclick="switchDropTab('combat-mj',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-mj">Simulation</button>
       <button onclick="switchDropTab('apparitions',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-mj">Apparitions</button>
-      <button onclick="switchDropTab('bestiaire-admin',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-designer">Création bestiaire</button>
+      <button onclick="switchDropTab('bestiaire-admin',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-designer">Atelier bestiaire</button>
+      <button onclick="switchDropTab('serments-admin',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-admin">Atelier serments</button>
       <button onclick="switchDropTab('database',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-admin">Administration</button>
     </div>
     <div style="margin-top:auto;padding:16px 20px;border-top:0.5px solid rgba(126,184,212,0.07);">
@@ -7203,6 +7207,9 @@ body.theme-aquaris .home-title{
 
     <!-- CRÉATION BESTIAIRE (designer/admin) -->
     <div id="bestiaire-admin" class="tab-content" data-private="true"><div id="p-bestiary-admin-c"></div></div>
+
+    <!-- ATELIER SERMENTS (admin) -->
+    <div id="serments-admin" class="tab-content" data-private="true"><div id="p-serments-admin-c"></div></div>
 
     <!-- COMBAT -->
     <div id="combat" class="tab-content"><div id="p-combat-c"></div></div>

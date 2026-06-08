@@ -236,6 +236,12 @@ body.np-is-admin #drawer-staff-section .perm-admin{
 body.np-is-admin #dd-staff-menu .perm-admin{
   display:flex !important;
 }
+body.np-is-admin #drawer-staff-section .perm-mj,
+body.np-is-admin #drawer-staff-section .perm-designer,
+body.np-is-admin #dd-staff-menu .perm-mj,
+body.np-is-admin #dd-staff-menu .perm-designer{
+  display:flex !important;
+}
 @media(max-width:780px){
   #dd-staff-menu.nav-section-staff{
     min-width:240px !important;
@@ -301,7 +307,8 @@ body.np-is-admin #dd-staff-menu .perm-admin{
       ['joueurs','Joueurs'],
       ['combat-mj','Simulation'],
       ['apparitions','Apparitions'],
-      ['bestiaire-admin','Création bestiaire'],
+      ['bestiaire-admin','Atelier bestiaire'],
+      ['serments-admin','Atelier serments'],
       ['database','Administration']
     ];
 

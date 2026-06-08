@@ -4201,7 +4201,7 @@ var _lastAppTabKey="np_last_app_tab";
 var _tabMemorySuspended=false;
 
 function _tabDropIdFor(id){
-  var staffTabs=["joueurs","combat-mj","apparitions","bestiaire-admin","database"];
+  var staffTabs=["joueurs","combat-mj","apparitions","bestiaire-admin","serments-admin","database"];
   return staffTabs.indexOf(id)>=0 ? "dd-staff" : "dd-joueurs";
 }
 
@@ -4210,9 +4210,9 @@ function _canUseTabNow(id){
   if(!id) return false;
   var baseTabs=["accueil","synopsis","serments","bestiaire","combat","evenements","reglement"];
   var authTabs=["fiche","profil"];
-  var staffTabs=["joueurs","combat-mj","apparitions","bestiaire-admin","database"];
+  var staffTabs=["joueurs","combat-mj","apparitions","bestiaire-admin","serments-admin","database"];
   var mjTabs=["joueurs","combat-mj","apparitions"];
-  var adminTabs=["database"];
+  var adminTabs=["serments-admin","database"];
   if(baseTabs.indexOf(id)>=0) return !!CU;
   if(authTabs.indexOf(id)>=0) return !!CU;
   if(staffTabs.indexOf(id)<0) return false;
@@ -5260,7 +5260,7 @@ function historyBack(){
   _updateBackBtn();
 }
 
-var TAB_POPUP_IDS=['synopsis','serments','bestiaire','bestiaire-admin','combat','reglement','profil','fiche','joueurs','combat-mj','apparitions','evenements','carte','database'];
+var TAB_POPUP_IDS=['synopsis','serments','bestiaire','bestiaire-admin','serments-admin','combat','reglement','profil','fiche','joueurs','combat-mj','apparitions','evenements','carte','database'];
 var _popupReturnTab='accueil';
 var _activePopupTab=null;
 function _isTabPopup(id){ return !!id && TAB_POPUP_IDS.indexOf(id)>=0; }
@@ -5339,9 +5339,9 @@ function switchTab(id, btn, _isBack){
     if(!window._dbTab) window._dbTab='dashboard';
   }
   // ── SECURITY GUARDS ─────────────────────────────────────
-  var STAFF_TABS=["joueurs","combat-mj","apparitions","bestiaire-admin","database"];
+  var STAFF_TABS=["joueurs","combat-mj","apparitions","bestiaire-admin","serments-admin","database"];
   var MJ_TABS=["joueurs","combat-mj","apparitions"];
-  var ADMIN_TABS=["database"];
+  var ADMIN_TABS=["serments-admin","database"];
   var isStaffUser = !!(CU && ((CU.type==="staff") || ["admin","mj","designer"].indexOf((CU.role||"").toLowerCase())>=0));
   if(STAFF_TABS.indexOf(id)>=0){
     if(!isStaffUser){
@@ -5406,6 +5406,9 @@ function switchTab(id, btn, _isBack){
   }
   if(id==="bestiaire-admin"){
     if(typeof renderBestiaryAdminPage==="function") renderBestiaryAdminPage("p-bestiary-admin-c");
+  }
+  if(id==="serments-admin"){
+    renderSermentsAdminPage("p-serments-admin-c");
   }
   if(id==="combat"){
     var c=ge("p-combat-c");
@@ -5916,6 +5919,113 @@ function renderAllSerments(tid){
   el.innerHTML=html;
 }
 
+function _refreshSermentViews(){
+  try{
+    var publicEl=ge("p-serments-c");
+    if(publicEl&&publicEl.innerHTML.trim()) renderAllSerments("p-serments-c");
+  }catch(e){}
+  try{
+    var adminEl=ge("p-serments-admin-c");
+    if(adminEl&&adminEl.innerHTML.trim()) renderSermentsAdminPage("p-serments-admin-c");
+  }catch(e){}
+  try{ popSSelects(); }catch(e){}
+}
+
+function renderSermentsAdminPage(tid){
+  var el=ge(tid); if(!el) return;
+  if(!CU||!isAdminRole(CU)){
+    el.innerHTML='<div class="card"><div class="card-title">Accès réservé</div><p style="color:var(--dim);">Atelier serments réservé aux administrateurs.</p></div>';
+    return;
+  }
+  var all=getAllSD();
+  var names=Object.keys(all).sort(function(a,b){ return a.localeCompare(b,"fr",{sensitivity:"base"}); });
+  var total=names.length;
+  var hidden=names.filter(function(n){ return !!(all[n]&&all[n].hidden); }).length;
+  var custom=Object.keys(gsd()||{}).length;
+  var html='<div class="serm-admin-workshop">';
+  html+='<section class="beast-admin-page-head">';
+  html+='<div class="beast-admin-page-title">Atelier serments</div>';
+  html+='<div class="beast-admin-page-sub">Espace admin pour créer, corriger et préparer les Serments, leurs branches et leurs paliers. La page Serments publique reste une vitrine de lecture.</div>';
+  html+='<div class="beast-admin-page-actions">';
+  html+='<button class="btn btn-sm btn-grn" onclick="openCreateSerm()"><span>+ Nouveau serment</span></button>';
+  html+='<button class="btn btn-sm" onclick="renderSermentsAdminPage(\'p-serments-admin-c\')"><span>Rafraîchir</span></button>';
+  html+='</div>';
+  html+='</section>';
+  html+='<div class="bestiary-admin-adv">';
+  html+='<div class="adv-stats">';
+  html+='<div class="adv-stat"><strong>'+total+'</strong><span>Serments</span></div>';
+  html+='<div class="adv-stat"><strong>'+custom+'</strong><span>Personnalisés</span></div>';
+  html+='<div class="adv-stat"><strong>'+hidden+'</strong><span>Masqués</span></div>';
+  html+='<div class="adv-stat"><strong>'+names.filter(function(n){ return getSermLevelKey(n,all[n])==="seasoned"; }).length+'</strong><span>Aguerris</span></div>';
+  html+='</div>';
+  html+='</div>';
+  html+='<div class="serm-admin-list">';
+  names.forEach(function(nom){
+    var s=all[nom]||{};
+    var enc=encodeURIComponent(nom);
+    var branches=getBranches(nom,s)||[];
+    var level=getSermLevelLabel(nom,s);
+    var cat=getSermCatLabel(s.cat||SERM_CATS[nom]||"melee");
+    html+='<details class="serm-admin-row">';
+    html+='<summary>';
+    html+='<span class="serm-admin-row-main"><strong>'+esc(nom)+'</strong><em>'+esc(s.arme||"Arme non définie")+'</em></span>';
+    html+='<span class="serm-admin-row-meta"><b>'+esc(level)+'</b><b>'+esc(cat)+'</b><b>'+branches.length+' branche'+(branches.length>1?'s':'')+'</b>'+(s.hidden?'<b>Masqué</b>':'')+'</span>';
+    html+='</summary>';
+    html+='<div class="serm-admin-row-body">';
+    html+='<p>'+esc(getSermLorePreview(s.lore||"Aucun lore."))+'</p>';
+    html+='<div class="serm-admin-row-actions">';
+    html+='<button class="btn btn-sm btn-gold" onclick="openEditSerm(\''+enc+'\')"><span>Modifier serment</span></button>';
+    html+='<button class="btn btn-sm btn-grn" onclick="openAddBranch(\''+enc+'\')"><span>+ Branche</span></button>';
+    if(!SD[nom]) html+='<button class="btn btn-sm btn-red" onclick="delSerm(\''+enc+'\')"><span>Supprimer</span></button>';
+    html+='</div>';
+    if(branches.length){
+      html+='<div class="serm-admin-branches">';
+      branches.forEach(function(br,idx){
+        var pals=br.paliers||[];
+        html+='<article class="serm-admin-branch">';
+        html+='<div><strong>'+esc(br.nom||"Branche")+'</strong><span>'+esc(br.style||"Style non défini")+' · '+pals.length+' palier'+(pals.length>1?'s':'')+'</span></div>';
+        if(br.desc) html+='<p>'+esc(getSermLorePreview(br.desc))+'</p>';
+        html+='<div class="serm-admin-row-actions">';
+        html+='<button class="btn btn-sm" onclick="openEditBranch(\''+enc+'\','+idx+')"><span>Modifier</span></button>';
+        html+='<button class="btn btn-sm" onclick="openManagePaliers(\''+enc+'\','+idx+')"><span>Paliers</span></button>';
+        html+='<button class="btn btn-sm btn-red" onclick="delBranch(\''+enc+'\','+idx+')"><span>Supprimer</span></button>';
+        html+='</div>';
+        html+='</article>';
+      });
+      html+='</div>';
+    }else{
+      html+='<p class="iempty">Aucune branche définie.</p>';
+    }
+    html+='</div>';
+    html+='</details>';
+  });
+  html+='</div>';
+  html+='</div>';
+  html+='<style id="serm-admin-workshop-style">';
+  html+='#serments-admin .serm-admin-workshop{display:grid;gap:16px;}';
+  html+='#serments-admin .serm-admin-list{display:grid;gap:10px;}';
+  html+='#serments-admin .serm-admin-row{border:1px solid rgba(126,184,212,.14);background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.018));border-radius:16px;overflow:hidden;}';
+  html+='#serments-admin .serm-admin-row>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;}';
+  html+='#serments-admin .serm-admin-row>summary::-webkit-details-marker{display:none;}';
+  html+='#serments-admin .serm-admin-row>summary::after{content:"+";font-family:var(--fm);color:var(--glacier);font-size:18px;}';
+  html+='#serments-admin .serm-admin-row[open]>summary::after{content:"-";}';
+  html+='#serments-admin .serm-admin-row-main{display:grid;gap:4px;min-width:0;}';
+  html+='#serments-admin .serm-admin-row-main strong{font-family:var(--fd);font-size:15px;letter-spacing:1.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}';
+  html+='#serments-admin .serm-admin-row-main em{font-size:12px;color:var(--dim);font-style:normal;}';
+  html+='#serments-admin .serm-admin-row-meta,#serments-admin .serm-admin-row-actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center;}';
+  html+='#serments-admin .serm-admin-row-meta b{font-family:var(--fd);font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);border:1px solid rgba(126,184,212,.14);border-radius:999px;padding:4px 8px;background:rgba(255,255,255,.03);}';
+  html+='#serments-admin .serm-admin-row-body{padding:0 16px 16px;display:grid;gap:12px;}';
+  html+='#serments-admin .serm-admin-row-body>p{margin:0;color:var(--dim);line-height:1.65;font-size:13px;}';
+  html+='#serments-admin .serm-admin-branches{display:grid;gap:8px;}';
+  html+='#serments-admin .serm-admin-branch{display:grid;gap:8px;padding:12px;border:1px solid rgba(126,184,212,.10);border-radius:12px;background:rgba(255,255,255,.025);}';
+  html+='#serments-admin .serm-admin-branch strong{font-family:var(--fd);font-size:12px;letter-spacing:1.4px;color:var(--text);display:block;}';
+  html+='#serments-admin .serm-admin-branch span{font-size:11px;color:var(--faint);}';
+  html+='#serments-admin .serm-admin-branch p{margin:0;color:var(--dim);font-size:12px;line-height:1.55;}';
+  html+='@media(max-width:760px){#serments-admin .serm-admin-row>summary{align-items:flex-start;flex-direction:column;}#serments-admin .serm-admin-row>summary::after{position:absolute;right:16px;top:12px;}}';
+  html+='</style>';
+  el.innerHTML=html;
+}
+
 function renderSermCard(nom,s){
   var icon=WEAPON_ICONS[nom]||"✦";
   var cat=SERM_CATS[nom]||s.cat||"melee";
@@ -6167,14 +6277,14 @@ function saveSerm(){
     notif("Serment '"+nom+"' créé.","ok");
   }
   closeModal("m-serm");
-  renderAllSerments("p-serments-c"); popSSelects();
+  _refreshSermentViews();
 }
 function delSerm(nomEnc){
   if(!CU||!can("manage_beasts")){ return; }
   var nom=decodeURIComponent(nomEnc);
   if(!confirm("Supprimer le Serment '"+nom+"' ?")) return;
   var custom=gsd(); delete custom[nom]; ssd(custom);
-  renderAllSerments("p-serments-c"); notif("Serment supprimé.","inf");
+  _refreshSermentViews(); notif("Serment supprimé.","inf");
 }
 
 var _branchSermNom=null,_branchIdx=-1;
@@ -6223,7 +6333,7 @@ function saveBranch(){
   }
   closeModal("m-branch");
   if(CU&&CU.pid) renderView();
-  renderAllSerments("p-serments-c"); notif("Branche sauvegardée.","ok");
+  _refreshSermentViews(); notif("Branche sauvegardée.","ok");
 }
 function delBranch(nomEnc,idx){
   if(!CU||!can("manage_beasts")){ return; }
@@ -6248,7 +6358,7 @@ function delBranch(nomEnc,idx){
     if(touched) sp(players);
   }
   if(CU&&CU.pid) renderView();
-  renderAllSerments("p-serments-c"); notif("Branche supprimée.","inf");
+  _refreshSermentViews(); notif("Branche supprimée.","inf");
 }
 
 var _palierSermNom=null,_palierBrIdx=-1;
@@ -6317,7 +6427,7 @@ function savePalier(){
   br.paliers.sort(function(a,b){return a.niv-b.niv;});
   if(!custom[_palierSermNom]) custom[_palierSermNom]=Object.assign({},s,{branches:branches}); else custom[_palierSermNom].branches=branches;
   ssd(custom); closeModal("m-palier");
-  renderAllSerments("p-serments-c"); notif(_palierIdx>=0?"Palier modifié.":"Palier ajouté.","ok");
+  _refreshSermentViews(); notif(_palierIdx>=0?"Palier modifié.":"Palier ajouté.","ok");
 }
 
 var _palierIdx=-1;
@@ -6346,7 +6456,7 @@ function delPalier(nomEnc,brIdx,palIdx){
   var br=branches[brIdx]; if(!br) return;
   br.paliers.splice(palIdx,1);
   if(!custom[nom]) custom[nom]=Object.assign({},s,{branches:branches}); else custom[nom].branches=branches;
-  ssd(custom); renderAllSerments("p-serments-c"); notif("Palier supprimé.","inf");
+  ssd(custom); _refreshSermentViews(); notif("Palier supprimé.","inf");
 }
 
 var _changeSermPid=null;
@@ -15393,8 +15503,9 @@ function _runtimeViewLabel(id){
     "accueil":"Accueil",
     "synopsis":"Synopsis",
     "serments":"Serments",
+    "serments-admin":"Atelier serments",
     "bestiaire":"Bestiaire",
-    "bestiaire-admin":"Création bestiaire",
+    "bestiaire-admin":"Atelier bestiaire",
     "evenements":"Événements",
     "reglement":"Règlement",
     "profil":"Profil",
@@ -15648,9 +15759,10 @@ function getCommandItems(){
     push("combat-mj","Simulation","Outils de combat",function(){ switchTab("combat-mj",null); },"C");
   }
   if(CU&&can("manage_beasts")){
-    push("bestiaire-admin","Création bestiaire","Créer, corriger et organiser les créatures",function(){ switchTab("bestiaire-admin",null); },"CB");
+    push("bestiaire-admin","Atelier bestiaire","Créer, corriger et organiser les créatures",function(){ switchTab("bestiaire-admin",null); },"AB");
   }
   if(role==="admin"){
+    push("serments-admin","Atelier serments","Créer, corriger et organiser les serments",function(){ switchTab("serments-admin",null); },"AS");
     push("database","Administration","Vue d’ensemble, comptes, thèmes et logs",function(){ switchTab("database",null); },"ADM");
   }
   return items;
