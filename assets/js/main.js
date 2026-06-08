@@ -2681,7 +2681,7 @@ function cropRemoveStoredImage(){
     sb(beasts);
     cropClear();
     closeModal("m-avatar-crop");
-    renderBGrid("p-bgrd",CU&&CU.type==="staff");
+    renderBGrid("p-bgrd",false);
     if(typeof renderDatabase==="function" && ge("p-db-editor-body")) try{ renderDatabase(); }catch(e){}
     notif("Image supprimée.","ok");
     return;
@@ -2765,7 +2765,7 @@ function cropApply(){
     _cropBeastId=null;
     if(ge("m-avatar-crop") && ge("m-avatar-crop").querySelector(".mtit")) ge("m-avatar-crop").querySelector(".mtit").textContent="Recadrer l'avatar";
     closeModal("m-avatar-crop");
-    renderBGrid("p-bgrd",CU&&CU.type==="staff");
+    renderBGrid("p-bgrd",false);
     if(typeof renderDatabase==="function" && ge("p-db-editor-body")) try{ renderDatabase(); }catch(e){}
     notif("Image mise à jour.","ok");
     return;
@@ -4421,7 +4421,7 @@ initStorage(); }
     switchDropTab("accueil",null,"dd-joueurs");
   }
   if(!isPending) renderView();
-  renderBGrid("p-bgrd",isStaff);
+  renderBGrid("p-bgrd",false);
   renderCombat("p-combat-c");
   renderRegles("p-regles-c");
   renderAllSerments("p-serments-c");
@@ -6620,11 +6620,11 @@ function _beastAdminSummaryText(total, filtered){
 }
 function setBeastAdminFilter(key, value){
   _beastAdminFilters[key]=value;
-  renderBGrid('p-bgrd', CU&&CU.type==='staff');
+  renderBGrid('p-bgrd',false);
 }
 function resetBeastAdminFilters(){
   _beastAdminFilters={visibility:'all',image:'all',usage:'all',archived:'active',completeness:'all',danger:'all',sort:'recent',levelMin:'',levelMax:''};
-  renderBGrid('p-bgrd', CU&&CU.type==='staff');
+  renderBGrid('p-bgrd',false);
 }
 function renderBeastAdminToolbar(total, filteredCount){
   var grid=ge('p-bgrd');
@@ -6663,7 +6663,7 @@ function renderBeastAdminToolbar(total, filteredCount){
 
 function beastSearch(q){
   _beastSearch=(q||'').toLowerCase().trim();
-  renderBGrid('p-bgrd',CU&&CU.role&&CU.role!=='joueur');
+  renderBGrid('p-bgrd',false);
 }
 
 function _clearSortBtns(except){
@@ -6677,7 +6677,7 @@ function setBeastFilter(beh,btn){
   _beastFilter=beh;
   document.querySelectorAll('.bfilt[data-beh]').forEach(function(b){b.classList.remove('active');});
   btn.classList.add('active');
-  renderBGrid('p-bgrd',CU&&CU.type==='staff');
+  renderBGrid('p-bgrd',false);
 }
 
 function toggleBeastPvSort(btn){
@@ -6688,7 +6688,7 @@ function toggleBeastPvSort(btn){
   else _beastPvSort='desc';
   btn.textContent='PV '+(_beastPvSort==='asc'?'↑':'↓');
   btn.classList.add('active');
-  renderBGrid('p-bgrd',CU&&CU.type==='staff');
+  renderBGrid('p-bgrd',false);
 }
 
 function toggleBeastNivSort(btn){
@@ -6699,7 +6699,7 @@ function toggleBeastNivSort(btn){
   else _beastNivSort='desc';
   btn.textContent='Niv '+(_beastNivSort==='asc'?'↑':'↓');
   btn.classList.add('active');
-  renderBGrid('p-bgrd',CU&&CU.type==='staff');
+  renderBGrid('p-bgrd',false);
 }
 
 function toggleBeastAlpha(btn){
@@ -6710,15 +6710,17 @@ function toggleBeastAlpha(btn){
   else _beastAlpha='desc';
   btn.textContent=_beastAlpha==='asc'?'A→Z':'Z→A';
   btn.classList.add('active');
-  renderBGrid('p-bgrd',CU&&CU.type==='staff');
+  renderBGrid('p-bgrd',false);
 }
 
 function renderBGrid(tid,staff){
   var beasts=gb();
   var el=ge(tid);if(!el)return;
+  var isPublicBestiary=tid==="p-bgrd";
+  if(isPublicBestiary) staff=false;
   var shouldRefocus = tid==="p-bgrd" && !!(ge("bestiaire") && ge("bestiaire").classList.contains("active"));
-  var isDesigner=CU&&(isAdminRole(CU)||roleKey(CU)==="designer");
-  var isAdminBestiary=!!(CU&&can("manage_beasts"));
+  var isDesigner=!isPublicBestiary&&CU&&(isAdminRole(CU)||roleKey(CU)==="designer");
+  var isAdminBestiary=!isPublicBestiary&&!!(CU&&can("manage_beasts"));
   var _bhl=(typeof BHL!=='undefined'&&BHL)?BHL:{};
   var filtered=_beastFilter==='all'?beasts.slice():beasts.filter(function(b){ return (_bhl[b.beh]||String(b.beh||'').replace(/^./,function(m){return m.toUpperCase();}))===_beastFilter; });
   if(!isDesigner) filtered=filtered.filter(function(b){return !b.hidden && !b.archived;});
@@ -6778,7 +6780,7 @@ function renderBGrid(tid,staff){
       }
     });
   }
-  renderBeastAdminToolbar(beasts.length, filtered.length);
+  if(!isPublicBestiary) renderBeastAdminToolbar(beasts.length, filtered.length);
   if(!filtered.length){
     var msg=_beastSearch?'Aucune créature ne correspond à "'+_beastSearch+'".':'Aucune créature pour ce filtre.';
     el.innerHTML='<p style="color:var(--faint);font-style:italic;padding:20px 0;">'+msg+'</p>';
@@ -6960,7 +6962,7 @@ function beastZoneRemoveMob(id, zone){
   b.updatedAt=Date.now();
   sb(beasts);
   renderBeastZoneManager(zone);
-  renderBGrid("p-bgrd",!!(CU&&can("manage_beasts")));
+  renderBGrid("p-bgrd",false);
   notif((b.nom||"Mob")+" retiré de la zone.","ok");
 }
 function beastZoneFilterList(q){
@@ -7151,7 +7153,7 @@ function saveBeastZoneAssignments(){
   });
   sb(beasts);
   renderBeastZoneManager(name);
-  renderBGrid("p-bgrd",!!(CU&&can("manage_beasts")));
+  renderBGrid("p-bgrd",false);
   notif("Zone enregistrée.","ok");
 }
 function deleteBeastZone(zone){
@@ -7167,7 +7169,7 @@ function deleteBeastZone(zone){
   _spawnLabRemoveCustomZone(zone);
   sb(beasts);
   renderBeastZoneManager(_beastZoneNames()[0]||'');
-  renderBGrid("p-bgrd",!!(CU&&can("manage_beasts")));
+  renderBGrid("p-bgrd",false);
   notif("Zone supprimée.","ok");
 }
 
@@ -7183,7 +7185,7 @@ function duplicateBeast(id){
   copy.archived=false;
   var beasts=gb(); beasts.unshift(copy); sb(beasts);
   notif(copy.nom+' créée.','ok');
-  renderBGrid("p-bgrd", CU&&CU.type==="staff");
+  renderBGrid("p-bgrd",false);
 }
 function setBeastArchived(id, archived){
   if(!can("manage_beasts")){ notif("Permission insuffisante.","err"); return; }
@@ -7194,7 +7196,7 @@ function setBeastArchived(id, archived){
   b.updatedAt=Date.now();
   sb(beasts);
   notif((b.nom||'Créature')+(b.archived?' archivée.':' restaurée.'),'ok');
-  renderBGrid("p-bgrd", CU&&CU.type==="staff");
+  renderBGrid("p-bgrd",false);
 }
 function archiveBeast(id){
   var b=_findBeastById(id); if(!b) return;
@@ -7206,7 +7208,7 @@ function hardDeleteBeast(id){
   if(!can("delete_beast")){notif("Permission insuffisante.","err");return;}
   if(!confirm("Supprimer définitivement cette créature ? Cette action est irréversible.")) return;
   sb(gb().filter(function(x){ return String(x&&x.id||'')!==String(id||''); }));
-  renderBGrid("p-bgrd",!!(CU&&can("manage_beasts")));
+  renderBGrid("p-bgrd",false);
   notif("Créature supprimée définitivement.","inf");
 }
 function exportBeastJson(id){
@@ -7240,7 +7242,7 @@ function importBeastJson(){
           beasts.unshift(norm);
         });
         sb(beasts);
-        renderBGrid('p-bgrd', CU&&CU.type==='staff');
+        renderBGrid('p-bgrd',false);
         notif(arr.length+' créature(s) importée(s).','ok');
       }catch(e){ notif('JSON invalide.','err'); }
     };
@@ -7321,7 +7323,7 @@ function toggleBeastHidden(id){
   b.hidden=!b.hidden;
   sb(beasts);
   notif(b.nom+(b.hidden?" masqué aux joueurs.":" publié."),"ok");
-  renderBGrid("p-bgrd", CU&&CU.type==="staff");
+  renderBGrid("p-bgrd",false);
 }
 
 
@@ -7423,7 +7425,7 @@ function bCard(b,staff){
   if(isHidden&&canToggle) badges+='<span style="font-family:var(--fd);font-size:8px;letter-spacing:1.5px;padding:3px 8px;border:1px solid rgba(201,160,76,.45);color:var(--gold);background:rgba(201,160,76,.10);">Masquée</span>';
   if(isArchived&&canToggle) badges+='<span style="font-family:var(--fd);font-size:8px;letter-spacing:1.5px;padding:3px 8px;border:1px solid rgba(201,74,74,.45);color:#ff9a9a;background:rgba(201,74,74,.10);">Archivée</span>';
   badges+='<span style="font-family:var(--fd);font-size:8px;letter-spacing:1.5px;padding:3px 8px;border:1px solid rgba(126,184,212,.25);color:var(--glacier);background:rgba(126,184,212,.08);">'+esc(_beastThreatBand(b))+'</span>';
-  badges+=issues.length?'<span style="font-family:var(--fd);font-size:8px;letter-spacing:1.5px;padding:3px 8px;border:1px solid rgba(201,160,76,.35);color:var(--gold);background:rgba(201,160,76,.08);">À compléter · '+issues.length+'</span>':'<span style="font-family:var(--fd);font-size:8px;letter-spacing:1.5px;padding:3px 8px;border:1px solid rgba(109,184,138,.35);color:var(--green);background:rgba(109,184,138,.08);">Complète</span>';
+  if(canEdit) badges+=issues.length?'<span style="font-family:var(--fd);font-size:8px;letter-spacing:1.5px;padding:3px 8px;border:1px solid rgba(201,160,76,.35);color:var(--gold);background:rgba(201,160,76,.08);">À compléter · '+issues.length+'</span>':'<span style="font-family:var(--fd);font-size:8px;letter-spacing:1.5px;padding:3px 8px;border:1px solid rgba(109,184,138,.35);color:var(--green);background:rgba(109,184,138,.08);">Complète</span>';
   var adminInsights='';
   if(canEdit){
     adminInsights='<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 10px;">'
@@ -8549,7 +8551,7 @@ function loadPlayer(pid){
   if(CU.role!=="joueur") _viewPid=pid;
   else CU.pid=pid;
   renderView();
-  renderBGrid("p-bgrd",true);
+  renderBGrid("p-bgrd",false);
   document.querySelectorAll(".prow").forEach(function(r){r.classList.remove("sel");});
   var row=ge("pr-"+pid);if(row)row.classList.add("sel");
   switchTab("fiche", null);
@@ -8980,7 +8982,7 @@ function addBeast(){
   var b={id:"b"+Date.now(),nom:n,sub:(ge("ab-sub")?ge("ab-sub").value.trim():""),beh:behArr[parseInt(ge("ab-beh").value,10)||3]||"Neutre",niv:(ge("ab-niv")?(parseInt(ge("ab-niv").value)||1):1),pv:parseInt(ge("ab-pv").value)||20,ep:parseInt(ge("ab-ep").value)||20,img:ge("ab-img").value.trim(),zones:_beastZoneInputValues("ab-zones"),frappe:ge("ab-fr").value.trim(),comp:ge("ab-co").value.trim(),drops:ge("ab-dr").value.trim(),gem:ge("ab-gm").value.trim(),desc:ge("ab-de").value.trim(),adminNote:(ge("ab-note")&&ge("ab-note").value||'').trim(),hidden:!!(ge("ab-hidden")&&ge("ab-hidden").checked),archived:!!(ge("ab-archived")&&ge("ab-archived").checked),createdAt:Date.now(),updatedAt:Date.now()};
   var bs=gb();bs.unshift(b);sb(bs);closeModal("m-addb");
   ["ab-n","ab-sub","ab-fr","ab-co","ab-dr","ab-gm","ab-de","ab-img","ab-zones","ab-note"].forEach(function(id){if(ge(id)) ge(id).value="";}); if(ge("ab-niv")) ge("ab-niv").value=1; if(ge("ab-hidden")) ge("ab-hidden").checked=false; if(ge("ab-archived")) ge("ab-archived").checked=false;
-  renderBGrid("p-bgrd",!!(CU&&can("manage_beasts")));notif(n+" ajouté.","ok");
+  renderBGrid("p-bgrd",false);notif(n+" ajouté.","ok");
 }
 function openEditBeast(id){
   if(!CU||!can("manage_beasts")){ notif("Non autorisé.","err"); return; }
@@ -9038,7 +9040,7 @@ function saveEditBeast(){
   b.updatedAt=Date.now();
   sb(beasts);
   closeModal("m-editb");
-  renderBGrid("p-bgrd",true);
+  renderBGrid("p-bgrd",false);
   notif(b.nom+" mis à jour.","ok");
   if(_beastZoneReturnAfterEdit){
     var returnZone=_beastZoneReturnAfterEdit;
