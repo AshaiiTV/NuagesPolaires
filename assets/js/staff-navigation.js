@@ -222,6 +222,14 @@ body:not(.np-is-admin) #drawer-staff-section .perm-admin,
 body:not(.np-is-admin) #dd-staff-menu .perm-admin{
   display:none !important;
 }
+body:not(.np-is-admin):not(.np-is-mj) #drawer-staff-section .perm-mj,
+body:not(.np-is-admin):not(.np-is-mj) #dd-staff-menu .perm-mj{
+  display:none !important;
+}
+body:not(.np-is-admin):not(.np-is-designer) #drawer-staff-section .perm-designer,
+body:not(.np-is-admin):not(.np-is-designer) #dd-staff-menu .perm-designer{
+  display:none !important;
+}
 body.np-is-admin #drawer-staff-section .perm-admin{
   display:flex !important;
 }
@@ -242,7 +250,10 @@ body.np-is-admin #dd-staff-menu .perm-admin{
 
   function syncBodyRole(){
     try{
-      document.body.classList.toggle('np-is-admin', isAdmin());
+      var r = role();
+      document.body.classList.toggle('np-is-admin', r === 'admin');
+      document.body.classList.toggle('np-is-mj', r === 'mj');
+      document.body.classList.toggle('np-is-designer', r === 'designer');
       document.body.classList.toggle('np-is-staff', isStaff());
     }catch(e){}
   }

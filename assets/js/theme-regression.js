@@ -378,7 +378,7 @@
   function renderReport(report){
     var root = document.getElementById(RESULT_ID);
     if(!root){
-      var stats = document.getElementById('p-stats-c');
+      var stats = document.getElementById('p-admin-dashboard-c');
       if(!stats) return;
       root = document.createElement('section');
       root.id = RESULT_ID;

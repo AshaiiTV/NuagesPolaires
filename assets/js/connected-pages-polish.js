@@ -283,12 +283,12 @@ body[data-theme-active="light"] #app-root [style*="linear-gradient(180deg, rgba(
 /* Staff / database */
 #staff :where(.staff-panel,.staff-card,.role-opt),
 #database :where(.db-card,.db-theme-admin-item,.audit-card,.settings-pane),
-#stats :where(.np-dashboard-console-card,.np-admin-dashboard-status-card,.np-dashboard-console-section){
+#database :where(.np-dashboard-console-card,.np-admin-dashboard-status-card,.np-dashboard-console-section){
   border-color:var(--np-readable-border) !important;
   background:var(--np-readable-card) !important;
 }
 #database :where(.db-card-title,.db-section-title,.theme-title),
-#stats :where(.np-dashboard-console-title,.np-admin-dashboard-title,.np-dashboard-console-section-title){
+#database :where(.np-dashboard-console-title,.np-admin-dashboard-title,.np-dashboard-console-section-title){
   color:var(--tm-text,var(--text)) !important;
 }
 #database :where(.danger,.btn.danger,button.danger){
