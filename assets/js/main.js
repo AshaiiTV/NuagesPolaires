@@ -5988,6 +5988,7 @@ function renderSermentsAdminPage(tid){
     html+='<div class="serm-admin-row-actions">';
     html+='<button class="btn btn-sm btn-gold" onclick="openEditSerm(\''+enc+'\')"><span>Modifier serment</span></button>';
     html+='<button class="btn btn-sm btn-grn" onclick="openAddBranch(\''+enc+'\')"><span>+ Branche</span></button>';
+    html+='<button class="btn btn-sm '+(s.hidden?'btn-grn':'btn-red')+'" onclick="toggleSermVisibility(\''+enc+'\')"><span>'+(s.hidden?'Rendre visible':'Masquer')+'</span></button>';
     if(!SD[nom]) html+='<button class="btn btn-sm btn-red" onclick="delSerm(\''+enc+'\')"><span>Supprimer</span></button>';
     html+='</div>';
     if(branches.length){
@@ -6067,6 +6068,29 @@ function renderSermentsAdminPage(tid){
   html+='@media(max-width:760px){#serments-admin .serm-admin-hero{grid-template-columns:1fr;padding:17px;}#serments-admin .serm-admin-hero-mark{width:58px;height:58px;}#serments-admin .serm-admin-title{font-size:21px;}#serments-admin .serm-admin-metrics{grid-template-columns:1fr;}#serments-admin .serm-admin-row>summary{grid-template-columns:auto minmax(0,1fr) auto;align-items:flex-start;}#serments-admin .serm-admin-row-meta{grid-column:1/-1;justify-content:flex-start;max-width:none;}#serments-admin .serm-admin-row>summary::after{grid-column:3;grid-row:1;}#serments-admin .serm-admin-branches{grid-template-columns:1fr;}}';
   html+='</style>';
   el.innerHTML=html;
+}
+
+function toggleSermVisibility(nomEnc){
+  if(!CU||!isAdminRole(CU)){ notif("Admin uniquement.","err"); return; }
+  var nom=decodeURIComponent(nomEnc||"");
+  var all=getAllSD();
+  var s=all[nom];
+  if(!nom||!s){ notif("Serment introuvable.","err"); return; }
+  var custom=gsd();
+  var nextHidden=!s.hidden;
+  var current=custom[nom]||{};
+  var merged=Object.assign({}, s, current);
+  merged.hidden=nextHidden;
+  merged.branches=current.branches||getBranches(nom,s)||[];
+  if(!merged.icon) merged.icon=(s&&s.icon)||WEAPON_ICONS[nom]||"✦";
+  if(!merged.cat) merged.cat=(s&&s.cat)||SERM_CATS[nom]||"melee";
+  custom[nom]=merged;
+  ssd(custom);
+  WEAPON_ICONS[nom]=merged.icon;
+  SERM_CATS[nom]=merged.cat;
+  sysLog("serment_visibilite","Serment '"+esc(nom)+"' "+(nextHidden?"masqué":"rendu visible"),CU?CU.name:"Staff");
+  _refreshSermentViews();
+  notif(nextHidden?"Serment masqué dans la page Serments.":"Serment visible dans la page Serments.","ok");
 }
 
 function renderSermCard(nom,s){
