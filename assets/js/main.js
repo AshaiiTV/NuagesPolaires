@@ -5867,8 +5867,6 @@ function getSermCatLabel(cat){
   return ({melee:"Mêlée",distance:"Distance",magie:"Magie",soutien:"Soutien"}[cat]||cat||"Mêlée");
 }
 function isSermVisibleInLibrary(nom,s){
-  var level=getSermLevelKey(nom,s);
-  if(level==="seasoned") return false;
   if(s&&s.hidden) return false;
   return true;
 }
