@@ -5887,6 +5887,16 @@ function getSermLevelLabel(nom,s){
 function getSermLevelClass(nom,s){
   return "rank-"+getSermLevelKey(nom,s);
 }
+function getSermEvolutionFrom(nom,s){
+  var from=s&&s.evolvesFrom;
+  if(from&&String(from).trim()) return String(from).trim();
+  return "";
+}
+function renderSermLineage(nom,s,compact){
+  var from=getSermEvolutionFrom(nom,s);
+  if(!from) return "";
+  return '<span class="'+(compact?'serm-lineage compact':'serm-lineage')+'"><b>'+esc(from)+'</b><i>→</i><strong>'+esc(nom)+'</strong></span>';
+}
 function getSermCatLabel(cat){
   return ({melee:"Mêlée",distance:"Distance",magie:"Magie",soutien:"Soutien"}[cat]||cat||"Mêlée");
 }
@@ -6089,8 +6099,8 @@ function renderSermentsAdminPage(tid){
     html+='<details class="serm-admin-row" data-level="'+escAttr(levelKey)+'" data-cat="'+escAttr(catKey)+'" data-visibility="'+escAttr(visKey)+'" data-search="'+escAttr(searchText)+'">';
     html+='<summary>';
     html+='<span class="serm-admin-glyph">'+esc(icon)+'</span>';
-    html+='<span class="serm-admin-row-main"><strong>'+esc(nom)+'</strong><em>'+esc(s.arme||"Arme non définie")+'</em></span>';
-    html+='<span class="serm-admin-row-meta"><b class="rank '+escAttr(getSermLevelClass(nom,s))+'">'+esc(level)+'</b><b>'+esc(cat)+'</b><b>'+branches.length+' branche'+(branches.length>1?'s':'')+'</b><b>'+palierCount+' palier'+(palierCount>1?'s':'')+'</b>'+(s.hidden?'<b class="muted">Masqué</b>':'')+'</span>';
+    html+='<span class="serm-admin-row-main"><strong>'+esc(nom)+'</strong><em>'+esc(s.arme||"Arme non définie")+'</em>'+renderSermLineage(nom,s,true)+'</span>';
+    html+='<span class="serm-admin-row-meta"><b class="rank '+escAttr(getSermLevelClass(nom,s))+'">'+esc(level)+'</b>'+(getSermEvolutionFrom(nom,s)?'<b class="evolution">Évolution</b>':'')+'<b>'+esc(cat)+'</b><b>'+branches.length+' branche'+(branches.length>1?'s':'')+'</b><b>'+palierCount+' palier'+(palierCount>1?'s':'')+'</b>'+(s.hidden?'<b class="muted">Masqué</b>':'')+'</span>';
     html+='</summary>';
     html+='<div class="serm-admin-row-body">';
     html+='<div class="serm-admin-lore">'+esc(getSermLorePreview(s.lore||"Aucun lore."))+'</div>';
@@ -6168,6 +6178,7 @@ function renderSermentsAdminPage(tid){
   html+='#serments-admin .serm-admin-row-main{display:grid;gap:4px;min-width:0;}';
   html+='#serments-admin .serm-admin-row-main strong{font-family:var(--fd);font-size:16px;letter-spacing:1.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}';
   html+='#serments-admin .serm-admin-row-main em{font-size:12px;color:var(--dim);font-style:normal;}';
+  html+='#serments-admin .serm-lineage{margin-top:2px;}';
   html+='#serments-admin .serm-admin-row-meta,#serments-admin .serm-admin-row-actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center;}';
   html+='#serments-admin .serm-admin-row-meta{justify-content:flex-end;max-width:360px;}';
   html+='#serments-admin .serm-admin-row-meta b{font-family:var(--fd);font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);border:1px solid rgba(126,184,212,.14);border-radius:999px;padding:4px 8px;background:rgba(255,255,255,.035);white-space:nowrap;}';
@@ -6179,6 +6190,7 @@ function renderSermentsAdminPage(tid){
   html+='#serments-admin .serm-admin-row-meta b.rank-transcended{color:#8eeeff;border-color:rgba(142,238,255,.38);background:linear-gradient(90deg,rgba(123,91,255,.20),rgba(142,238,255,.12));}';
   html+='#serments-admin .serm-admin-row-meta b.rank-corrupted{color:#ff8d8d;border-color:rgba(255,91,91,.38);background:linear-gradient(90deg,rgba(255,91,91,.18),rgba(255,255,255,.035));}';
   html+='#serments-admin .serm-admin-row-meta b.rank-other{color:#b7bac2;border-color:rgba(183,186,194,.28);background:rgba(183,186,194,.08);}';
+  html+='#serments-admin .serm-admin-row-meta b.evolution{color:#9fd6ff;border-color:rgba(126,184,212,.32);background:linear-gradient(90deg,rgba(126,184,212,.14),rgba(255,255,255,.035));}';
   html+='#serments-admin .serm-admin-row-meta b.muted{color:var(--red);border-color:rgba(201,74,74,.24);background:rgba(201,74,74,.08);}';
   html+='#serments-admin .serm-admin-row-body{padding:0 16px 16px 18px;display:grid;gap:13px;}';
   html+='#serments-admin .serm-admin-lore{margin:0;color:var(--dim);line-height:1.68;font-size:13px;padding:13px 14px;border:1px solid rgba(126,184,212,.09);border-radius:14px;background:rgba(0,0,0,.12);}';
@@ -6234,7 +6246,7 @@ function renderSermCard(nom,s){
   if(isCustom) h+='<div class="serm-badge-new">Nouveau</div>';
   h+='<div class="serm-head" style="padding-right:44px">';
   h+='<div class="serm-icon">'+icon+'</div>';
-  h+='<div class="serm-head-copy"><div class="snm">'+esc(nom)+'</div><div class="swp">'+esc(s.arme)+'</div><div class="serm-level-pill '+escAttr(getSermLevelClass(nom,s))+'">'+esc(sermLevel)+'</div></div>';
+  h+='<div class="serm-head-copy"><div class="snm">'+esc(nom)+'</div><div class="swp">'+esc(s.arme)+'</div>'+renderSermLineage(nom,s,false)+'<div class="serm-level-pill '+escAttr(getSermLevelClass(nom,s))+'">'+esc(sermLevel)+'</div></div>';
   h+='</div>';
   h+='<div class="serm-cat" style="right:14px;">'+esc(getSermCatLabel(cat))+'</div>';
   h+='<p class="serm-lore">'+esc(getSermLorePreview(s.lore))+'</p>';
@@ -6773,7 +6785,7 @@ function renderSerm(p){
   // En-tête
   html+='<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">';
   html+='<div style="font-size:28px;width:48px;height:48px;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+(bundle.icon||WEAPON_ICONS[p.classe]||"✦")+'</div>';
-  html+='<div><div class="snm">'+esc(p.classe)+'</div><div class="swp">'+esc(bundle.weapon||s.arme||p.arme||"")+'</div><div class="serm-level-pill '+escAttr(getSermLevelClass(p.classe,s))+'">'+esc(bundle.sermLevel||getSermLevelLabel(p.classe,s))+'</div></div>';
+  html+='<div><div class="snm">'+esc(p.classe)+'</div><div class="swp">'+esc(bundle.weapon||s.arme||p.arme||"")+'</div>'+renderSermLineage(p.classe,s,false)+'<div class="serm-level-pill '+escAttr(getSermLevelClass(p.classe,s))+'">'+esc(bundle.sermLevel||getSermLevelLabel(p.classe,s))+'</div></div>';
   html+='</div>';
   // Stats
   html+='<div class="sstats"><div class="sst"><div class="sstv">'+s.pvN+'</div><div class="sstl">PV/niv</div></div><div class="sst"><div class="sstv">'+s.epN+'</div><div class="sstl">EP/niv</div></div><div class="sst"><div class="sstv">'+s.emN+'</div><div class="sstl">EM/niv</div></div><div class="sst"><div class="sstv">'+s.dmg+'</div><div class="sstl">Dmg frappe</div></div></div>';
