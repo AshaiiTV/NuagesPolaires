@@ -6988,7 +6988,7 @@ function renderBeastAdminToolbar(total, filteredCount){
     +'<div class="card" style="margin-bottom:14px;padding:14px 16px;">'
       +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;">'
         +'<div>'
-          +'<div class="card-title">Pilotage admin du bestiaire</div>'
+          +'<div class="card-title beast-admin-title-line"><span>Pilotage admin du bestiaire</span><b class="beast-admin-mini-tag">Admin</b></div>'
           +'<div style="font-size:12px;color:var(--faint);margin-top:4px;">'+esc(_beastAdminSummaryText(total||0, filteredCount||0))+' · filtres cumulables · duplication, aperçu, archivage, JSON et simulateur.</div>'
         +'</div>'
         +'<div style="display:flex;gap:8px;flex-wrap:wrap;">'
