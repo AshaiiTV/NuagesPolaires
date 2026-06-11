@@ -5883,7 +5883,7 @@ function getSermFamilyRoot(nom,all){
 function renderSermLineage(nom,s,compact){
   var from=getSermEvolutionFrom(nom,s);
   if(!from) return "";
-  return '<span class="'+(compact?'serm-lineage compact':'serm-lineage')+'"><b>'+esc(from)+'</b><i>→</i><strong>'+esc(nom)+'</strong></span>';
+  return '<span class="'+(compact?'serm-lineage compact':'serm-lineage')+'"><i>Évolution de</i><b>'+esc(from)+'</b></span>';
 }
 function getSermCatLabel(cat){
   return ({melee:"Mêlée",distance:"Distance",magie:"Magie",soutien:"Soutien"}[cat]||cat||"Mêlée");
