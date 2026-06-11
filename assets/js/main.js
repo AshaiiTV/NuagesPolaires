@@ -294,28 +294,6 @@ var SD={
         {niv:7,nom:"Ligne Jurée",cout:"7 EM — 1 action",desc:"Interception possible sur 2 attaques. Après interception, le porteur peut avancer ou reculer d'un cran sans action."},
         {niv:10,nom:"Ligne Jurée",cout:"7 EM — 1 action",desc:"Interception possible sur 3 attaques. Les attaques interceptées infligent -20% dégâts au porteur."}
       ]}},
-
-  "Maître d'Armes":{arme:"Épée modulée du serment",pvN:6,epN:6,emN:3,dmg:11,type:"Tranchant",sermLevel:"seasoned",hidden:true,evolvesFrom:"Duelliste",
-    lore:"Le Maître d'Armes naît chez les Duellistes qui ne se contentent plus d'exceller dans une seule manière de combattre. Ils apprennent les distances, les gardes, les angles et les rythmes comme d'autres apprennent une langue. Leur serment ne récompense pas la spécialisation pure : il récompense la lecture, l'adaptation et la capacité à changer de réponse avant que l'adversaire ait compris la question. Son épée modulée du serment paraît classique au premier regard, mais son équilibre change subtilement selon la posture du porteur. Le Maître d'Armes ressemble à un combattant complet, patient, presque professoral dans sa cruauté calme : il ne cherche pas seulement à gagner, il cherche à comprendre comment l'autre perd.",
-    bA:{nom:"Branche A — Lecture d'Armes",style:"Contrôle",
-      descPhys:"Le Maître d'Armes observe une fraction de seconde de trop. Puis sa lame se place exactement là où l'attaque adverse devait passer, comme s'il avait lu le mouvement avant sa naissance.",
-      flavor:"Cette branche récompense la compréhension du combat. Plus l'adversaire répète son style, plus le Maître d'Armes devient difficile à surprendre.",
-      paliers:[
-        {niv:2,nom:"Lecture d'Armes",cout:"5 EM — 1 action",desc:"Marque une cible observée. Jusqu'au prochain tour, la première attaque de cette cible contre le porteur coûte +2 EP."},
-        {niv:5,nom:"Lecture d'Armes",cout:"5 EM — 1 action",desc:"La cible marquée coûte +3 EP sur sa première attaque contre le porteur. Le porteur gagne +2 dégâts contre elle."},
-        {niv:7,nom:"Lecture d'Armes",cout:"5 EM — 1 action",desc:"La cible marquée coûte +4 EP. Si elle répète la même action offensive, le porteur gagne une défense allégée contre elle."},
-        {niv:10,nom:"Lecture d'Armes",cout:"5 EM — 1 action",desc:"La cible marquée coûte +5 EP. La première défense du porteur contre elle ne consomme qu'une demi-réaction narrative, à arbitrer staff."}
-      ]},
-    bB:{nom:"Branche B — Arsenal Lié",style:"Adaptation",
-      descPhys:"L'épée change de prise, de poids, presque de silhouette. Rien ne se transforme vraiment, et pourtant tout dans la posture du porteur indique une autre façon de frapper.",
-      flavor:"Le Maître d'Armes ne possède pas mille armes. Il possède mille manières d'utiliser la sienne. Cette branche lui permet d'adapter son rôle selon le besoin immédiat du combat.",
-      paliers:[
-        {niv:2,nom:"Arsenal Lié",cout:"6 EM — 1 action",desc:"Choisit une posture jusqu'au prochain tour : Précision (+3 dégâts cible seule), Garde (+3 PV temporaires), Mobilité (-1 EP sur déplacement)."},
-        {niv:5,nom:"Arsenal Lié",cout:"6 EM — 1 action",desc:"Posture améliorée : Précision +5 dégâts, Garde +5 PV temporaires, Mobilité -2 EP sur déplacement."},
-        {niv:7,nom:"Arsenal Lié",cout:"6 EM — 1 action",desc:"Le porteur peut changer de posture une fois sans action après avoir touché ou défendu."},
-        {niv:10,nom:"Arsenal Lié",cout:"6 EM — 1 action",desc:"Le porteur conserve deux bénéfices mineurs de posture à la fois, mais un seul effet principal reste actif."}
-      ]}},
-
   "Sauvageon":{arme:"Hache à deux mains du serment",pvN:5,epN:8,emN:1,dmg:14,type:"Tranchant",
     lore:"Le Serment du Sauvageon s'attache à ceux dont la force naît des entrailles mêmes de l'instinct. Il reconnaît les êtres farouches, ceux qui ne se contentent pas de survivre, mais qui opposent leur existence entière à ce qui menace les leurs. Là où d'autres apprennent la guerre, le sauvageon semble l'avoir toujours portée en lui, brute, rugissante, impossible à contenir tout à fait. Sa hache à deux mains du serment est massive, lourde, presque primitive dans son évidence. Elle n'a pas vocation à séduire, mais à s'imposer. Elle est le prolongement d'un engagement ancien : employer sa puissance pour abattre l'opposant. Le Sauvageon ressemble à une force que le monde a à peine civilisée. Sa carrure, son allure, son regard ou sa manière d'entrer dans l'espace inspirent la rudesse, la rage contenue, l'endurance. Il évoque le berserker, le brutal, celui qui avance malgré les coups.",
     bA:{nom:"Branche A — Spirale Brisante",style:"AOE",
@@ -5840,7 +5818,7 @@ function playerConsume(){
 }
 
 var WEAPON_ICONS={
-  "Duelliste":"⚔","Bretteur":"⚔","Lame Lourde":"⚔","Lame d'Honneur":"⚔","Maître d'Armes":"⚔","Sauvageon":"🪓","Croisé":"🛡","Rodeur":"🗡","Rôdeur":"🗡",
+  "Duelliste":"⚔","Bretteur":"⚔","Lame Lourde":"⚔","Lame d'Honneur":"⚔","Sauvageon":"🪓","Croisé":"🛡","Rodeur":"🗡","Rôdeur":"🗡",
   "Traqueur":"🏹","Flecheur":"🏹","Flécheur":"🏹","Elementaliste":"👊","Élémentaliste":"👊",
   "Evocateur":"🪄","Évocateur":"🪄","Conjurateur":"⛓","Arcaniste":"🔮"
 };
@@ -5853,7 +5831,7 @@ var STYLE_COLORS={
   "AOE Indéfendable":"var(--red)","Précision Défendable":"var(--glacier)"
 };
 var SERM_CATS={
-  "Duelliste":"melee","Bretteur":"melee","Lame Lourde":"melee","Lame d'Honneur":"melee","Maître d'Armes":"melee","Sauvageon":"melee","Croisé":"melee","Rôdeur":"melee",
+  "Duelliste":"melee","Bretteur":"melee","Lame Lourde":"melee","Lame d'Honneur":"melee","Sauvageon":"melee","Croisé":"melee","Rôdeur":"melee",
   "Traqueur":"melee","Flécheur":"distance","Elementaliste":"melee",
   "Evocateur":"magie","Conjurateur":"soutien","Arcaniste":"magie"
 };
@@ -15694,7 +15672,7 @@ function _drawItem(doc,item,x,y,WHITE,DIM,FAINT,accentCol){
 
 function _sermColor(classe){
   var cols={
-    "Duelliste":"#7eb8d4","Bretteur":"#89d89a","Lame Lourde":"#c9a84c","Lame d'Honneur":"#c9a84c","Maître d'Armes":"#a8d4f0","Sauvageon":"#c94a4a","Croisé":"#c9a84c",
+    "Duelliste":"#7eb8d4","Bretteur":"#89d89a","Lame Lourde":"#c9a84c","Lame d'Honneur":"#c9a84c","Sauvageon":"#c94a4a","Croisé":"#c9a84c",
     "Rôdeur":"#6db88a","Traqueur":"#c084d4","Flécheur":"#7eb8d4",
     "Élémentaliste":"#c9a84c","Évocateur":"#c084d4","Conjurateur":"#6db88a","Arcaniste":"#a8d4f0"
   };
