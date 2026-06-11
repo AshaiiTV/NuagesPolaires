@@ -253,11 +253,11 @@ var SD={
         {niv:10,nom:"Pas Rompu",cout:"5 EM — réaction",desc:"Riposte après esquive : 14+Niv dégâts. Si la cible a raté son attaque, elle perd 1 action de déplacement ce tour."}
       ]}},
 
-  "Lame Lourde":{arme:"Espadon du serment",pvN:7,epN:4,emN:2,dmg:16,type:"Tranchant lourd",sermLevel:"seasoned",hidden:true,evolvesFrom:"Duelliste",
-    lore:"La Lame Lourde apparaît chez les Duellistes qui abandonnent la pure finesse pour imposer une présence impossible à ignorer. Le porteur ne cherche plus seulement le bon angle : il cherche le moment où tout le poids du corps, de l'arme et de la volonté descend au même endroit. Son espadon du serment est une grande lame massive, exigeante, presque trop lourde pour ceux qui n'ont pas appris à respirer avec elle. Chaque frappe demande un engagement réel. Chaque erreur se paie. La Lame Lourde ressemble à un combattant ancré, patient, dangereux même immobile. Il avance peu, mais quand il avance, l'espace semble devoir s'écarter.",
+  "Claymore":{arme:"Claymore du serment",pvN:7,epN:4,emN:2,dmg:16,type:"Tranchant lourd",sermLevel:"seasoned",hidden:true,evolvesFrom:"Duelliste",
+    lore:"Le Claymore apparaît chez les Duellistes qui abandonnent la pure finesse pour imposer une présence impossible à ignorer. Le porteur ne cherche plus seulement le bon angle : il cherche le moment où tout le poids du corps, de l'arme et de la volonté descend au même endroit. Sa claymore du serment est une grande lame massive, exigeante, presque trop lourde pour ceux qui n'ont pas appris à respirer avec elle. Chaque frappe demande un engagement réel. Chaque erreur se paie. Le Claymore ressemble à un combattant ancré, patient, dangereux même immobile. Il avance peu, mais quand il avance, l'espace semble devoir s'écarter.",
     bA:{nom:"Branche A — Posture Haute",style:"Pression lourde",
       descPhys:"Le porteur remonte l'espadon au-dessus de l'épaule. La garde paraît ouverte, presque provocante, mais la lame suspendue annonce un coup si lourd que l'adversaire doit décider avant même qu'il parte.",
-      flavor:"Cette branche transforme la lenteur en menace. La Lame Lourde accepte d'être lisible, parce que la vraie question n'est pas de savoir d'où vient le coup, mais si l'adversaire a de quoi l'arrêter.",
+      flavor:"Cette branche transforme la lenteur en menace. Le Claymore accepte d'être lisible, parce que la vraie question n'est pas de savoir d'où vient le coup, mais si l'adversaire a de quoi l'arrêter.",
       paliers:[
         {niv:2,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Entre en posture jusqu'au prochain tour. La prochaine frappe lourde inflige 12+Niv dégâts et coûte +2 EP à défendre."},
         {niv:5,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe lourde : 16+Niv dégâts. Si la cible défend, elle ne peut pas contre-attaquer immédiatement."},
@@ -266,7 +266,7 @@ var SD={
       ]},
     bB:{nom:"Branche B — Fendre la Ligne",style:"Brise-garde",
       descPhys:"L'espadon part en arc large, lent, plein. Ce n'est pas une coupe élégante : c'est une masse de métal qui traverse la garde, les appuis et la certitude de tenir bon.",
-      flavor:"La Lame Lourde ne poursuit pas les cibles rapides. Elle brise les positions. Cette branche vise ceux qui se croient protégés derrière une parade, un bouclier ou une ligne stable.",
+      flavor:"Le Claymore ne poursuit pas les cibles rapides. Il brise les positions. Cette branche vise ceux qui se croient protégés derrière une parade, un bouclier ou une ligne stable.",
       paliers:[
         {niv:2,nom:"Fendre la Ligne",cout:"7 EM — 1 action",desc:"Frappe 10+Niv dégâts. Si la cible a déjà défendu ce tour, elle dépense +3 EP pour défendre cette attaque."},
         {niv:5,nom:"Fendre la Ligne",cout:"7 EM — 1 action",desc:"Frappe 14+Niv dégâts. Contre une cible en garde, parade ou protection, ajoute +4 dégâts."},
@@ -5818,7 +5818,7 @@ function playerConsume(){
 }
 
 var WEAPON_ICONS={
-  "Duelliste":"⚔","Bretteur":"⚔","Lame Lourde":"⚔","Lame d'Honneur":"⚔","Sauvageon":"🪓","Croisé":"🛡","Rodeur":"🗡","Rôdeur":"🗡",
+  "Duelliste":"⚔","Bretteur":"⚔","Claymore":"⚔","Lame d'Honneur":"⚔","Sauvageon":"🪓","Croisé":"🛡","Rodeur":"🗡","Rôdeur":"🗡",
   "Traqueur":"🏹","Flecheur":"🏹","Flécheur":"🏹","Elementaliste":"👊","Élémentaliste":"👊",
   "Evocateur":"🪄","Évocateur":"🪄","Conjurateur":"⛓","Arcaniste":"🔮"
 };
@@ -5831,7 +5831,7 @@ var STYLE_COLORS={
   "AOE Indéfendable":"var(--red)","Précision Défendable":"var(--glacier)"
 };
 var SERM_CATS={
-  "Duelliste":"melee","Bretteur":"melee","Lame Lourde":"melee","Lame d'Honneur":"melee","Sauvageon":"melee","Croisé":"melee","Rôdeur":"melee",
+  "Duelliste":"melee","Bretteur":"melee","Claymore":"melee","Lame d'Honneur":"melee","Sauvageon":"melee","Croisé":"melee","Rôdeur":"melee",
   "Traqueur":"melee","Flécheur":"distance","Elementaliste":"melee",
   "Evocateur":"magie","Conjurateur":"soutien","Arcaniste":"magie"
 };
@@ -15672,7 +15672,7 @@ function _drawItem(doc,item,x,y,WHITE,DIM,FAINT,accentCol){
 
 function _sermColor(classe){
   var cols={
-    "Duelliste":"#7eb8d4","Bretteur":"#89d89a","Lame Lourde":"#c9a84c","Lame d'Honneur":"#c9a84c","Sauvageon":"#c94a4a","Croisé":"#c9a84c",
+    "Duelliste":"#7eb8d4","Bretteur":"#89d89a","Claymore":"#c9a84c","Lame d'Honneur":"#c9a84c","Sauvageon":"#c94a4a","Croisé":"#c9a84c",
     "Rôdeur":"#6db88a","Traqueur":"#c084d4","Flécheur":"#7eb8d4",
     "Élémentaliste":"#c9a84c","Évocateur":"#c084d4","Conjurateur":"#6db88a","Arcaniste":"#a8d4f0"
   };
