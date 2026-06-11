@@ -5892,6 +5892,16 @@ function getSermEvolutionFrom(nom,s){
   if(from&&String(from).trim()) return String(from).trim();
   return "";
 }
+function getSermFamilyRoot(nom,all){
+  all=all||getAllSD();
+  var cur=nom;
+  var guard=0;
+  while(cur&&all[cur]&&getSermEvolutionFrom(cur,all[cur])&&guard<12){
+    cur=getSermEvolutionFrom(cur,all[cur]);
+    guard++;
+  }
+  return cur||nom;
+}
 function renderSermLineage(nom,s,compact){
   var from=getSermEvolutionFrom(nom,s);
   if(!from) return "";
@@ -5963,7 +5973,7 @@ function _refreshSermentViews(){
   try{ popSSelects(); }catch(e){}
 }
 
-var _sermAdminFilters={q:"",level:"",cat:"",visibility:""};
+var _sermAdminFilters={q:"",level:"",cat:"",visibility:"",family:""};
 function normalizeSermCat(cat){
   cat=String(cat||"").trim().toLowerCase();
   if(cat==="mêlée"||cat==="melee") return "melee";
@@ -5976,12 +5986,12 @@ function normalizeFilterText(v){
   return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 }
 function setSermentsAdminFilter(key,value){
-  if(!_sermAdminFilters) _sermAdminFilters={q:"",level:"",cat:"",visibility:""};
+  if(!_sermAdminFilters) _sermAdminFilters={q:"",level:"",cat:"",visibility:"",family:""};
   _sermAdminFilters[key]=String(value||"");
   applySermentsAdminFilters();
 }
 function resetSermentsAdminFilters(){
-  _sermAdminFilters={q:"",level:"",cat:"",visibility:""};
+  _sermAdminFilters={q:"",level:"",cat:"",visibility:"",family:""};
   var root=ge("serments-admin");
   if(root){
     var q=root.querySelector('[data-serm-admin-filter="q"]');
@@ -6003,6 +6013,7 @@ function applySermentsAdminFilters(){
   var visible=0;
   rows.forEach(function(row){
     var show=true;
+    if(filters.family&&row.getAttribute("data-family")!==filters.family) show=false;
     if(filters.level&&row.getAttribute("data-level")!==filters.level) show=false;
     if(filters.cat&&row.getAttribute("data-cat")!==filters.cat) show=false;
     if(filters.visibility&&row.getAttribute("data-visibility")!==filters.visibility) show=false;
@@ -6014,6 +6025,10 @@ function applySermentsAdminFilters(){
   if(count) count.textContent=visible+" / "+rows.length;
   var empty=ge("serm-admin-empty");
   if(empty) empty.style.display=visible?"none":"block";
+  document.querySelectorAll("#serments-admin .serm-admin-family-btn").forEach(function(btn){
+    var family=btn.getAttribute("data-family-filter")||"";
+    btn.classList.toggle("active",family===(filters.family||""));
+  });
 }
 
 function renderSermentsAdminPage(tid){
@@ -6024,7 +6039,13 @@ function renderSermentsAdminPage(tid){
   }
   var all=getAllSD();
   var names=Object.keys(all).sort(function(a,b){ return a.localeCompare(b,"fr",{sensitivity:"base"}); });
-  var filters=_sermAdminFilters||{q:"",level:"",cat:"",visibility:""};
+  var filters=_sermAdminFilters||{q:"",level:"",cat:"",visibility:"",family:""};
+  var familyNames=names.filter(function(n){ return getSermFamilyRoot(n,all)===n; }).sort(function(a,b){ return a.localeCompare(b,"fr",{sensitivity:"base"}); });
+  var familyCounts=names.reduce(function(acc,n){
+    var root=getSermFamilyRoot(n,all);
+    acc[root]=(acc[root]||0)+1;
+    return acc;
+  },{});
   var total=names.length;
   var hidden=names.filter(function(n){ return !!(all[n]&&all[n].hidden); }).length;
   var custom=Object.keys(gsd()||{}).length;
@@ -6053,6 +6074,17 @@ function renderSermentsAdminPage(tid){
   html+='<div><span>Lecture rapide</span><strong>Ouvre un serment pour modifier ses branches et ses paliers.</strong></div>';
   html+='<div><span>État masqué</span><strong>'+hidden+' serment'+(hidden>1?'s':'')+' invisible'+(hidden>1?'s':'')+' côté joueur.</strong></div>';
   html+='</div>';
+  html+='<section class="serm-admin-family-menu">';
+  html+='<div class="serm-admin-family-head"><span>Lignées</span><strong>Choisis un serment de base pour afficher uniquement sa famille et ses évolutions.</strong></div>';
+  html+='<div class="serm-admin-family-actions">';
+  html+='<button class="serm-admin-family-btn '+(!filters.family?'active':'')+'" data-family-filter="" onclick="setSermentsAdminFilter(\'family\',\'\')"><span>Toutes</span><em>'+total+'</em></button>';
+  familyNames.forEach(function(rootName){
+    var s=all[rootName]||{};
+    var icon=(s&&s.icon)||WEAPON_ICONS[rootName]||"✦";
+    html+='<button class="serm-admin-family-btn '+(filters.family===rootName?'active':'')+'" data-family-filter="'+escAttr(rootName)+'" onclick="setSermentsAdminFilter(\'family\',decodeURIComponent(\''+encodeURIComponent(rootName)+'\'))"><i>'+esc(icon)+'</i><span>'+esc(rootName)+'</span><em>'+((familyCounts[rootName]||0))+'</em></button>';
+  });
+  html+='</div>';
+  html+='</section>';
   html+='<section class="serm-admin-filters">';
   html+='<div class="serm-admin-filter-search"><label>Recherche</label><input type="search" data-serm-admin-filter="q" value="'+escAttr(filters.q||"")+'" placeholder="Nom, arme, branche..." oninput="setSermentsAdminFilter(\'q\',this.value)"></div>';
   html+='<div><label>Rareté</label><select data-serm-admin-filter="level" onchange="setSermentsAdminFilter(\'level\',this.value)">';
@@ -6085,6 +6117,7 @@ function renderSermentsAdminPage(tid){
     var catKey=normalizeSermCat(s.cat||SERM_CATS[nom]||"melee");
     var cat=getSermCatLabel(catKey);
     var visKey=s.hidden?"hidden":"visible";
+    var familyRoot=getSermFamilyRoot(nom,all);
     var searchText=normalizeFilterText([
       nom,
       s.arme,
@@ -6096,7 +6129,7 @@ function renderSermentsAdminPage(tid){
     ].join(" "));
     var icon=(s&&s.icon)||WEAPON_ICONS[nom]||"✦";
     var palierCount=branches.reduce(function(sum,br){ return sum+((br&&br.paliers)||[]).length; },0);
-    html+='<details class="serm-admin-row" data-level="'+escAttr(levelKey)+'" data-cat="'+escAttr(catKey)+'" data-visibility="'+escAttr(visKey)+'" data-search="'+escAttr(searchText)+'">';
+    html+='<details class="serm-admin-row" data-level="'+escAttr(levelKey)+'" data-cat="'+escAttr(catKey)+'" data-visibility="'+escAttr(visKey)+'" data-family="'+escAttr(familyRoot)+'" data-search="'+escAttr(searchText)+'">';
     html+='<summary>';
     html+='<span class="serm-admin-glyph">'+esc(icon)+'</span>';
     html+='<span class="serm-admin-row-main"><strong>'+esc(nom)+'</strong><em>'+esc(s.arme||"Arme non définie")+'</em>'+renderSermLineage(nom,s,true)+'</span>';
@@ -6154,6 +6187,17 @@ function renderSermentsAdminPage(tid){
   html+='#serments-admin .serm-admin-tools>div{padding:13px 15px;border:1px solid rgba(126,184,212,.12);border-radius:16px;background:rgba(255,255,255,.028);}';
   html+='#serments-admin .serm-admin-tools span{display:block;font-family:var(--fd);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--faint);margin-bottom:5px;}';
   html+='#serments-admin .serm-admin-tools strong{font-size:12px;line-height:1.5;color:var(--dim);font-weight:600;}';
+  html+='#serments-admin .serm-admin-family-menu{display:grid;gap:12px;padding:15px;border:1px solid rgba(126,184,212,.14);border-radius:20px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.018));box-shadow:inset 0 1px 0 rgba(255,255,255,.04);}';
+  html+='#serments-admin .serm-admin-family-head{display:flex;align-items:end;justify-content:space-between;gap:14px;}';
+  html+='#serments-admin .serm-admin-family-head span{font-family:var(--fd);font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:var(--gold);}';
+  html+='#serments-admin .serm-admin-family-head strong{font-size:12px;line-height:1.45;color:var(--dim);font-weight:600;text-align:right;}';
+  html+='#serments-admin .serm-admin-family-actions{display:flex;gap:9px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin;}';
+  html+='#serments-admin .serm-admin-family-btn{appearance:none;border:1px solid rgba(126,184,212,.16);border-radius:999px;background:rgba(7,10,18,.54);color:var(--dim);display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:7px 10px 7px 12px;cursor:pointer;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.035);transition:border-color .16s ease,background .16s ease,color .16s ease,transform .16s ease;}';
+  html+='#serments-admin .serm-admin-family-btn:hover{border-color:rgba(var(--tm-accent-rgb,126,184,212),.38);color:var(--text);transform:translateY(-1px);}';
+  html+='#serments-admin .serm-admin-family-btn.active{border-color:rgba(201,168,76,.44);background:linear-gradient(90deg,rgba(201,168,76,.18),rgba(126,184,212,.11));color:var(--text);box-shadow:0 10px 24px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.07);}';
+  html+='#serments-admin .serm-admin-family-btn i{font-style:normal;font-size:15px;line-height:1;}';
+  html+='#serments-admin .serm-admin-family-btn span{font-family:var(--fd);font-size:10px;letter-spacing:1.6px;text-transform:uppercase;}';
+  html+='#serments-admin .serm-admin-family-btn em{min-width:24px;height:24px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:11px;color:var(--gold);border:1px solid rgba(201,168,76,.22);background:rgba(201,168,76,.08);}';
   html+='#serments-admin .serm-admin-filters{display:grid;grid-template-columns:minmax(220px,1.4fr) repeat(3,minmax(150px,.7fr)) auto auto;gap:10px;align-items:end;padding:14px;border:1px solid rgba(126,184,212,.14);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.018));box-shadow:inset 0 1px 0 rgba(255,255,255,.04);}';
   html+='#serments-admin .serm-admin-filters label{display:block;margin:0 0 6px;font-family:var(--fd);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--faint);}';
   html+='#serments-admin .serm-admin-filters input,#serments-admin .serm-admin-filters select{width:100%;height:42px;border:1px solid rgba(126,184,212,.18);border-radius:13px;background:rgba(7,10,18,.68);color:var(--text);padding:0 12px;font:inherit;box-shadow:inset 0 1px 0 rgba(255,255,255,.035);}';
@@ -6202,8 +6246,10 @@ function renderSermentsAdminPage(tid){
   html+='#serments-admin .serm-admin-branch strong{font-family:var(--fd);font-size:12px;letter-spacing:1.4px;color:var(--text);display:block;margin-bottom:3px;}';
   html+='#serments-admin .serm-admin-branch span{font-size:11px;color:var(--faint);}';
   html+='#serments-admin .serm-admin-branch p{margin:0;color:var(--dim);font-size:12px;line-height:1.55;}';
-  html+='body.light #serments-admin .serm-admin-row,body.light #serments-admin .serm-admin-metric,body.light #serments-admin .serm-admin-tools>div,body.light #serments-admin .serm-admin-branch,body.light #serments-admin .serm-admin-lore,body.light #serments-admin .serm-admin-filters,body.light #serments-admin .serm-admin-empty{background:rgba(255,255,255,.78);border-color:rgba(40,84,110,.13);box-shadow:0 14px 34px rgba(24,48,69,.08);}';
+  html+='body.light #serments-admin .serm-admin-row,body.light #serments-admin .serm-admin-metric,body.light #serments-admin .serm-admin-tools>div,body.light #serments-admin .serm-admin-branch,body.light #serments-admin .serm-admin-lore,body.light #serments-admin .serm-admin-filters,body.light #serments-admin .serm-admin-family-menu,body.light #serments-admin .serm-admin-empty{background:rgba(255,255,255,.78);border-color:rgba(40,84,110,.13);box-shadow:0 14px 34px rgba(24,48,69,.08);}';
   html+='body.light #serments-admin .serm-admin-filters input,body.light #serments-admin .serm-admin-filters select{background:rgba(255,255,255,.9);color:var(--text);border-color:rgba(40,84,110,.18);}';
+  html+='body.light #serments-admin .serm-admin-family-btn{background:rgba(255,255,255,.7);border-color:rgba(40,84,110,.14);color:var(--dim);}';
+  html+='body.light #serments-admin .serm-admin-family-btn.active{background:linear-gradient(90deg,rgba(201,168,76,.18),rgba(126,184,212,.12));color:var(--text);border-color:rgba(201,168,76,.34);}';
   html+='@media(max-width:1180px){#serments-admin .serm-admin-filters{grid-template-columns:repeat(2,minmax(0,1fr));}#serments-admin .serm-admin-filter-search{grid-column:1/-1;}#serments-admin .serm-admin-filter-count{justify-content:center;}}';
   html+='@media(max-width:980px){#serments-admin .serm-admin-hero{grid-template-columns:auto 1fr;}#serments-admin .serm-admin-hero-actions{grid-column:1/-1;justify-content:flex-start;}#serments-admin .serm-admin-metrics{grid-template-columns:repeat(2,minmax(0,1fr));}#serments-admin .serm-admin-tools{grid-template-columns:1fr;}#serments-admin .serm-admin-list{grid-template-columns:1fr;}}';
   html+='@media(max-width:760px){#serments-admin .serm-admin-hero{grid-template-columns:1fr;padding:17px;}#serments-admin .serm-admin-hero-mark{width:58px;height:58px;}#serments-admin .serm-admin-title{font-size:21px;}#serments-admin .serm-admin-metrics{grid-template-columns:1fr;}#serments-admin .serm-admin-row>summary{grid-template-columns:auto minmax(0,1fr) auto;align-items:flex-start;}#serments-admin .serm-admin-row-meta{grid-column:1/-1;justify-content:flex-start;max-width:none;}#serments-admin .serm-admin-row>summary::after{grid-column:3;grid-row:1;}#serments-admin .serm-admin-branches{grid-template-columns:1fr;}}';
