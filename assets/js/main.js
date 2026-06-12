@@ -264,14 +264,14 @@ var SD={
         {niv:7,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe Haute : 28+Niv dégâts, 10 EP. Si la cible bloque, elle perd 16 EP et ne se replace pas gratuitement."},
         {niv:10,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe Haute : 32+Niv dégâts, 10 EP. Si la cible bloque, elle perd 20 EP. Sur défense réussie, la cible subit tout de même 25% des dégâts sous forme d'impact."}
       ]},
-    bB:{nom:"Branche B — Fendre la Ligne",style:"Brise-garde",
+    bB:{nom:"Branche B — Fendre la Ligne",style:"Brise-ligne",
       descPhys:"L'espadon part en arc large, lent, plein. Ce n'est pas une coupe élégante : c'est une masse de métal qui traverse la garde, les appuis et la certitude de tenir bon.",
       flavor:"Fendre la Ligne n'est pas fait pour courir après les fuyards. C'est une réponse aux gardes, aux fronts, aux certitudes. Le Claymore frappe là où l'ennemi pensait tenir, jusqu'à ce que la position cesse d'être une protection et devienne un piège.",
       paliers:[
-        {niv:2,nom:"Fendre la Ligne",cout:"7 EM — 1 action",desc:"Frappe 10+Niv dégâts. Si la cible a déjà défendu ce tour, elle dépense +3 EP pour défendre cette attaque."},
-        {niv:5,nom:"Fendre la Ligne",cout:"7 EM — 1 action",desc:"Frappe 14+Niv dégâts. Contre une cible en garde, parade ou protection, ajoute +4 dégâts."},
-        {niv:7,nom:"Fendre la Ligne",cout:"7 EM — 1 action",desc:"Frappe 18+Niv dégâts. Une défense réussie ne permet pas à la cible de se replacer gratuitement."},
-        {niv:10,nom:"Fendre la Ligne",cout:"7 EM — 1 action",desc:"Frappe 22+Niv dégâts. Si la cible défend, sa prochaine défense coûte +2 EP jusqu'à la fin du tour suivant."}
+        {niv:2,nom:"Fendre la Ligne",cout:"7 EM — 1 action",desc:"Frappe 10+Niv dégâts. Brise-ligne : si la cible bloque, le coup traverse le blocage et ajoute en dégâts le bonus que le blocage aurait retiré. Si la cible a déjà défendu ce tour, elle dépense +3 EP pour défendre cette attaque."},
+        {niv:5,nom:"Fendre la Ligne",cout:"7 EM — 1 action",desc:"Frappe 14+Niv dégâts. Brise-ligne : si la cible bloque, le coup traverse le blocage et ajoute en dégâts le bonus que le blocage aurait retiré. Contre une cible en garde, parade ou protection, ajoute +4 dégâts."},
+        {niv:7,nom:"Fendre la Ligne",cout:"7 EM — 1 action",desc:"Frappe 18+Niv dégâts. Brise-ligne : si la cible bloque, le coup traverse le blocage et ajoute en dégâts le bonus que le blocage aurait retiré. Une défense réussie ne permet pas à la cible de se replacer gratuitement."},
+        {niv:10,nom:"Fendre la Ligne",cout:"7 EM — 1 action",desc:"Frappe 22+Niv dégâts. Brise-ligne : si la cible bloque, le coup traverse le blocage et ajoute en dégâts le bonus que le blocage aurait retiré. Si la cible défend, sa prochaine défense coûte +2 EP jusqu'à la fin du tour suivant."}
       ]}},
 
   "Lame d'Honneur":{arme:"Épée claire du serment",pvN:7,epN:5,emN:3,dmg:10,type:"Tranchant",sermLevel:"seasoned",hidden:true,evolvesFrom:"Duelliste",
@@ -11280,7 +11280,7 @@ function cBuildAbilityOptionsForPalier(info, pal, actLeft){
   }
   if(f.classe==='Claymore' && /Fendre la Ligne/i.test(name)){
     var nfl=(String(desc).match(/-?\d+/g)||[]).map(function(n){ return parseInt(n,10); });
-    push({ label:'🪓 '+name, value:cDamageWithLevel(cFirstNumber(desc,nfl[0]||10), info.level), targetType:'enemy', defenseExtraEp:parseInt(((String(desc).match(/\+(\d+)\s*EP/i)||[])[1]||'0'),10)||0, guardBonusDmg:/garde|parade|protection/i.test(desc)?(nfl[1]||4):0, noReposition:/replacer/i.test(desc), nextDefenseTax:parseInt(((String(desc).match(/prochaine d[ée]fense co[ûu]te \+(\d+)\s*EP/i)||[])[1]||'0'),10)||0 });
+    push({ label:'🪓 '+name, value:cDamageWithLevel(cFirstNumber(desc,nfl[0]||10), info.level), targetType:'enemy', defenseExtraEp:parseInt(((String(desc).match(/\+(\d+)\s*EP/i)||[])[1]||'0'),10)||0, guardBonusDmg:/garde|parade|protection/i.test(desc)?(nfl[1]||4):0, blockBreakLine:/brise-ligne|traverse le blocage/i.test(desc), noReposition:/replac/i.test(desc), nextDefenseTax:parseInt(((String(desc).match(/prochaine d[ée]fense co[ûu]te \+(\d+)\s*EP/i)||[])[1]||'0'),10)||0 });
     return out;
   }
   if(/Lancer Bestial/i.test(name)){
@@ -11624,6 +11624,7 @@ function cDeclareAction(fi, action, opts){
       entry.defenseExtraEp=opts.defenseExtraEp||0;
       entry.defenseChipPct=opts.defenseChipPct||0;
       entry.guardBonusDmg=opts.guardBonusDmg||0;
+      entry.blockBreakLine=!!opts.blockBreakLine;
       entry.noCounter=!!opts.noCounter;
       entry.noReposition=!!opts.noReposition;
       entry.nextDefenseTax=opts.nextDefenseTax||0;
@@ -11807,8 +11808,14 @@ function cResolveAttackInstance(attacker, fi, atk){
           }
         } else if(def.action==="bloquer"){
           var blockPct=typeof def.blockPct==='number'?def.blockPct:(target&&target.type==="beast"?25:50);
-          dmg=Math.ceil(dmg*(1-(blockPct/100)));
-          defDesc=target&&target.type==="beast"?" (bloqué avec le corps −"+blockPct+"%)":" (bloqué −"+blockPct+"%)";
+          if(atk.blockBreakLine){
+            var breakBonus=Math.ceil(rawDmg*(blockPct/100));
+            dmg=rawDmg+breakBonus;
+            defDesc=(target&&target.type==="beast"?" (blocage corporel brisé +":" (blocage brisé +")+breakBonus+")";
+          } else {
+            dmg=Math.ceil(dmg*(1-(blockPct/100)));
+            defDesc=target&&target.type==="beast"?" (bloqué avec le corps −"+blockPct+"%)":" (bloqué −"+blockPct+"%)";
+          }
           if(atk.blockEpDrain){
             var oldBlockEp=target.epCur||0;
             target.epCur=Math.max(0,oldBlockEp-atk.blockEpDrain);
