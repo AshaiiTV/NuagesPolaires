@@ -260,7 +260,7 @@ var SD={
       flavor:"Posture Haute fait de la préparation une arme. Le Claymore annonce le danger, garde la lame suspendue, et force l'adversaire à vivre une seconde entière sous la promesse de l'impact. Ce n'est pas discret. C'est pire : c'est inévitable.",
       paliers:[
         {niv:2,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Entre en posture jusqu'au prochain tour. La prochaine Frappe Haute coûte 10 EP, inflige 20+Niv dégâts et retire 12 EP si la cible bloque."},
-        {niv:5,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe Haute : 24+Niv dégâts, 10 EP. Si la cible bloque, elle perd 14 EP et ne peut pas contre-attaquer immédiatement."},
+        {niv:5,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe Haute : 24+Niv dégâts, 10 EP. Si la cible bloque, elle perd 14 EP."},
         {niv:7,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe Haute : 28+Niv dégâts, 10 EP. Si la cible bloque, elle perd 16 EP et ne se replace pas gratuitement."},
         {niv:10,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe Haute : 32+Niv dégâts, 10 EP. Si la cible bloque, elle perd 20 EP. Sur défense réussie, la cible subit tout de même 25% des dégâts sous forme d'impact."}
       ]},
@@ -11081,7 +11081,6 @@ function cParseDescMechanics(desc){
     defenseExtraEp:parseInt(((desc.match(/\+(\d+)\s*EP[^.]{0,42}d[ée]fend|d[ée]fend[^.]{0,42}\+(\d+)\s*EP/i)||[]).filter(Boolean)[1]||'0'),10)||0,
     defenseChipPct:/25\s*%/.test(desc)?25:0,
     guardBonusDmg:/garde|parade|protection/i.test(desc)?(nums[1]||0):0,
-    noCounter:/contre-attaquer/i.test(desc),
     noReposition:/replacer/i.test(desc),
     nextDefenseTax:parseInt(((desc.match(/prochaine d[ée]fense co[ûu]te \+(\d+)\s*EP/i)||[])[1]||'0'),10)||0,
     repulse:/repousse|recul/i.test(desc),
@@ -11091,11 +11090,6 @@ function cParseDescMechanics(desc){
 }
 function cSerializeOpts(obj){
   return JSON.stringify(obj||{}).replace(/</g,'\u003c').replace(/>/g,'\u003e').replace(/'/g,'&#39;');
-}
-function cIsCounterLikeAction(action, opts){
-  opts=opts||{};
-  var text=[action,opts.label,opts.palNom,opts.descText,opts.fullDescText].join(' ');
-  return /riposte|contre[-\s]?attaqu/i.test(text);
 }
 function cActiveSummonForOwner(ownerPid){
   return (_cs.fighters||[]).find(function(x){ return x&&x.isSummon&&x.ownerPid===ownerPid&&x.pvCur>0; }) || null;
@@ -11280,7 +11274,7 @@ function cBuildAbilityOptionsForPalier(info, pal, actLeft){
   if(f.classe==='Claymore' && /Posture Haute/i.test(name)){
     var nph=(String(desc).match(/-?\d+/g)||[]).map(function(n){ return parseInt(n,10); });
     var blockDrain=(String(desc).match(/bloqu[^.]*?(?:perd|retire)\s*(\d+)\s*EP|(?:perd|retire)\s*(\d+)\s*EP[^.]*?bloqu/i)||[]);
-    push({ label:'🗡 '+name, kind:'buff', targetType:'none', claymorePosture:{damage:cDamageWithLevel(cFirstNumber(desc,nph[0]||20), info.level), epCost:parseInt(((String(desc).match(/(\d+)\s*EP/i)||[])[1]||'10'),10)||10, blockEpDrain:parseInt((blockDrain[1]||blockDrain[2]||'0'),10)||0, noCounter:/contre-attaquer/i.test(desc), noReposition:/replac/i.test(desc), defenseChipPct:/25\s*%/.test(desc)?25:0, desc:desc} });
+    push({ label:'🗡 '+name, kind:'buff', targetType:'none', claymorePosture:{damage:cDamageWithLevel(cFirstNumber(desc,nph[0]||20), info.level), epCost:parseInt(((String(desc).match(/(\d+)\s*EP/i)||[])[1]||'10'),10)||10, blockEpDrain:parseInt((blockDrain[1]||blockDrain[2]||'0'),10)||0, noReposition:/replac/i.test(desc), defenseChipPct:/25\s*%/.test(desc)?25:0, desc:desc} });
     return out;
   }
   if(f.classe==='Claymore' && /Fendre la Ligne/i.test(name)){
@@ -11343,10 +11337,9 @@ function cRenderAbilityButtons(fi, actLeft, accent, accentDim, accentBorder){
   options.forEach(function(op){
     var isHeal=op.kind==='heal';
     var sub=[];
-    var isDisabled=f.noCounterRound===_cs.round && cIsCounterLikeAction(op.action||'capacite', op);
-    var bg=isDisabled?'rgba(255,255,255,0.025)':(isHeal?'rgba(90,170,122,0.06)':accentDim);
-    var bd=isDisabled?'rgba(255,255,255,0.08)':(isHeal?'rgba(90,170,122,0.2)':accentBorder);
-    var col=isDisabled?'rgba(255,255,255,0.28)':(isHeal?'var(--green)':accent);
+    var bg=isHeal?'rgba(90,170,122,0.06)':accentDim;
+    var bd=isHeal?'rgba(90,170,122,0.2)':accentBorder;
+    var col=isHeal?'var(--green)':accent;
     if(op.palierNiv) sub.push('Palier '+op.palierNiv);
     if(op.emCost) sub.push('−'+op.emCost+' EM');
     if(op.epCost) sub.push('−'+op.epCost+' EP');
@@ -11355,14 +11348,13 @@ function cRenderAbilityButtons(fi, actLeft, accent, accentDim, accentBorder){
     if(op.aoe) sub.push('AOE');
     if(op.provoke) sub.push('Aggro');
     if(op.kind==='summon') sub.push('Invocation');
-    if(isDisabled) sub.push('bloqué');
     var payload=cSerializeOpts(op);
     var guard='';
     if(op.targetType==='enemy') guard="var _t=parseInt(document.getElementById('decl-tgt-"+fi+"').value);if(isNaN(_t)){var _s=document.getElementById('decl-tgt-"+fi+"');_s.style.borderColor='var(--red)';_s.style.boxShadow='0 0 0 2px rgba(201,74,74,0.4)';setTimeout(function(){_s.style.borderColor='';_s.style.boxShadow='';},1500);return;}window.__cDeclTarget=_t;";
     if(op.targetType==='ally') guard="var _ht=parseInt((document.getElementById('decl-htgt-"+fi+"')&&document.getElementById('decl-htgt-"+fi+"').value)||csGet('h',"+fi+")||-1);if(isNaN(_ht)||_ht<0){return;}window.__cDeclHealTarget=_ht;";
     if(op.targetType==='enemy'&&op.healTargetType==='ally') guard+="var _hel=document.getElementById('decl-htgt-"+fi+"');var _htv=_hel&&_hel.value?parseInt(_hel.value):-1;if(!isNaN(_htv)&&_htv>=0)window.__cDeclHealTarget=_htv;";
-    var onclick=isDisabled?"return;":guard+"var _o=JSON.parse(this.getAttribute('data-opts'));if(window.__cDeclTarget!==undefined){_o.target=window.__cDeclTarget;window.__cDeclTarget=undefined;}if(window.__cDeclHealTarget!==undefined){_o.healTarget=window.__cDeclHealTarget;window.__cDeclHealTarget=undefined;}cDeclareAction("+fi+",_o.action||'capacite',_o);";
-    h+='<button data-opts=\''+payload+'\' '+(isDisabled?'disabled aria-disabled="true" title="Contre-attaque bloquée par Posture Haute" ':'')+'onclick="'+onclick+'" style="width:100%;padding:8px 8px;background:'+bg+';border:1px solid '+bd+';cursor:'+(isDisabled?'not-allowed':'pointer')+';text-align:left;transition:all .15s;margin-bottom:6px;opacity:'+(isDisabled?'.55':'1')+';" onmouseover="this.style.opacity=\''+(isDisabled?'.55':'0.84')+'\'" onmouseout="this.style.opacity=\''+(isDisabled?'.55':'1')+'\'">';
+    var onclick=guard+"var _o=JSON.parse(this.getAttribute('data-opts'));if(window.__cDeclTarget!==undefined){_o.target=window.__cDeclTarget;window.__cDeclTarget=undefined;}if(window.__cDeclHealTarget!==undefined){_o.healTarget=window.__cDeclHealTarget;window.__cDeclHealTarget=undefined;}cDeclareAction("+fi+",_o.action||'capacite',_o);";
+    h+='<button data-opts=\''+payload+'\' onclick="'+onclick+'" style="width:100%;padding:8px 8px;background:'+bg+';border:1px solid '+bd+';cursor:pointer;text-align:left;transition:all .15s;margin-bottom:6px;" onmouseover="this.style.opacity=\'0.84\'" onmouseout="this.style.opacity=\'1\'">';
     h+='<div style="font-size:10px;color:'+col+';display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><span>'+esc(op.label||op.palNom||'Capacité')+'</span>'+(op.value?'<span style="color:var(--text);">'+op.value+' dmg</span>':(op.healAmt?'<span style="color:var(--green);">+'+op.healAmt+' PV</span>':''))+'</div>';
     if(op.descText) h+='<div style="font-size:9px;color:rgba(255,255,255,0.45);margin-top:3px;line-height:1.45;">'+esc(op.descText)+'</div>';
     h+='<div style="font-family:var(--fm);font-size:7px;color:rgba(255,255,255,0.22);margin-top:3px;">'+esc(sub.join(' · '))+'</div>';
@@ -11554,9 +11546,6 @@ function cDeclareAction(fi, action, opts){
   if(action==="deplacer" && f.noFreeRepositionRound===_cs.round){
     notif(f.name+" ne peut pas se replacer gratuitement après cette défense.","err"); return;
   }
-  if(f.noCounterRound===_cs.round && cIsCounterLikeAction(action, opts)){
-    notif(f.name+" ne peut pas contre-attaquer immédiatement.","err"); return;
-  }
   _cs.decl=_cs.decl||{};
   _cs.decl[fi]=_cs.decl[fi]||[];
 
@@ -11572,7 +11561,7 @@ function cDeclareAction(fi, action, opts){
   switch(action){
     case "frappe":
       entry.kind="attack"; entry.value=dmg; entry.label=entry.label||(claymoreHeavy?("🗡 Frappe Haute ("+dmg+")"):("⚔ Frappe ("+dmg+")")); entry.epCost=claymoreHeavy?(claymoreHeavy.epCost||10):6;
-      if(claymoreHeavy){ entry.blockEpDrain=claymoreHeavy.blockEpDrain||0; entry.defenseExtraEp=claymoreHeavy.defenseExtraEp||0; entry.defenseChipPct=claymoreHeavy.defenseChipPct||0; entry.noCounter=!!claymoreHeavy.noCounter; entry.noReposition=!!claymoreHeavy.noReposition; entry.consumeClaymorePosture=true; }
+      if(claymoreHeavy){ entry.blockEpDrain=claymoreHeavy.blockEpDrain||0; entry.defenseExtraEp=claymoreHeavy.defenseExtraEp||0; entry.defenseChipPct=claymoreHeavy.defenseChipPct||0; entry.noReposition=!!claymoreHeavy.noReposition; entry.consumeClaymorePosture=true; }
       break;
     case "pugilat":
       entry.kind="attack"; entry.value=pugDmg; entry.label=entry.label||("👊 Pugilat ("+pugDmg+")"); entry.epCost=6; break;
@@ -11638,7 +11627,6 @@ function cDeclareAction(fi, action, opts){
       entry.defenseChipPct=opts.defenseChipPct||0;
       entry.guardBonusDmg=opts.guardBonusDmg||0;
       entry.blockBreakLine=!!opts.blockBreakLine;
-      entry.noCounter=!!opts.noCounter;
       entry.noReposition=!!opts.noReposition;
       entry.nextDefenseTax=opts.nextDefenseTax||0;
       entry.blockEpDrain=opts.blockEpDrain||0;
@@ -11846,7 +11834,6 @@ function cResolveAttackInstance(attacker, fi, atk){
         }
         if(atk.guardBonusDmg){ dmg+=atk.guardBonusDmg; defDesc+=" + brise-garde"; }
         if(atk.defenseChipPct) dmg=Math.max(dmg,Math.ceil(rawDmg*(atk.defenseChipPct/100)));
-        if(atk.noCounter){ target.noCounterRound=_cs.round+1; cLog("🗡 "+target.name+" ne peut pas contre-attaquer immédiatement.","info"); }
         if(atk.noReposition){ target.noFreeRepositionRound=_cs.round+1; cLog("↔ "+target.name+" ne se replace pas gratuitement après la défense.","info"); }
         if(atk.nextDefenseTax){ target.defenseTaxNext=(target.defenseTaxNext||0)+atk.nextDefenseTax; cLog("⚡ Prochaine défense de "+target.name+" : +"+atk.nextDefenseTax+" EP","info"); }
       }
@@ -13192,9 +13179,8 @@ body .nav-group-menu .nav-section-header{
         var claymoreHeavy=f.claymorePosture||null;
         if(claymoreHeavy&&claymoreHeavy.damage) dmg=claymoreHeavy.damage;
         var pugDmg=3+(f.level||1);
-        if(f.noCounterRound===_cs.round || f.noFreeRepositionRound===_cs.round){
+        if(f.noFreeRepositionRound===_cs.round){
           var lockBits=[];
-          if(f.noCounterRound===_cs.round) lockBits.push("contre-attaque bloquée");
           if(f.noFreeRepositionRound===_cs.round) lockBits.push("replacement gratuit bloqué");
           h+='<div style="margin-bottom:7px;padding:5px 6px;background:rgba(201,74,74,0.08);border:1px solid rgba(201,74,74,0.18);font-family:var(--fd);font-size:7px;letter-spacing:1px;color:rgba(201,74,74,0.85);">🗡 POSTURE HAUTE · '+lockBits.join(" · ")+'</div>';
         }
@@ -13265,7 +13251,6 @@ body .nav-group-menu .nav-section-header{
             h+='<div style="font-family:var(--fd);font-size:7px;letter-spacing:2px;color:var(--red);margin-bottom:6px;">COMPÉTENCE CRÉATURE</div>';
             mobOps.forEach(function(op){
               var sub=[];
-              var isDisabled=f.noCounterRound===_cs.round && cIsCounterLikeAction(op.action||'capacite', op);
               if(op.epCost) sub.push('−'+op.epCost+' EP');
               if(op.emCost) sub.push('−'+op.emCost+' EM');
               if(op.consumeActions&&op.consumeActions>1) sub.push(op.consumeActions+' actions');
@@ -13274,18 +13259,13 @@ body .nav-group-menu .nav-section-header{
               if(op.onlyDodge) sub.push('esquivable uniquement');
               if(op.undefendable) sub.push('imparable');
               if(op.statusToTarget) sub.push(op.statusToTarget);
-              if(isDisabled) sub.push('bloqué');
               var payload=cSerializeOpts(op);
               var guard='';
               if(op.targetType==='enemy') guard="var _s=document.getElementById('decl-tgt-"+fi+"');var _t=parseInt(((_s&&_s.value)||csGet('t',"+fi+")||-1),10);if(isNaN(_t)||_t<0){if(_s){_s.style.borderColor='var(--red)';_s.style.boxShadow='0 0 0 2px rgba(201,74,74,0.4)';setTimeout(function(){_s.style.borderColor='';_s.style.boxShadow='';},1500);}return;}window.__cDeclTarget=_t;";
               if(op.targetType==='ally') guard="var _hs=document.getElementById('decl-htgt-"+fi+"');var _ht=parseInt(((_hs&&_hs.value)||csGet('h',"+fi+")||-1),10);if(isNaN(_ht)||_ht<0){if(_hs){_hs.style.borderColor='var(--green)';_hs.style.boxShadow='0 0 0 2px rgba(90,170,122,0.35)';setTimeout(function(){_hs.style.borderColor='';_hs.style.boxShadow='';},1500);}return;}window.__cDeclHealTarget=_ht;";
-              var bg=isDisabled?'rgba(255,255,255,0.025)':'rgba(201,74,74,0.06)';
-              var hoverBg=isDisabled?'rgba(255,255,255,0.025)':'rgba(201,74,74,0.12)';
-              var bd=isDisabled?'rgba(255,255,255,0.08)':'rgba(201,74,74,0.2)';
-              var col=isDisabled?'rgba(255,255,255,0.28)':'var(--red)';
-              var onclick=isDisabled?"return;":guard+"var _o=JSON.parse(this.getAttribute('data-opts'));if(window.__cDeclTarget!==undefined){_o.target=window.__cDeclTarget;window.__cDeclTarget=undefined;}if(window.__cDeclHealTarget!==undefined){_o.healTarget=window.__cDeclHealTarget;window.__cDeclHealTarget=undefined;}cDeclareAction("+fi+",_o.action||'capacite',_o);";
-              h+='<button data-opts=\''+payload+'\' '+(isDisabled?'disabled aria-disabled="true" title="Contre-attaque bloquée par Posture Haute" ':'')+'onclick="'+onclick+'" style="width:100%;padding:8px;background:'+bg+';border:1px solid '+bd+';cursor:'+(isDisabled?'not-allowed':'pointer')+';text-align:left;transition:all .15s;margin-bottom:6px;opacity:'+(isDisabled?'.55':'1')+';" onmouseover="this.style.background=\''+hoverBg+'\'" onmouseout="this.style.background=\''+bg+'\'">';
-              h+='<div style="font-size:10px;color:'+col+';display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><span>'+esc(op.label||'⚡ Compétence')+'</span>'+(op.value?'<span style="color:var(--text);">'+op.value+' dmg</span>':(op.healAmt?'<span style="color:var(--green);">+'+op.healAmt+' PV</span>':''))+'</div>';
+              var onclick=guard+"var _o=JSON.parse(this.getAttribute('data-opts'));if(window.__cDeclTarget!==undefined){_o.target=window.__cDeclTarget;window.__cDeclTarget=undefined;}if(window.__cDeclHealTarget!==undefined){_o.healTarget=window.__cDeclHealTarget;window.__cDeclHealTarget=undefined;}cDeclareAction("+fi+",_o.action||'capacite',_o);";
+              h+='<button data-opts=\''+payload+'\' onclick="'+onclick+'" style="width:100%;padding:8px;background:rgba(201,74,74,0.06);border:1px solid rgba(201,74,74,0.2);cursor:pointer;text-align:left;transition:all .15s;margin-bottom:6px;" onmouseover="this.style.background=\'rgba(201,74,74,0.12)\'" onmouseout="this.style.background=\'rgba(201,74,74,0.06)\'">';
+              h+='<div style="font-size:10px;color:var(--red);display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><span>'+esc(op.label||'⚡ Compétence')+'</span>'+(op.value?'<span style="color:var(--text);">'+op.value+' dmg</span>':(op.healAmt?'<span style="color:var(--green);">+'+op.healAmt+' PV</span>':''))+'</div>';
               if(op.descText) h+='<div style="font-size:9px;color:rgba(255,255,255,0.45);margin-top:3px;line-height:1.45;">'+esc(op.descText)+'</div>';
               h+='<div style="font-family:var(--fm);font-size:7px;color:rgba(255,255,255,0.22);margin-top:3px;">'+esc(sub.join(' · '))+'</div>';
               h+='</button>';
