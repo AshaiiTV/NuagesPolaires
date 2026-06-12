@@ -238,19 +238,19 @@ var SD={
       descPhys:"La lame part trop tôt, trop visible — presque volontairement. L'adversaire réagit, et c'est là que le vrai coup arrive, décalé d'un souffle, porté dans l'angle que la défense vient d'abandonner.",
       flavor:"Le Bretteur vend une erreur comme d'autres vendent une menace. Il donne à l'adversaire quelque chose à défendre, puis retire le sens du geste au dernier moment. La cible ne tombe pas dans un piège grossier ; elle tombe dans sa propre bonne réaction.",
       paliers:[
-        {niv:2,nom:"Feinte de Fer",cout:"6 EM — 1 action",desc:"Frappe 8+Niv. Si la cible utilise une défense, elle dépense 2 EP supplémentaires. Si elle ne défend pas, la frappe gagne +4 dégâts."},
-        {niv:5,nom:"Feinte de Fer",cout:"6 EM — 1 action",desc:"Frappe 12+Niv. Défense adverse : +3 EP dépensés. Sans défense : +6 dégâts."},
-        {niv:7,nom:"Feinte de Fer",cout:"6 EM — 1 action",desc:"Frappe 16+Niv. Défense adverse : +4 EP dépensés. Sans défense : +8 dégâts."},
-        {niv:10,nom:"Feinte de Fer",cout:"6 EM — 1 action",desc:"Frappe 20+Niv. Défense adverse : +5 EP dépensés. Sans défense : +10 dégâts."}
+        {niv:10,nom:"Feinte de Fer",cout:"6 EM — 1 action",desc:"Frappe 8+Niv. Si la cible utilise une défense, elle dépense 2 EP supplémentaires. Si elle ne défend pas, la frappe gagne +4 dégâts."},
+        {niv:13,nom:"Feinte de Fer",cout:"6 EM — 1 action",desc:"Frappe 12+Niv. Défense adverse : +3 EP dépensés. Sans défense : +6 dégâts."},
+        {niv:16,nom:"Feinte de Fer",cout:"6 EM — 1 action",desc:"Frappe 16+Niv. Défense adverse : +4 EP dépensés. Sans défense : +8 dégâts."},
+        {niv:20,nom:"Feinte de Fer",cout:"6 EM — 1 action",desc:"Frappe 20+Niv. Défense adverse : +5 EP dépensés. Sans défense : +10 dégâts."}
       ]},
     bB:{nom:"Branche B — Pas Rompu",style:"Fluidité",
       descPhys:"Le Bretteur pivote au dernier instant. Le corps se décale, la lame accompagne le mouvement, et l'attaque adverse glisse dans le vide pendant qu'une ligne nette apparaît en retour.",
       flavor:"Pas Rompu n'est pas une fuite. C'est une disparition minuscule. Le Bretteur laisse l'attaque passer à l'endroit où il était, puis revient dans l'angle mort avec la cruauté tranquille de quelqu'un qui avait prévu le coup avant son départ.",
       paliers:[
-        {niv:2,nom:"Pas Rompu",cout:"5 EM — réaction",desc:"Lorsqu'une attaque ciblée est esquivée, le Bretteur peut riposter : 5+Niv dégâts. Utilisable 1 fois par tour."},
-        {niv:5,nom:"Pas Rompu",cout:"5 EM — réaction",desc:"Riposte après esquive : 8+Niv dégâts. Le Bretteur peut aussi se replacer à distance courte."},
-        {niv:7,nom:"Pas Rompu",cout:"5 EM — réaction",desc:"Riposte après esquive : 11+Niv dégâts. La prochaine attaque du Bretteur contre cette cible coûte -1 EP."},
-        {niv:10,nom:"Pas Rompu",cout:"5 EM — réaction",desc:"Riposte après esquive : 14+Niv dégâts. Si la cible a raté son attaque, elle perd 1 action de déplacement ce tour."}
+        {niv:10,nom:"Pas Rompu",cout:"5 EM — réaction",desc:"Lorsqu'une attaque ciblée est esquivée, le Bretteur peut riposter : 5+Niv dégâts. Utilisable 1 fois par tour."},
+        {niv:13,nom:"Pas Rompu",cout:"5 EM — réaction",desc:"Riposte après esquive : 8+Niv dégâts. Le Bretteur peut aussi se replacer à distance courte."},
+        {niv:16,nom:"Pas Rompu",cout:"5 EM — réaction",desc:"Riposte après esquive : 11+Niv dégâts. La prochaine attaque du Bretteur contre cette cible coûte -1 EP."},
+        {niv:20,nom:"Pas Rompu",cout:"5 EM — réaction",desc:"Riposte après esquive : 14+Niv dégâts. Si la cible a raté son attaque, elle perd 1 action de déplacement ce tour."}
       ]}},
 
   "Claymore":{arme:"Claymore du serment",pvN:7,epN:4,emN:2,dmg:16,type:"Tranchant lourd",sermLevel:"seasoned",hidden:true,evolvesFrom:"Duelliste",
@@ -259,19 +259,19 @@ var SD={
       descPhys:"Le porteur remonte l'espadon au-dessus de l'épaule. La garde paraît ouverte, presque provocante, mais la lame suspendue annonce un coup si lourd que l'adversaire doit décider avant même qu'il parte.",
       flavor:"Posture Haute fait de la préparation une arme. Le Claymore annonce le danger, garde la lame suspendue, et force l'adversaire à vivre une seconde entière sous la promesse de l'impact. Ce n'est pas discret. C'est pire : c'est inévitable.",
       paliers:[
-        {niv:2,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Entre en posture jusqu'au prochain tour. La prochaine Frappe Haute coûte 10 EP, inflige 20+Niv dégâts et retire 12 EP si la cible bloque."},
-        {niv:5,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe Haute : 24+Niv dégâts, 10 EP. Si la cible bloque, elle perd 14 EP."},
-        {niv:7,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe Haute : 28+Niv dégâts, 10 EP. Si la cible bloque, elle perd 16 EP et ne peut pas se déplacer au prochain round."},
-        {niv:10,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe Haute : 32+Niv dégâts, 10 EP. Si la cible bloque, elle perd 20 EP. Sur défense réussie, la cible subit tout de même 25% des dégâts sous forme d'impact."}
+        {niv:10,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Entre en posture jusqu'au prochain tour. La prochaine Frappe Haute coûte 10 EP, inflige 20+Niv dégâts et retire 12 EP si la cible bloque."},
+        {niv:13,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe Haute : 24+Niv dégâts, 10 EP. Si la cible bloque, elle perd 14 EP."},
+        {niv:16,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe Haute : 28+Niv dégâts, 10 EP. Si la cible bloque, elle perd 16 EP et ne peut pas se déplacer au prochain round."},
+        {niv:20,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe Haute : 32+Niv dégâts, 10 EP. Si la cible bloque, elle perd 20 EP. Sur défense réussie, la cible subit tout de même 25% des dégâts sous forme d'impact."}
       ]},
     bB:{nom:"Branche B — Fendre la Ligne",style:"Brise-ligne",
       descPhys:"L'espadon part en arc large, lent, plein. Ce n'est pas une coupe élégante : c'est une masse de métal qui traverse la garde, les appuis et la certitude de tenir bon.",
       flavor:"Fendre la Ligne n'est pas fait pour courir après les fuyards. C'est une réponse aux gardes, aux fronts, aux certitudes. Le Claymore frappe là où l'ennemi pensait tenir, jusqu'à ce que la position cesse d'être une protection et devienne un piège.",
       paliers:[
-        {niv:2,nom:"Fendre la Ligne",cout:"7 EM — 1 action",desc:"Frappe 10+Niv dégâts. Brise-ligne : si la cible bloque, le coup traverse le blocage et ajoute en dégâts le bonus que le blocage aurait retiré. Si la cible a déjà défendu ce tour, elle dépense +3 EP pour défendre cette attaque."},
-        {niv:5,nom:"Fendre la Ligne",cout:"7 EM — 1 action",desc:"Frappe 14+Niv dégâts. Brise-ligne : si la cible bloque, le coup traverse le blocage et ajoute en dégâts le bonus que le blocage aurait retiré. Contre une cible en garde, parade ou protection, ajoute +4 dégâts."},
-        {niv:7,nom:"Fendre la Ligne",cout:"7 EM — 1 action",desc:"Frappe 18+Niv dégâts. Brise-ligne : si la cible bloque, le coup traverse le blocage et ajoute en dégâts le bonus que le blocage aurait retiré. Une défense réussie ne permet pas à la cible de se replacer gratuitement."},
-        {niv:10,nom:"Fendre la Ligne",cout:"7 EM — 1 action",desc:"Frappe 22+Niv dégâts. Brise-ligne : si la cible bloque, le coup traverse le blocage et ajoute en dégâts le bonus que le blocage aurait retiré. Si la cible défend, sa prochaine défense coûte +2 EP jusqu'à la fin du tour suivant."}
+        {niv:10,nom:"Fendre la Ligne",cout:"7 EM — 1 action",desc:"Frappe 10+Niv dégâts. Brise-ligne : si la cible bloque, le coup traverse le blocage et ajoute en dégâts le bonus que le blocage aurait retiré. Si la cible a déjà défendu ce tour, elle dépense +3 EP pour défendre cette attaque."},
+        {niv:13,nom:"Fendre la Ligne",cout:"7 EM — 1 action",desc:"Frappe 14+Niv dégâts. Brise-ligne : si la cible bloque, le coup traverse le blocage et ajoute en dégâts le bonus que le blocage aurait retiré. Contre une cible en garde, parade ou protection, ajoute +4 dégâts."},
+        {niv:16,nom:"Fendre la Ligne",cout:"7 EM — 1 action",desc:"Frappe 18+Niv dégâts. Brise-ligne : si la cible bloque, le coup traverse le blocage et ajoute en dégâts le bonus que le blocage aurait retiré. Une défense réussie ne permet pas à la cible de se replacer gratuitement."},
+        {niv:20,nom:"Fendre la Ligne",cout:"7 EM — 1 action",desc:"Frappe 22+Niv dégâts. Brise-ligne : si la cible bloque, le coup traverse le blocage et ajoute en dégâts le bonus que le blocage aurait retiré. Si la cible défend, sa prochaine défense coûte +2 EP jusqu'à la fin du tour suivant."}
       ]}},
 
   "Lame d'Honneur":{arme:"Épée claire du serment",pvN:7,epN:5,emN:3,dmg:10,type:"Tranchant",sermLevel:"seasoned",hidden:true,evolvesFrom:"Duelliste",
@@ -280,19 +280,19 @@ var SD={
       descPhys:"La Lame d'Honneur pointe une cible. Le monde ne disparaît pas, mais tout semble se resserrer entre deux corps, deux souffles, deux volontés. Chaque pas hors de ce duel paraît plus lourd, presque moins légitime.",
       flavor:"Duel Juré ferme la porte. L'EM investi devient une mise à prix spirituelle : il ne revient pas simplement avec le temps, parce qu'il appartient désormais à la promesse. La Lame d'Honneur gagne le droit de frapper sa cible comme une sentence, mais tout ce qui n'est pas cette cible devient secondaire, presque indigne de sa lame.",
       paliers:[
-        {niv:2,nom:"Duel Juré",cout:"5 EM — 1 action — EM non régénérable",desc:"Désigne une cible jusqu'à sa mort, la fin du combat ou rupture validée staff. Contre elle : +40% dégâts. Contre toute autre cible : -60% dégâts. Si la cible meurt, récupère jusqu'à 6 EP dépensés pendant ce duel."},
-        {niv:5,nom:"Duel Juré",cout:"5 EM — 1 action — EM non régénérable",desc:"Contre la cible jurée : +55% dégâts. Contre les autres : -70% dégâts. Si la cible meurt, récupère jusqu'à 9 EP dépensés pendant ce duel."},
-        {niv:7,nom:"Duel Juré",cout:"5 EM — 1 action — EM non régénérable",desc:"Contre la cible jurée : +70% dégâts. Contre les autres : -80% dégâts. Si la cible meurt, récupère jusqu'à 12 EP dépensés pendant ce duel."},
-        {niv:10,nom:"Duel Juré",cout:"5 EM — 1 action — EM non régénérable",desc:"Contre la cible jurée : +90% dégâts. Contre les autres : -90% dégâts. Si la cible meurt, récupère toute l'EP dépensée pendant ce duel, dans la limite de son maximum d'EP."}
+        {niv:10,nom:"Duel Juré",cout:"5 EM — 1 action — EM non régénérable",desc:"Désigne une cible jusqu'à sa mort, la fin du combat ou rupture validée staff. Contre elle : +40% dégâts. Contre toute autre cible : -60% dégâts. Si la cible meurt, récupère jusqu'à 6 EP dépensés pendant ce duel."},
+        {niv:13,nom:"Duel Juré",cout:"5 EM — 1 action — EM non régénérable",desc:"Contre la cible jurée : +55% dégâts. Contre les autres : -70% dégâts. Si la cible meurt, récupère jusqu'à 9 EP dépensés pendant ce duel."},
+        {niv:16,nom:"Duel Juré",cout:"5 EM — 1 action — EM non régénérable",desc:"Contre la cible jurée : +70% dégâts. Contre les autres : -80% dégâts. Si la cible meurt, récupère jusqu'à 12 EP dépensés pendant ce duel."},
+        {niv:20,nom:"Duel Juré",cout:"5 EM — 1 action — EM non régénérable",desc:"Contre la cible jurée : +90% dégâts. Contre les autres : -90% dégâts. Si la cible meurt, récupère toute l'EP dépensée pendant ce duel, dans la limite de son maximum d'EP."}
       ]},
     bB:{nom:"Branche B — Sentence du Duel",style:"Exécution",
       descPhys:"La lame claire ne cherche plus les ouvertures générales. Elle revient toujours vers la même présence, le même angle, la même faute. Chaque coup ressemble moins à une attaque qu'à une ligne de plus dans une condamnation.",
       flavor:"Sentence du Duel est la partie la plus froide du serment. Pas de panache inutile, pas de grande protection héroïque : seulement la même cible, encore, jusqu'à rupture. Chaque frappe rappelle que la Lame d'Honneur a choisi son ennemi et que ce choix doit aller au bout.",
       paliers:[
-        {niv:2,nom:"Sentence du Duel",cout:"4 EM — 1 action — cible jurée uniquement",desc:"Frappe 10+Niv dégâts. Si la cible est sous Duel Juré, ajoute +4 dégâts et marque 1 EP dépensé comme récupérable si elle meurt."},
-        {niv:5,nom:"Sentence du Duel",cout:"4 EM — 1 action — cible jurée uniquement",desc:"Frappe 14+Niv dégâts. Si la cible est sous Duel Juré, ajoute +7 dégâts et marque 2 EP dépensés comme récupérables si elle meurt."},
-        {niv:7,nom:"Sentence du Duel",cout:"4 EM — 1 action — cible jurée uniquement",desc:"Frappe 18+Niv dégâts. Si la cible est sous Duel Juré, ajoute +10 dégâts. Si elle défend, sa défense coûte +2 EP."},
-        {niv:10,nom:"Sentence du Duel",cout:"4 EM — 1 action — cible jurée uniquement",desc:"Frappe 22+Niv dégâts. Si la cible est sous Duel Juré, ajoute +14 dégâts. Si cette attaque tue la cible, la récupération d'EP du Duel Juré se déclenche immédiatement."}
+        {niv:10,nom:"Sentence du Duel",cout:"4 EM — 1 action — cible jurée uniquement",desc:"Frappe 10+Niv dégâts. Si la cible est sous Duel Juré, ajoute +4 dégâts et marque 1 EP dépensé comme récupérable si elle meurt."},
+        {niv:13,nom:"Sentence du Duel",cout:"4 EM — 1 action — cible jurée uniquement",desc:"Frappe 14+Niv dégâts. Si la cible est sous Duel Juré, ajoute +7 dégâts et marque 2 EP dépensés comme récupérables si elle meurt."},
+        {niv:16,nom:"Sentence du Duel",cout:"4 EM — 1 action — cible jurée uniquement",desc:"Frappe 18+Niv dégâts. Si la cible est sous Duel Juré, ajoute +10 dégâts. Si elle défend, sa défense coûte +2 EP."},
+        {niv:20,nom:"Sentence du Duel",cout:"4 EM — 1 action — cible jurée uniquement",desc:"Frappe 22+Niv dégâts. Si la cible est sous Duel Juré, ajoute +14 dégâts. Si cette attaque tue la cible, la récupération d'EP du Duel Juré se déclenche immédiatement."}
       ]}},
   "Sauvageon":{arme:"Hache à deux mains du serment",pvN:5,epN:8,emN:1,dmg:14,type:"Tranchant",
     lore:"Le Sauvageon est le serment de ceux qui ont appris à vivre avant d'apprendre à se tenir droits. Il ne leur offre pas la brutalité : il la reconnaît déjà là, enfouie dans les épaules, dans la mâchoire, dans cette façon d'avancer quand tout conseille de reculer. Sa hache à deux mains du serment est une évidence primitive, lourde, presque insultante dans sa simplicité. Elle ne promet ni élégance ni pardon. Elle promet que quelque chose va céder. Le Sauvageon n'est pas seulement fort : il est habité par une survie ancienne, une rage utile, une endurance qui donne l'impression que le monde l'a cogné longtemps sans réussir à le coucher.",
@@ -5898,10 +5898,10 @@ function getSermLorePreview(text){
   return clean.slice(0,257).replace(/\s+\S*$/,"")+"...";
 }
 function getPalierStageLabel(level,idx,total){
-  var map={2:"Débloqué",5:"Renforcé",7:"Maîtrisé",10:"Parachevé"};
-  if(map[level]) return map[level];
   if(idx===0) return "Débloqué";
   if(total&&idx===total-1) return "Parachevé";
+  if(idx===1) return "Renforcé";
+  if(idx===2) return "Maîtrisé";
   return "Palier "+(idx+1);
 }
 
@@ -8269,9 +8269,9 @@ function renderRegles(tid){
   var terms=[
     {t:"Dimenséa",d:"Relique aux pouvoirs dimensionnels, autrefois entre les mains de l\'Argonaute. Son changement de mains a déclenché le champ dimensionnel qui a projeté l\'humanité dans le futur. Elle est l\'origine de tout."},
     {t:"Élève du Serment",d:"Terme désignant les survivants qui portent un Serment. Ils forment une minorité parmi les rescapés de la projection dimensionnelle. Le Dimenséa a fait d\'eux ce qu\'ils sont."},
-    {t:"Serment",d:"Lien sacré entre un porteur et son arme liée. Il ne se choisit pas — il reconnaît son porteur. Il se déploie à travers quatre paliers (niveaux 2, 5, 7 et 10) à mesure que le porteur s\'en montre digne."},
+    {t:"Serment",d:"Lien sacré entre un porteur et son arme liée. Il ne se choisit pas — il reconnaît son porteur. Il se déploie à travers quatre paliers adaptés à son rang à mesure que le porteur s\'en montre digne."},
     {t:"Arme du Serment",d:"Manifestation physique du lien entre le porteur et son Serment. Elle peut être invoquée ou renvoyée à volonté (1 EM). Elle ne peut pas être maniée par quelqu\'un d\'autre. À la mort du porteur, elle disparaît instantanément."},
-    {t:"Palier",d:"Seuil de progression d\'un Serment. Il en existe quatre : Palier I (Niv. 2), Palier II (Niv. 5), Palier III (Niv. 7), Palier IV (Niv. 10). Chaque palier débloque ou transforme une capacité."},
+    {t:"Palier",d:"Seuil de progression d\'un Serment. Les serments basiques progressent aux niveaux 2, 5, 7 et 10. Les serments aguerris commencent au niveau 10 et progressent ensuite aux niveaux 13, 16 et 20. Chaque palier débloque ou transforme une capacité."},
     {t:"Gemme de Sang",d:"Fragment cristallin extrait des créatures vaincues. Il en existe trois grades : Blanche (+5 XP), Incarnate (+20 XP) et Écarlate (+50 XP). Fusionnée à l\'arme du Serment, elle fait progresser son porteur."},
     {t:"PV",d:"Points de Vie. Mesure la résistance vitale d\'un personnage. À 0, le personnage est KO (voire mort selon le contexte). Base Niv. 1 : 30 PV."},
     {t:"EP",d:"Énergie Physique. Carburant de toutes les actions physiques (frappes, esquives, déplacements, etc.). À 0, le personnage s\'effondre et est hors combat. Base Niv. 1 : 50 EP."},
@@ -9043,6 +9043,11 @@ function switchProgTab(tab){
 // LEVEL-UP
 // ==========================================
 var SERM_PALIERS=[{niv:2,nom:"Palier I — Éveil"},{niv:5,nom:"Palier II — Densité"},{niv:7,nom:"Palier III — Maîtrise"},{niv:10,nom:"Palier IV — Plénitude"}];
+var SERM_PALIERS_SEASONED=[{niv:10,nom:"Aguerri I — Éveil"},{niv:13,nom:"Aguerri II — Densité"},{niv:16,nom:"Aguerri III — Maîtrise"},{niv:20,nom:"Aguerri IV — Plénitude"}];
+function getSermPalierDefsFor(classe){
+  var s=(getAllSD()[classe]||SD[classe]||null);
+  return getSermLevelKey(classe,s)==="seasoned"?SERM_PALIERS_SEASONED:SERM_PALIERS;
+}
 function xpReq(l){return l*30;}
 function sxpReq(l){return l*10;}
 
@@ -9061,7 +9066,7 @@ function doSLvlUp(p){
   var gained=[];
   while(p.sXp>=p.sXpMax){
     p.sXp-=p.sXpMax;p.sLevel++;p.sXpMax=sxpReq(p.sLevel);
-    var pal=SERM_PALIERS.find(function(pl){return pl.niv===p.sLevel;});
+    var pal=getSermPalierDefsFor(p.classe).find(function(pl){return pl.niv===p.sLevel;});
     var msg="⬆ Serment Niv. "+p.sLevel+(pal?" — "+pal.nom+" débloqué !":"");
     gained.push({niv:p.sLevel,palier:pal?pal.nom:null});
     p.history.push({ts:Date.now(),type:"add",text:msg,by:"Système"});
@@ -9128,7 +9133,8 @@ function updateSermPreview(){
   if(!type){var g=ge("sxpp-gain");var a=ge("sxpp-after");if(g)g.textContent="—";if(a)a.textContent="Sélectionne une gemme";return;}
   var xpG={b:5,i:20,e:50};var total=xpG[type]*qty;
   var simXP=p.sXp+total;var simLvl=p.sLevel;var simMax=p.sXpMax;var lups=0;var pals=[];
-  while(simXP>=simMax){simXP-=simMax;simLvl++;simMax=sxpReq(simLvl);lups++;var pal=SERM_PALIERS.find(function(pl){return pl.niv===simLvl;});if(pal)pals.push(pal.nom);}
+  var palierDefs=getSermPalierDefsFor(p.classe);
+  while(simXP>=simMax){simXP-=simMax;simLvl++;simMax=sxpReq(simLvl);lups++;var pal=palierDefs.find(function(pl){return pl.niv===simLvl;});if(pal)pals.push(pal.nom);}
   var g=ge("sxpp-gain");var a=ge("sxpp-after");
   if(g)g.textContent="+"+total+" XP Serment"+(lups?" ⬆×"+lups:"");
   if(a)a.textContent=lups?"Serment Niv. "+p.sLevel+" → "+simLvl+(pals.length?" — "+pals[0]+" débloqué !":""):"XP Serment : "+p.sXp+" → "+(p.sXp+total)+" / "+p.sXpMax;
@@ -15595,10 +15601,10 @@ function _buildPDF(p){
   doc.setFontSize(7);
   doc.setTextColor(GOLD);
   doc.setFont("helvetica","normal");
-  doc.text("PALIER "+_palierNum(p.sLevel||1),W-30,branchY+10,{align:"right"});
+  doc.text("PALIER "+_palierNum(p.sLevel||1,p.classe),W-30,branchY+10,{align:"right"});
   doc.setFontSize(9);
   doc.setTextColor(GOLD);
-  doc.text(_palierLabel(p.sLevel||1),W-18,branchY+18,{align:"right"});
+  doc.text(_palierLabel(p.sLevel||1,p.classe),W-18,branchY+18,{align:"right"});
 
   // === XP SERMENT ===
   var xpY=branchY+30;
@@ -15770,17 +15776,23 @@ function _sermColor(classe){
   return cols[classe]||"#7eb8d4";
 }
 
-function _palierNum(sLevel){
-  if(sLevel>=10) return "IV";
-  if(sLevel>=7)  return "III";
-  if(sLevel>=5)  return "II";
+function _palierNum(sLevel,classe){
+  var defs=getSermPalierDefsFor(classe||"");
+  var idx=-1;
+  defs.forEach(function(pal,i){ if(sLevel>=pal.niv) idx=i; });
+  if(idx>=3) return "IV";
+  if(idx===2) return "III";
+  if(idx===1) return "II";
   return "I";
 }
 
-function _palierLabel(sLevel){
-  if(sLevel>=10) return "Plénitude";
-  if(sLevel>=7)  return "Maîtrise";
-  if(sLevel>=5)  return "Densité";
+function _palierLabel(sLevel,classe){
+  var defs=getSermPalierDefsFor(classe||"");
+  var idx=-1;
+  defs.forEach(function(pal,i){ if(sLevel>=pal.niv) idx=i; });
+  if(idx>=3) return "Plénitude";
+  if(idx===2) return "Maîtrise";
+  if(idx===1) return "Densité";
   return "Éveil";
 }
 
