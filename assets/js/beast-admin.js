@@ -118,7 +118,7 @@
       wrap.className = 'bestiary-admin-adv';
       wrap.innerHTML = ''
         +'<div class="adv-head">'
-          +'<div><div class="adv-title">Bestiaire</div><div class="adv-sub">Recherche, tri et édition rapide. Les outils lourds sont rangés pour garder la page lisible.</div></div>'
+          +'<div><div class="beast-admin-title-line"><div class="adv-title">Atelier Bestiaire</div><span class="beast-admin-mini-tag">Admin</span></div><div class="adv-sub">Recherche, tri et édition rapide. Les outils lourds sont rangés pour garder la page lisible.</div></div>'
           +'<div class="adv-actions">'
             +'<button class="btn btn-sm btn-grn" onclick="openModal(\'m-addb\')"><span>+ Nouvelle créature</span></button>'
             +'<details class="beast-admin-tools"><summary>Outils</summary><div>'
@@ -209,6 +209,8 @@
       +'#bestiaire-admin .bestiary-admin-adv{margin-bottom:14px;padding:14px 16px;border:1px solid rgba(126,184,212,.14);background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.018));}'
       +'#bestiaire-admin .bestiary-admin-adv .adv-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px;}'
       +'#bestiaire-admin .bestiary-admin-adv .adv-title{font-family:var(--fd);font-size:12px;letter-spacing:2px;color:var(--text);text-transform:uppercase;}'
+      +'#bestiaire-admin .beast-admin-title-line{display:flex;align-items:center;gap:9px;flex-wrap:wrap;}'
+      +'#bestiaire-admin .beast-admin-mini-tag{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;border:1px solid rgba(201,168,76,.32);background:rgba(201,168,76,.09);color:var(--gold);font-family:var(--fd);font-size:8px;letter-spacing:1.8px;text-transform:uppercase;font-weight:700;}'
       +'#bestiaire-admin .bestiary-admin-adv .adv-sub{font-size:12px;color:var(--dim);max-width:720px;line-height:1.5;}'
       +'#bestiaire-admin .bestiary-admin-adv .adv-actions,#bestiaire-admin .beast-admin-actions,#bestiaire-admin .beast-admin-badges{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}'
       +'#bestiaire-admin .bestiary-admin-adv .adv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}'
