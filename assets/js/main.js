@@ -11074,6 +11074,21 @@ function cParseEMCost(cout){
   var n=cNums(cout||'');
   return n.length?parseInt(n[0],10):0;
 }
+function cParseDescMechanics(desc){
+  desc=String(desc||'');
+  var nums=(desc.match(/-?\d+/g)||[]).map(function(n){return parseInt(n,10);});
+  return {
+    defenseExtraEp:parseInt(((desc.match(/\+(\d+)\s*EP[^.]{0,42}d[ée]fend|d[ée]fend[^.]{0,42}\+(\d+)\s*EP/i)||[]).filter(Boolean)[1]||'0'),10)||0,
+    defenseChipPct:/25\s*%/.test(desc)?25:0,
+    guardBonusDmg:/garde|parade|protection/i.test(desc)?(nums[1]||0):0,
+    noCounter:/contre-attaquer/i.test(desc),
+    noReposition:/replacer/i.test(desc),
+    nextDefenseTax:parseInt(((desc.match(/prochaine d[ée]fense co[ûu]te \+(\d+)\s*EP/i)||[])[1]||'0'),10)||0,
+    repulse:/repousse|recul/i.test(desc),
+    onlyDodge:/uniquement esquivable|seulement esquivable|non\s*parable/i.test(desc),
+    undefendable:/imparable|ind[ée]fendable|non\s*esquivable/i.test(desc)
+  };
+}
 function cSerializeOpts(obj){
   return JSON.stringify(obj||{}).replace(/</g,'\u003c').replace(/>/g,'\u003e').replace(/'/g,'&#39;');
 }
@@ -11257,6 +11272,16 @@ function cBuildAbilityOptionsForPalier(info, pal, actLeft){
     push({ action:'frappe_dechainees', label:name, value:cDamageWithLevel(nfd[0]||4, info.level), healAmt:(nfd[1]||4), targetType:'enemy', healTargetType:'ally' });
     return out;
   }
+  if(f.classe==='Claymore' && /Posture Haute/i.test(name)){
+    var nph=(String(desc).match(/-?\d+/g)||[]).map(function(n){ return parseInt(n,10); });
+    push({ label:'🗡 '+name, kind:'buff', targetType:'none', claymorePosture:{damage:cDamageWithLevel(cFirstNumber(desc,nph[0]||12), info.level), defenseExtraEp:parseInt(((String(desc).match(/\+(\d+)\s*EP/i)||[])[1]||'0'),10)||0, noCounter:/contre-attaquer/i.test(desc), noReposition:/replacer/i.test(desc), defenseChipPct:/25\s*%/.test(desc)?25:0, desc:desc} });
+    return out;
+  }
+  if(f.classe==='Claymore' && /Fendre la Ligne/i.test(name)){
+    var nfl=(String(desc).match(/-?\d+/g)||[]).map(function(n){ return parseInt(n,10); });
+    push({ label:'🪓 '+name, value:cDamageWithLevel(cFirstNumber(desc,nfl[0]||10), info.level), targetType:'enemy', defenseExtraEp:parseInt(((String(desc).match(/\+(\d+)\s*EP/i)||[])[1]||'0'),10)||0, guardBonusDmg:/garde|parade|protection/i.test(desc)?(nfl[1]||4):0, noReposition:/replacer/i.test(desc), nextDefenseTax:parseInt(((String(desc).match(/prochaine d[ée]fense co[ûu]te \+(\d+)\s*EP/i)||[])[1]||'0'),10)||0 });
+    return out;
+  }
   if(/Lancer Bestial/i.test(name)){
     push({ label:name, value:cDamageWithLevel(cFirstNumber(desc,18), info.level), targetType:'enemy', disarm:true });
     return out;
@@ -11279,7 +11304,8 @@ function cBuildAbilityOptionsForPalier(info, pal, actLeft){
     push({ label:name, value:cDamageWithLevel(cFirstNumber(desc,8), info.level), aoe:true, aoeIncludesAllies:/alli[ée]es? ET ennemies?/i.test(desc), targetType:'none', undefendable:/IND[ÉE]FENDABLE|ind[ée]fendable/i.test(desc) });
     return out;
   }
-  push({ label:name, value:cDamageWithLevel(cFirstNumber(desc,6), info.level), targetType:'enemy', repulse:/repousse/i.test(desc) });
+  var mech=cParseDescMechanics(desc);
+  push(Object.assign({ label:name, value:cDamageWithLevel(cFirstNumber(desc,6), info.level), targetType:'enemy' }, mech));
   return out;
 }
 function cGetAbilityOptions(fi, actLeft){
@@ -11523,13 +11549,17 @@ function cDeclareAction(fi, action, opts){
   var sd=f.type==="player"?(getAllSD()[f.classe]||null):null;
   var dmgBase=sd?sd.dmg:(f.dmgBase||6);
   var dmg=dmgBase+(f.level||1);
+  var claymoreHeavy=f.claymorePosture||null;
+  if(action==="frappe"&&claymoreHeavy&&claymoreHeavy.damage) dmg=claymoreHeavy.damage;
   var pugDmg=4+(f.level||1);
 
   var entry={action:action, label:opts.label||"", target:opts.target, defenseOf:opts.defenseOf, consumeActions:consume, kind:opts.kind||"utility"};
 
   switch(action){
     case "frappe":
-      entry.kind="attack"; entry.value=dmg; entry.label=entry.label||("⚔ Frappe ("+dmg+")"); entry.epCost=6; break;
+      entry.kind="attack"; entry.value=dmg; entry.label=entry.label||(claymoreHeavy?("🗡 Frappe lourde ("+dmg+")"):("⚔ Frappe ("+dmg+")")); entry.epCost=6;
+      if(claymoreHeavy){ entry.defenseExtraEp=claymoreHeavy.defenseExtraEp||0; entry.defenseChipPct=claymoreHeavy.defenseChipPct||0; entry.noCounter=!!claymoreHeavy.noCounter; entry.noReposition=!!claymoreHeavy.noReposition; entry.consumeClaymorePosture=true; }
+      break;
     case "pugilat":
       entry.kind="attack"; entry.value=pugDmg; entry.label=entry.label||("👊 Pugilat ("+pugDmg+")"); entry.epCost=6; break;
     case "esquive":
@@ -11589,6 +11619,13 @@ function cDeclareAction(fi, action, opts){
       entry.repulse=!!opts.repulse;
       entry.disarm=!!opts.disarm;
       entry.summon=opts.summon||null;
+      entry.claymorePosture=opts.claymorePosture||null;
+      entry.defenseExtraEp=opts.defenseExtraEp||0;
+      entry.defenseChipPct=opts.defenseChipPct||0;
+      entry.guardBonusDmg=opts.guardBonusDmg||0;
+      entry.noCounter=!!opts.noCounter;
+      entry.noReposition=!!opts.noReposition;
+      entry.nextDefenseTax=opts.nextDefenseTax||0;
       break;
     case "soin":
       entry.kind="heal"; entry.label=entry.label||("💚 Soin ("+(opts.healAmt||0)+" PV)"); entry.emCost=opts.emCost||0; entry.epCost=opts.epCost||0; entry.healAmt=opts.healAmt||0; entry.healTarget=opts.healTarget; entry.actsSacr=opts.actsSacr||0; break;
@@ -11734,6 +11771,7 @@ function cResolveAttackInstance(attacker, fi, atk){
       target=redirected; ti=_cs.fighters.indexOf(redirected);
     }
     var dmg=atk.value||0;
+    var rawDmg=dmg;
     var elem=cApplyElementalLogic(attacker, atk, target, dmg); dmg=elem.dmg;
     var defDesc="";
     if(!atk.undefendable){
@@ -11749,10 +11787,22 @@ function cResolveAttackInstance(attacker, fi, atk){
       }
       if(def){
         usedDefs[defKey]=defIdx+1;
+        var extraDefEp=(atk.defenseExtraEp||0)+(target.defenseTaxNext||0);
+        if(extraDefEp>0){
+          var oldDefEp=target.epCur||0;
+          target.epCur=Math.max(0,oldDefEp-extraDefEp);
+          target.defenseTaxNext=0;
+          cLog("⚡ "+target.name+" paie +"+extraDefEp+" EP pour défendre "+(atk.palNom||atk.label||"l'attaque"),"info");
+        }
         if(def.action==="esquive"){
+          if(atk.defenseChipPct){
+            dmg=Math.ceil(rawDmg*(atk.defenseChipPct/100));
+            defDesc=" (défense traversée "+atk.defenseChipPct+"%)";
+          } else {
           combatQueueFx({kind:'dodge',fromCid:cEnsureFighterCid(attacker),toCid:cEnsureFighterCid(target),text:'ESQUIVE'});
           cLog("🛡 "+target.name+" esquive l'attaque de "+attacker.name+" — 0 dégâts","info");
           return;
+          }
         } else if(def.action==="bloquer"){
           var blockPct=typeof def.blockPct==='number'?def.blockPct:(target&&target.type==="beast"?25:50);
           dmg=Math.ceil(dmg*(1-(blockPct/100)));
@@ -11767,6 +11817,11 @@ function cResolveAttackInstance(attacker, fi, atk){
         else if(def.action==="subit"){
           defDesc=" (subit)";
         }
+        if(atk.guardBonusDmg){ dmg+=atk.guardBonusDmg; defDesc+=" + brise-garde"; }
+        if(atk.defenseChipPct) dmg=Math.max(dmg,Math.ceil(rawDmg*(atk.defenseChipPct/100)));
+        if(atk.noCounter) cLog("🗡 "+target.name+" ne peut pas contre-attaquer immédiatement.","info");
+        if(atk.noReposition) cLog("↔ "+target.name+" ne se replace pas gratuitement après la défense.","info");
+        if(atk.nextDefenseTax){ target.defenseTaxNext=(target.defenseTaxNext||0)+atk.nextDefenseTax; cLog("⚡ Prochaine défense de "+target.name+" : +"+atk.nextDefenseTax+" EP","info"); }
       }
     }
     var res=cApplyRawDamage(target,dmg);
@@ -11790,6 +11845,10 @@ function cResolveAttackInstance(attacker, fi, atk){
       }
     }
   });
+  if(atk.consumeClaymorePosture){
+    delete attacker.claymorePosture;
+    cLog("🗡 "+attacker.name+" quitte Posture Haute après la frappe lourde.","info");
+  }
 }
 function combatResolve(){
   if(_cs.phase!=="resolution"){ notif("Les déclarations ne sont pas complètes.","inf"); return; }
@@ -11845,6 +11904,10 @@ function combatResolve(){
       }
       if(a.action==="capacite"&&a.provoke){
         cApplyShieldCallTaunt(fi, a.perEnemyPvMax||0);
+      }
+      if(a.action==="capacite"&&a.claymorePosture){
+        f.claymorePosture=a.claymorePosture;
+        cLog("🗡 "+f.name+" entre en Posture Haute : prochaine frappe lourde "+(a.claymorePosture.damage||0)+" dégâts.","spell");
       }
       if(a.action==="capacite"&&a.kind==="summon"&&a.summon){
         var sum=a.summon;
@@ -13099,6 +13162,8 @@ body .nav-group-menu .nav-section-header{
         var sd=isJ?(getAllSD()[f.classe]||null):null;
         var dmgBase=sd?sd.dmg:(f.dmgBase||6);
         var dmg=dmgBase+(f.level||1);
+        var claymoreHeavy=f.claymorePosture||null;
+        if(claymoreHeavy&&claymoreHeavy.damage) dmg=claymoreHeavy.damage;
         var pugDmg=3+(f.level||1);
 
         // Cible pour les attaques
@@ -13120,7 +13185,7 @@ body .nav-group-menu .nav-section-header{
         // Grille actions
         h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">';
         var declBtns=[
-          {a:"frappe",   l:"⚔ Frappe",    sub:dmg+" dmg",   col:"rgba(201,74,74"},
+          {a:"frappe",   l:claymoreHeavy?"🗡 Frappe lourde":"⚔ Frappe",    sub:dmg+" dmg",   col:"rgba(201,74,74"},
         ];
         if(isJ){
           declBtns.push({a:"pugilat",  l:"👊 Pugilat",   sub:pugDmg+" dmg",col:"rgba(201,74,74"});
