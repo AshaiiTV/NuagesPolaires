@@ -11544,6 +11544,9 @@ function cDeclareAction(fi, action, opts){
   if(action!=="passer" && consume>left){
     notif("Pas assez d'actions restantes pour cette compétence.","err"); return;
   }
+  if(action==="deplacer" && f.noFreeRepositionRound===_cs.round){
+    notif(f.name+" ne peut pas se replacer gratuitement après cette défense.","err"); return;
+  }
   _cs.decl=_cs.decl||{};
   _cs.decl[fi]=_cs.decl[fi]||[];
 
@@ -11833,8 +11836,8 @@ function cResolveAttackInstance(attacker, fi, atk){
         }
         if(atk.guardBonusDmg){ dmg+=atk.guardBonusDmg; defDesc+=" + brise-garde"; }
         if(atk.defenseChipPct) dmg=Math.max(dmg,Math.ceil(rawDmg*(atk.defenseChipPct/100)));
-        if(atk.noCounter) cLog("🗡 "+target.name+" ne peut pas contre-attaquer immédiatement.","info");
-        if(atk.noReposition) cLog("↔ "+target.name+" ne se replace pas gratuitement après la défense.","info");
+        if(atk.noCounter){ target.noCounterRound=_cs.round+1; cLog("🗡 "+target.name+" ne peut pas contre-attaquer immédiatement.","info"); }
+        if(atk.noReposition){ target.noFreeRepositionRound=_cs.round+1; cLog("↔ "+target.name+" ne se replace pas gratuitement après la défense.","info"); }
         if(atk.nextDefenseTax){ target.defenseTaxNext=(target.defenseTaxNext||0)+atk.nextDefenseTax; cLog("⚡ Prochaine défense de "+target.name+" : +"+atk.nextDefenseTax+" EP","info"); }
       }
     }
@@ -13179,6 +13182,12 @@ body .nav-group-menu .nav-section-header{
         var claymoreHeavy=f.claymorePosture||null;
         if(claymoreHeavy&&claymoreHeavy.damage) dmg=claymoreHeavy.damage;
         var pugDmg=3+(f.level||1);
+        if(f.noCounterRound===_cs.round || f.noFreeRepositionRound===_cs.round){
+          var lockBits=[];
+          if(f.noCounterRound===_cs.round) lockBits.push("contre-attaque bloquée");
+          if(f.noFreeRepositionRound===_cs.round) lockBits.push("replacement gratuit bloqué");
+          h+='<div style="margin-bottom:7px;padding:5px 6px;background:rgba(201,74,74,0.08);border:1px solid rgba(201,74,74,0.18);font-family:var(--fd);font-size:7px;letter-spacing:1px;color:rgba(201,74,74,0.85);">🗡 POSTURE HAUTE · '+lockBits.join(" · ")+'</div>';
+        }
 
         // Cible pour les attaques
         var prevTgt=csGet("t",fi)||"";
