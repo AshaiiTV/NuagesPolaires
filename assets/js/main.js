@@ -259,10 +259,10 @@ var SD={
       descPhys:"Le porteur remonte l'espadon au-dessus de l'épaule. La garde paraît ouverte, presque provocante, mais la lame suspendue annonce un coup si lourd que l'adversaire doit décider avant même qu'il parte.",
       flavor:"Posture Haute fait de la préparation une arme. Le Claymore annonce le danger, garde la lame suspendue, et force l'adversaire à vivre une seconde entière sous la promesse de l'impact. Ce n'est pas discret. C'est pire : c'est inévitable.",
       paliers:[
-        {niv:2,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Entre en posture jusqu'au prochain tour. La prochaine frappe lourde inflige 12+Niv dégâts et coûte +2 EP à défendre."},
-        {niv:5,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe lourde : 16+Niv dégâts. Si la cible défend, elle ne peut pas contre-attaquer immédiatement."},
-        {niv:7,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe lourde : 20+Niv dégâts. Si elle est parée, la cible recule d'un cran ou perd 2 EP supplémentaires."},
-        {niv:10,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe lourde : 24+Niv dégâts. Sur défense réussie, la cible subit tout de même 25% des dégâts sous forme d'impact."}
+        {niv:2,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Entre en posture jusqu'au prochain tour. La prochaine Frappe Haute coûte 10 EP, inflige 20+Niv dégâts et retire 12 EP si la cible bloque."},
+        {niv:5,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe Haute : 24+Niv dégâts, 10 EP. Si la cible bloque, elle perd 14 EP et ne peut pas contre-attaquer immédiatement."},
+        {niv:7,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe Haute : 28+Niv dégâts, 10 EP. Si la cible bloque, elle perd 16 EP et ne se replace pas gratuitement."},
+        {niv:10,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe Haute : 32+Niv dégâts, 10 EP. Si la cible bloque, elle perd 20 EP. Sur défense réussie, la cible subit tout de même 25% des dégâts sous forme d'impact."}
       ]},
     bB:{nom:"Branche B — Fendre la Ligne",style:"Brise-garde",
       descPhys:"L'espadon part en arc large, lent, plein. Ce n'est pas une coupe élégante : c'est une masse de métal qui traverse la garde, les appuis et la certitude de tenir bon.",
@@ -11274,7 +11274,8 @@ function cBuildAbilityOptionsForPalier(info, pal, actLeft){
   }
   if(f.classe==='Claymore' && /Posture Haute/i.test(name)){
     var nph=(String(desc).match(/-?\d+/g)||[]).map(function(n){ return parseInt(n,10); });
-    push({ label:'🗡 '+name, kind:'buff', targetType:'none', claymorePosture:{damage:cDamageWithLevel(cFirstNumber(desc,nph[0]||12), info.level), defenseExtraEp:parseInt(((String(desc).match(/\+(\d+)\s*EP/i)||[])[1]||'0'),10)||0, noCounter:/contre-attaquer/i.test(desc), noReposition:/replacer/i.test(desc), defenseChipPct:/25\s*%/.test(desc)?25:0, desc:desc} });
+    var blockDrain=(String(desc).match(/bloqu[^.]*?(?:perd|retire)\s*(\d+)\s*EP|(?:perd|retire)\s*(\d+)\s*EP[^.]*?bloqu/i)||[]);
+    push({ label:'🗡 '+name, kind:'buff', targetType:'none', claymorePosture:{damage:cDamageWithLevel(cFirstNumber(desc,nph[0]||20), info.level), epCost:parseInt(((String(desc).match(/(\d+)\s*EP/i)||[])[1]||'10'),10)||10, blockEpDrain:parseInt((blockDrain[1]||blockDrain[2]||'0'),10)||0, noCounter:/contre-attaquer/i.test(desc), noReposition:/replac/i.test(desc), defenseChipPct:/25\s*%/.test(desc)?25:0, desc:desc} });
     return out;
   }
   if(f.classe==='Claymore' && /Fendre la Ligne/i.test(name)){
@@ -11557,8 +11558,8 @@ function cDeclareAction(fi, action, opts){
 
   switch(action){
     case "frappe":
-      entry.kind="attack"; entry.value=dmg; entry.label=entry.label||(claymoreHeavy?("🗡 Frappe lourde ("+dmg+")"):("⚔ Frappe ("+dmg+")")); entry.epCost=6;
-      if(claymoreHeavy){ entry.defenseExtraEp=claymoreHeavy.defenseExtraEp||0; entry.defenseChipPct=claymoreHeavy.defenseChipPct||0; entry.noCounter=!!claymoreHeavy.noCounter; entry.noReposition=!!claymoreHeavy.noReposition; entry.consumeClaymorePosture=true; }
+      entry.kind="attack"; entry.value=dmg; entry.label=entry.label||(claymoreHeavy?("🗡 Frappe Haute ("+dmg+")"):("⚔ Frappe ("+dmg+")")); entry.epCost=claymoreHeavy?(claymoreHeavy.epCost||10):6;
+      if(claymoreHeavy){ entry.blockEpDrain=claymoreHeavy.blockEpDrain||0; entry.defenseExtraEp=claymoreHeavy.defenseExtraEp||0; entry.defenseChipPct=claymoreHeavy.defenseChipPct||0; entry.noCounter=!!claymoreHeavy.noCounter; entry.noReposition=!!claymoreHeavy.noReposition; entry.consumeClaymorePosture=true; }
       break;
     case "pugilat":
       entry.kind="attack"; entry.value=pugDmg; entry.label=entry.label||("👊 Pugilat ("+pugDmg+")"); entry.epCost=6; break;
@@ -11626,6 +11627,7 @@ function cDeclareAction(fi, action, opts){
       entry.noCounter=!!opts.noCounter;
       entry.noReposition=!!opts.noReposition;
       entry.nextDefenseTax=opts.nextDefenseTax||0;
+      entry.blockEpDrain=opts.blockEpDrain||0;
       break;
     case "soin":
       entry.kind="heal"; entry.label=entry.label||("💚 Soin ("+(opts.healAmt||0)+" PV)"); entry.emCost=opts.emCost||0; entry.epCost=opts.epCost||0; entry.healAmt=opts.healAmt||0; entry.healTarget=opts.healTarget; entry.actsSacr=opts.actsSacr||0; break;
@@ -11807,6 +11809,11 @@ function cResolveAttackInstance(attacker, fi, atk){
           var blockPct=typeof def.blockPct==='number'?def.blockPct:(target&&target.type==="beast"?25:50);
           dmg=Math.ceil(dmg*(1-(blockPct/100)));
           defDesc=target&&target.type==="beast"?" (bloqué avec le corps −"+blockPct+"%)":" (bloqué −"+blockPct+"%)";
+          if(atk.blockEpDrain){
+            var oldBlockEp=target.epCur||0;
+            target.epCur=Math.max(0,oldBlockEp-atk.blockEpDrain);
+            cLog("🗡 Blocage puni : "+target.name+" perd "+(oldBlockEp-target.epCur)+" EP en encaissant la Frappe Haute.","damage");
+          }
         } else if(def.action==="parer"){
           if(target&&target.type==="beast"){
             dmg=Math.ceil(dmg*0.75); defDesc=" (bloqué avec le corps −25%)";
@@ -11847,7 +11854,7 @@ function cResolveAttackInstance(attacker, fi, atk){
   });
   if(atk.consumeClaymorePosture){
     delete attacker.claymorePosture;
-    cLog("🗡 "+attacker.name+" quitte Posture Haute après la frappe lourde.","info");
+    cLog("🗡 "+attacker.name+" quitte Posture Haute après la Frappe Haute.","info");
   }
 }
 function combatResolve(){
@@ -11907,7 +11914,7 @@ function combatResolve(){
       }
       if(a.action==="capacite"&&a.claymorePosture){
         f.claymorePosture=a.claymorePosture;
-        cLog("🗡 "+f.name+" entre en Posture Haute : prochaine frappe lourde "+(a.claymorePosture.damage||0)+" dégâts.","spell");
+        cLog("🗡 "+f.name+" entre en Posture Haute : prochaine Frappe Haute "+(a.claymorePosture.damage||0)+" dégâts.","spell");
       }
       if(a.action==="capacite"&&a.kind==="summon"&&a.summon){
         var sum=a.summon;
@@ -13185,7 +13192,7 @@ body .nav-group-menu .nav-section-header{
         // Grille actions
         h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">';
         var declBtns=[
-          {a:"frappe",   l:claymoreHeavy?"🗡 Frappe lourde":"⚔ Frappe",    sub:dmg+" dmg",   col:"rgba(201,74,74"},
+          {a:"frappe",   l:claymoreHeavy?"🗡 Frappe Haute":"⚔ Frappe",    sub:claymoreHeavy?(dmg+" dmg · "+(claymoreHeavy.epCost||10)+" EP"):(dmg+" dmg"),   col:"rgba(201,74,74"},
         ];
         if(isJ){
           declBtns.push({a:"pugilat",  l:"👊 Pugilat",   sub:pugDmg+" dmg",col:"rgba(201,74,74"});
