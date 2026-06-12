@@ -261,7 +261,7 @@ var SD={
       paliers:[
         {niv:2,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Entre en posture jusqu'au prochain tour. La prochaine Frappe Haute coûte 10 EP, inflige 20+Niv dégâts et retire 12 EP si la cible bloque."},
         {niv:5,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe Haute : 24+Niv dégâts, 10 EP. Si la cible bloque, elle perd 14 EP."},
-        {niv:7,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe Haute : 28+Niv dégâts, 10 EP. Si la cible bloque, elle perd 16 EP et ne se replace pas gratuitement."},
+        {niv:7,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe Haute : 28+Niv dégâts, 10 EP. Si la cible bloque, elle perd 16 EP et ne peut pas se déplacer au prochain round."},
         {niv:10,nom:"Posture Haute",cout:"6 EM — 1 action",desc:"Frappe Haute : 32+Niv dégâts, 10 EP. Si la cible bloque, elle perd 20 EP. Sur défense réussie, la cible subit tout de même 25% des dégâts sous forme d'impact."}
       ]},
     bB:{nom:"Branche B — Fendre la Ligne",style:"Brise-ligne",
@@ -11081,7 +11081,7 @@ function cParseDescMechanics(desc){
     defenseExtraEp:parseInt(((desc.match(/\+(\d+)\s*EP[^.]{0,42}d[ée]fend|d[ée]fend[^.]{0,42}\+(\d+)\s*EP/i)||[]).filter(Boolean)[1]||'0'),10)||0,
     defenseChipPct:/25\s*%/.test(desc)?25:0,
     guardBonusDmg:/garde|parade|protection/i.test(desc)?(nums[1]||0):0,
-    noReposition:/replacer/i.test(desc),
+    noReposition:/replac|d[ée]placer/i.test(desc),
     nextDefenseTax:parseInt(((desc.match(/prochaine d[ée]fense co[ûu]te \+(\d+)\s*EP/i)||[])[1]||'0'),10)||0,
     repulse:/repousse|recul/i.test(desc),
     onlyDodge:/uniquement esquivable|seulement esquivable|non\s*parable/i.test(desc),
@@ -11274,7 +11274,7 @@ function cBuildAbilityOptionsForPalier(info, pal, actLeft){
   if(f.classe==='Claymore' && /Posture Haute/i.test(name)){
     var nph=(String(desc).match(/-?\d+/g)||[]).map(function(n){ return parseInt(n,10); });
     var blockDrain=(String(desc).match(/bloqu[^.]*?(?:perd|retire)\s*(\d+)\s*EP|(?:perd|retire)\s*(\d+)\s*EP[^.]*?bloqu/i)||[]);
-    push({ label:'🗡 '+name, kind:'buff', targetType:'none', claymorePosture:{damage:cDamageWithLevel(cFirstNumber(desc,nph[0]||20), info.level), epCost:parseInt(((String(desc).match(/(\d+)\s*EP/i)||[])[1]||'10'),10)||10, blockEpDrain:parseInt((blockDrain[1]||blockDrain[2]||'0'),10)||0, noReposition:/replac/i.test(desc), defenseChipPct:/25\s*%/.test(desc)?25:0, desc:desc} });
+    push({ label:'🗡 '+name, kind:'buff', targetType:'none', claymorePosture:{damage:cDamageWithLevel(cFirstNumber(desc,nph[0]||20), info.level), epCost:parseInt(((String(desc).match(/(\d+)\s*EP/i)||[])[1]||'10'),10)||10, blockEpDrain:parseInt((blockDrain[1]||blockDrain[2]||'0'),10)||0, noReposition:/replac|d[ée]placer/i.test(desc), defenseChipPct:/25\s*%/.test(desc)?25:0, desc:desc} });
     return out;
   }
   if(f.classe==='Claymore' && /Fendre la Ligne/i.test(name)){
@@ -11544,7 +11544,7 @@ function cDeclareAction(fi, action, opts){
     notif("Pas assez d'actions restantes pour cette compétence.","err"); return;
   }
   if(action==="deplacer" && f.noFreeRepositionRound===_cs.round){
-    notif(f.name+" ne peut pas se replacer gratuitement après cette défense.","err"); return;
+    notif(f.name+" ne peut pas se déplacer ce round.","err"); return;
   }
   _cs.decl=_cs.decl||{};
   _cs.decl[fi]=_cs.decl[fi]||[];
@@ -11834,7 +11834,7 @@ function cResolveAttackInstance(attacker, fi, atk){
         }
         if(atk.guardBonusDmg){ dmg+=atk.guardBonusDmg; defDesc+=" + brise-garde"; }
         if(atk.defenseChipPct) dmg=Math.max(dmg,Math.ceil(rawDmg*(atk.defenseChipPct/100)));
-        if(atk.noReposition){ target.noFreeRepositionRound=_cs.round+1; cLog("↔ "+target.name+" ne se replace pas gratuitement après la défense.","info"); }
+        if(atk.noReposition){ target.noFreeRepositionRound=_cs.round+1; cLog("↔ "+target.name+" ne peut pas se déplacer au prochain round.","info"); }
         if(atk.nextDefenseTax){ target.defenseTaxNext=(target.defenseTaxNext||0)+atk.nextDefenseTax; cLog("⚡ Prochaine défense de "+target.name+" : +"+atk.nextDefenseTax+" EP","info"); }
       }
     }
@@ -13181,7 +13181,7 @@ body .nav-group-menu .nav-section-header{
         var pugDmg=3+(f.level||1);
         if(f.noFreeRepositionRound===_cs.round){
           var lockBits=[];
-          if(f.noFreeRepositionRound===_cs.round) lockBits.push("replacement gratuit bloqué");
+          if(f.noFreeRepositionRound===_cs.round) lockBits.push("déplacement bloqué");
           h+='<div style="margin-bottom:7px;padding:5px 6px;background:rgba(201,74,74,0.08);border:1px solid rgba(201,74,74,0.18);font-family:var(--fd);font-size:7px;letter-spacing:1px;color:rgba(201,74,74,0.85);">🗡 POSTURE HAUTE · '+lockBits.join(" · ")+'</div>';
         }
 
@@ -13218,7 +13218,7 @@ body .nav-group-menu .nav-section-header{
           declBtns.push({a:"parer",    l:"🤜 Parer",     sub:"−25%",        col:"rgba(126,184,212"});
         }
         declBtns.push(
-          {a:"deplacer", l:"🏃 Déplacement",sub:(f.noFreeRepositionRound===_cs.round?"bloqué":""), col:"rgba(255,255,255", disabled:f.noFreeRepositionRound===_cs.round, disabledReason:"Replacement gratuit bloqué par Posture Haute"},
+          {a:"deplacer", l:"🏃 Déplacement",sub:(f.noFreeRepositionRound===_cs.round?"bloqué":""), col:"rgba(255,255,255", disabled:f.noFreeRepositionRound===_cs.round, disabledReason:"Déplacement bloqué par Posture Haute"},
         );
         declBtns.forEach(function(btn){
           var needsTgt=btn.a==="frappe"||btn.a==="pugilat";
