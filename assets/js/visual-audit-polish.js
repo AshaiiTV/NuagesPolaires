@@ -1,11 +1,11 @@
-/* Nuages Polaires — Visual Audit Polish v279
+/* Nuages Polaires — Visual Audit Polish v280
    Front-only pass for navigation density, home counters, forms, player sheet grouping and mobile clarity.
 */
 (function(){
   'use strict';
 
-  var VERSION = 'v279';
-  var STYLE_ID = 'np-visual-audit-polish-v279';
+  var VERSION = 'v280';
+  var STYLE_ID = 'np-visual-audit-polish-v280';
   var TIMER = null;
 
   function injectStyle(){
@@ -168,6 +168,25 @@
 #bestiaire #beast-filters .bfilt,#p-hist-filters .bfilt{flex:0 1 auto;border-radius:999px!important;min-height:36px!important;letter-spacing:1.2px!important;}
 #bestiaire #beast-search-input{min-height:46px!important;border-radius:16px!important;}
 #offline-banner,#pending-banner,#runtime-guard{box-shadow:0 16px 34px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.04)!important;}
+
+/* === v280 — reduce frames inside frames === */
+#app-root :where(.card,.panel,.staff-panel,.db-card,.summary-card,.archive-card,.history-card,.bcrd,.prog-panel,.sim-panel,.sim-fighter-card,.sim-log,.sim-history,.collection-card,.theme-card-premium) :where(.card,.panel,.staff-panel,.db-card,.summary-card,.archive-card,.history-card,.bcrd,.prog-panel,.sim-panel,.sim-fighter-card,.sim-log,.sim-history,.collection-card,.theme-card-premium),
+.modal :where(.card,.panel,.staff-panel,.db-card,.summary-card,.archive-card,.history-card,.bcrd,.prog-panel,.sim-panel,.sim-fighter-card,.sim-log,.sim-history,.collection-card,.theme-card-premium){
+  background:transparent!important;
+  border-color:rgba(var(--tm-accent-rgb,155,216,244),.10)!important;
+  border-left:0!important;
+  border-right:0!important;
+  border-bottom:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  padding-left:0!important;
+  padding-right:0!important;
+}
+#app-root :where(.card,.panel,.staff-panel,.db-card,.summary-card,.archive-card,.history-card,.bcrd,.prog-panel,.sim-panel,.collection-card) :where(.card,.panel,.staff-panel,.db-card,.summary-card,.archive-card,.history-card,.bcrd,.prog-panel,.sim-panel,.collection-card)::before,
+.modal :where(.card,.panel,.staff-panel,.db-card,.summary-card,.archive-card,.history-card,.bcrd,.prog-panel,.sim-panel,.collection-card)::before{display:none!important;}
+#app-root :where(.card,.panel,.staff-panel,.db-card,.summary-card,.archive-card,.history-card,.prog-panel,.collection-card) > :where(.card,.panel,.staff-panel,.db-card,.summary-card,.archive-card,.history-card,.prog-panel,.collection-card) + :where(.card,.panel,.staff-panel,.db-card,.summary-card,.archive-card,.history-card,.prog-panel,.collection-card){margin-top:18px!important;padding-top:18px!important;border-top:1px solid rgba(var(--tm-accent-rgb,155,216,244),.12)!important;}
+#fiche :where(.card,.staff-panel) :where(.card,.staff-panel),#database :where(.card,.db-card,.staff-panel) :where(.card,.db-card,.staff-panel),#staff :where(.card,.staff-panel) :where(.card,.staff-panel){background:transparent!important;box-shadow:none!important;}
+#app-root :where(.warnbox,.hlbox,.empty-state){box-shadow:none!important;}
 
 /* === v279 — mobile drawer as task navigation === */
 @media(max-width:860px){
