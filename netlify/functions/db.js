@@ -308,6 +308,15 @@ function normalizeStoreValue(key, value) {
       return out;
     }).filter(item => { if (seen.has(item.id)) return false; seen.add(item.id); return true; });
   }
+  if (key === "rpg_characters") {
+    const seen = new Set();
+    return (Array.isArray(value) ? value : []).map((entry, idx) => normalizeRpgCharacter(entry, idx))
+      .filter(item => {
+        if (!item || seen.has(item.ownerId)) return false;
+        seen.add(item.ownerId);
+        return true;
+      });
+  }
   if (key === "spawn_lab_staff") {
     const out = value && typeof value === "object" && !Array.isArray(value) ? { ...value } : {};
     out.schemaVersion = 2;
@@ -325,6 +334,38 @@ function normalizeStoreValue(key, value) {
   if (String(key || "").startsWith("combat_arc_")) return (Array.isArray(value) ? value : []).slice(-500);
   if (String(key || "").startsWith("combat_arc_rec_")) return isPlainObject(value) ? value : {};
   return value;
+}
+function normalizeRpgCharacter(entry, idx = 0) {
+  const raw = entry && typeof entry === "object" && !Array.isArray(entry) ? entry : {};
+  const out = {};
+  out.id = sanitizeText(raw.id || ("rpg_" + idx)).slice(0, 128);
+  out.ownerId = sanitizeText(raw.ownerId || "").slice(0, 128);
+  out.ownerPid = sanitizeText(raw.ownerPid || "").slice(0, 128);
+  out.ownerPseudo = sanitizeText(raw.ownerPseudo || "").slice(0, 64);
+  out.schemaVersion = Math.max(1, Math.floor(Number(raw.schemaVersion) || 1));
+  out.created = !!raw.created;
+  out.name = sanitizeText(raw.name || "Voyageur").slice(0, 32);
+  out.oath = sanitizeText(raw.oath || "Duelliste").slice(0, 80);
+  out.level = Math.max(1, Math.min(100, Math.floor(Number(raw.level) || 1)));
+  out.xp = Math.max(0, Math.floor(Number(raw.xp) || 0));
+  out.gold = Math.max(0, Math.min(999999, Math.floor(Number(raw.gold) || 0)));
+  out.loc = sanitizeText(raw.loc || "camp").slice(0, 80);
+  out.spawn = sanitizeText(raw.spawn || out.loc || "camp").slice(0, 80);
+  out.hp = Math.max(0, Math.floor(Number(raw.hp) || 0));
+  out.maxHp = Math.max(1, Math.floor(Number(raw.maxHp) || 1));
+  out.energy = Math.max(0, Math.floor(Number(raw.energy) || 0));
+  out.maxEnergy = Math.max(1, Math.floor(Number(raw.maxEnergy) || 1));
+  out.mana = Math.max(0, Math.floor(Number(raw.mana) || 0));
+  out.maxMana = Math.max(1, Math.floor(Number(raw.maxMana) || 1));
+  out.reputation = Math.max(0, Math.floor(Number(raw.reputation) || 0));
+  out.inv = raw.inv && typeof raw.inv === "object" && !Array.isArray(raw.inv) ? raw.inv : {};
+  out.equip = raw.equip && typeof raw.equip === "object" && !Array.isArray(raw.equip) ? raw.equip : { weapon: null, armor: null, trinket: null };
+  out.combat = raw.combat && typeof raw.combat === "object" && !Array.isArray(raw.combat) ? raw.combat : null;
+  out.visited = raw.visited && typeof raw.visited === "object" && !Array.isArray(raw.visited) ? raw.visited : {};
+  out.flags = raw.flags && typeof raw.flags === "object" && !Array.isArray(raw.flags) ? raw.flags : {};
+  out.log = Array.isArray(raw.log) ? raw.log.slice(0, 12).map(line => sanitizeText(line).slice(0, 240)) : [];
+  out.updatedAt = Number.isFinite(Number(raw.updatedAt)) ? Number(raw.updatedAt) : Date.now();
+  return out;
 }
 function sanitizeForKey(key, value) {
   const cleaned = sanitizeDeep(value, 0);
@@ -508,6 +549,32 @@ exports.handler = async (event) => {
 
     if (action === "ping") {
       return { statusCode: 200, headers, body: JSON.stringify({ ok: true, source: "db", now: Date.now() }) };
+    }
+
+    if (action === "rpg_get_character") {
+      if (!caller) return { statusCode: 401, headers, body: JSON.stringify({ ok: false, error: "Authentification requise" }) };
+      const chars = await readStore("rpg_characters", []);
+      const own = (Array.isArray(chars) ? chars : []).find(ch => ch && ch.ownerId === caller.sub) || null;
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, character: own }) };
+    }
+
+    if (action === "rpg_save_character") {
+      if (!caller) return { statusCode: 401, headers, body: JSON.stringify({ ok: false, error: "Authentification requise" }) };
+      const input = body.character && typeof body.character === "object" && !Array.isArray(body.character) ? body.character : {};
+      const normalized = normalizeRpgCharacter(sanitizeDeep(input, 0), 0);
+      normalized.id = normalized.id || ("rpg_" + caller.sub);
+      normalized.ownerId = caller.sub;
+      normalized.ownerPid = caller.pid || "";
+      normalized.ownerPseudo = caller.pseudo || caller.name || "Joueur";
+      normalized.updatedAt = Date.now();
+      const chars = await readStore("rpg_characters", []);
+      const list = Array.isArray(chars) ? chars : [];
+      const idx = list.findIndex(ch => ch && ch.ownerId === caller.sub);
+      if (idx >= 0) list[idx] = normalized;
+      else list.push(normalized);
+      await writeStore("rpg_characters", list);
+      try { await auditDb(event, caller, "rpg_save_character", { character: normalized.name, level: normalized.level, loc: normalized.loc }); } catch (_) {}
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, character: normalized }) };
     }
 
     if (action === "get") {

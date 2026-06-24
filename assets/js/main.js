@@ -5403,6 +5403,12 @@ function switchTab(id, btn, _isBack){
     var c=ge("p-bgrd");
     if(c&&!c.innerHTML.trim()) renderBGrid("p-bgrd",false);
   }
+  if(id==="rpg-prototype" && typeof renderRpgPrototype==="function"){
+    document.querySelectorAll(".screen").forEach(function(s){ s.classList.remove("active","screen-enter"); });
+    var rpgApp=ge("s-app");
+    if(rpgApp) rpgApp.classList.add("active","screen-enter");
+    renderRpgPrototype("p-rpg-prototype-c");
+  }
   if(id==="bestiaire-admin"){
     if(typeof renderBestiaryAdminPage==="function") renderBestiaryAdminPage("p-bestiary-admin-c");
   }

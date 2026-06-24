@@ -188,6 +188,8 @@ textarea{resize:vertical;min-height:72px;font-size:15px;}
 .nav-dropdown-btn.open:after{transform:rotate(180deg);}
 .nav-dropdown-btn:hover{color:var(--text);}
 .nav-dropdown-btn.has-active{color:var(--glacier);border-bottom:2px solid var(--glacier);}
+.rpg-nav-btn{padding:0 14px;height:52px;font-family:var(--fd);font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;color:var(--glacier);border:none;background:transparent;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:5px;}
+.rpg-nav-btn:hover,.rpg-nav-btn.active{color:var(--text);border-bottom-color:var(--glacier);}
 .nav-dropdown-menu{display:none;position:fixed;top:0;left:0;min-width:200px;background:rgba(4,5,10,0.98);border:1px solid rgba(126,184,212,0.18);z-index:9999;box-shadow:0 20px 48px rgba(0,0,0,.8);backdrop-filter:blur(8px);margin-top:0;transform-origin:top left;}
 .nav-dropdown-menu.open{display:block;animation:navDrop .14s ease both;}
 .nav-dropdown-item{display:flex;align-items:center;gap:0;padding:9px 16px;font-family:var(--fd);font-size:9px;letter-spacing:2px;background:transparent;border:none;color:var(--dim);cursor:pointer;transition:background .15s,color .15s;width:100%;text-align:left;white-space:nowrap;}
@@ -6612,6 +6614,10 @@ body.theme-aquaris .home-title{
         <span class="home-btn-label">Rejoindre l'aventure</span>
         <span class="home-btn-arrow">→</span>
       </button>
+      <button class="home-btn home-btn-secondary" onclick="openRpgPrototype()">
+        <span class="home-btn-label">Prototype RPG</span>
+        <span style="font-size:11px;opacity:.4;">*</span>
+      </button>
       <button class="home-btn home-btn-secondary" onclick="showScreen('s-login')">
         <span class="home-btn-label">Espace joueur</span>
         <span style="font-size:11px;opacity:.4;">↗</span>
@@ -7021,6 +7027,7 @@ body.theme-aquaris .home-title{
           <button class="nav-dropdown-item" onclick="switchDropTab('synopsis',this,'dd-joueurs')"><span class="nav-item-icon">✦</span>Synopsis</button>
           <button class="nav-dropdown-item" onclick="switchDropTab('serments',this,'dd-joueurs')"><span class="nav-item-icon">⚜</span>Serments</button>
           <button class="nav-dropdown-item" onclick="switchDropTab('bestiaire',this,'dd-joueurs')"><span class="nav-item-icon">◈</span>Bestiaire</button>
+          <button class="nav-dropdown-item" onclick="switchDropTab('rpg-prototype',this,'dd-joueurs')"><span class="nav-item-icon">*</span>Prototype RPG</button>
           <div class="nav-divider"></div>
           <div class="nav-section-header">RÈGLES</div>
           <button class="nav-dropdown-item" onclick="switchDropTab('combat',this,'dd-joueurs')"><span class="nav-item-icon">⚔</span>Système de jeu</button>
@@ -7028,6 +7035,8 @@ body.theme-aquaris .home-title{
           <button class="nav-dropdown-item" onclick="switchDropTab('reglement',this,'dd-joueurs');scrollTo(0,0);"><span class="nav-item-icon">§</span>Règlement HRP</button>
         </div>
       </div>
+
+      <button class="rpg-nav-btn" onclick="openRpgPrototype()"><span class="nav-icon">*</span> Jeu RPG</button>
 
       <div id="staff-nav-placeholder"></div>
           </nav>
@@ -7091,6 +7100,7 @@ body.theme-aquaris .home-title{
       <button onclick="switchDropTab('synopsis',null,'dd-joueurs');closeMobileDrawer();" class="drawer-item">Synopsis</button>
       <button onclick="switchDropTab('serments',null,'dd-joueurs');closeMobileDrawer();" class="drawer-item">Serments</button>
       <button onclick="switchDropTab('bestiaire',null,'dd-joueurs');closeMobileDrawer();" class="drawer-item">Bestiaire</button>
+      <button onclick="switchDropTab('rpg-prototype',null,'dd-joueurs');closeMobileDrawer();" class="drawer-item">Prototype RPG</button>
       <button onclick="switchDropTab('combat',null,'dd-joueurs');closeMobileDrawer();" class="drawer-item">Système de jeu</button>
       <button onclick="switchDropTab('evenements',null,'dd-joueurs');closeMobileDrawer();" class="drawer-item">Événements</button>
       <button onclick="switchDropTab('reglement',null,'dd-joueurs');closeMobileDrawer();" class="drawer-item">Règlement HRP</button>
@@ -7270,6 +7280,9 @@ body.theme-aquaris .home-title{
       </div>
       <div class="bgrd" id="p-bgrd"></div>
     </div>
+
+    <!-- PROTOTYPE RPG -->
+    <div id="rpg-prototype" class="tab-content"><div id="p-rpg-prototype-c"></div></div>
 
     <!-- CRÉATION BESTIAIRE (designer/admin) -->
     <div id="bestiaire-admin" class="tab-content" data-private="true"><div id="p-bestiary-admin-c"></div></div>
@@ -9014,5 +9027,6 @@ body[class*="theme-"] ::selection{
 <script src="./assets/js/mobile-polish.js"></script>
 <script src="./assets/js/visual-audit-polish.js"></script>
 <script src="./assets/js/database-admin-polish.js"></script>
+<script src="./assets/js/rpg-prototype.js"></script>
 </body>
 </html>
