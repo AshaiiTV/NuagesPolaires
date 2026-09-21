@@ -32,3 +32,6 @@ coverage/
 
 # Temporary archives
 *.zip
+
+# Local browser validation
+test-results/

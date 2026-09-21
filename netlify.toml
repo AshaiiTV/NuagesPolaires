@@ -1,9 +1,10 @@
 [build]
-  publish = "."
+  command = "npm run build"
+  publish = "dist"
   functions = "netlify/functions"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "24"
   NPM_VERSION = "10"
 
 # ── Headers de sécurité ────────────────────────────────────────
@@ -18,8 +19,8 @@
     Cross-Origin-Opener-Policy = "same-origin"
     Cross-Origin-Resource-Policy = "same-origin"
     X-Permitted-Cross-Domain-Policies = "none"
-    # Content Security Policy — bloque XSS, limite les sources autorisées
-    # unsafe-inline requis pour les styles inline du frontend SPA
+    # Content Security Policy — défense complémentaire au rendu/à la validation
+    # unsafe-inline reste nécessaire aux handlers et styles inline historiques
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://i.imgur.com blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests;"
 
 # ── Env requis (à définir dans Netlify Dashboard > Environment variables) ──

@@ -1,5 +1,6 @@
 const { neon } = require("@neondatabase/serverless");
 const crypto = require("crypto");
+const { createRecordStore, mutateJsonStore } = require("./_shared/auth-store");
 
 let _npSqlClient = null;
 function _getDatabaseUrl() {
@@ -112,7 +113,9 @@ function signToken(payload) {
 function verifyToken(token) {
   if (!SECRET || SECRET.length < 32) return null;
   try {
-    const [header, body, sig] = token.split(".");
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const [header, body, sig] = parts;
     if (!header || !body || !sig) return null;
     const expected = b64url(crypto.createHmac("sha256", SECRET).update(header + "." + body).digest());
     const sigBuf = Buffer.from(sig, "utf8");
@@ -120,7 +123,7 @@ function verifyToken(token) {
     if (sigBuf.length !== expectedBuf.length) return null;
     if (!crypto.timingSafeEqual(sigBuf, expectedBuf)) return null;
     const payload = JSON.parse(Buffer.from(body, "base64").toString());
-    if (payload.exp && Date.now() > payload.exp) return null;
+    if (!Number.isFinite(payload.exp) || Date.now() >= payload.exp) return null;
     return payload;
   } catch {
     return null;
@@ -217,6 +220,23 @@ function normalizeThemeId(v) {
   const loose = themeLooseKey(id);
   return THEME_ID_ALIASES[loose] || loose || 'dark';
 }
+function updateEventTheme(current, themeId, patch) {
+  if (Array.isArray(current)) {
+    const list = current.filter(theme => theme && typeof theme === "object" && !Array.isArray(theme))
+      .map(theme => ({ ...theme, id: normalizeThemeId(theme.id) }));
+    const index = list.findIndex(theme => theme.id === themeId);
+    if (index < 0) list.push({ id: themeId, ...patch });
+    else list[index] = { ...list[index], ...patch };
+    return list;
+  }
+  const map = {};
+  for (const [key, value] of Object.entries(current && typeof current === "object" ? current : {})) {
+    const id = normalizeThemeId((value && value.id) || key);
+    map[id] = { ...(value && typeof value === "object" && !Array.isArray(value) ? value : {}), id };
+  }
+  map[themeId] = { ...(map[themeId] || {}), id: themeId, ...patch };
+  return map;
+}
 function dedupeById(list, prefix, normalizer) {
   const out = [];
   const seen = new Set();
@@ -236,7 +256,7 @@ function normalizeAccountRecord(record, idx = 0) {
   out.pseudo = sanitizeStr(out.pseudo || out.name || ("Joueur " + (idx + 1)), 32);
   out.role = normalizeRole(out.role);
   out.pid = out.pid ? sanitizeStr(out.pid, 128) : null;
-  out.createdAt = Number.isFinite(Number(out.createdAt)) ? Number(out.createdAt) : Date.now();
+  out.createdAt = Number.isFinite(Number(out.createdAt)) ? Number(out.createdAt) : 0;
   out.lastSeen = Number.isFinite(Number(out.lastSeen)) ? Number(out.lastSeen) : out.createdAt;
   out.unlockedThemes = Array.isArray(out.unlockedThemes)
     ? out.unlockedThemes.map(normalizeThemeId).filter(Boolean).filter((v, i, arr) => arr.indexOf(v) === i)
@@ -245,6 +265,7 @@ function normalizeAccountRecord(record, idx = 0) {
     ? out.blockedThemes.map(normalizeThemeId).filter(Boolean).filter((v, i, arr) => arr.indexOf(v) === i)
     : [];
   out.selectedTheme = normalizeThemeId(out.selectedTheme || "dark") || "dark";
+  out.sessionVersion = sessionVersion(out.sessionVersion);
   return out;
 }
 function normalizePlayerRecord(record, idx = 0) {
@@ -262,11 +283,7 @@ function normalizePlayerRecord(record, idx = 0) {
 function normalizeAccounts(list) { return dedupeById(list, "a_", normalizeAccountRecord); }
 function normalizePlayers(list) { return dedupeById(list, "p_", normalizePlayerRecord); }
 async function appendAuditLog(entry) {
-  const logs = await readStore("np_audit_log", []);
-  const arr = Array.isArray(logs) ? logs : [];
-  arr.unshift(entry);
-  if (arr.length > 500) arr.length = 500;
-  await writeStore("np_audit_log", arr);
+  await mutateJsonStore(sql, "np_audit_log", [], logs => ({ value: [entry, ...(Array.isArray(logs) ? logs : [])].slice(0, 1000) }));
 }
 async function audit(event, actor, action, details = {}) {
   try {
@@ -306,23 +323,10 @@ async function writeStore(key, value) {
   `;
 }
 
-async function loadThemeAdminStore(){
-  const rows = await sql`SELECT value FROM np_store WHERE key = ${'themes_admin_store'}`;
-  return rows.length && rows[0].value && typeof rows[0].value === 'object' ? rows[0].value : { visibleThemes: [], meta: {} };
-}
-async function saveThemeAdminStore(store){
-  await sql`
-    INSERT INTO np_store (key, value)
-    VALUES (${'themes_admin_store'}, ${store})
-    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-  `;
-}
-
-async function loadAccounts() {
-  const accounts = await readStore("accounts", []);
-  return normalizeAccounts(accounts);
-}
-async function saveAccounts(accounts) { await writeStore("accounts", normalizeAccounts(accounts)); }
+const accountStore = createRecordStore({ sql, key: "accounts", normalize: normalizeAccounts, protectAccounts: true });
+const playerStore = createRecordStore({ sql, key: "players", normalize: normalizePlayers });
+async function loadAccounts(versions) { return accountStore.load(versions); }
+async function saveAccounts(accounts, source = accounts) { return accountStore.save(accounts, source); }
 function getBootstrapAdminConfig() {
   const pseudo = sanitizeStr(process.env.NP_ADMIN_PSEUDO || process.env.ADMIN_PSEUDO || "", 32);
   const password = sanitizeStr(process.env.NP_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || "", 256);
@@ -355,6 +359,8 @@ async function ensureBootstrapAdmin(accounts) {
     existing.role = "admin";
     existing.pass = pass;
     existing.forcePasswordReset = true;
+    existing.resetExpiresAt = Date.now() + RESET_MAX_AGE_MS;
+    revokeSessions(existing);
     existing.updatedAt = Date.now();
   } else {
     accounts.push({
@@ -366,27 +372,53 @@ async function ensureBootstrapAdmin(accounts) {
       createdAt: Date.now(),
       lastSeen: Date.now(),
       forcePasswordReset: true,
+      resetExpiresAt: Date.now() + RESET_MAX_AGE_MS,
+      sessionVersion: 1,
     });
   }
+  await saveAccounts(accounts);
   if (cfg.recovery) {
     await writeStore("np_admin_recovery_consumed", { fingerprint: fp, pseudo: cfg.pseudo, consumedAt: Date.now() });
   }
-  await saveAccounts(accounts);
   return accounts;
 }
-async function loadPlayers() {
-  const players = await readStore("players", []);
-  return normalizePlayers(players);
+async function loadPlayers(versions) { return playerStore.load(versions); }
+async function deleteAccountAndPlayer(caller) {
+  const nextAccounts = caller.accounts.filter(account => account.id !== caller.account.id);
+  if (!caller.account.pid || normalizeRole(caller.account.role) !== "joueur") {
+    await saveAccounts(nextAccounts, caller.accounts);
+    return;
+  }
+  const players = await loadPlayers();
+  const accountSnapshot = accountStore.snapshot(caller.accounts);
+  const playerSnapshot = playerStore.snapshot(players);
+  const keptAccounts = accountSnapshot.filter((account, index) => normalizeAccountRecord(account, index).id !== caller.account.id);
+  const nextPlayers = (Array.isArray(playerSnapshot) ? playerSnapshot : []).filter((player, index) => normalizePlayerRecord(player, index).id !== caller.account.pid);
+  // Lock both rows in a stable order, then check both original snapshots.
+  // One SQL statement either removes the account and character together or
+  // changes neither when another request reset the account/edited a character.
+  const result = await sql`
+    WITH locked AS MATERIALIZED (
+      SELECT key, value FROM np_store WHERE key IN ('accounts', 'players') ORDER BY key FOR UPDATE
+    ), eligible AS (
+      SELECT 1 WHERE EXISTS (SELECT 1 FROM locked WHERE key = 'accounts' AND value = ${JSON.stringify(accountSnapshot)}::jsonb)
+      AND (
+        (${playerSnapshot === null} AND NOT EXISTS (SELECT 1 FROM locked WHERE key = 'players'))
+        OR EXISTS (SELECT 1 FROM locked WHERE key = 'players' AND value = ${JSON.stringify(playerSnapshot)}::jsonb)
+      )
+    )
+    UPDATE np_store SET value = CASE WHEN key = 'accounts' THEN ${JSON.stringify(keptAccounts)}::jsonb ELSE ${JSON.stringify(nextPlayers)}::jsonb END,
+      updated_at = now()
+    WHERE key IN ('accounts', 'players') AND EXISTS (SELECT 1 FROM eligible)
+    RETURNING key
+  `;
+  if (!result.some(row => row.key === "accounts")) {
+    const error = new Error("Les données ont changé. Recharge la page puis réessaie.");
+    error.statusCode = 409;
+    throw error;
+  }
 }
-async function savePlayers(players) { await writeStore("players", normalizePlayers(players)); }
 
-async function readRateLimits() {
-  const value = await readStore("np_rate_auth", {});
-  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
-}
-async function writeRateLimits(map) {
-  await writeStore("np_rate_auth", map);
-}
 function cleanupRateBucket(bucket, now) {
   for (const k of Object.keys(bucket)) {
     const e = bucket[k];
@@ -394,40 +426,49 @@ function cleanupRateBucket(bucket, now) {
   }
 }
 async function checkRateLimitPersistent(key) {
-  const now = Date.now();
-  const bucket = await readRateLimits();
-  cleanupRateBucket(bucket, now);
-  const entry = bucket[key] || { count: 0, first: now };
-  if (now - entry.first > WINDOW_MS) {
-    bucket[key] = { count: 1, first: now };
-    await writeRateLimits(bucket);
-    return true;
-  }
-  if (entry.count >= MAX_ATTEMPTS) {
-    await writeRateLimits(bucket);
-    return false;
-  }
-  entry.count++;
-  bucket[key] = entry;
-  await writeRateLimits(bucket);
-  return true;
+  return mutateJsonStore(sql, "np_rate_auth", {}, value => {
+    const now = Date.now();
+    const bucket = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    cleanupRateBucket(bucket, now);
+    const entry = bucket[key] || { count: 0, first: now };
+    if (entry.count >= MAX_ATTEMPTS) return { value: bucket, result: false };
+    bucket[key] = { ...entry, count: entry.count + 1 };
+    return { value: bucket, result: true };
+  });
 }
 async function resetRateLimitPersistent(key) {
-  const bucket = await readRateLimits();
-  if (key in bucket) {
+  return mutateJsonStore(sql, "np_rate_auth", {}, value => {
+    const bucket = value && typeof value === "object" && !Array.isArray(value) ? value : {};
     delete bucket[key];
-    await writeRateLimits(bucket);
-  }
+    return { value: bucket };
+  });
 }
 
+const RESET_MAX_AGE_MS = 60 * 60 * 1000;
+function sessionVersion(value) {
+  return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+}
+function revokeSessions(account) {
+  account.sessionVersion = sessionVersion(account.sessionVersion) + 1;
+}
+function hasValidReset(account) {
+  return account.forcePasswordReset === true && Number.isFinite(account.resetExpiresAt) && account.resetExpiresAt > Date.now();
+}
+function finishPasswordReset(account) {
+  account.forcePasswordReset = false;
+  delete account.resetExpiresAt;
+  revokeSessions(account);
+}
 function makeSessionPayload(account) {
   return {
     sub: account.id,
     name: account.pseudo,
     role: account.role || "joueur",
     pid: account.pid || null,
+    sessionVersion: sessionVersion(account.sessionVersion),
+    forcePasswordReset: !!account.forcePasswordReset,
     iat: Date.now(),
-    exp: Date.now() + 30 * 24 * 60 * 60 * 1000,
+    exp: account.forcePasswordReset ? Math.min(account.resetExpiresAt, Date.now() + RESET_MAX_AGE_MS) : Date.now() + 30 * 24 * 60 * 60 * 1000,
   };
 }
 function sessionResponse(headers, account, statusCode = 200, extra = {}) {
@@ -439,7 +480,7 @@ function sessionResponse(headers, account, statusCode = 200, extra = {}) {
     body: JSON.stringify({ ok: true, role: payload.role, pid: payload.pid, name: payload.name, forcePasswordReset: !!account.forcePasswordReset, ...extra }),
   };
 }
-async function getCallerAccount(event) {
+async function getCallerAccount(event, allowForcedReset = false) {
   const token = getTokenFromCookie(event);
   if (!token) return null;
   const payload = verifyToken(token);
@@ -447,6 +488,11 @@ async function getCallerAccount(event) {
   const accounts = await loadAccounts();
   const account = accounts.find(a => a.id === payload.sub);
   if (!account) return null;
+  if (sessionVersion(payload.sessionVersion) !== sessionVersion(account.sessionVersion)) return null;
+  if (account.forcePasswordReset || payload.forcePasswordReset) {
+    if (!allowForcedReset || !hasValidReset(account) || payload.forcePasswordReset !== true) return null;
+  }
+  accountStore.guard(accounts, account.id);
   return { payload, account, accounts };
 }
 function isAdmin(account) { return !!account && String(account.role || "").toLowerCase() === "admin"; }
@@ -482,10 +528,17 @@ async function persistAccountsAndSession(headers, accounts, account, statusCode 
 
 async function buildSessionBundle(account) {
   const role = normalizeRole(account && account.role);
-  const accounts = await loadAccounts();
-  const players = await loadPlayers();
-  const themeVisibility = await readStore("theme_visibility", {});
-  const spawnLabStaff = ["admin", "mj", "designer"].includes(role) ? await readStore("spawn_lab_staff", {}) : null;
+  const versions = {};
+  const readVersioned = async (key, fallback) => {
+    const rows = await sql`SELECT value, md5(value::text) AS version FROM np_store WHERE key = ${key}`;
+    versions[key] = rows.length ? rows[0].version : null;
+    return rows.length ? rows[0].value : fallback;
+  };
+  const accounts = await loadAccounts(versions);
+  const players = await loadPlayers(versions);
+  const themeVisibility = await readVersioned("theme_visibility", {});
+  const spawnLabStaff = ["admin", "mj", "designer"].includes(role) ? await readVersioned("spawn_lab_staff", {}) : null;
+  const beasts = ["admin", "mj", "designer"].includes(role) ? await readVersioned("beasts", []) : undefined;
   let filteredAccounts = [];
   let filteredPlayers = [];
   const combatArchivesByOwner = {};
@@ -531,12 +584,12 @@ async function buildSessionBundle(account) {
     }
     for (const owner of owners) {
       const idxKey = `combat_arc_idx_${owner}`;
-      const idxValue = await readStore(idxKey, []);
+      const idxValue = await readVersioned(idxKey, []);
       if (Array.isArray(idxValue) && idxValue.length) {
         combatArchiveIndexByOwner[owner] = idxValue.map(arc => buildCombatArchiveMeta(arc, owner));
       }
       const key = `combat_arc_${owner}`;
-      const value = await readStore(key, []);
+      const value = await readVersioned(key, []);
       const legacyList = Array.isArray(value) ? value : [];
       combatArchivesByOwner[owner] = legacyList;
       if (!combatArchiveIndexByOwner[owner] || !combatArchiveIndexByOwner[owner].length) {
@@ -545,8 +598,10 @@ async function buildSessionBundle(account) {
     }
   }
   return {
+    versions,
     accounts: filteredAccounts,
     players: filteredPlayers,
+    beasts: Array.isArray(beasts) ? beasts : undefined,
     themeVisibility: (themeVisibility && typeof themeVisibility==='object' && !Array.isArray(themeVisibility)) ? themeVisibility : {},
     spawn_lab_staff: (spawnLabStaff && typeof spawnLabStaff==='object' && !Array.isArray(spawnLabStaff)) ? spawnLabStaff : undefined,
     combatArchivesByOwner,
@@ -570,6 +625,7 @@ exports.handler = async (event) => {
   try {
     await ensureTable();
     const body = JSON.parse(event.body || "{}");
+    if (!body || typeof body !== "object" || Array.isArray(body)) return { statusCode: 400, headers, body: JSON.stringify({ ok: false, error: "Objet JSON attendu" }) };
     const action = sanitizeAction(body.action);
 
     if (action === "login") {
@@ -581,7 +637,7 @@ exports.handler = async (event) => {
       const account = accounts.find(a => String(a.pseudo || "").toLowerCase() === pseudo.toLowerCase());
       const ERR_AUTH = { error: "Identifiant ou mot de passe incorrect" };
       if (!checkRateLimit(ip) || !(await checkRateLimitPersistent(`ip:${ip}`)) || !(await checkRateLimitPersistent(`login:${pseudo.toLowerCase()}`))) {
-        if (account && isAdmin(account) && (await verifyPassword(passHash, account.pass))) {
+        if (account && (!account.forcePasswordReset || hasValidReset(account)) && isAdmin(account) && (await verifyPassword(passHash, account.pass))) {
           resetRateLimit(ip);
           await resetRateLimitPersistent(`ip:${ip}`);
           await resetRateLimitPersistent(`login:${pseudo.toLowerCase()}`);
@@ -596,7 +652,7 @@ exports.handler = async (event) => {
         await new Promise(r => setTimeout(r, 200));
         return { statusCode: 401, headers, body: JSON.stringify(ERR_AUTH) };
       }
-      const ok = await verifyPassword(passHash, account.pass);
+      const ok = (!account.forcePasswordReset || hasValidReset(account)) && await verifyPassword(passHash, account.pass);
       if (!ok) {
         await audit(event, account, "login_failed", { pseudo: account.pseudo || pseudo });
         return { statusCode: 401, headers, body: JSON.stringify(ERR_AUTH) };
@@ -615,17 +671,17 @@ exports.handler = async (event) => {
       }
       account.lastSeen = Date.now();
       await audit(event, account, "login_success", {});
-      return persistAccountsAndSession(headers, accounts, account, 200);
+      return await persistAccountsAndSession(headers, accounts, account, 200);
     }
 
     if (action === "verify") {
-      const caller = await getCallerAccount(event);
+      const caller = await getCallerAccount(event, true);
       if (!caller) {
         return { statusCode: 401, headers: { ...headers, "Set-Cookie": clearCookie() }, body: JSON.stringify({ error: "Non authentifié" }) };
       }
       const account = caller.account;
       account.lastSeen = Date.now();
-      return persistAccountsAndSession(headers, caller.accounts, account, 200);
+      return await persistAccountsAndSession(headers, caller.accounts, account, 200);
     }
 
     if (action === "session_bundle") {
@@ -637,6 +693,8 @@ exports.handler = async (event) => {
       account.lastSeen = Date.now();
       await saveAccounts(caller.accounts);
       const bundle = await buildSessionBundle(account);
+      const versions = bundle.versions;
+      delete bundle.versions;
       return {
         statusCode: 200,
         headers,
@@ -647,12 +705,18 @@ exports.handler = async (event) => {
           name: account.pseudo || "Joueur",
           forcePasswordReset: !!account.forcePasswordReset,
           source: 'db',
+          versions,
           data: bundle
         })
       };
     }
 
     if (action === "logout") {
+      const caller = await getCallerAccount(event, true);
+      if (caller) {
+        revokeSessions(caller.account);
+        await saveAccounts(caller.accounts);
+      }
       return { statusCode: 200, headers: { ...headers, "Set-Cookie": clearCookie() }, body: JSON.stringify({ ok: true }) };
     }
 
@@ -686,7 +750,7 @@ exports.handler = async (event) => {
       await resetRateLimitPersistent(`ip:${ip}`);
       await resetRateLimitPersistent(`register:${pseudo.toLowerCase()}`);
       await audit(event, newAccount, "register_success", {});
-      return persistAccountsAndSession(headers, accounts, newAccount, 201);
+      return await persistAccountsAndSession(headers, accounts, newAccount, 201);
     }
 
     if (action === "touch_last_seen") {
@@ -708,20 +772,23 @@ exports.handler = async (event) => {
       const ok = await verifyPassword(currentPassHash, caller.account.pass);
       if (!ok) return { statusCode: 403, headers, body: JSON.stringify({ error: "Mot de passe actuel incorrect" }) };
       caller.account.pass = await upgradePassword(newPassHash);
-      caller.account.forcePasswordReset = false;
+      finishPasswordReset(caller.account);
       await audit(event, caller.account, "self_change_password", {});
-      return persistAccountsAndSession(headers, caller.accounts, caller.account, 200);
+      return await persistAccountsAndSession(headers, caller.accounts, caller.account, 200);
     }
 
     if (action === "complete_forced_reset") {
-      const caller = await getCallerAccount(event);
+      const caller = await getCallerAccount(event, true);
       if (!caller) return { statusCode: 401, headers: { ...headers, "Set-Cookie": clearCookie() }, body: JSON.stringify({ error: "Session expirée" }) };
+      if (!hasValidReset(caller.account) || caller.payload.forcePasswordReset !== true) {
+        return { statusCode: 403, headers, body: JSON.stringify({ error: "Aucune réinitialisation autorisée" }) };
+      }
       const newPassHash = sanitizeStr(body.newPassHash, 200);
       if (!isValidSha256ClientHash(newPassHash)) return { statusCode: 400, headers, body: JSON.stringify({ error: "Mot de passe invalide" }) };
       caller.account.pass = await upgradePassword(newPassHash);
-      caller.account.forcePasswordReset = false;
+      finishPasswordReset(caller.account);
       await audit(event, caller.account, "complete_forced_reset", {});
-      return persistAccountsAndSession(headers, caller.accounts, caller.account, 200);
+      return await persistAccountsAndSession(headers, caller.accounts, caller.account, 200);
     }
 
     if (action === "self_delete_account") {
@@ -732,12 +799,7 @@ exports.handler = async (event) => {
       if (normalizeRole(caller.account.role) === "admin") return { statusCode: 403, headers, body: JSON.stringify({ error: "Le compte administrateur ne peut pas être supprimé." }) };
       const ok = await verifyPassword(currentPassHash, caller.account.pass);
       if (!ok) return { statusCode: 403, headers, body: JSON.stringify({ error: "Mot de passe incorrect" }) };
-      const nextAccounts = caller.accounts.filter(a => a.id !== caller.account.id);
-      if (caller.account.pid && normalizeRole(caller.account.role) === "joueur") {
-        const players = await loadPlayers();
-        await savePlayers(players.filter(p => p.id !== caller.account.pid));
-      }
-      await saveAccounts(nextAccounts);
+      await deleteAccountAndPlayer(caller);
       return { statusCode: 200, headers: { ...headers, "Set-Cookie": clearCookie() }, body: JSON.stringify({ ok: true }) };
     }
 
@@ -748,11 +810,15 @@ exports.handler = async (event) => {
       if (!isValidGenericId(accountId)) return { statusCode: 400, headers, body: JSON.stringify({ error: "Compte invalide" }) };
       const target = caller.accounts.find(a => a.id === accountId);
       if (!target) return { statusCode: 404, headers, body: JSON.stringify({ error: "Compte introuvable" }) };
-      target.pass = await upgradePassword("sha256:" + crypto.createHash("sha256").update("reset").digest("hex"));
+      const temporaryPassword = crypto.randomBytes(24).toString("base64url");
+      const expiresAt = Date.now() + RESET_MAX_AGE_MS;
+      target.pass = await upgradePassword(hashPlainPasswordForStorage(temporaryPassword));
       target.forcePasswordReset = true;
+      target.resetExpiresAt = expiresAt;
+      revokeSessions(target);
       await saveAccounts(caller.accounts);
       await audit(event, caller.account, "admin_reset_password", { accountId });
-      return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, temporaryPassword, expiresAt }) };
     }
 
     if (action === "admin_set_password") {
@@ -765,7 +831,7 @@ exports.handler = async (event) => {
       const target = caller.accounts.find(a => a.id === accountId);
       if (!target) return { statusCode: 404, headers, body: JSON.stringify({ error: "Compte introuvable" }) };
       target.pass = await upgradePassword(newPassHash);
-      target.forcePasswordReset = false;
+      finishPasswordReset(target);
       await saveAccounts(caller.accounts);
       await audit(event, caller.account, "admin_set_password", { accountId });
       return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
@@ -782,7 +848,7 @@ exports.handler = async (event) => {
       if (normalizeRole(target.role) === "admin" && admins.length <= 1) {
         return { statusCode: 400, headers, body: JSON.stringify({ error: "Impossible de supprimer le dernier compte Admin." }) };
       }
-      await saveAccounts(caller.accounts.filter(a => a.id !== accountId));
+      await saveAccounts(caller.accounts.filter(a => a.id !== accountId), caller.accounts);
       await audit(event, caller.account, "admin_delete_account", { accountId });
       return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
     }
@@ -906,10 +972,7 @@ if (action === "self_set_theme") {
       if (themeId && !isValidThemeId(themeId)) return { statusCode: 400, headers, body: JSON.stringify({ error: "Thème invalide" }) };
       const enabled = !!body.enabled;
       if (!themeId) return { statusCode: 400, headers, body: JSON.stringify({ error: "Thème invalide" }) };
-      const eventThemes = await readStore("event_themes", {});
-      const nextThemes = eventThemes && typeof eventThemes === "object" && !Array.isArray(eventThemes) ? eventThemes : {};
-      nextThemes[themeId] = { ...(nextThemes[themeId] || {}), autoGrantAll: enabled };
-      await writeStore("event_themes", nextThemes);
+      await mutateJsonStore(sql, "event_themes", [], current => ({ value: updateEventTheme(current, themeId, { autoGrantAll: enabled }) }));
       await audit(event, caller.account, "admin_set_theme_autogrant", { themeId, enabled });
       return { statusCode: 200, headers, body: JSON.stringify({ ok: true, themeId, autoGrantAll: enabled }) };
     }
@@ -965,47 +1028,18 @@ if (action === "self_set_theme") {
       const themeId = normalizeThemeId(themeIdRaw);
       const visible = !!body.visible;
       if (!themeId) return { statusCode: 400, headers, body: JSON.stringify({ error: "Thème invalide" }) };
-      const vis = await readStore("theme_visibility", {});
-      const nextVis = {};
-      if (vis && typeof vis === "object" && !Array.isArray(vis)) {
-        for (const [key, val] of Object.entries(vis)) {
-          const normalized = normalizeThemeId(key);
-          if (!normalized) continue;
-          nextVis[normalized] = !!val;
+      const nextVis = await mutateJsonStore(sql, "theme_visibility", {}, current => {
+        const value = {};
+        for (const [key, visible] of Object.entries(current && typeof current === "object" && !Array.isArray(current) ? current : {})) {
+          value[normalizeThemeId(key)] = !!visible;
         }
-      }
-      nextVis[themeId] = visible;
-      await writeStore("theme_visibility", nextVis);
-
-      const currentEventThemes = await readStore("event_themes", []);
-      let nextEventThemes = currentEventThemes;
-      if (Array.isArray(currentEventThemes)) {
-        const normalizedList = currentEventThemes
-          .filter(t => t && typeof t === "object" && !Array.isArray(t))
-          .map(t => ({ ...t, id: normalizeThemeId(t.id) }))
-          .filter(t => !!t.id);
-        const idx = normalizedList.findIndex(t => t && t.id === themeId);
-        if (idx >= 0) {
-          nextEventThemes = normalizedList.slice();
-          nextEventThemes[idx] = { ...(normalizedList[idx] || {}), id: themeId, visible, event: true };
-        } else {
-          nextEventThemes = normalizedList.concat([{ id: themeId, visible, event: true }]);
-        }
-      } else if (currentEventThemes && typeof currentEventThemes === "object") {
-        const normalizedObj = {};
-        for (const [key, value] of Object.entries(currentEventThemes)) {
-          const normalized = normalizeThemeId((value && value.id) || key);
-          if (!normalized) continue;
-          normalizedObj[normalized] = { ...((value && typeof value === "object" && !Array.isArray(value)) ? value : {}), id: normalized };
-        }
-        nextEventThemes = {
-          ...normalizedObj,
-          [themeId]: { ...((normalizedObj && normalizedObj[themeId]) || {}), id: themeId, visible, event: true }
-        };
-      } else {
-        nextEventThemes = [{ id: themeId, visible, event: true }];
-      }
-      await writeStore("event_themes", nextEventThemes);
+        value[themeId] = visible;
+        return { value, result: value };
+      });
+      const nextEventThemes = await mutateJsonStore(sql, "event_themes", [], current => {
+        const value = updateEventTheme(current, themeId, { visible, event: true });
+        return { value, result: value };
+      });
 
       await audit(event, caller.account, "admin_set_theme_visibility", { themeId, visible });
       return { statusCode: 200, headers, body: JSON.stringify({ ok: true, themeId, visible, themeVisibility: nextVis, eventThemes: nextEventThemes }) };
@@ -1047,7 +1081,9 @@ if (action === "self_set_theme") {
 
     return { statusCode: 400, headers, body: JSON.stringify({ error: "Action inconnue" }) };
   } catch (err) {
+    if (err instanceof SyntaxError) return { statusCode: 400, headers, body: JSON.stringify({ ok: false, error: "JSON invalide" }) };
     if (_isDbUnavailableError(err)) return _dbUnavailableResponse(headers);
+    if (err && err.statusCode === 409) return { statusCode: 409, headers, body: JSON.stringify({ ok: false, error: err.message, conflict: true }) };
     console.error("Auth error:", err);
     return { statusCode: 500, headers, body: JSON.stringify({ ok: false, error: "Erreur interne" }) };
   }

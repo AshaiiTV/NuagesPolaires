@@ -1,6 +1,6 @@
-Nuages Polaires v278
-- Diagnostic serveur admin : Auth, DB, variables Netlify, recovery et contexte deploy
-- Erreurs connexion/inscription plus lisibles + bannière maintenance
-- Recovery admin consommé une fois par mot de passe temporaire
-- Interface comptes admin avec recherche, filtres, statuts et actions mot de passe
-- Script de test auth : npm run test:auth
+Nuages Polaires v290 — Corrections audit sécurité et sauvegardes
+- Sessions révocables, récupération limitée et mots de passe temporaires aléatoires
+- Permissions serveur, données publiques filtrées, avatars sécurisés
+- Écritures concurrentes protégées, archives détaillées, journal/avatar joueur
+- Import fonctionnel préservant les comptes et récupération des archives locales
+- Tests locaux PostgreSQL/Chromium, build statique dist, Node 24

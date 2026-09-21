@@ -1,66 +1,48 @@
 # Nuages Polaires
 
-Site web / portail staff pour **Nuages Polaires**.
+Compagnon de jeu et portail staff Nuages Polaires. Version locale **v290**, issue de la v289 avec corrections de sécurité et de sauvegarde.
 
-Version actuelle préparée pour Git : **v275 Git Ready**  
-Base fonctionnelle : **v274 — fix connexion admin**
+## Démarrer
 
-## Contenu principal
-
-- `index.html` : application front principale.
-- `assets/js/` : modules front.
-- `netlify/functions/` : fonctions serveur Netlify.
-- `docs/` : documentation technique.
-- `VERSION.txt` : résumé de version.
-
-## Installation locale
+Node **24 LTS** et npm 10.9 ou supérieur sont nécessaires.
 
 ```bash
-npm install
+npm ci
 npm run check
+npm test
+npm run build
 ```
 
-## Variables Netlify nécessaires
+`check` vérifie tous les scripts applicatifs et de test. `test` exécute les scénarios serveur et les requêtes PostgreSQL sur une base PGlite en mémoire, sans identifiants ni données réelles. `build` exécute ces contrôles puis copie uniquement l'HTML et les assets dans `dist/`.
 
-Les secrets ne doivent jamais être commit.
-
-À configurer dans Netlify :
-
-```txt
-NETLIFY_DATABASE_URL
-NP_JWT_SECRET
-SITE_ORIGIN
-```
-
-`NP_JWT_SECRET` doit faire au moins 32 caractères.
-
-## Déploiement Netlify
-
-Build command recommandé :
+Pour vérifier les parcours dans Chromium :
 
 ```bash
-npm run check
+npx playwright install chromium
+npm run test:browser
 ```
 
-Publish directory :
+Le test démarre une application locale avec les véritables handlers serveur et une base fictive. Il couvre notamment connexion, journal, conflits de sauvegarde, XSS avatar, archives après rechargement, import et déconnexion. Captures dans `test-results/browser/`, dossier ignoré par Git.
 
-```txt
-.
-```
+## Structure
 
-## Workflow Git recommandé
+- `index.html` et `assets/js/` : application et modules front.
+- `netlify/functions/auth.js` : authentification et gestion des comptes.
+- `netlify/functions/db.js` : lectures filtrées et écritures autorisées/versionnées.
+- `netlify/functions/_shared/` : persistance atomique partagée.
+- `scripts/` : contrôles, tests locaux et génération du site statique.
+- `docs/security-and-data.md` : contrat de sauvegarde, récupération et limites restantes.
 
-```bash
-git status
-npm run check
-git add .
-git commit -m "v275 - git ready"
-git push
-```
+## Configuration Netlify
 
-## Notes importantes
+La configuration versionnée utilise `npm run build`, publie `dist/` et garde les fonctions dans `netlify/functions/`.
 
-- Ne jamais commit `.env`.
-- Ne jamais mettre l'URL Neon réelle dans Git.
-- Toujours lancer `npm run check` avant un commit.
-- La v274 corrige un bug critique de connexion admin dans `api-hardening.js`.
+Définir dans Netlify : `NETLIFY_DATABASE_URL`, `NP_JWT_SECRET` (au moins 32 caractères) et `NP_SITE_URL` (origine publique exacte). Voir `.env.example` et `docs/env-vars.md`. Ne jamais ajouter les vraies valeurs au dépôt.
+
+Les variables `NP_ADMIN_PSEUDO`, `NP_ADMIN_PASSWORD` et `NP_ADMIN_RECOVERY` servent uniquement à la récupération contrôlée d'un accès admin. Les anciennes réinitialisations sans échéance doivent être renouvelées. Voir `docs/deploy-netlify.md` avant une mise en ligne.
+
+## Sauvegardes
+
+L'export JSON de l'interface est **partiel**. Les comptes qu'il contient sont des métadonnées, sans mots de passe, et sont ignorés à l'import. Une sauvegarde complète doit être faite côté PostgreSQL/Neon et sa restauration testée sur une base isolée.
+
+Les conflits de version sont refusés par le serveur. Conserver son brouillon, recharger les données puis réappliquer la modification ; le client ne force pas l'écrasement d'une modification concurrente.

@@ -1,5 +1,5 @@
 {
-  "version": "v274",
+  "version": "v290",
   "runtime_scripts": [
     "./assets/js/main.js",
     "./assets/js/ui-patches.js",
@@ -16,6 +16,7 @@
     "./assets/js/staff-navigation.js",
     "./assets/js/connected-pages-polish.js",
     "./assets/js/mobile-polish.js",
+    "./assets/js/visual-audit-polish.js",
     "./assets/js/database-admin-polish.js"
   ],
   "cleanup": [

@@ -1,5 +1,16 @@
 # Changelog
 
+## v290 — Sécurité et fiabilité après audit
+
+- Accès publics limités aux contenus publiés ; clés internes et notes staff filtrées.
+- Sessions révocables au changement/récupération du mot de passe et à la déconnexion ; reset temporaire aléatoire, expirant et à usage unique.
+- Écritures avec contrôle atomique de version et conflits explicites ; fusion des modifications indépendantes des comptes.
+- Protection des comptes contre les imports génériques, sauvegarde du journal/avatar via une opération limitée au propriétaire.
+- Archives détaillées enregistrées avant l'index, refus d'annoncer un succès après erreur ; arrêt des nouveaux caches privés persistants et récupération explicite des anciennes archives locales.
+- Validation des URL et échappement du rendu ; labels et autocomplétion du formulaire de connexion.
+- Tests de régression serveur, SQL PostgreSQL en mémoire et Chromium ; build contrôlé dans `dist/`, hors sources serveur/tests.
+- Références de version alignées et passage à Node 24 LTS.
+
 ## v278 — Robustesse auth & comptes admin
 
 - Messages d'erreur connexion/inscription plus explicites avec recommandations selon le code HTTP.

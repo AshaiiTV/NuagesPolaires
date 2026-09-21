@@ -1,79 +1,38 @@
-# Déploiement Netlify
+# Préparer la mise en ligne — v290
 
-## 1. Importer le repo GitHub
+La préparation locale n'effectue aucun déploiement. Le contrat API versionné doit être livré avec les fichiers front de la même version.
 
-Netlify → Add new site → Import an existing project → GitHub.
-
-## 2. Paramètres de build
-
-Build command :
+## Contrôles locaux
 
 ```bash
-npm run check
+npm ci
+npm run build
+npx playwright install chromium
+npm run test:browser
 ```
 
-Publish directory :
+La configuration `netlify.toml` utilise Node 24, la commande `npm run build`, le dossier publié `dist/` et les fonctions `netlify/functions/`. Les tests, sources serveur et documents ne sont pas copiés dans le site statique. Le build exécute les tests serveur et SQL locaux ; Chromium constitue une recette supplémentaire.
 
-```txt
-.
-```
+## Environnement
 
-## 3. Variables d'environnement
+Définir `NETLIFY_DATABASE_URL`, `NP_JWT_SECRET` et `NP_SITE_URL`. L'origine doit correspondre à l'URL réelle, et à l'URL de recette lors d'un test sur environnement isolé. Vérifier également toute surcharge `AWS_LAMBDA_JS_RUNTIME` déjà présente dans le dashboard : le dépôt cible Node 24.
 
-Dans Netlify → Site configuration → Environment variables :
+## Sauvegarde et récupération
 
-```txt
-NETLIFY_DATABASE_URL
-NP_JWT_SECRET
-NP_SITE_URL
-```
+Avant de remplacer une version utilisée, conserver une sauvegarde PostgreSQL indépendante et vérifier sa restauration sur une base isolée. L'export JSON de l'interface ne contient pas tous les stores ni les mots de passe. Sur chaque navigateur utilisé historiquement, récupérer aussi les archives de combat locales : la v290 les conserve en quarantaine et affiche une option de téléchargement au propriétaire connecté. Vérifier le fichier téléchargé avant de confirmer l’effacement local.
 
-Si aucun compte admin n'existe encore dans la base, ajoute aussi temporairement :
+Si aucun admin n'existe, `NP_ADMIN_PSEUDO` et `NP_ADMIN_PASSWORD` permettent le bootstrap au prochain login. Si un admin existe mais que son accès est perdu, ajouter `NP_ADMIN_RECOVERY=true` avec un **nouveau** mot de passe temporaire d'au moins huit caractères. Se connecter, terminer le reset dans l'heure, puis retirer les variables temporaires. Un couple pseudo/mot de passe déjà consommé ne déclenche pas une deuxième récupération.
 
-```txt
-NP_ADMIN_PSEUDO
-NP_ADMIN_PASSWORD
-```
+Les anciens comptes forcés à changer leur mot de passe sans échéance valide devront recevoir une nouvelle réinitialisation. Le mot de passe partagé historique `reset` n'est plus un parcours de récupération accepté.
 
-Le prochain login avec ce pseudo crée/répare le premier admin. Si un admin existe déjà mais que le mot de passe est perdu, ajoute aussi `NP_ADMIN_RECOVERY=true`. Change ensuite le mot de passe depuis le site et supprime `NP_ADMIN_PASSWORD` / `NP_ADMIN_RECOVERY`.
+## Recette sur une base isolée
 
-## 4. Déploiement
+Tester admin, MJ, designer, joueur lié et compte en attente ; vérifier journal/avatar, XP, combat, plus de 50 archives, conflit de deux sessions et import partiel. Vérifier qu'un ancien cookie est refusé après changement de mot de passe et que les créatures masquées restent visibles pour le staff, mais absentes des réponses publiques.
 
-Chaque `git push` sur `main` déclenche un deploy Netlify.
-
-## 5. Vérification après deploy
-
-- Ouvrir le site.
-- Tester la connexion admin.
-- Aller dans `Staff → Tableau de bord`.
-- Lancer :
-  - Diagnostic serveur
-  - Diagnostic DB/Auth
-  - Test complet
-  - Tester les thèmes
-
-Test auth automatisé optionnel :
+Le script existant `npm run test:auth` contacte une URL fournie et **crée un compte** sur cette cible. Il ne fait pas partie des tests locaux par défaut. Réserver son usage à une cible explicitement choisie :
 
 ```bash
-NP_TEST_BASE_URL=https://votre-site.netlify.app npm run test:auth
+NP_TEST_BASE_URL=https://votre-site-de-recette.netlify.app npm run test:auth
 ```
 
-Ce test crée un compte joueur temporaire `test_*`, vérifie le doublon, le mauvais mot de passe puis la session.
-
-Avec un compte admin :
-
-```bash
-NP_TEST_BASE_URL=https://votre-site.netlify.app NP_TEST_ADMIN_PSEUDO=Admin NP_TEST_ADMIN_PASSWORD=... npm run test:auth
-```
-
-## 6. En cas d'erreur admin login
-
-Vérifier :
-
-- `NP_JWT_SECRET` présent et >= 32 caractères.
-- `NETLIFY_DATABASE_URL` correct.
-- `NP_ADMIN_PSEUDO` et `NP_ADMIN_PASSWORD` présents si la base est neuve ou sans admin.
-- `NP_ADMIN_RECOVERY=true` présent temporairement si un admin existe déjà mais que le mot de passe est perdu.
-- Le site utilise bien une version >= v274.
-
-Le dashboard admin affiche aussi une bannière/diagnostic quand Auth, DB ou Netlify est indisponible.
+La configuration Git/Netlify réelle et le déclenchement automatique sur push doivent être vérifiés dans le projet connecté avant publication. Aucun push n'est requis pour les contrôles locaux.

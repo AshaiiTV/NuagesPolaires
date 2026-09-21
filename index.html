@@ -6777,7 +6777,7 @@ body.theme-aquaris .home-title{
         <input type="text" id="reg-pseudo" placeholder="Ton pseudo">
       </div>
       <div class="frow">
-        <label class="flbl">Mot de passe</label>
+        <label class="flbl" for="login-pass">Mot de passe</label>
         <div class="password-field">
           <input type="password" id="reg-pass" placeholder="••••••••">
           <button type="button" class="password-eye" aria-label="Afficher le mot de passe" title="Afficher le mot de passe" onclick="togglePasswordVisibility('reg-pass',this)">👁</button>
@@ -6859,13 +6859,13 @@ body.theme-aquaris .home-title{
     </div>
     <div class="login-card">
       <div class="frow">
-        <label class="flbl">Identifiant</label>
-        <input type="text" id="login-id" placeholder="Ton pseudo" autofocus>
+        <label class="flbl" for="login-id">Identifiant</label>
+        <input type="text" id="login-id" autocomplete="username" placeholder="Ton pseudo" autofocus>
       </div>
       <div class="frow">
         <label class="flbl">Mot de passe</label>
         <div class="password-field">
-          <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')loginUnified()">
+          <input type="password" id="login-pass" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')loginUnified()">
           <button type="button" class="password-eye" aria-label="Afficher le mot de passe" title="Afficher le mot de passe" onclick="togglePasswordVisibility('login-pass',this)">👁</button>
         </div>
       </div>
@@ -6897,8 +6897,8 @@ body.theme-aquaris .home-title{
     </div>
     <div class="login-card">
       <div style="font-size:13px;color:var(--dim);margin-bottom:16px;line-height:1.6;">Choisis un mot de passe pour sécuriser ton compte. Il te sera demandé à chaque connexion.</div>
-      <div class="field"><label>Nouveau mot de passe</label><div class="password-field"><input type="password" id="reset-pass1" placeholder="••••••••" autofocus onkeydown="if(event.key==='Enter')ge('reset-pass2').focus()"><button type="button" class="password-eye" aria-label="Afficher le mot de passe" title="Afficher le mot de passe" onclick="togglePasswordVisibility('reset-pass1',this)">👁</button></div></div>
-      <div class="field" style="margin-top:12px;"><label>Confirmer</label><div class="password-field"><input type="password" id="reset-pass2" placeholder="••••••••" onkeydown="if(event.key==='Enter')saveResetPass()"><button type="button" class="password-eye" aria-label="Afficher le mot de passe" title="Afficher le mot de passe" onclick="togglePasswordVisibility('reset-pass2',this)">👁</button></div></div>
+      <div class="field"><label for="reset-pass1">Nouveau mot de passe</label><div class="password-field"><input type="password" id="reset-pass1" autocomplete="new-password" placeholder="••••••••" autofocus onkeydown="if(event.key==='Enter')ge('reset-pass2').focus()"><button type="button" class="password-eye" aria-label="Afficher le mot de passe" title="Afficher le mot de passe" onclick="togglePasswordVisibility('reset-pass1',this)">👁</button></div></div>
+      <div class="field" style="margin-top:12px;"><label for="reset-pass2">Confirmer</label><div class="password-field"><input type="password" id="reset-pass2" autocomplete="new-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')saveResetPass()"><button type="button" class="password-eye" aria-label="Afficher le mot de passe" title="Afficher le mot de passe" onclick="togglePasswordVisibility('reset-pass2',this)">👁</button></div></div>
       <p class="errmsg" id="reset-err" style="margin-top:8px;"></p>
       <button class="btn btn-full" style="margin-top:16px;" onclick="saveResetPass()"><span>Définir le mot de passe</span></button>
     </div>

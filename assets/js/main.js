@@ -523,8 +523,19 @@ var THEME_CANON_META = {
 function getThemeCanonMeta(themeId){
   return THEME_CANON_META[normalizeThemeId(themeId)] || null;
 }
+function _dbSessionChangedError(){
+  var error = new Error('La session a changé pendant le chargement.');
+  error.code = 'SESSION_CHANGED';
+  return error;
+}
+function _assertDbSessionGeneration(generation, allowLogout){
+  if(generation !== _dbSessionGeneration || (window.__logoutBusy && !allowLogout)) throw _dbSessionChangedError();
+}
 async function _jsonPost(url, payload, opts){
   opts = opts || {};
+  var sessionGeneration = _dbSessionGeneration;
+  var isLogout = payload && payload.action === 'logout';
+  _assertDbSessionGeneration(sessionGeneration, isLogout);
   var res = await fetch(url, {
     method: 'POST',
     credentials: 'same-origin',
@@ -533,6 +544,9 @@ async function _jsonPost(url, payload, opts){
   });
   var data = {};
   try { data = await res.json(); } catch(e) {}
+  _assertDbSessionGeneration(sessionGeneration, isLogout);
+  if(!data || typeof data !== 'object' || Array.isArray(data)) data = {ok:false, error:'Réponse du serveur invalide.'};
+  Object.defineProperty(data, '__npSessionGeneration', {value:sessionGeneration});
   if(!res.ok && !data.ok) data.ok = false;
   data.status = res.status;
   if(!res.ok && !opts.silent && data && data.error){
@@ -540,8 +554,25 @@ async function _jsonPost(url, payload, opts){
   }
   return data;
 }
-async function _authCall(payload, opts){ return _jsonPost('/.netlify/functions/auth', payload, opts); }
-async function _dbCall(payload, opts){ return _jsonPost('/.netlify/functions/db', payload, opts); }
+async function _authCall(payload, opts){
+  var sessionGeneration = _dbSessionGeneration;
+  var response = await _jsonPost('/.netlify/functions/auth', payload, opts);
+  _assertDbSessionGeneration(sessionGeneration, payload && payload.action === 'logout');
+  return response;
+}
+async function _dbCall(payload, opts){
+  var sessionGeneration = _dbSessionGeneration;
+  var resp = await _jsonPost('/.netlify/functions/db', payload, opts);
+  _assertDbSessionGeneration(sessionGeneration);
+  if(resp && resp.ok !== false && resp.status < 400){
+    if(payload.action === 'get' && Object.prototype.hasOwnProperty.call(resp, 'version')){
+      _dbVersions[payload.key] = resp.version;
+      _dbCache[payload.key] = resp.value == null ? null : _normalizeDbValueForKey(payload.key, resp.value);
+    }
+    if(resp.versions) _rememberDbVersions(resp.versions);
+  }
+  return resp;
+}
 async function apiAuth(action, data){
   var payload = Object.assign({ action: action }, data || {});
   return _authCall(payload);
@@ -634,14 +665,19 @@ function _normalizeAccountRecord(acc, idx){
 
 function _normalizeImageDataUrl(url){
   url = String(url || '').trim();
-  if(!url) return '';
-  if(/^data:image\/[a-zA-Z0-9.+-]+;base64,/i.test(url)) return url;
-  var m = url.match(/^data:(image\/[a-zA-Z0-9.+-]+);base(?!64,)(.*)$/i);
-  if(m) return 'data:' + m[1] + ';base64,' + String(m[2] || '').replace(/^,+/, '');
-  var m2 = url.match(/^data:(image\/[a-zA-Z0-9.+-]+);([^,]+),(.*)$/i);
-  if(m2 && /base64/i.test(m2[2])) return 'data:' + m2[1] + ';base64,' + String(m2[3] || '');
-  return url;
+  if(!url || /[\u0000-\u0020\u007f<>"'`]/.test(url)) return '';
+  // Only inert raster data and web URLs are accepted, including legacy stored data.
+  if(/^data:image\/(?:png|jpe?g|gif|webp|avif);base64,[A-Za-z0-9+/]+={0,2}$/i.test(url)) return url;
+  if(/^data:/i.test(url)) return '';
+  try{
+    var parsed = new URL(url, window.location.href);
+    if(parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return '';
+    if(parsed.username || parsed.password) return '';
+    return parsed.href;
+  }catch(e){ return ''; }
 }
+function _imageAttr(url){ return escAttr(_normalizeImageDataUrl(url)); }
+
 function _normalizePlayerRecord(player, idx){
   var out = _ensurePlainObject(_npClone(player));
   out.id = String(out.id || _slugDataId('p_', out.name || idx, idx));
@@ -780,7 +816,8 @@ function _normalizeDbValueForKey(key, value){
     Object.keys(raw).forEach(function(themeId){ map[normalizeThemeId(themeId)] = !!raw[themeId]; });
     return map;
   }
-  if(k === 'np_syslog' || k === 'np_syslog_archive') return _ensureArray(_npClone(value)).slice(-500);
+  if(k === 'np_syslog') return _ensureArray(_npClone(value)).slice(0, 500);
+  if(k === 'np_syslog_archive') return _ensureArray(_npClone(value)).slice(0, 50);
   if(k.indexOf('combat_arc_idx_') === 0) return _normalizeListById(value, 'arc_', _normalizeCombatArchiveRecord).slice(0, 5000);
   if(k.indexOf('combat_arc_rec_') === 0) return _normalizeCombatArchiveRecord(value || {}, 0);
   if(k.indexOf('combat_arc_') === 0) return _normalizeListById(value, 'arc_', _normalizeCombatArchiveRecord).slice(0, 500);
@@ -791,24 +828,26 @@ function _reportDbWriteError(key, err){
   _DB_WRITE_STATUS.lastErrKey = String(key || '');
   if(typeof notif === 'function' && (_DB_WRITE_STATUS.lastErrAt - (_DB_WRITE_STATUS.lastErrToastAt || 0) > 6000)){
     _DB_WRITE_STATUS.lastErrToastAt = _DB_WRITE_STATUS.lastErrAt;
-    try{ notif('Sauvegarde DB échouée (' + _DB_WRITE_STATUS.lastErrKey + '). Les données locales sont conservées.', 'err'); }catch(e){}
+    try{ notif('Sauvegarde non enregistrée (' + _DB_WRITE_STATUS.lastErrKey + '). ' + ((err && err.message) || 'Réessaie après rechargement. Copie ton travail avant de quitter cette page.'), 'err'); }catch(e){}
   }
 }
 function _reportDbWriteSuccess(key){ _DB_WRITE_STATUS.lastOkAt = Date.now(); }
 
-function _hydrateBundleData(bundle){
+function _hydrateBundleData(bundle, sessionGeneration){
+  if(sessionGeneration === undefined && bundle) sessionGeneration = bundle.__npSessionGeneration;
+  if(sessionGeneration !== undefined) _assertDbSessionGeneration(sessionGeneration);
   try{
     if(!bundle) return bundle;
+    if(bundle.versions) _rememberDbVersions(bundle.versions);
     var data = bundle.data || bundle;
     if(!data || typeof data !== 'object') return bundle;
     data = _npClone(data);
     Object.keys(data).forEach(function(key){ data[key] = _normalizeDbValueForKey(key, data[key]); });
-    ['players','accounts','beasts','events','serments_custom','lieux','event_themes'].forEach(function(k){
+    ['players','accounts','beasts','events','serments_custom','lieux','event_themes','np_syslog','np_syslog_archive'].forEach(function(k){
       if(Object.prototype.hasOwnProperty.call(data, k)) _dbCache[k] = data[k];
     });
     if(Object.prototype.hasOwnProperty.call(data, 'spawn_lab_staff')){
-      _dbCache.spawn_lab_staff = _spawnLabMergeGlobal(data.spawn_lab_staff, _spawnLabReadLocalGlobalRaw());
-      try{ localStorage.setItem("np_spawn_lab_staff", JSON.stringify(_dbCache.spawn_lab_staff)); }catch(e0){}
+      _dbCache.spawn_lab_staff = data.spawn_lab_staff;
     }
     if(data.combatArchivesByOwner && typeof data.combatArchivesByOwner==='object' && !Array.isArray(data.combatArchivesByOwner)){
       Object.keys(data.combatArchivesByOwner).forEach(function(owner){
@@ -843,19 +882,24 @@ function _hydrateBundleData(bundle){
 }
 
 async function _loadPublicBundle(){
+  var sessionGeneration = _dbSessionGeneration;
   return _dbCall({ action:'get_public_bundle' }, { silent:true }).then(function(bundle){
+    _assertDbSessionGeneration(sessionGeneration);
     if(!bundle || bundle.offline || bundle.status >= 500 || bundle.ok === false){
       throw new Error((bundle && bundle.error) || 'db_unavailable');
     }
-    return _hydrateBundleData(bundle);
+    _dbOffline = false;
+    return _hydrateBundleData(bundle, sessionGeneration);
   });
 }
 async function _loadSessionBundle(){
+  var sessionGeneration = _dbSessionGeneration;
   return _authCall({ action:'session_bundle' }, { silent:true }).then(function(bundle){
-    if(!bundle || bundle.offline || bundle.status >= 500){
+    _assertDbSessionGeneration(sessionGeneration);
+    if(!bundle || bundle.offline || bundle.status >= 400 || bundle.ok === false){
       throw new Error((bundle && bundle.error) || 'auth_unavailable');
     }
-    return _hydrateBundleData(bundle);
+    return _hydrateBundleData(bundle, sessionGeneration);
   });
 }
 
@@ -1081,19 +1125,21 @@ var _LOG_KEY="np_syslog";
 var _LOG_ARCHIVE_KEY="np_syslog_archive";
 var _LOG_PAGE_SIZE=50;
 function getSysLog(){ return sto(_LOG_KEY)||[]; }
-function saveSysLog(arr){ sv(_LOG_KEY,arr); }
+function saveSysLog(arr){ return sv(_LOG_KEY,arr); }
 function getSysLogArchive(){ return sto(_LOG_ARCHIVE_KEY)||[]; }
-function saveSysLogArchive(arr){ sv(_LOG_ARCHIVE_KEY,arr); }
+function saveSysLogArchive(arr){ return sv(_LOG_ARCHIVE_KEY,arr); }
 function sysLog(action,detail,actor){
   var entry={ts:Date.now(),action:action||"",detail:detail||"",actor:actor||(window.CU?CU.name:"Système")};
   var log=getSysLog(); log.unshift(entry);
   if(log.length>2000) log=log.slice(0,2000);
   saveSysLog(log);
 }
-function archiveSysLog(){
+async function archiveSysLog(){
   // Collecter TOUT : syslog global + history de tous les personnages
-  var sysEntries=getSysLog();
-  var players=gp();
+  var sysEntries=_cloneForDb(getSysLog());
+  var players=_cloneForDb(gp());
+  var logVersion=_dbVersions[_LOG_KEY];
+  var playersVersion=_dbVersions.players;
   var histEntries=[];
   players.forEach(function(p){
     (p.history||[]).forEach(function(h){
@@ -1113,14 +1159,14 @@ function archiveSysLog(){
   var filename="archive-"+now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0")+"_"+String(now.getHours()).padStart(2,"0")+"h"+String(now.getMinutes()).padStart(2,"0");
   archive.unshift({archivedAt:Date.now(),label:"Archive du "+ts,filename:filename,entries:allEntries});
   if(archive.length>50) archive=archive.slice(0,50);
-  saveSysLogArchive(archive);
-
-  // Vider TOUT — syslog + history de chaque personnage
-  saveSysLog([]);
-  var ps=gp();
-  ps.forEach(function(p){ p.history=[]; });
-  sp(ps);
-
+  try{
+    await saveSysLogArchive(archive);
+    if(_dbVersions[_LOG_KEY] !== logVersion || JSON.stringify(getSysLog()) !== JSON.stringify(sysEntries)) throw new Error('Le log a changé pendant l’archivage. Les nouvelles entrées sont conservées.');
+    await saveSysLog([]);
+    if(_dbVersions.players !== playersVersion || JSON.stringify(gp()) !== JSON.stringify(players)) throw new Error('Les fiches ont changé pendant l’archivage. Leurs historiques sont conservés.');
+    players.forEach(function(p){ p.history=[]; });
+    await sp(players);
+  }catch(e){ notif('Archivage incomplet : '+e.message, 'err'); return; }
   notif("Archivé ("+allEntries.length+" entrées). Log vidé.","ok");
   renderDatabase();
 }
@@ -1141,12 +1187,13 @@ function downloadArchive(idx){
   setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); },200);
 }
 
-function deleteArchive(idx){
+async function deleteArchive(idx){
   if(!isAdminRole(CU)){ return; }
   if(!confirm("Supprimer cette archive ? Cette action est irréversible.")) return;
   var archives=getSysLogArchive();
   archives.splice(idx,1);
-  saveSysLogArchive(archives);
+  try{ await saveSysLogArchive(archives); }
+  catch(e){ notif('Suppression non enregistrée : '+e.message,'err'); return; }
   notif("Archive supprimée.","ok");
   _logShowArchive="list";
   renderDatabase();
@@ -1155,11 +1202,18 @@ var _logPage=0;
 var _logShowArchive=null;
 
 async function _dbBootstrap() {
+  var sessionGeneration = _dbSessionGeneration;
   // Mettre à jour le message du loader
   var loaderMsg = document.querySelector("#db-loader .np-loader-status") || document.querySelector("#db-loader div");
   // Version du schéma — si changé, invalider le cache localStorage
-  var CACHE_VERSION="np_v8"; // v22 data integrity & schema normalization
+  var CACHE_VERSION="np_v9_private_cache"; // v22 data integrity & schema normalization
   var cacheOk=localStorage.getItem("np_cache_version")===CACHE_VERSION;
+  if(!cacheOk){
+    ['beasts','events','lieux','serments_custom'].forEach(function(key){
+      try{ localStorage.removeItem('np_'+key); }catch(e){}
+      delete _dbCache[key];
+    });
+  }
   try {
     var timeoutPromise = new Promise(function(_, reject){
       setTimeout(function(){ reject(new Error("timeout")); }, 5000);
@@ -1168,12 +1222,11 @@ async function _dbBootstrap() {
     // Le cookie httpOnly est envoyé automatiquement avec credentials:"same-origin"
     // Le serveur filtre les clés privées selon l'auth du cookie
     var data = await Promise.race([_loadPublicBundle(), timeoutPromise]);
+    _assertDbSessionGeneration(sessionGeneration);
     _dbCache = data.data || {};
-    if(_dbCache.spawn_lab_staff === undefined) _dbCache.spawn_lab_staff = _spawnLabReadLocalGlobalRaw();
-    else _dbCache.spawn_lab_staff = _spawnLabMergeGlobal(_dbCache.spawn_lab_staff, _spawnLabReadLocalGlobalRaw());
     // Stocker uniquement les clés publiques dans localStorage (fallback offline)
     // Les données privées restent en RAM uniquement et disparaissent au refresh/logout.
-    ["beasts","serments_custom","events","lieux","public_stats"].forEach(function(k){
+    ["public_stats"].forEach(function(k){
       if(_dbCache[k]!==undefined){
         try{ localStorage.setItem("np_"+k, JSON.stringify(_dbCache[k])); }catch(e2){}
       }
@@ -1185,12 +1238,13 @@ async function _dbBootstrap() {
     _dbReady = true;
     _dbOffline = false;
   } catch (e) {
+    if(sessionGeneration !== _dbSessionGeneration || window.__logoutBusy) return;
     console.warn("DB hors ligne ou timeout, fallback localStorage:", e.message||e);
     if(loaderMsg) loaderMsg.textContent = "Mode hors-ligne — chargement du cache local…";
     // Charger depuis localStorage (fallback offline)
     // Clés privées exclues : on ne restaure jamais accounts/players hors-ligne.
     var cacheLoaded=0;
-    var offlineKeys = ["beasts","serments_custom","events","lieux","public_stats","spawn_lab_staff"];
+    var offlineKeys = ["beasts","serments_custom","events","lieux","public_stats"];
     offlineKeys.forEach(function(k) {
       try {
         var v = localStorage.getItem("np_"+k);
@@ -1210,6 +1264,15 @@ async function _dbBootstrap() {
 
 // Cache mémoire principal du front
 var _dbCache = Object.create(null);
+var _dbVersions = Object.create(null);
+var _dbSessionGeneration = 0;
+var _authEntryPending = false;
+function _rememberDbVersions(versions){
+  Object.keys(versions || {}).forEach(function(key){
+    _dbVersions[key] = versions[key];
+    if(_DB_WRITE_QUEUE && _DB_WRITE_QUEUE[key] && _DB_WRITE_QUEUE[key]._failed) delete _DB_WRITE_QUEUE[key];
+  });
+}
 var _dbToken = false;
 var _auditLoading = false;
 var _auditLoadedOnce = false;
@@ -1219,7 +1282,7 @@ function _dbSetToken(v){
   return _dbToken;
 }
 (function initDbCache(){
-  var preloadKeys = ["beasts","serments_custom","events","event_themes","theme_visibility","lieux","public_stats","np_syslog","np_syslog_archive","spawn_lab_staff"];
+  var preloadKeys = ["beasts","serments_custom","events","event_themes","theme_visibility","lieux","public_stats"];
   for(var i=0;i<preloadKeys.length;i++){
     var k = preloadKeys[i];
     try{
@@ -1248,41 +1311,128 @@ function sto(k) {
   return (v !== undefined && v !== null) ? v : null;
 }
 
-// Clés privées — jamais persistées en clair dans le navigateur
-var _PRIVATE_KEYS = ["accounts","players"];
+// Les nouvelles données privées restent en mémoire. Les archives historiques
+// existantes sont isolées jusqu’à récupération et effacement explicites.
+var _PRIVATE_KEYS = ["accounts","players","spawn_lab_staff","np_syslog","np_syslog_archive"];
+function _isPrivateKey(key){
+  return ["accounts","players","spawn_lab_staff","np_syslog","np_syslog_archive","np_audit_log","audit_log"].indexOf(String(key)) >= 0 || /^(combat_arc_|np_syslog|spawn_lab_|(?:np_)?recent_crop_images$)/.test(String(key));
+}
+function _isLegacyCombatArchiveStorageKey(key){
+  return /^(?:np_)?combat_arc_/i.test(String(key || ''));
+}
+function _dismissLegacyCombatArchiveRecovery(){
+  var banner = document.getElementById('legacy-combat-recovery');
+  if(banner) banner.remove();
+  _LEGACY_COMBAT_ARCHIVE_BUFFER = null;
+}
+function _purgePrivateBrowserStorage(){
+  _dismissLegacyCombatArchiveRecovery();
+  try{
+    var keys = [];
+    for(var i=0; i<localStorage.length; i++){
+      var key = localStorage.key(i);
+      // An old local archive may be its only surviving copy. Ordinary reads and
+      // writes never use these quarantined keys; only the recovery controls do.
+      if(!_isLegacyCombatArchiveStorageKey(key) && (_isPrivateKey(key) || _isPrivateKey(String(key).replace(/^np_/, '')))) keys.push(key);
+    }
+    keys.forEach(function(key){ localStorage.removeItem(key); });
+  }catch(e){}
+}
 var _LOCAL_ONLY_KEYS = ["theme_visibility"];
 var _DB_WRITE_QUEUE = window._DB_WRITE_QUEUE || (window._DB_WRITE_QUEUE = Object.create(null));
 var _LEGACY_COMBAT_ARCHIVE_BUFFER = null;
-var _LEGACY_COMBAT_ARCHIVE_MIGRATION_KEY = "np_combat_arc_migrated_v2";
+function _legacyCombatArchiveSessionKey(){
+  if(!_dbToken || !CU || window.__logoutBusy) return '';
+  return JSON.stringify([_dbSessionGeneration, String(CU.pseudo || ''), String(CU.name || '')]);
+}
 function _collectLegacyCombatArchivesFromLocalStorage(){
-  var out = Object.create(null);
+  var entries = [];
+  if(!_legacyCombatArchiveSessionKey()) return entries;
+  var owners = [CU.pseudo, CU.name].map(function(owner){ return String(owner || '').trim(); }).filter(Boolean);
   try{
     for(var i=0;i<localStorage.length;i++){
       var key = localStorage.key(i);
-      var match = String(key||'').match(/^(?:np_)?combat_arc_(.+)$/i);
-      if(!match) continue;
-      var owner = String(match[1]||'').trim();
-      if(!owner || /^(idx_|rec_)/i.test(owner)) continue;
+      if(!_isLegacyCombatArchiveStorageKey(key)) continue;
+      var bareKey = String(key).replace(/^np_/, '');
+      var belongsToSession = owners.some(function(owner){
+        return bareKey === 'combat_arc_' + owner || bareKey === 'combat_arc_idx_' + owner || bareKey.indexOf('combat_arc_rec_' + owner + '__') === 0;
+      });
+      if(!belongsToSession) continue;
       var raw = localStorage.getItem(key);
-      if(!raw) continue;
-      var parsed = JSON.parse(raw);
-      if(!Array.isArray(parsed) || !parsed.length) continue;
-      if(!out[owner]) out[owner] = [];
-      parsed.forEach(function(entry){ out[owner].push(entry); });
+      // Preserve the original bytes, including malformed legacy JSON.
+      if(raw !== null) entries.push({key:key, rawValue:raw});
     }
   }catch(e){}
-  return out;
+  return entries;
+}
+function _exportLegacyCombatArchiveRecovery(){
+  var sessionKey = _legacyCombatArchiveSessionKey();
+  if(!sessionKey) return false;
+  var entries = _collectLegacyCombatArchivesFromLocalStorage();
+  if(!entries.length) return false;
+  var url = null;
+  var anchor = null;
+  try{
+    var payload = {format:'np-local-combat-recovery-v1', exportedAt:new Date().toISOString(), storage:entries};
+    url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'}));
+    anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'nuages-polaires-archives-locales-' + new Date().toISOString().slice(0,10) + '.json';
+    document.body.appendChild(anchor);
+    anchor.click();
+    _LEGACY_COMBAT_ARCHIVE_BUFFER = {sessionKey:sessionKey, entries:entries};
+    var erase = document.getElementById('legacy-combat-recovery-erase');
+    if(erase) erase.disabled = false;
+    return true;
+  }catch(e){
+    notif('Le téléchargement n’a pas pu démarrer. Les copies locales sont conservées.', 'err');
+    return false;
+  }finally{
+    if(anchor) anchor.remove();
+    if(url) setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  }
 }
 function _removeLegacyCombatArchivesFromLocalStorage(){
+  var buffer = _LEGACY_COMBAT_ARCHIVE_BUFFER;
+  if(!buffer || !buffer.sessionKey || buffer.sessionKey !== _legacyCombatArchiveSessionKey()) return false;
+  if(!confirm('As-tu vérifié que le fichier JSON est bien enregistré et lisible ? Effacer maintenant les anciennes copies locales exportées de ton compte ?')) return false;
+  if(buffer.sessionKey !== _legacyCombatArchiveSessionKey()) return false;
   try{
-    var toRemove = [];
-    for(var i=0;i<localStorage.length;i++){
-      var key = localStorage.key(i);
-      if(/^(?:np_)?combat_arc_/i.test(String(key||''))) toRemove.push(key);
-    }
-    toRemove.forEach(function(key){ try{ localStorage.removeItem(key); }catch(e2){} });
-    try{ localStorage.setItem(_LEGACY_COMBAT_ARCHIVE_MIGRATION_KEY, String(Date.now())); }catch(e3){}
-  }catch(e){}
+    buffer.entries.forEach(function(entry){
+      // Preserve any copy changed in another tab since this export.
+      if(localStorage.getItem(entry.key) === entry.rawValue) localStorage.removeItem(entry.key);
+    });
+    _showLegacyCombatArchiveRecovery();
+    return true;
+  }catch(e){
+    notif('Certaines copies locales n’ont pas pu être effacées.', 'err');
+    return false;
+  }
+}
+function _showLegacyCombatArchiveRecovery(){
+  _dismissLegacyCombatArchiveRecovery();
+  if(!_collectLegacyCombatArchivesFromLocalStorage().length) return false;
+  var app = document.getElementById('s-app');
+  if(!app) return false;
+  var banner = document.createElement('div');
+  banner.id = 'legacy-combat-recovery';
+  banner.setAttribute('role', 'status');
+  banner.style.cssText = 'margin:12px;padding:14px;border:1px solid var(--gold);border-radius:10px;background:var(--bg2);display:flex;gap:10px;flex-wrap:wrap;align-items:center;';
+  var message = document.createElement('p');
+  message.style.cssText = 'margin:0;flex:1 1 280px;';
+  message.textContent = 'Des archives de combat de ton compte existent encore dans ce navigateur. Télécharge une copie JSON et vérifie le fichier avant de les effacer. Elles restent conservées ici jusqu’à cet effacement explicite et ne sont pas envoyées au serveur.';
+  banner.appendChild(message);
+  [['Télécharger ma copie JSON', _exportLegacyCombatArchiveRecovery], ['Effacer les copies exportées…', _removeLegacyCombatArchivesFromLocalStorage], ['Plus tard', _dismissLegacyCombatArchiveRecovery]].forEach(function(action, index){
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn btn-sm';
+    button.textContent = action[0];
+    button.addEventListener('click', action[1]);
+    if(index === 1){ button.id = 'legacy-combat-recovery-erase'; button.disabled = true; }
+    banner.appendChild(button);
+  });
+  app.insertBefore(banner, app.firstChild);
+  return true;
 }
 function _mergeCombatArchiveLists(base, incoming){
   var merged = [];
@@ -1304,96 +1454,114 @@ function _mergeCombatArchiveLists(base, incoming){
 function _combatArchiveListsEqual(a,b){
   try{ return JSON.stringify(Array.isArray(a)?a:[]) === JSON.stringify(Array.isArray(b)?b:[]); }catch(e){ return false; }
 }
-function _migrateLegacyCombatArchivesForCurrentSession(){
-  if(!_dbToken || _dbOffline) return Promise.resolve(false);
-  var owners = [];
-  try{ owners = combatArchiveCurrentOwners ? combatArchiveCurrentOwners() : []; }catch(e){ owners = []; }
-  owners = (owners||[]).filter(function(owner, idx, arr){ return !!owner && arr.indexOf(owner) === idx; });
-  if(!owners.length) return Promise.resolve(false);
-  var legacy = _collectLegacyCombatArchivesFromLocalStorage();
-  if(_LEGACY_COMBAT_ARCHIVE_BUFFER && typeof _LEGACY_COMBAT_ARCHIVE_BUFFER === 'object') {
-    Object.keys(_LEGACY_COMBAT_ARCHIVE_BUFFER).forEach(function(owner){
-      legacy[owner] = _mergeCombatArchiveLists(legacy[owner]||[], _LEGACY_COMBAT_ARCHIVE_BUFFER[owner]||[]);
-    });
-  }
-  var primaryOwner = owners[0];
-  var merged = sto('combat_arc_' + primaryOwner) || [];
-  var hasLegacy = false;
-  owners.forEach(function(owner){
-    if(Array.isArray(legacy[owner]) && legacy[owner].length){
-      merged = _mergeCombatArchiveLists(merged, legacy[owner]);
-      hasLegacy = true;
-    }
-    if(owner !== primaryOwner){
-      var aliasValue = sto('combat_arc_' + owner) || [];
-      if(Array.isArray(aliasValue) && aliasValue.length){
-        merged = _mergeCombatArchiveLists(merged, aliasValue);
-      }
-    }
-  });
-  if(!hasLegacy && owners.length < 2) return Promise.resolve(false);
-  if(!_combatArchiveListsEqual(sto('combat_arc_' + primaryOwner) || [], merged)){
-    _dbCache['combat_arc_' + primaryOwner] = merged;
-  }
-  var writes = [_enqueueDbWrite('combat_arc_' + primaryOwner, merged).catch(function(){ return null; })];
-  owners.slice(1).forEach(function(owner){
-    delete _dbCache['combat_arc_' + owner];
-    writes.push(_enqueueDbWrite('combat_arc_' + owner, []).catch(function(){ return null; }));
-  });
-  return Promise.all(writes).then(function(){
-    _LEGACY_COMBAT_ARCHIVE_BUFFER = null;
-    _removeLegacyCombatArchivesFromLocalStorage();
-    return true;
-  }).catch(function(){ return false; });
+async function _migrateLegacyCombatArchivesForCurrentSession(){
+  if(!_dbToken || _dbOffline) return false;
+  var owners = combatArchiveCurrentOwners();
+  if(owners.length < 2) return false;
+  var merged = [];
+  owners.forEach(function(owner){ merged = _mergeCombatArchiveLists(merged, getCombatArchivesForOwner(owner)); });
+  if(!merged.length) return false;
+  await saveCombatArchives(merged, owners[0]);
+  return true;
 }
 function _isDbBackedKey(k){
   var key = String(k||"");
   if(!key) return false;
-  if(["accounts","players","beasts","serments_custom","events","lieux","event_themes","theme_visibility","np_syslog","spawn_lab_staff"].indexOf(key)>=0) return true;
+  if(["accounts","players","beasts","serments_custom","events","lieux","event_themes","theme_visibility","np_syslog","np_syslog_archive","spawn_lab_staff"].indexOf(key)>=0) return true;
   return key.indexOf("combat_arc_")===0 || key.indexOf("combat_arc_idx_")===0 || key.indexOf("combat_arc_rec_")===0;
 }
 function _cloneForDb(value){
   try{ return JSON.parse(JSON.stringify(value)); }catch(e){ return value; }
 }
-function _enqueueDbWrite(key, value){
-  var snapshot = _normalizeDbValueForKey(key, _cloneForDb(value));
-  var prev = _DB_WRITE_QUEUE[key] || Promise.resolve();
-  _DB_WRITE_QUEUE[key] = prev.catch(function(){}).then(function(){
-    return _dbCall({ action:"set", key:key, value:snapshot }, { silent:true }).then(function(resp){
-      if(!resp || resp.ok===false) throw new Error((resp&&resp.error)||"save_failed");
+function _dbWriteFailure(key, response){
+  var err = new Error(response && response.code === 'VERSION_CONFLICT'
+    ? 'Une modification plus récente existe. Copie ton travail puis recharge la page avant de réessayer.'
+    : (response && response.error) || 'La base n’a pas confirmé la sauvegarde.');
+  err.code = response && response.code;
+  _reportDbWriteError(key, err);
+  return err;
+}
+function _enqueueDbMutation(key, payload){
+  var sessionGeneration = _dbSessionGeneration;
+  var previous = _DB_WRITE_QUEUE[key];
+  var expected = Object.prototype.hasOwnProperty.call(_dbVersions, key) ? _dbVersions[key] : null;
+  var request = (previous || Promise.resolve()).then(function(previousResult){
+    if(sessionGeneration !== _dbSessionGeneration || !_dbToken || _dbOffline || window.__logoutBusy) throw _dbWriteFailure(key, {error:'Connexion requise pour enregistrer.'});
+    var nextPayload = Object.assign({}, payload, {
+      expectedVersion: previousResult && Object.prototype.hasOwnProperty.call(previousResult, 'version') ? previousResult.version : expected
+    });
+    return _dbCall(nextPayload, {silent:true}).then(function(resp){
+      if(!resp || resp.ok !== true || resp.skipped || resp.status >= 400) throw _dbWriteFailure(key, resp);
+      if(sessionGeneration !== _dbSessionGeneration) throw new Error('La session a changé pendant l’enregistrement.');
+      _dbVersions[key] = resp.version;
       _reportDbWriteSuccess(key);
       return resp;
     });
-  }).catch(function(err){
-    console.warn("sv() DB error pour '" + key + "':", err);
-    _reportDbWriteError(key, err);
-    throw err;
   });
-  return _DB_WRITE_QUEUE[key];
+  _DB_WRITE_QUEUE[key] = request;
+  // Mark the rejection handled for legacy fire-and-forget callers, without changing the returned promise.
+  request.catch(function(err){
+    request._failed = true;
+    if(!err.code) _reportDbWriteError(key, err);
+  });
+  request.then(function(){ if(_DB_WRITE_QUEUE[key] === request) delete _DB_WRITE_QUEUE[key]; }, function(){});
+  return request;
 }
-try{ _LEGACY_COMBAT_ARCHIVE_BUFFER = _collectLegacyCombatArchivesFromLocalStorage(); }catch(e){}
-// Écriture : cache RAM immédiat + persist async en DB.
-// Les clés privées restent uniquement hors localStorage, mais sont bien persistées côté base si la session le permet.
-function sv(k, v) {
-  var normalized = _normalizeDbValueForKey(k, v);
+function _enqueueDbWrite(key, value){
+  return _enqueueDbMutation(key, {action:'set', key:key, value:_normalizeDbValueForKey(key, _cloneForDb(value))});
+}
+function _deleteDbKey(key){
+  return _enqueueDbMutation(key, {action:'delete', key:key}).then(function(resp){ delete _dbCache[key]; return resp; });
+}
+_purgePrivateBrowserStorage();
+// Unconfirmed changes stay in memory and are never labelled saved.
+function sv(k, v){
+  var normalized = _normalizeDbValueForKey(k, _cloneForDb(v));
+  if(k === 'accounts'){
+    var refused = Promise.reject(_dbWriteFailure(k, {error:'Les comptes se modifient uniquement via les actions de gestion dédiées.'}));
+    refused.catch(function(){});
+    return refused;
+  }
   _dbCache[k] = normalized;
-  if(_PRIVATE_KEYS.indexOf(k)===-1){
-    try { localStorage.setItem("np_"+k, JSON.stringify(normalized)); } catch(e2) {}
-  } else {
-    try { localStorage.removeItem("np_"+k); } catch(e2) {}
+  if(_isPrivateKey(k) && !_isLegacyCombatArchiveStorageKey(k)){
+    try{ localStorage.removeItem('np_' + k); }catch(e){}
   }
-  if(!_dbOffline && _LOCAL_ONLY_KEYS.indexOf(k)===-1 && _dbToken && _isDbBackedKey(k)){
-    return _enqueueDbWrite(k, normalized);
+  if(_LOCAL_ONLY_KEYS.indexOf(k) >= 0){
+    try{ localStorage.setItem('np_' + k, JSON.stringify(normalized)); }catch(e){}
+    return Promise.resolve({ok:true, localOnly:true});
   }
-  return Promise.resolve({ ok:true, skipped:true });
+  if(_isDbBackedKey(k)) return _enqueueDbWrite(k, normalized);
+  var unsupported = Promise.reject(_dbWriteFailure(k, {error:'Cette donnée ne dispose pas de sauvegarde serveur.'}));
+  unsupported.catch(function(){});
+  return unsupported;
+}
+async function _savePlayerPatch(pid, patch){
+  if(CU && roleKey(CU) === 'joueur'){
+    if(String(CU.pid) !== String(pid)) throw new Error('Ce personnage ne t’appartient pas.');
+    var resp = await _enqueueDbMutation('players', {action:'patch_own_player', patch:_cloneForDb(patch)});
+    if(Array.isArray(resp.value)) _dbCache.players = resp.value.map(_normalizePlayerRecord);
+    return resp;
+  }
+  var players = _cloneForDb(gp());
+  var target = players.find(function(p){ return String(p.id) === String(pid); });
+  if(!target) throw new Error('Personnage introuvable.');
+  Object.assign(target, patch);
+  return sp(players);
+}
+async function _confirmDbSave(promise){
+  try{
+    var result=await promise;
+    if(!result || result.ok !== true || result.skipped) throw new Error('La base n’a pas confirmé la modification.');
+    return true;
+  }catch(e){ notif('Modification non enregistrée : '+e.message, 'err'); return false; }
 }
 function gp(){ var v = sto("players")||[]; return Array.isArray(v) ? v : []; }
-function sp(p){sv("players",p);}
+function sp(p){return sv("players",p);}
 function gb(){
   var v = sto("beasts")||[];
   return _normalizeListById(Array.isArray(v) ? v : [], 'b_', _normalizeBeastRecord);
 }
-function sb(b){sv("beasts", _normalizeListById(Array.isArray(b) ? b : [], 'b_', _normalizeBeastRecord));}
+function sb(b){return sv("beasts", _normalizeListById(Array.isArray(b) ? b : [], 'b_', _normalizeBeastRecord));}
 function getBeastById(id){
   id = String(id || '');
   return gb().find(function(b){ return String(b && b.id || '') === id; }) || null;
@@ -1404,7 +1572,7 @@ function getBeastCatalogEntry(idOrBeast){
 }
 // Serments custom (stock_s, fusionn_s avec SD au runtime)
 function gsd(){return sto("serments_custom")||{};}
-function ssd(s){sv("serments_custom",s);}
+function ssd(s){return sv("serments_custom",s);}
 // Retourne SD fusionn_ avec les serments custom
 function getAllSD(){
   var all={};
@@ -1414,7 +1582,7 @@ function getAllSD(){
   return all;
 }
 function gpid(id){return gp().find(function(p){return p.id===id;});}
-function up(p){var ps=gp();var i=ps.findIndex(function(x){return x.id===p.id;});if(i>=0){ps[i]=p;sp(ps);}}
+function up(p){var ps=gp();var i=ps.findIndex(function(x){return x.id===p.id;});if(i>=0){ps[i]=p;return sp(ps);}}
 
 function getThemeActorPlayer(){
   try{
@@ -1533,7 +1701,12 @@ function openModal(id){
   el.classList.add("open");
   try{ _reconcileScrollLocks(); }catch(_e){}
 }
-function closeModal(id){var el=ge(id);if(el){el.classList.remove("open");try{el.style.zIndex='';var md=el.querySelector('.modal');if(md) md.style.zIndex='';}catch(_e){}}try{ _reconcileScrollLocks(); }catch(_e){}}
+function closeModal(id){
+  if(id === 'm-password-recovery'){
+    var secretField = ge('password-recovery-secret');
+    if(secretField) secretField.value = '';
+  }
+var el=ge(id);if(el){el.classList.remove("open");try{el.style.zIndex='';var md=el.querySelector('.modal');if(md) md.style.zIndex='';}catch(_e){}}try{ _reconcileScrollLocks(); }catch(_e){}}
 function _isElementActuallyOpen(el){
   if(!el) return false;
   try{
@@ -1589,101 +1762,9 @@ function _primeGlobalUiLayers(){
 }
 
 function initStorage(){
-  // Corriger la faute "am_ricain" dans les données en cache
-  var rawPlayers=localStorage.getItem("np_players");
-  if(rawPlayers&&rawPlayers.indexOf("am_ricain")>-1){
-    localStorage.setItem("np_players",rawPlayers.split("am_ricain").join("am\u00e9ricain"));
-  }
-  // Validation JSON : supprimer les entrées corrompues pour éviter de bloquer le login
-  // Les clés privées ne doivent plus survivre en localStorage.
-  ["players","accounts"].forEach(function(k){ try{ localStorage.removeItem("np_"+k); }catch(e){} });
-  ["beasts","serments_custom"].forEach(function(k){
-    var raw=localStorage.getItem("np_"+k);
-    if(raw){
-      try{ JSON.parse(raw); }
-      catch(e){
-        console.warn("initStorage: données corrompues pour",k,"— suppression");
-        localStorage.removeItem("np_"+k);
-        if(_dbCache) delete _dbCache[k];
-      }
-    }
-  });
-
-  // Joueurs (personnages)
-  var players=sto("players");
-  if(!players){
-    // Aucun joueur en DB — initialiser un tableau vide
-    sv("players",[]);
-  } else {
-    // Migration douce : assurer que chaque joueur a les champs requis
-    var changed=false;
-    players.forEach(function(p){
-      if(!p.equipment){p.equipment={helmet:null,chest:null,legs:null};changed=true;}
-      if(!p.inventory){p.inventory=[];changed=true;}
-      if(!p.history){p.history=[];changed=true;}
-    });
-    if(changed) sp(players);
-  }
-
-  // === MIGRATION VERS SYSTÈME UNIFIÉ ===
-  // Tout passe dans np_accounts. Les anciens np_mjs sont migrés.
-  var accounts=sto("accounts")||[];
-  var mjs=sto("mjs");
-  var migrated=false;
-
-  // Migration historique depuis np_mjs : uniquement si la DB a déjà fourni des comptes.
-  // Ne jamais créer de compte admin par défaut côté client.
-  var hasAdmin=accounts.find(function(a){return a.role==="admin";});
-  if(!hasAdmin){
-    if(mjs&&mjs.length&&accounts.length){
-      mjs.forEach(function(m){
-        if(!accounts.find(function(a){return a.pseudo.toLowerCase()===(m.name||"").toLowerCase();})){
-          accounts.push({
-            id:"staff_"+Date.now()+"_"+Math.random().toString(36).slice(2),
-            pseudo:m.name,
-            pass:m.pass,
-            role:m.role||"mj",
-            pid:m.pid||null,
-            createdAt:Date.now()
-          });
-        }
-      });
-      migrated=true;
-    }
-  } else if(mjs&&mjs.length){
-    // Migrer les comptes mjs non encore dans accounts
-    mjs.forEach(function(m){
-      if(!accounts.find(function(a){return a.pseudo.toLowerCase()===(m.name||"").toLowerCase();})){
-        accounts.push({
-          id:"staff_"+Date.now()+"_"+Math.random().toString(36).slice(2),
-          pseudo:m.name, pass:m.pass, role:m.role||"mj", pid:m.pid||null, createdAt:Date.now()
-        });
-        migrated=true;
-      }
-    });
-  }
-
-  if(migrated){
-    sv("accounts",accounts);
-    // Nettoyer l'ancien storage mjs
-    localStorage.removeItem("np_mjs");
-  }
-  if(!sto("accounts")) sv("accounts",accounts);
-
-  // Corriger les comptes sans rôle défini (migration sécurisée)
-  var allAccounts=sto("accounts")||[];
-  var fixed=false;
-  allAccounts.forEach(function(a,i){
-    if(!a.role){
-      // Heuristique : si le pseudo est "Admin" ou si c'est le seul compte, c'est admin
-      if(a.pseudo==="Admin"||allAccounts.length===1) a.role="admin";
-      else a.role="joueur";
-      fixed=true;
-    }
-  });
-  if(fixed) sv("accounts",allAccounts);
-
-  // Bestiaire — aussi initialisé au boot via _initPublicData()
+  _purgePrivateBrowserStorage();
+  _dbCache.players = (sto('players') || []).map(_normalizePlayerRecord);
+  _dbCache.accounts = (sto('accounts') || []).map(_normalizeAccountRecord);
   _initBeasts();
 }
 
@@ -1740,14 +1821,14 @@ function _initBeasts(){
   var bsts=sto("beasts");
   if(Array.isArray(bsts)) return;
   // Bestiaire piloté par la DB : plus d'injection de créatures codées en dur.
-  sv("beasts", []);
+  _dbCache.beasts = [];
 }
 
 // ==========================================
 // STORAGE COMPTES UNIFIÉ
 // ==========================================
 function getAccounts(){ var v = sto("accounts")||[]; return Array.isArray(v) ? v : []; }
-function saveAccounts(a){ sv("accounts",a); }
+function saveAccounts(a){ return sv("accounts",a); }
 function getAccountByPseudo(pseudo){
   return getAccounts().find(function(a){ return a.pseudo.toLowerCase()===pseudo.toLowerCase(); });
 }
@@ -1994,6 +2075,7 @@ function initHomePage(){
 // INSCRIPTION
 // ==========================================
 function register(){
+  if(window.__logoutBusy || _authEntryPending) return;
   var pseudo=ge("reg-pseudo").value.trim();
   var pass=ge("reg-pass").value;
   var pass2=ge("reg-pass2").value;
@@ -2014,10 +2096,14 @@ function register(){
 
   var btn=ge("reg-btn"); if(btn) btn.disabled=true;
   errEl.textContent="";
+  _authEntryPending = true;
+  var sessionGeneration = ++_dbSessionGeneration;
 
   // Tout passe par le serveur — plus d'écriture directe en DB côté front
-  hashPass(pass).then(function(h){
-    _authCall({action:"register", pseudo:pseudo, passHash:h}).then(function(r){
+  return hashPass(pass).then(function(h){
+    if(sessionGeneration !== _dbSessionGeneration || window.__logoutBusy) return;
+    return _authCall({action:"register", pseudo:pseudo, passHash:h}).then(function(r){
+      _assertDbSessionGeneration(sessionGeneration);
       if(!r||!r.ok){
         npHandleServiceIssue(r, "Inscription");
         var msg = npFriendlyApiError(r, "Inscription");
@@ -2027,9 +2113,12 @@ function register(){
       }
       // Cookie posé par le serveur — recharger les données
       _dbToken=true;
+      _dbCache = Object.create(null);
+      _dbVersions = Object.create(null);
       ge("reg-pseudo").value=""; ge("reg-pass").value=""; ge("reg-pass2").value="";
       // Recharger le cache depuis la DB (le cookie est maintenant valide)
       _loadSessionBundle().then(function(bundle){
+        _assertDbSessionGeneration(sessionGeneration);
         var role=bundle.role||"joueur", pid=bundle.pid||null, name=bundle.name||pseudo;
         if(role==="joueur"){
           var p=pid?gpid(pid):null;
@@ -2039,16 +2128,22 @@ function register(){
         }
         launchApp();
       }).catch(function(){
+        if(sessionGeneration !== _dbSessionGeneration || window.__logoutBusy) return;
         CU={type:"player",role:"joueur",pid:null,name:pseudo,pseudo:pseudo,pending:true};
         launchApp();
       });
     }).catch(function(e){
+      if(sessionGeneration !== _dbSessionGeneration || window.__logoutBusy) return;
       var r = { status:0, error:e && e.message ? e.message : String(e) };
       npHandleServiceIssue(r, "Inscription");
       failRegister(npFriendlyApiError(r, "Inscription"));
     });
   }).catch(function(){
+    if(sessionGeneration !== _dbSessionGeneration || window.__logoutBusy) return;
     failRegister("Erreur interne de hachage du mot de passe.");
+  }).finally(function(){
+    _authEntryPending = false;
+    if(btn) btn.disabled=false;
   });
 }
 
@@ -2068,13 +2163,17 @@ function _clearSession(){
 // _tryAutoLogin — vérifie le cookie httpOnly via le serveur
 // Retourne une Promise<bool>
 async function _tryAutoLogin(){
+  var sessionGeneration = _dbSessionGeneration;
   try{
     // Appel au serveur avec credentials — le cookie httpOnly est envoyé automatiquement
     // Utiliser _authCall pour avoir la gestion d'erreur centralisée
+    var verification = await _authCall({action:'verify'}, {silent:true});
+    _assertDbSessionGeneration(sessionGeneration);
+    if(!verification || !verification.ok) return false;
+    if(verification.forcePasswordReset){ _resetAccountId='self'; showScreen('s-reset'); return true; }
     var data = await _loadSessionBundle();
+    _assertDbSessionGeneration(sessionGeneration);
     if(!data||!data.ok) return false;
-
-    if(data.forcePasswordReset){ _resetAccountId="self"; showScreen("s-reset"); return true; }
 
     // Cookie valide — reconstruire CU depuis les données en cache
     var role = data.role || "joueur";
@@ -2105,6 +2204,7 @@ var accounts = getAccounts();
 
     return true;
   }catch(e){
+    if(sessionGeneration !== _dbSessionGeneration || window.__logoutBusy) return false;
     // Erreur réseau ou serveur — pas d'auth possible hors-ligne
     console.warn("_tryAutoLogin: serveur inaccessible", e.message||e);
     // Purger le cache privé pour éviter un état incohérent
@@ -2117,6 +2217,7 @@ var accounts = getAccounts();
 }
 
 function loginUnified(){
+  if(window.__logoutBusy || _authEntryPending) return;
   var id=ge("login-id").value.trim();
   var pass=ge("login-pass").value;
   var errEl=ge("err-login");
@@ -2125,14 +2226,18 @@ function loginUnified(){
 
   // Le login va directement au serveur — pas de lecture du cache local avant auth
   if(!pass){ errEl.textContent="Entre ton mot de passe."; ge("login-pass").focus(); return; }
+  _authEntryPending = true;
+  var sessionGeneration = ++_dbSessionGeneration;
 
   // Obtenir le cookie httpOnly via le serveur — vérification et migration PBKDF2 côté serveur
-  hashPass(pass).then(function(h){
+  return hashPass(pass).then(function(h){
+    if(sessionGeneration !== _dbSessionGeneration || window.__logoutBusy) return;
     // Validation format sha256 avant envoi
     if(!h||h.indexOf("sha256:")!==0||h.length<71){
       errEl.textContent="Erreur interne de hachage."; return;
     }
-    _authCall({action:"login", pseudo:id, passHash:h}).then(function(serverResp){
+    return _authCall({action:"login", pseudo:id, passHash:h}).then(function(serverResp){
+      _assertDbSessionGeneration(sessionGeneration);
       if(!serverResp||!serverResp.ok){
         // Utiliser le message du serveur (rate limit, compte inexistant, etc.)
         npHandleServiceIssue(serverResp, "Connexion");
@@ -2147,16 +2252,26 @@ function loginUnified(){
       // Continuer le flow de connexion avec les données du serveur
       _finishLogin(serverResp, id);
     }).catch(function(e){
+      if(sessionGeneration !== _dbSessionGeneration || window.__logoutBusy) return;
       // Erreur réseau pure (serveur injoignable)
       var r = { status:0, error:e && e.message ? e.message : String(e) };
       npHandleServiceIssue(r, "Connexion");
       errEl.textContent=npFriendlyApiError(r, "Connexion");
       ge("login-pass").value=""; ge("login-pass").focus();
     });
-  });
+  }).catch(function(){
+    if(sessionGeneration === _dbSessionGeneration && !window.__logoutBusy) errEl.textContent="Erreur interne de hachage.";
+  }).finally(function(){ _authEntryPending = false; });
 }
 
 function _finishLogin(serverResp, id){
+  if(window.__logoutBusy) return;
+  var sessionGeneration = ++_dbSessionGeneration;
+  _purgePrivateBrowserStorage();
+  _dbCache = Object.create(null);
+  _dbVersions = Object.create(null);
+  _cropRecentImages=[]; _spawnLabState=null;
+  Object.keys(_DB_WRITE_QUEUE).forEach(function(key){ delete _DB_WRITE_QUEUE[key]; });
   // serverResp contient: ok, role, pid, name depuis le serveur
   var role = serverResp.role || "joueur";
   var pid  = serverResp.pid  || null;
@@ -2169,7 +2284,9 @@ function _finishLogin(serverResp, id){
   if(serverResp && serverResp.forcePasswordReset){ _resetAccountId="self"; showScreen("s-reset"); ge("login-pass").value=""; return; }
 
   // Recharger les données privées filtrées via l'endpoint dédié
-  _loadSessionBundle().then(function(bundle){
+  Promise.all([_loadPublicBundle(), _loadSessionBundle()]).then(function(bundles){
+    _assertDbSessionGeneration(sessionGeneration);
+    var bundle = bundles[1];
     if(bundle&&bundle.data){
       if(bundle.data.accounts!==undefined) _dbCache.accounts=bundle.data.accounts;
       if(bundle.data.players!==undefined) _dbCache.players=bundle.data.players;
@@ -2193,15 +2310,16 @@ function _finishLogin(serverResp, id){
     var account=getAccountByPseudo(id);
     if(account) _trackLastSeen(account.id);
     sysLog("connexion","Connexion au Compagnon",name);
-    _playLoginTransition(function(){ launchApp(); });
+    _playLoginTransition(function(){ if(sessionGeneration === _dbSessionGeneration && !window.__logoutBusy) launchApp(); });
   }).catch(function(){
+    if(sessionGeneration !== _dbSessionGeneration || window.__logoutBusy) return;
     // DB inaccessible après login — construire CU depuis serverResp seulement
     if(role==="joueur"){
       CU={type:"player",role:"joueur",pid:pid||null,name:name,pseudo:id,pending:!pid};
     } else {
       CU={type:"staff",role:role,pid:pid||null,name:name,pseudo:id};
     }
-    _playLoginTransition(function(){ launchApp(); });
+    _playLoginTransition(function(){ if(sessionGeneration === _dbSessionGeneration && !window.__logoutBusy) launchApp(); });
   });
 }
 
@@ -2292,15 +2410,23 @@ function updateHdrProfile(){
   var av=ge("hdr-av"); var avTxt=ge("hdr-av-txt");
   var p=CU.pid?gpid(CU.pid):null;
   if(av){
-    if(p&&p.avatar){
-      av.innerHTML='<img src="'+p.avatar+'" alt="" onerror="this.outerHTML=\'<span class=hdr-av-txt>'+((p?p.name[0]:CU.name[0])||"?")+'</span>\'">';
-    } else {
-      av.innerHTML='<span class="hdr-av-txt">'+(p?p.name[0]:CU.name[0]).toUpperCase()+'</span>';
+    var initial = String((p && p.name) || CU.name || '?').charAt(0).toUpperCase();
+    var fallback = document.createElement('span');
+    fallback.className = 'hdr-av-txt';
+    fallback.textContent = initial;
+    av.replaceChildren(fallback);
+    var imageUrl = _normalizeImageDataUrl(p && p.avatar);
+    if(imageUrl){
+      var image = document.createElement('img');
+      image.alt = '';
+      image.onerror = function(){ av.replaceChildren(fallback); };
+      image.src = imageUrl;
+      av.replaceChildren(image);
     }
   }
   // Nom affiché
   var userEl=ge("hdr-user");
-  if(userEl) userEl.textContent=p?esc(p.name):esc(CU.name);
+  if(userEl) userEl.textContent=p?p.name:CU.name;
   // Badge rôle
   var badgeEl=ge("hdr-badge");
   if(badgeEl){
@@ -2330,6 +2456,7 @@ var _cropImg=null,_cropX=0,_cropY=0,_cropScale=1,_cropDragging=false,_cropDX=0,_
 var _cropTargetPid=null, _cropBeastId=null, _cropDraftInputId=null, _cropDraftPreviewId=null;
 var _cropNaturalW=0,_cropNaturalH=0,_cropMinScale=0.5,_cropMaxScale=4,_cropSourceLabel="",_cropSourceBytes=0,_cropLoadedUrl="";
 var _cropRecentsKey="np_recent_crop_images";
+var _cropRecentImages=[];
 
 function _cropBytesLabel(bytes){
   bytes=Number(bytes||0);
@@ -2397,22 +2524,11 @@ function _cropUpdateUi(){
   _cropSetText("crop-meta",meta);
   _cropSetText("crop-export-line","Sortie carrée optimisée automatiquement (WebP/JPEG) pour un stockage plus léger.");
 }
-function _cropGetRecentImages(){
-  try{
-    var raw=localStorage.getItem(_cropRecentsKey)||"[]";
-    var arr=JSON.parse(raw);
-    if(!Array.isArray(arr)) return [];
-    return arr.filter(function(v){return /^data:image\//i.test(String(v||""));}).slice(0,8);
-  }catch(e){ return []; }
-}
+function _cropGetRecentImages(){ return _cropRecentImages.slice(); }
 function _cropStoreRecentImage(dataUrl){
-  if(!/^data:image\//i.test(String(dataUrl||""))) return;
-  try{
-    var arr=_cropGetRecentImages().filter(function(v){return v!==dataUrl;});
-    arr.unshift(dataUrl);
-    arr=arr.slice(0,8);
-    localStorage.setItem(_cropRecentsKey,JSON.stringify(arr));
-  }catch(e){}
+  dataUrl = _normalizeImageDataUrl(dataUrl);
+  if(!/^data:image\//i.test(dataUrl)) return;
+  _cropRecentImages = [dataUrl].concat(_cropRecentImages.filter(function(value){return value!==dataUrl;})).slice(0,8);
   _renderCropRecentImages();
 }
 function _renderCropRecentImages(){
@@ -2424,7 +2540,7 @@ function _renderCropRecentImages(){
     return;
   }
   host.innerHTML=arr.map(function(src,i){
-    return '<button type="button" class="crop-recent-btn" onclick="cropUseRecentImage('+i+')"><img src="'+src+'" alt="Image récente '+(i+1)+'"></button>';
+    return '<button type="button" class="crop-recent-btn" onclick="cropUseRecentImage('+i+')"><img src="'+_imageAttr(src)+'" alt="Image récente '+(i+1)+'"></button>';
   }).join("");
 }
 function cropUseRecentImage(i){
@@ -2436,6 +2552,7 @@ function cropUseRecentImage(i){
   cropLoadImg(arr[i]);
 }
 function cropClearRecentImages(){
+  _cropRecentImages=[];
   try{ localStorage.removeItem(_cropRecentsKey); }catch(e){}
   _renderCropRecentImages();
   notif("Historique d'images locales vidé.","ok");
@@ -2546,7 +2663,7 @@ function renderNewPlayerAvatarDraft(){
   if(!input||!preview) return;
   var val=String(input.value||"").trim();
   if(val){
-    preview.innerHTML='<img src="'+val+'" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\';this.parentNode.innerHTML=\'<div style=&quot;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--faint);background:var(--bg4);&quot;>✦</div>\';">';
+    preview.innerHTML='<img src="'+_imageAttr(val)+'" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\';this.parentNode.innerHTML=\'<div style=&quot;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--faint);background:var(--bg4);&quot;>✦</div>\';">';
     if(meta) meta.textContent=/^data:/i.test(val)?"Image locale optimisée, prête à être stockée en base.":"Image distante liée au personnage.";
   } else {
     preview.innerHTML='<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--faint);background:var(--bg4);">✦</div>';
@@ -2587,7 +2704,7 @@ function cropLoadLocalFile(input){
 }
 
 function cropLoadImg(url){
-  url=String(url||"").trim();
+  url=_normalizeImageDataUrl(url);
   if(!url){cropClear();return;}
   var img=new Image();
   if(!/^data:/i.test(url)) img.crossOrigin="anonymous";
@@ -2674,13 +2791,14 @@ function cropAutoFit(mode){
   _cropScale=sc;
   cropRecenter();
 }
-function cropRemoveStoredImage(){
+async function cropRemoveStoredImage(){
   if(_cropBeastId){
     var beasts=gb();
     var bi=beasts.findIndex(function(x){return x.id===_cropBeastId;});
     if(bi<0){ge("crop-err").textContent="Créature introuvable.";return;}
     beasts[bi].img="";
-    sb(beasts);
+    try{ await sb(beasts); }
+    catch(e){ ge('crop-err').textContent='Image non enregistrée : '+e.message; return; }
     cropClear();
     closeModal("m-avatar-crop");
     renderBGrid("p-bgrd",false);
@@ -2700,9 +2818,8 @@ function cropRemoveStoredImage(){
   var targetPid=_cropTargetPid||(CU&&CU.pid);
   var p=targetPid?gpid(targetPid):null;
   if(!p){ge("crop-err").textContent="Personnage introuvable.";return;}
-  p.avatar="";
-  var ps=gp();var i=ps.findIndex(function(x){return x.id===p.id;});
-  if(i>=0){ps[i]=p;sp(ps);}
+  try{ await _savePlayerPatch(targetPid, {avatar:''}); }
+  catch(e){ ge('crop-err').textContent='Avatar non enregistré : '+e.message; return; }
   cropClear();
   closeModal("m-avatar-crop");
   renderView();
@@ -2744,7 +2861,7 @@ function _cropExportCompressed(){
   return best||"";
 }
 
-function cropApply(){
+async function cropApply(){
   if(!_cropImg){ge("crop-err").textContent="Aucune image chargée.";return;}
   var dataUrl=_cropExportCompressed();
   if(!dataUrl){
@@ -2763,7 +2880,8 @@ function cropApply(){
     var bi=beasts.findIndex(function(x){return x.id===_cropBeastId;});
     if(bi<0){ge("crop-err").textContent="Créature introuvable.";return;}
     beasts[bi].img=dataUrl;
-    sb(beasts);
+    try{ await sb(beasts); }
+    catch(e){ ge('crop-err').textContent='Image non enregistrée : '+e.message; return; }
     _cropBeastId=null;
     if(ge("m-avatar-crop") && ge("m-avatar-crop").querySelector(".mtit")) ge("m-avatar-crop").querySelector(".mtit").textContent="Recadrer l'avatar";
     closeModal("m-avatar-crop");
@@ -2785,9 +2903,8 @@ function cropApply(){
   var targetPid=_cropTargetPid||CU.pid;
   var p=targetPid?gpid(targetPid):null;
   if(!p){ge("crop-err").textContent="Personnage introuvable.";return;}
-  p.avatar=dataUrl;
-  var ps=gp();var i=ps.findIndex(function(x){return x.id===p.id;});
-  if(i>=0){ps[i]=p;sp(ps);}
+  try{ await _savePlayerPatch(targetPid, {avatar:dataUrl}); }
+  catch(e){ ge('crop-err').textContent='Avatar non enregistré : '+e.message; return; }
   closeModal("m-avatar-crop");
   renderView();
   if(CU&&targetPid===CU.pid) renderProfil();
@@ -2924,7 +3041,7 @@ function renderProfil(){
   var hasPerso=!!CU.pid;
   var p2=hasPerso?gpid(CU.pid):null;
   var avInner=p2&&p2.avatar
-    ?'<img src="'+p2.avatar+'" style="width:100%;height:100%;object-fit:cover;">'
+    ?'<img src="'+_imageAttr(p2.avatar)+'" style="width:100%;height:100%;object-fit:cover;">'
     :'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:28px;color:var(--dim);">'+(CU.name[0]||"?").toUpperCase()+'</div>';
   if(!isCollectionTab) h+='<div class="np-account-top'+((hasPerso&&p2)?'':' np-account-top-solo')+'">';
   h+='<div class="np-account-identity">';
@@ -3867,7 +3984,7 @@ function renderAdminThemes(targetId){
       var options = '<option value="">Choisir un joueur…</option>';
       playerAccounts.forEach(function(acc){
         var owns = Array.isArray(acc.unlockedThemes) && acc.unlockedThemes.map(normalizeThemeId).indexOf(normalizeThemeId(t.id))>=0;
-        options += '<option value="'+acc.id+'">'+esc(acc.pseudo)+(owns?' • déjà débloqué':'')+'</option>';
+        options += '<option value="'+escAttr(acc.id)+'">'+esc(acc.pseudo)+(owns?' • déjà débloqué':'')+'</option>';
       });
       h += "<article class='theme-card-premium collection-card np-theme-vault-card db-theme-admin-item"+(isVisibleForPlayers?"":" th-locked")+"' data-theme-admin-card='"+safeThemeId+"' data-theme-id='"+esc(t.id)+"' data-theme-rarity='"+esc(rarity)+"' data-theme-category='"+esc(category)+"' data-theme-state='"+esc(state)+"' style='--card-bg:"+esc(bg1)+";--card-a:"+esc(bg2)+";--card-b:"+esc(bg3)+";'>";
       h += "<div class='theme-topline' data-theme-eyebrow='"+esc(rarity)+"'><span class='theme-card-state' data-theme-admin-visibility-label='"+safeThemeId+"'>"+(isAlways?"Toujours visible":(isVisibleForPlayers?"Visible":"Masqué"))+"</span></div>";
@@ -3906,7 +4023,7 @@ function renderAdminThemes(targetId){
   el.innerHTML = h;
 }
 
-function upsertEventTheme(themeId, patch){
+async function upsertEventTheme(themeId, patch){
   var id = normalizeThemeId(themeId);
   if(!id) return null;
   var themes = sto("event_themes") || [];
@@ -3918,8 +4035,7 @@ function upsertEventTheme(themeId, patch){
   if(next.event !== true) next.event = true;
   if(idx >= 0) themes[idx] = next;
   else themes.push(next);
-  sv("event_themes", themes);
-  return next;
+  return sv("event_themes", themes);
 }
 function isThemeAutoGranted(themeId){
   var t = getThemeById(themeId);
@@ -4085,12 +4201,12 @@ function __bindThemeVisibilityDelegation(){
   });
 }
 try{ __bindThemeVisibilityDelegation(); }catch(e){}
-function toggleThemeAutoGrant(themeId){
+async function toggleThemeAutoGrant(themeId){
   if(!isAdminRole(CU)) return;
   var t = getThemeById(themeId);
   if(!t){ notif("Thème introuvable.","err"); return; }
   var next = !isThemeAutoGranted(themeId);
-  upsertEventTheme(themeId, { autoGrantAll: next });
+  if(!await _confirmDbSave(upsertEventTheme(themeId, {autoGrantAll:next}))) return false;
   notif(next ? "Distribution automatique activée pour « "+t.name+" »." : "Distribution automatique désactivée pour « "+t.name+" ».", next?"ok":"inf");
   renderAdminThemes();
 }
@@ -4172,7 +4288,7 @@ function openEditTheme(id){
   openModal("m-theme");
 }
 
-function saveTheme(){
+async function saveTheme(){
   if(!can("manage_mjs")) return;
   var id      = ge("mth-id").value.trim();
   var name    = ge("mth-name").value.trim();
@@ -4190,7 +4306,7 @@ function saveTheme(){
   var obj = { id:id, name:name, desc:desc, cls:cls, preview:[bg,accent,gold], event:true, availableUntil:untilTs, createdAt:(prev&&prev.createdAt)||Date.now(), autoGrantAll: !!(prev&&prev.autoGrantAll), visible: !!(prev&&prev.visible) };
   if(existing >= 0) themes[existing] = obj;
   else themes.push(obj);
-  sv("event_themes", themes);
+  if(!await _confirmDbSave(sv('event_themes', themes))) return false;
   closeModal("m-theme");
   renderAdminThemes();
   notif("Thème « "+name+" » enregistré.", "ok");
@@ -4296,6 +4412,7 @@ function launchApp(){
   // initStorage() uniquement ici — après auth confirmée (CU est défini)
   if(!window._storageInitDone){ window._storageInitDone=true; _primeGlobalUiLayers();
 initStorage(); }
+  _showLegacyCombatArchiveRecovery();
   try{ _migrateLegacyCombatArchivesForCurrentSession().then(function(migrated){ if(migrated){ try{ notif("Archives du simulateur restaurées.","ok"); }catch(e){} } }).catch(function(){}); }catch(e){}
 
   // Bandeau hors-ligne si DB indisponible
@@ -4306,16 +4423,19 @@ initStorage(); }
       // Tentative de reconnexion silencieuse toutes les 30s
       if(!window._offlineRetryInterval){
         window._offlineRetryInterval=setInterval(function(){
+          var sessionGeneration = _dbSessionGeneration;
           _dbCall({action:"ping"}).then(function(r){
+            _assertDbSessionGeneration(sessionGeneration);
             if(!r || r.ok !== true) return;
             // DB revenue — recharger silencieusement les données
             _dbOffline=false;
             clearInterval(window._offlineRetryInterval);
             window._offlineRetryInterval=null;
             if(banner) banner.style.display="none";
-            notif("Connexion rétablie — données synchronisées.","ok");
+            notif("Connexion rétablie — rechargement des données.","inf");
             _dbCall({action:"get_all"}).then(function(data){
-              if(data&&data.data) _dbCache=data.data;
+              _assertDbSessionGeneration(sessionGeneration);
+              if(data&&data.data && data.ok !== false) _hydrateBundleData(data, sessionGeneration);
             }).catch(function(){});
           }).catch(function(){});
         }, 30000);
@@ -4470,17 +4590,17 @@ function renderPendingTab(){
   html+=pending.map(function(a){
     var date=new Date(a.createdAt).toLocaleDateString("fr-FR")+' — '+new Date(a.createdAt).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
     var opts='<option value="">— Choisir un personnage —</option>';
-    opts+=availablePlayers.map(function(p){ return '<option value="'+p.id+'">'+esc(p.name)+' — '+esc(p.classe)+'</option>'; }).join("");
+    opts+=availablePlayers.map(function(p){ return '<option value="'+escAttr(p.id)+'">'+esc(p.name)+' — '+esc(p.classe)+'</option>'; }).join("");
     return '<div class="card mb16" style="border-color:var(--gold);background:rgba(201,168,76,.03);">'
       +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">'
         +'<div style="width:40px;height:40px;background:var(--bg4);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:16px;color:var(--gold);flex-shrink:0;">'+a.pseudo[0].toUpperCase()+'</div>'
         +'<div><div style="font-family:var(--fd);font-size:14px;letter-spacing:1px;">'+esc(a.pseudo)+'</div>'
         +'<div style="font-size:14px;color:var(--dim);font-style:italic;">Inscrit le '+date+'</div></div>'
         +'<div class="sp"></div>'
-        +'<button class="btn btn-sm btn-red" onclick="deleteAccount(\''+a.id+'\')"><span>Refuser</span></button>'
+        +'<button class="btn btn-sm btn-red" onclick="deleteAccount(\''+jsesc(a.id)+'\')"><span>Refuser</span></button>'
       +'</div>'
-      +'<select id="link-sel-'+a.id+'" style="width:100%;margin-bottom:10px;font-size:14px;padding:10px 13px;">'+opts+'</select>'
-      +'<button class="btn btn-grn" style="width:100%;padding:11px;" onclick="linkAccount(\''+a.id+'\')"><span>Lier ce compte à un personnage</span></button>'
+      +'<select id="link-sel-'+escAttr(a.id)+'" style="width:100%;margin-bottom:10px;font-size:14px;padding:10px 13px;">'+opts+'</select>'
+      +'<button class="btn btn-grn" style="width:100%;padding:11px;" onclick="linkAccount(\''+jsesc(a.id)+'\')"><span>Lier ce compte à un personnage</span></button>'
     +'</div>';
   }).join("");
   el.innerHTML=html;
@@ -4632,10 +4752,8 @@ function _renderOwnedThemesDb(account){
 }
 
 function jsesc(v){
-  return String(v==null ? "" : v)
-    .replace(/\\/g, "\\\\")
-    .replace(/'/g, "\\'")
-    .replace(/"/g, '\\\"');
+  var literal = JSON.stringify(String(v == null ? '' : v)).slice(1,-1).replace(/'/g, "\\'");
+  return escAttr(literal);
 }
 function adminRevokeThemeFromDb(accountId, themeId){
   return adminRevokeThemeFromAccount(accountId, themeId);
@@ -4676,7 +4794,7 @@ function renderDatabase(){
   html+='<div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border2);padding-bottom:0;">';
   tabs.forEach(function(t){
     var active=_tab===t.k;
-    html+='<button onclick="openDatabaseInnerTab(\''+t.k+'\')" style="font-family:var(--fd);font-size:11px;letter-spacing:2px;text-transform:uppercase;padding:10px 18px;border:none;background:transparent;cursor:pointer;color:'+(active?'var(--glacier)':'var(--dim)')+';border-bottom:2px solid '+(active?'var(--glacier)':'transparent')+';transition:all .2s;">'+t.l+'</button>';
+    html+='<button onclick="openDatabaseInnerTab(\''+jsesc(t.k)+'\')" style="font-family:var(--fd);font-size:11px;letter-spacing:2px;text-transform:uppercase;padding:10px 18px;border:none;background:transparent;cursor:pointer;color:'+(active?'var(--glacier)':'var(--dim)')+';border-bottom:2px solid '+(active?'var(--glacier)':'transparent')+';transition:all .2s;">'+t.l+'</button>';
   });
   html+='</div>';
 
@@ -4718,7 +4836,7 @@ function renderDatabase(){
     function thSort(col,label){
       var isActive=_dbSort.col===col;
       var arrow=isActive?(_dbSort.dir>0?" ↑":" ↓"):"";
-      return '<th style="cursor:pointer;user-select:none;'+(isActive?'color:var(--glacier);':'')+'white-space:nowrap;" onclick="window._dbSort={col:\''+col+'\',dir:'+(isActive?'(_dbSort.dir*-1)':'1')+'};renderDatabase()">'+label+arrow+'</th>';
+      return '<th style="cursor:pointer;user-select:none;'+(isActive?'color:var(--glacier);':'')+'white-space:nowrap;" onclick="window._dbSort={col:\''+jsesc(col)+'\',dir:'+(isActive?'(_dbSort.dir*-1)':'1')+'};renderDatabase()">'+label+arrow+'</th>';
     }
 
     html+='<div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">';
@@ -4734,11 +4852,11 @@ function renderDatabase(){
         var p=a.pid?players.find(function(x){return x.id===a.pid;}):null;
         var date=new Date(a.createdAt).toLocaleDateString("fr-FR")+' — '+new Date(a.createdAt).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
         var isLastAdmin=role==="admin"&&accounts.filter(function(x){return x.role==="admin";}).length<=1;
-        var roleSel='<select onchange="dbSetRole(\''+a.id+'\',this.value)" style="font-size:14px;padding:3px 6px;border:1px solid '+col+';color:'+col+';background:var(--bg3);"'+(isLastAdmin?' disabled':'')+' >';
+        var roleSel='<select onchange="dbSetRole(\''+jsesc(a.id)+'\',this.value)" style="font-size:14px;padding:3px 6px;border:1px solid '+col+';color:'+col+';background:var(--bg3);"'+(isLastAdmin?' disabled':'')+' >';
         roles.forEach(function(r){ roleSel+='<option value="'+r+'"'+(role===r?' selected':'')+'>'+roleLabels[r]+'</option>'; });
         roleSel+='</select>';
-        var relink='<select onchange="setAccountPid(\''+a.id+'\',this.value)" style="font-size:14px;padding:3px 6px;max-width:120px;"><option value="">— Aucun —</option>';
-        players.forEach(function(pl){ relink+='<option value="'+pl.id+'"'+(a.pid===pl.id?' selected':'')+'>'+pl.name+'</option>'; });
+        var relink='<select onchange="setAccountPid(\''+jsesc(a.id)+'\',this.value)" style="font-size:14px;padding:3px 6px;max-width:120px;"><option value="">— Aucun —</option>';
+        players.forEach(function(pl){ relink+='<option value="'+escAttr(pl.id)+'"'+(a.pid===pl.id?' selected':'')+'>'+esc(pl.name)+'</option>'; });
         relink+='</select>';
         var ts=a.lastSeen;
         var activite;
@@ -4756,19 +4874,19 @@ function renderDatabase(){
         html+='<tr>'
           +'<td style="font-family:var(--fd);font-size:12px;">'+esc(a.pseudo)+'</td>'
           +'<td>'
-          +(a.pass==="reset"
+          +(a.forcePasswordReset
             ?'<span style="font-family:var(--fd);font-size:9px;letter-spacing:1px;color:var(--gold);padding:2px 6px;border:1px solid rgba(201,160,76,.4);">⚠ RÉINITIALISÉ</span>'
             :'<span style="font-family:var(--fm);color:var(--faint);letter-spacing:2px;">••••••••</span>'
           )
-          +' <button class="btn btn-sm" style="margin-left:4px;border-color:var(--glacier-dim);color:var(--glacier-dim);" onclick="openEditPassSafe(\''+a.id+'\',\''+encodeURIComponent(a.pseudo||'')+'\')" title="Changer le mot de passe"><span>✎</span></button>'
-          +' <button class="btn btn-sm" style="margin-left:2px;border-color:rgba(201,160,76,.5);color:var(--gold);font-size:10px;" onclick="resetAccountPass(\''+a.id+'\')" title="Mot de passe oublié — le joueur pourra se reconnecter avec son pseudo seul et définir un nouveau mot de passe"><span>🔑 Reset</span></button>'
+          +' <button class="btn btn-sm" style="margin-left:4px;border-color:var(--glacier-dim);color:var(--glacier-dim);" onclick="openEditPassSafe(\''+jsesc(a.id)+'\',\''+encodeURIComponent(a.pseudo||'')+'\')" title="Changer le mot de passe"><span>✎</span></button>'
+          +' <button class="btn btn-sm" style="margin-left:2px;border-color:rgba(201,160,76,.5);color:var(--gold);font-size:10px;" onclick="resetAccountPass(\''+jsesc(a.id)+'\')" title="Générer un mot de passe temporaire unique valable une heure"><span>🔑 Reset</span></button>'
           +'</td>'
           +'<td>'+roleSel+'</td>'
-          +'<td>'+relink+(a.pid?'<button class="btn btn-sm" style="margin-left:4px;border-color:var(--faint);color:var(--faint);" onclick="unlinkAccount(\''+a.id+'\')"><span>✕</span></button>':'')+(a.pid?'<button class="btn btn-sm" style="margin-left:4px;border-color:var(--glacier-dim);color:var(--glacier);" onclick="loadPlayer(\''+a.pid+'\');switchTab(\'fiche\',null);" title="Aller à la fiche"><span>→</span></button>':'')+'</td>'
+          +'<td>'+relink+(a.pid?'<button class="btn btn-sm" style="margin-left:4px;border-color:var(--faint);color:var(--faint);" onclick="unlinkAccount(\''+jsesc(a.id)+'\')"><span>✕</span></button>':'')+(a.pid?'<button class="btn btn-sm" style="margin-left:4px;border-color:var(--glacier-dim);color:var(--glacier);" onclick="loadPlayer(\''+jsesc(a.pid)+'\');switchTab(\'fiche\',null);" title="Aller à la fiche"><span>→</span></button>':'')+'</td>'
           +'<td style="max-width:340px;">'+(role==="joueur"?_renderOwnedThemesDb(a):'<span style="color:var(--faint);">—</span>')+'</td>'
           +'<td>'+activite+'</td>'
           +'<td style="color:var(--dim);">'+date+'</td>'
-          +'<td>'+(!isLastAdmin?'<button class="btn btn-sm btn-red" onclick="deleteAccount(\''+a.id+'\')"><span>Suppr.</span></button>':'')+'</td>'
+          +'<td>'+(!isLastAdmin?'<button class="btn btn-sm btn-red" onclick="deleteAccount(\''+jsesc(a.id)+'\')"><span>Suppr.</span></button>':'')+'</td>'
         +'</tr>';
       });
       html+='</tbody></table>';
@@ -5004,7 +5122,7 @@ function _renderLogEntries(entries,canDelete){
     h+='</div>';
     // Bouton supprimer (uniquement log actif + historiques perso)
     if(canDelete&&e.src==="history"&&e.pid!=null){
-      h+='<button onclick="deleteHistoryEntry(\''+e.pid+'\','+e.hidx+')" style="background:none;border:none;color:var(--faint);cursor:pointer;font-size:13px;padding:0 4px;flex-shrink:0;opacity:.4;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.4" title="Supprimer">✕</button>';
+      h+='<button onclick="deleteHistoryEntry(\''+jsesc(e.pid)+'\','+e.hidx+')" style="background:none;border:none;color:var(--faint);cursor:pointer;font-size:13px;padding:0 4px;flex-shrink:0;opacity:.4;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.4" title="Supprimer">✕</button>';
     }
     h+='</div>';
   });
@@ -5023,18 +5141,18 @@ function _renderLogEntries(entries,canDelete){
   return h;
 }
 
-function clearAllHistory(){
+async function clearAllHistory(){
   if(!can("manage_players")){notif("Non autorisé.","err");return;}
   if(!confirm("Vider tout le log de tous les personnages ?")) return;
   var ps=gp();
   var total=ps.reduce(function(acc,p){return acc+(p.history||[]).length;},0);
   ps.forEach(function(p){p.history=[];});
-  sp(ps);
+  if(!await _confirmDbSave(sp(ps))) return false;
   sysLog("history_clear","Historique complet vidé ("+total+" entrées)",CU?CU.name:"Staff");
   notif("Log vidé.","inf");
   renderDatabase();
 }
-function deleteHistoryEntry(pid,idx){
+async function deleteHistoryEntry(pid,idx){
   if(!CU||CU.type!=="staff"){ return; }
   if(!can("manage_players")){notif("Non autorisé.","err");return;}
   var ps=gp();
@@ -5043,7 +5161,7 @@ function deleteHistoryEntry(pid,idx){
   var entry=p.history[idx]||{};
   sysLog("history_delete","Entrée supprimée pour '"+esc(p.name)+"' : "+(entry.text||"?"),CU?CU.name:"Staff");
   p.history.splice(idx,1);
-  sp(ps);
+  if(!await _confirmDbSave(sp(ps))) return false;
   renderDatabase();
 }
 
@@ -5114,6 +5232,10 @@ function startAdminPoll(){
 async function logout(){
   if(window.__logoutBusy) return;
   window.__logoutBusy = true;
+  _dbSessionGeneration++;
+  _dbSetToken(null);
+  if(window._offlineRetryInterval){ clearInterval(window._offlineRetryInterval); window._offlineRetryInterval=null; }
+  _purgePrivateBrowserStorage();
   try{
     try{
       await _authCall({action:"logout"}, { silent:true });
@@ -5123,9 +5245,21 @@ async function logout(){
       document.cookie = "np_session=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; Secure; SameSite=Strict";
     }catch(e){}
     _clearSession();
-    _PRIVATE_KEYS.forEach(function(k){
-      try{ localStorage.removeItem("np_"+k); }catch(e){}
-    });
+    _purgePrivateBrowserStorage();
+    _LEGACY_COMBAT_ARCHIVE_BUFFER = null;
+    _cropRecentImages=[];
+    _spawnLabState=null;
+    _auditLog=[]; _auditLoadedOnce=false;
+    _resetAccountId=null;
+    _dbVersions = Object.create(null);
+    Object.keys(_DB_WRITE_QUEUE).forEach(function(key){ delete _DB_WRITE_QUEUE[key]; });
+    if(_combatAutosaveTimer) clearTimeout(_combatAutosaveTimer);
+    if(_csPollId) clearInterval(_csPollId);
+    _cs = combatBlankState();
+    _csHist = []; _csRedoHist = [];
+    document.querySelectorAll('.moverlay.open').forEach(function(el){ closeModal(el.id); });
+    var recoveryModal = ge('m-password-recovery');
+    if(recoveryModal) recoveryModal.remove();
     try{ localStorage.removeItem(_lastAppTabKey); }catch(e){}
     _dbSetToken(null);
     _dbCache = Object.create(null);
@@ -5196,19 +5330,29 @@ function saveResetPass(){
 
 
 function resetAccountPass(accountId){
-  if(!can("manage_mjs")&&!can("manage_players")){ notif("Permission insuffisante.","err"); return; }
+  if(!can('manage_mjs') && !can('manage_players')){ notif('Permission insuffisante.', 'err'); return; }
   var acc=getAccounts().find(function(a){ return a.id===accountId; });
-  if(!acc){ notif("Compte introuvable.","err"); return; }
-  if(!confirm("Réinitialiser le mot de passe de "+acc.pseudo+" ?\n\nIl pourra se reconnecter avec le mot de passe temporaire « reset » et devra définir un nouveau mot de passe avant d'accéder à l'application.")) return;
-  _authCall({action:"admin_reset_password", accountId:accountId}).then(function(r){
-    if(!r||!r.ok){ notif((r&&r.error)||"Impossible de réinitialiser ce mot de passe.","err"); return; }
-    sysLog("mdp_reset","Mot de passe de '"+acc.pseudo+"' réinitialisé",CU?CU.name:"Staff");
+  if(!acc){ notif('Compte introuvable.', 'err'); return; }
+  if(!confirm('Réinitialiser le mot de passe de '+acc.pseudo+' ? Un mot de passe temporaire unique, valable une heure, sera affiché pour le lui transmettre.')) return;
+  _authCall({action:'admin_reset_password', accountId:accountId}).then(function(r){
+    if(!r || !r.ok || !r.temporaryPassword){ notif((r&&r.error)||'Réinitialisation impossible.', 'err'); return; }
+    sysLog('mdp_reset', 'Mot de passe de '+acc.pseudo+' réinitialisé', CU?CU.name:'Staff');
     renderDatabase();
-    notif("Mot de passe de "+acc.pseudo+" réinitialisé. Mot de passe temporaire : reset","ok");
-  }).catch(function(){ notif("Erreur réseau lors de la réinitialisation.","err"); });
+    var old=ge('m-password-recovery'); if(old) old.remove();
+    var modal=document.createElement('div');
+    modal.id='m-password-recovery'; modal.className='moverlay';
+    modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true');
+    modal.setAttribute('aria-labelledby','password-recovery-title');
+    modal.innerHTML='<div class="modal"><h2 class="mtit" id="password-recovery-title">Mot de passe temporaire</h2><p id="password-recovery-account"></p><p>À transmettre au propriétaire du compte. Il devra choisir un nouveau mot de passe à la connexion.</p><label for="password-recovery-secret">Code temporaire</label><input id="password-recovery-secret" type="text" readonly autocomplete="off" style="width:100%;font-family:monospace"><p id="password-recovery-expiry"></p><button class="btn" type="button" id="password-recovery-close">Fermer et effacer</button></div>';
+    document.body.appendChild(modal);
+    ge('password-recovery-account').textContent=acc.pseudo;
+    ge('password-recovery-secret').value=r.temporaryPassword;
+    ge('password-recovery-expiry').textContent='Expire le '+new Date(r.expiresAt).toLocaleString('fr-FR')+'. Ce code ne sera plus affiché après fermeture.';
+    ge('password-recovery-close').onclick=function(){ closeModal(modal.id); modal.remove(); };
+    openModal(modal.id);
+    ge('password-recovery-secret').focus(); ge('password-recovery-secret').select();
+  }).catch(function(){ notif('Erreur réseau lors de la réinitialisation.', 'err'); });
 }
-
-
 
 function toggleDeleteAccount(){
   if(!CU){ return; }
@@ -5486,8 +5630,10 @@ function renderFicheState(title,msg){
 }
 async function _reloadOwnPlayerIntoCache(activePid){
   if(!_dbToken) return false;
+  var sessionGeneration = _dbSessionGeneration;
   try{
     var resp=await _loadSessionBundle();
+    _assertDbSessionGeneration(sessionGeneration);
     if(resp&&resp.data&&Array.isArray(resp.data.players)) _dbCache.players=resp.data.players;
     return !!gpid(activePid);
   }catch(e){
@@ -5498,14 +5644,18 @@ async function _reloadOwnPlayerIntoCache(activePid){
 
 
 async function _refreshPrivateCaches(){
+  var sessionGeneration = _dbSessionGeneration;
   try{
     var pub = await _loadPublicBundle();
+    _assertDbSessionGeneration(sessionGeneration);
     if(pub && pub.data){
       Object.keys(pub.data).forEach(function(k){ _dbCache[k] = pub.data[k]; });
     }
   }catch(e){}
+  if(sessionGeneration !== _dbSessionGeneration || window.__logoutBusy || !_dbToken) return _dbCache;
   try{
     var sess = await _loadSessionBundle();
+    _assertDbSessionGeneration(sessionGeneration);
     if(sess && sess.data){
       Object.keys(sess.data).forEach(function(k){ _dbCache[k] = sess.data[k]; });
     }
@@ -5535,10 +5685,10 @@ function renderView(){
     updateHdrProfile();
     var av=ge("p-av");
     if(can("manage_stats")){
-      var avContent=p.avatar?'<img src="'+p.avatar+'" class="sav" onerror="this.style.display=\'none\'">':'<div class="savph">'+p.name[0]+'</div>';
-      av.innerHTML='<div onclick="openAvatarCropFor(\''+p.id+'\')" title="Recadrer l\'avatar" style="position:relative;cursor:pointer;display:inline-block;" onmouseover="this.querySelector(\'.av-overlay\').style.opacity=1" onmouseout="this.querySelector(\'.av-overlay\').style.opacity=0">'+avContent+'<div class="av-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;font-size:24px;color:#fff;border-radius:inherit;">✎</div></div>';
+      var avContent=p.avatar?'<img src="'+_imageAttr(p.avatar)+'" class="sav" onerror="this.style.display=\'none\'">':'<div class="savph">'+esc(p.name[0])+'</div>';
+      av.innerHTML='<div onclick="openAvatarCropFor(\''+jsesc(p.id)+'\')" title="Recadrer l\'avatar" style="position:relative;cursor:pointer;display:inline-block;" onmouseover="this.querySelector(\'.av-overlay\').style.opacity=1" onmouseout="this.querySelector(\'.av-overlay\').style.opacity=0">'+avContent+'<div class="av-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;font-size:24px;color:#fff;border-radius:inherit;">✎</div></div>';
     }else{
-      av.innerHTML=p.avatar?'<img src="'+p.avatar+'" class="sav" onerror="this.style.display=\'none\'">':'<div class="savph">'+p.name[0]+'</div>';
+      av.innerHTML=p.avatar?'<img src="'+_imageAttr(p.avatar)+'" class="sav" onerror="this.style.display=\'none\'">':'<div class="savph">'+esc(p.name[0])+'</div>';
     }
     var sermBundle=getPlayerSermentBundle(p);
     if(ge("p-nom")) ge("p-nom").textContent=p.name;
@@ -5564,9 +5714,9 @@ function renderView(){
         adminBtnsEl.style.position="relative";
         adminBtnsEl.style.zIndex="2";
         adminBtnsEl.innerHTML=''
-          +'<button class="btn btn-sm btn-gold" onclick="oES(\''+p.id+'\')" style="white-space:nowrap;"><span>✎ Stats</span></button>'
-          +'<button class="btn btn-sm" onclick="openChangeSerm(\''+p.id+'\')" style="border-color:var(--glacier-dim);color:var(--glacier-dim);white-space:nowrap;"><span>⇄ Serment</span></button>'
-          +'<button class="btn btn-sm" onclick="openChangeBranch(\''+p.id+'\')" style="border-color:var(--purple);color:var(--purple);white-space:nowrap;"><span>⇄ Branche</span></button>';
+          +'<button class="btn btn-sm btn-gold" onclick="oES(\''+jsesc(p.id)+'\')" style="white-space:nowrap;"><span>✎ Stats</span></button>'
+          +'<button class="btn btn-sm" onclick="openChangeSerm(\''+jsesc(p.id)+'\')" style="border-color:var(--glacier-dim);color:var(--glacier-dim);white-space:nowrap;"><span>⇄ Serment</span></button>'
+          +'<button class="btn btn-sm" onclick="openChangeBranch(\''+jsesc(p.id)+'\')" style="border-color:var(--purple);color:var(--purple);white-space:nowrap;"><span>⇄ Branche</span></button>';
       }else adminBtnsEl.style.display="none";
     }
     ge("pv-v").textContent=p.pvCur+" / "+p.pvMax;
@@ -5623,7 +5773,7 @@ function renderJournalFiche(p){
     // Zone éditable
     contentEl.innerHTML='<textarea id="journal-fiche-text" style="width:100%;min-height:180px;background:var(--bg4);border:1px solid var(--border2);color:var(--text);font-family:var(--fb);font-size:14px;line-height:1.8;padding:14px;resize:vertical;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor=\'var(--glacier-dim)\'" onblur="this.style.borderColor=\'var(--border2)\'" placeholder="Notes personnelles, lore, secrets…">'+escHtml(journal)+'</textarea>'
       +'<p style="font-size:11px;color:var(--faint);font-style:italic;margin-top:6px;">'+(isAdmin&&!isOwner?'Vous lisez le journal de '+esc(p.name)+' en tant qu\'Admin.':'Visible uniquement par toi et les administrateurs.')+'</p>';
-    if(btnsEl) btnsEl.innerHTML='<button class="btn btn-sm btn-grn" onclick="saveJournalFiche(\''+p.id+'\')"><span>Sauvegarder</span></button>';
+    if(btnsEl) btnsEl.innerHTML='<button class="btn btn-sm btn-grn" onclick="saveJournalFiche(\''+jsesc(p.id)+'\')"><span>Sauvegarder</span></button>';
   } else {
     // Lecture seule pour MJ
     contentEl.innerHTML=journal
@@ -5634,14 +5784,12 @@ function renderJournalFiche(p){
   }
 }
 
-function saveJournalFiche(pid){
-  var txt=ge("journal-fiche-text"); if(!txt) return;
-  var ps=gp();
-  var idx=ps.findIndex(function(x){return x.id===pid;});
-  if(idx<0) return;
-  ps[idx].journal=txt.value;
-  sp(ps);
-  notif("Journal sauvegardé.","ok");
+async function saveJournalFiche(pid){
+  var txt=ge('journal-fiche-text'); if(!txt) return;
+  try{
+    await _savePlayerPatch(pid, {journal:txt.value});
+    notif('Journal sauvegardé.', 'ok');
+  }catch(e){ notif('Journal non enregistré : '+e.message, 'err'); }
 }
 
 function renderCombatHistFiche(p){
@@ -5671,11 +5819,11 @@ function renderCombatHistFiche(p){
     var nomCombat=entry.text.split("—")[0].replace("⚔","").trim();
     h+='<div style="background:var(--bg3);border:1px solid var(--border);padding:12px 14px;">';
     h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">';
-    h+='<div style="font-family:var(--fd);font-size:12px;letter-spacing:1px;color:var(--text);">⚔ '+nomCombat+'</div>';
+    h+='<div style="font-family:var(--fd);font-size:12px;letter-spacing:1px;color:var(--text);">⚔ '+esc(nomCombat)+'</div>';
     h+='<div style="display:flex;gap:8px;align-items:center;">';
     h+='<span style="font-family:var(--fm);font-size:10px;color:var(--faint);">'+rounds+' round'+(rounds>1?'s':'')+'</span>';
     h+='<span style="font-size:10px;color:var(--faint);">'+fdt(entry.ts)+'</span>';
-    if(entry.by) h+='<span style="font-size:10px;color:var(--glacier-dim);">'+entry.by+'</span>';
+    if(entry.by) h+='<span style="font-size:10px;color:var(--glacier-dim);">'+esc(entry.by)+'</span>';
     h+='</div></div>';
     if(pvMax){
       h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
@@ -5734,7 +5882,7 @@ function renderInv(p){
     }).join("");
   }
   var sel=ge("p-csel");sel.innerHTML='<option value="">— Choisir —</option>';
-  inv.filter(function(i){return i.qty>0;}).forEach(function(i){sel.innerHTML+='<option value="'+i.id+'">'+i.name+' (×'+i.qty+')</option>';});
+  inv.filter(function(i){return i.qty>0;}).forEach(function(i){sel.innerHTML+='<option value="'+escAttr(i.id)+'">'+i.name+' (×'+i.qty+')</option>';});
   var canDelHist=can("manage_players");
   var allHist=[...(p.history||[])].reverse();
   // Construire les filtres disponibles selon les types présents
@@ -5760,7 +5908,7 @@ function renderInv(p){
     filterEl.innerHTML=presentTypes.map(function(t){
       var td=HIST_TYPES[t];
       var isActive=activeFilter===t;
-      return '<button onclick="setHistFilter(\''+p.id+'\',\''+t+'\')" style="font-family:var(--fd);font-size:8px;letter-spacing:1px;padding:3px 8px;background:'+(isActive?'rgba(126,184,212,.15)':'var(--bg3)')+';border:1px solid '+(isActive?'var(--glacier)':'var(--border2)')+';color:'+(isActive?'var(--glacier)':'var(--faint)')+';cursor:pointer;transition:all .15s;">'+(td.icon?td.icon+' ':'')+td.label+'</button>';
+      return '<button onclick="setHistFilter(\''+jsesc(p.id)+'\',\''+jsesc(t)+'\')" style="font-family:var(--fd);font-size:8px;letter-spacing:1px;padding:3px 8px;background:'+(isActive?'rgba(126,184,212,.15)':'var(--bg3)')+';border:1px solid '+(isActive?'var(--glacier)':'var(--border2)')+';color:'+(isActive?'var(--glacier)':'var(--faint)')+';cursor:pointer;transition:all .15s;">'+(td.icon?td.icon+' ':'')+td.label+'</button>';
     }).join("");
     var filterType=activeFilter==="all"?null:activeFilter;
     var hist=filterType?allHist.filter(function(h){return (h.type||"add")===filterType;}):allHist;
@@ -5773,7 +5921,7 @@ function renderInv(p){
         +'<span class="hdate">'+fdt(h.ts)+'</span>'
         +(typeInfo.icon?'<span style="font-size:9px;color:'+typeCol+';margin:0 4px;">'+typeInfo.icon+'</span>':'')
         +'<span class="htxt">'+h.text+'<br><span class="hby">'+h.by+'</span></span>'
-        +(canDelHist?'<button onclick="delHistEntry(\''+p.id+'\','+realIdx+')" title="Supprimer" style="position:absolute;top:50%;right:6px;transform:translateY(-50%);background:none;border:none;color:var(--faint);cursor:pointer;font-size:16px;padding:2px 4px;transition:color .15s;" onmouseover="this.style.color=\'var(--red)\'" onmouseout="this.style.color=\'var(--faint)\'">✕</button>':'')
+        +(canDelHist?'<button onclick="delHistEntry(\''+jsesc(p.id)+'\','+realIdx+')" title="Supprimer" style="position:absolute;top:50%;right:6px;transform:translateY(-50%);background:none;border:none;color:var(--faint);cursor:pointer;font-size:16px;padding:2px 4px;transition:color .15s;" onmouseover="this.style.color=\'var(--red)\'" onmouseout="this.style.color=\'var(--faint)\'">✕</button>':'')
       +'</div>';
     }).join(""):'<p style="color:var(--faint);font-style:italic;font-size:13px;">Aucune entrée pour ce filtre.</p>';
   } else {
@@ -5783,7 +5931,7 @@ function renderInv(p){
       return'<div class="hent '+(h.type||"add")+'" style="position:relative;'+(canDelHist?'padding-right:28px;':'')+'">'
         +'<span class="hdate">'+fdt(h.ts)+'</span>'
         +'<span class="htxt">'+h.text+'<br><span class="hby">'+h.by+'</span></span>'
-        +(canDelHist?'<button onclick="delHistEntry(\''+p.id+'\','+realIdx+')" title="Supprimer" style="position:absolute;top:50%;right:6px;transform:translateY(-50%);background:none;border:none;color:var(--faint);cursor:pointer;font-size:16px;padding:2px 4px;transition:color .15s;" onmouseover="this.style.color=\'var(--red)\'" onmouseout="this.style.color=\'var(--faint)\'">✕</button>':'')
+        +(canDelHist?'<button onclick="delHistEntry(\''+jsesc(p.id)+'\','+realIdx+')" title="Supprimer" style="position:absolute;top:50%;right:6px;transform:translateY(-50%);background:none;border:none;color:var(--faint);cursor:pointer;font-size:16px;padding:2px 4px;transition:color .15s;" onmouseover="this.style.color=\'var(--red)\'" onmouseout="this.style.color=\'var(--faint)\'">✕</button>':'')
       +'</div>';
     }).join(""):'<p style="color:var(--faint);font-style:italic;font-size:13px;">Aucun historique.</p>';
   }
@@ -5796,25 +5944,25 @@ function setHistFilter(pid,type){
   renderInv(p);
 }
 
-function delHistEntry(pid,idx){
+async function delHistEntry(pid,idx){
   if(!can("manage_players")){notif("Non autorisé.","err");return;}
   if(!confirm("Supprimer cette entrée de l'historique ?")) return;
   var ps=gp();
   var p=ps.find(function(x){return x.id===pid;});
   if(!p||!p.history) return;
   p.history.splice(idx,1);
-  sp(ps);
+  if(!await _confirmDbSave(sp(ps))) return false;
   renderInv(p);
 }
 
-function playerConsume(){
+async function playerConsume(){
   var p=gpid(CU.pid);var id=ge("p-csel").value;var note=ge("p-cnote").value.trim();
   if(!id){ge("p-cerr").textContent="Choisis un item.";return;}
   var item=(p.inventory||[]).find(function(i){return i.id===id;});
   if(!item||item.qty<=0){ge("p-cerr").textContent="Item indisponible.";return;}
   item.qty--;p.history=p.history||[];
   p.history.push({ts:Date.now(),type:"item",text:"Consommé : "+esc(item.name)+(note?" — "+note:""),by:p.name+" (joueur)"});
-  up(p);ge("p-cerr").textContent="";ge("p-cnote").value="";renderInv(p);notif(item.name+" consommé.","ok");
+  if(!await _confirmDbSave(up(p))) return false;ge("p-cerr").textContent="";ge("p-cnote").value="";renderInv(p);notif(item.name+" consommé.","ok");
 }
 
 var WEAPON_ICONS={
@@ -6116,10 +6264,10 @@ function renderSermentsAdminPage(tid){
     html+='<div class="serm-admin-row-body">';
     html+='<div class="serm-admin-lore">'+esc(getSermLorePreview(s.lore||"Aucun lore."))+'</div>';
     html+='<div class="serm-admin-row-actions">';
-    html+='<button class="btn btn-sm btn-gold" onclick="openEditSerm(\''+enc+'\')"><span>Modifier serment</span></button>';
-    html+='<button class="btn btn-sm btn-grn" onclick="openAddBranch(\''+enc+'\')"><span>+ Branche</span></button>';
-    html+='<button class="btn btn-sm '+(s.hidden?'btn-grn':'btn-red')+'" onclick="toggleSermVisibility(\''+enc+'\')"><span>'+(s.hidden?'Rendre visible':'Masquer')+'</span></button>';
-    if(!SD[nom]) html+='<button class="btn btn-sm btn-red" onclick="delSerm(\''+enc+'\')"><span>Supprimer</span></button>';
+    html+='<button class="btn btn-sm btn-gold" onclick="openEditSerm(\''+jsesc(enc)+'\')"><span>Modifier serment</span></button>';
+    html+='<button class="btn btn-sm btn-grn" onclick="openAddBranch(\''+jsesc(enc)+'\')"><span>+ Branche</span></button>';
+    html+='<button class="btn btn-sm '+(s.hidden?'btn-grn':'btn-red')+'" onclick="toggleSermVisibility(\''+jsesc(enc)+'\')"><span>'+(s.hidden?'Rendre visible':'Masquer')+'</span></button>';
+    if(!SD[nom]) html+='<button class="btn btn-sm btn-red" onclick="delSerm(\''+jsesc(enc)+'\')"><span>Supprimer</span></button>';
     html+='</div>';
     if(branches.length){
       html+='<div class="serm-admin-branches">';
@@ -6129,9 +6277,9 @@ function renderSermentsAdminPage(tid){
         html+='<div class="serm-admin-branch-head"><div><strong>'+esc(br.nom||"Branche")+'</strong><span>'+esc(br.style||"Style non défini")+'</span></div><b>'+pals.length+' palier'+(pals.length>1?'s':'')+'</b></div>';
         if(br.desc) html+='<p>'+esc(getSermLorePreview(br.desc))+'</p>';
         html+='<div class="serm-admin-row-actions">';
-        html+='<button class="btn btn-sm" onclick="openEditBranch(\''+enc+'\','+idx+')"><span>Modifier</span></button>';
-        html+='<button class="btn btn-sm" onclick="openManagePaliers(\''+enc+'\','+idx+')"><span>Paliers</span></button>';
-        html+='<button class="btn btn-sm btn-red" onclick="delBranch(\''+enc+'\','+idx+')"><span>Supprimer</span></button>';
+        html+='<button class="btn btn-sm" onclick="openEditBranch(\''+jsesc(enc)+'\','+idx+')"><span>Modifier</span></button>';
+        html+='<button class="btn btn-sm" onclick="openManagePaliers(\''+jsesc(enc)+'\','+idx+')"><span>Paliers</span></button>';
+        html+='<button class="btn btn-sm btn-red" onclick="delBranch(\''+jsesc(enc)+'\','+idx+')"><span>Supprimer</span></button>';
         html+='</div>';
         html+='</article>';
       });
@@ -6236,7 +6384,7 @@ function renderSermentsAdminPage(tid){
   applySermentsAdminFilters();
 }
 
-function toggleSermVisibility(nomEnc){
+async function toggleSermVisibility(nomEnc){
   if(!CU||!isAdminRole(CU)){ notif("Admin uniquement.","err"); return; }
   var nom=decodeURIComponent(nomEnc||"");
   var all=getAllSD();
@@ -6251,7 +6399,7 @@ function toggleSermVisibility(nomEnc){
   if(!merged.icon) merged.icon=(s&&s.icon)||WEAPON_ICONS[nom]||"✦";
   if(!merged.cat) merged.cat=(s&&s.cat)||SERM_CATS[nom]||"melee";
   custom[nom]=merged;
-  ssd(custom);
+  if(!await _confirmDbSave(ssd(custom))) return false;
   WEAPON_ICONS[nom]=merged.icon;
   SERM_CATS[nom]=merged.cat;
   sysLog("serment_visibilite","Serment '"+esc(nom)+"' "+(nextHidden?"masqué":"rendu visible"),CU?CU.name:"Staff");
@@ -6454,7 +6602,7 @@ function openEditSerm(nomEnc){
   ge("mserm-hidden").checked=!!s.hidden;
   openModal("m-serm");
 }
-function saveSerm(){
+async function saveSerm(){
   if(!CU||!can("manage_beasts")){ return; }
   var nom=_editSermNom||ge("mserm-nom").value.trim();
   if(!nom){notif("Nom obligatoire.","err");return;}
@@ -6478,7 +6626,7 @@ function saveSerm(){
     branches:existingBranches
   };
   WEAPON_ICONS[nom]=icon; SERM_CATS[nom]=custom[nom].cat;
-  ssd(custom);
+  if(!await _confirmDbSave(ssd(custom))) return false;
   // Propagation dynamique — recalculer les stats de tous les joueurs avec ce Serment
   if(_editSermNom){
     var updated=0;
@@ -6500,7 +6648,7 @@ function saveSerm(){
       }
     });
     if(updated>0){
-      sp(players);
+      if(!await _confirmDbSave(sp(players))) return false;
       if(CU&&CU.pid){var cur=gpid(CU.pid);if(cur&&cur.classe===nom)renderView();}
       notif(nom+" modifié — "+updated+" fiche(s) synchronisée(s).","ok");
     } else {
@@ -6512,11 +6660,11 @@ function saveSerm(){
   closeModal("m-serm");
   _refreshSermentViews();
 }
-function delSerm(nomEnc){
+async function delSerm(nomEnc){
   if(!CU||!can("manage_beasts")){ return; }
   var nom=decodeURIComponent(nomEnc);
   if(!confirm("Supprimer le Serment '"+nom+"' ?")) return;
-  var custom=gsd(); delete custom[nom]; ssd(custom);
+  var custom=gsd(); delete custom[nom]; if(!await _confirmDbSave(ssd(custom))) return false;
   _refreshSermentViews(); notif("Serment supprimé.","inf");
 }
 
@@ -6539,7 +6687,7 @@ function openEditBranch(nomEnc,idx){
   ge("mbr-nom").value=br.nom||""; ge("mbr-style").value=br.style||""; ge("mbr-desc").value=br.desc||"";
   openModal("m-branch");
 }
-function saveBranch(){
+async function saveBranch(){
   if(!CU||!can("manage_beasts")){ return; }
   var nom2=ge("mbr-nom").value.trim(); var style=ge("mbr-style").value.trim();
   if(!nom2){notif("Nom obligatoire.","err");return;}
@@ -6550,7 +6698,7 @@ function saveBranch(){
   if(_branchIdx>=0) branches[_branchIdx]=br; else branches.push(br);
   if(!custom[_branchSermNom]) custom[_branchSermNom]=Object.assign({},s,{branches:branches});
   else custom[_branchSermNom].branches=branches;
-  ssd(custom);
+  if(!await _confirmDbSave(ssd(custom))) return false;
   if(oldBranch&&oldBranch.nom!==br.nom){
     var players=gp();
     var touched=0;
@@ -6562,13 +6710,13 @@ function saveBranch(){
         touched++;
       }
     });
-    if(touched) sp(players);
+    if(touched) if(!await _confirmDbSave(sp(players))) return false;
   }
   closeModal("m-branch");
   if(CU&&CU.pid) renderView();
   _refreshSermentViews(); notif("Branche sauvegardée.","ok");
 }
-function delBranch(nomEnc,idx){
+async function delBranch(nomEnc,idx){
   if(!CU||!can("manage_beasts")){ return; }
   if(!confirm("Supprimer cette branche ?")) return;
   var nom=decodeURIComponent(nomEnc); var custom=gsd(); var all=getAllSD(); var s=all[nom];
@@ -6576,7 +6724,7 @@ function delBranch(nomEnc,idx){
   var removed=branches[idx]?Object.assign({},branches[idx]):null;
   branches.splice(idx,1);
   if(!custom[nom]) custom[nom]=Object.assign({},s,{branches:branches}); else custom[nom].branches=branches;
-  ssd(custom);
+  if(!await _confirmDbSave(ssd(custom))) return false;
   if(removed){
     var players=gp();
     var touched=0;
@@ -6588,7 +6736,7 @@ function delBranch(nomEnc,idx){
         touched++;
       }
     });
-    if(touched) sp(players);
+    if(touched) if(!await _confirmDbSave(sp(players))) return false;
   }
   if(CU&&CU.pid) renderView();
   _refreshSermentViews(); notif("Branche supprimée.","inf");
@@ -6642,7 +6790,7 @@ function openAddPalier(nomEnc,brIdx){
   ge("mpal-niv").value="2"; ge("mpal-nom").value=""; ge("mpal-cout").value=""; ge("mpal-desc").value="";
   openModal("m-palier");
 }
-function savePalier(){
+async function savePalier(){
   if(!CU||!can("manage_beasts")){ return; }
   var niv=parseInt(ge("mpal-niv").value)||2;
   var nom2=ge("mpal-nom").value.trim(); var cout=ge("mpal-cout").value.trim(); var desc=ge("mpal-desc").value.trim();
@@ -6659,7 +6807,7 @@ function savePalier(){
   }
   br.paliers.sort(function(a,b){return a.niv-b.niv;});
   if(!custom[_palierSermNom]) custom[_palierSermNom]=Object.assign({},s,{branches:branches}); else custom[_palierSermNom].branches=branches;
-  ssd(custom); closeModal("m-palier");
+  if(!await _confirmDbSave(ssd(custom))) return false; closeModal("m-palier");
   _refreshSermentViews(); notif(_palierIdx>=0?"Palier modifié.":"Palier ajouté.","ok");
 }
 
@@ -6680,7 +6828,7 @@ function openEditPalier(nomEnc,brIdx,palIdx){
   openModal("m-palier");
 }
 
-function delPalier(nomEnc,brIdx,palIdx){
+async function delPalier(nomEnc,brIdx,palIdx){
   if(!CU||!can("manage_beasts")){ return; }
   if(!confirm("Supprimer ce palier ?")) return;
   var nom=decodeURIComponent(nomEnc);
@@ -6689,7 +6837,7 @@ function delPalier(nomEnc,brIdx,palIdx){
   var br=branches[brIdx]; if(!br) return;
   br.paliers.splice(palIdx,1);
   if(!custom[nom]) custom[nom]=Object.assign({},s,{branches:branches}); else custom[nom].branches=branches;
-  ssd(custom); _refreshSermentViews(); notif("Palier supprimé.","inf");
+  if(!await _confirmDbSave(ssd(custom))) return false; _refreshSermentViews(); notif("Palier supprimé.","inf");
 }
 
 var _changeSermPid=null;
@@ -6749,7 +6897,7 @@ function openChangeBranch(pid){
   }).join("");
   openModal("m-changebranch");
 }
-function saveChangeBranch(){
+async function saveChangeBranch(){
   if(!CU||CU.type!=="staff"){ return; }
   var p=gpid(_changeBranchPid); if(!p) return;
   var sel=document.querySelector('input[name="branch-sel"]:checked');
@@ -6759,7 +6907,7 @@ function saveChangeBranch(){
   p.history=p.history||[];
   p.history.push({ts:Date.now(),type:"serment",text:"Branche : "+old+" → "+p.branch,by:"Admin "+CU.name});
   sysLog("branche_change","'"+esc(p.name)+"' : Branche "+old+" → "+p.branch,CU?CU.name:"Staff");
-  up(p); closeModal("m-changebranch");
+  if(!await _confirmDbSave(up(p))) return false; closeModal("m-changebranch");
   if(CU.pid===_changeBranchPid||_viewPid===_changeBranchPid) renderView();
   notif(p.name+" : Branche changée en "+esc(p.branch)+".","ok");
 }
@@ -6778,7 +6926,7 @@ function openChangeSerm(pid){
   });
   openModal("m-changeserm");
 }
-function saveChangeSerm(){
+async function saveChangeSerm(){
   if(!CU||CU.type!=="staff"){ return; }
   var p=gpid(_changeSermPid); if(!p) return;
   var sel=ge("mcs-sel").value; if(!sel){notif("Choisis un Serment.","err");return;}
@@ -6788,7 +6936,7 @@ function saveChangeSerm(){
   p.history=p.history||[];
   p.history.push({ts:Date.now(),type:"serment",text:"Serment : "+old+" -> "+sel,by:"Admin "+CU.name});
   sysLog("serment_change","'"+esc(p.name)+"' : Serment "+old+" → "+sel,CU?CU.name:"Staff");
-  up(p); closeModal("m-changeserm");
+  if(!await _confirmDbSave(up(p))) return false; closeModal("m-changeserm");
   if(CU.pid===_changeSermPid) renderView();
   renderSPList(); notif(p.name+" : Serment changé en "+sel+".","ok");
 }
@@ -6831,9 +6979,9 @@ function renderSerm(p){
     if(isChosen){
       var adminBtns='';
       if(can("manage_stats")){
-        adminBtns+='<button class="btn btn-sm btn-gold" onclick="oES(\''+p.id+'\')" style="font-size:10px;padding:2px 10px;"><span>✎ Stats</span></button>';
-        adminBtns+='<button class="btn btn-sm" onclick="openChangeSerm(\''+p.id+'\')" style="font-size:10px;padding:2px 10px;border-color:var(--glacier-dim);color:var(--glacier-dim);"><span>⇄ Serment</span></button>';
-        adminBtns+='<button class="btn btn-sm" onclick="openChangeBranch(\''+p.id+'\')" style="font-size:10px;padding:2px 10px;border-color:var(--purple);color:var(--purple);"><span>⇄ Branche</span></button>';
+        adminBtns+='<button class="btn btn-sm btn-gold" onclick="oES(\''+jsesc(p.id)+'\')" style="font-size:10px;padding:2px 10px;"><span>✎ Stats</span></button>';
+        adminBtns+='<button class="btn btn-sm" onclick="openChangeSerm(\''+jsesc(p.id)+'\')" style="font-size:10px;padding:2px 10px;border-color:var(--glacier-dim);color:var(--glacier-dim);"><span>⇄ Serment</span></button>';
+        adminBtns+='<button class="btn btn-sm" onclick="openChangeBranch(\''+jsesc(p.id)+'\')" style="font-size:10px;padding:2px 10px;border-color:var(--purple);color:var(--purple);"><span>⇄ Branche</span></button>';
       }
       html+='<div style="position:absolute;top:-1px;right:8px;display:flex;align-items:center;gap:6px;">';
       if(adminBtns) html+=adminBtns;
@@ -7302,7 +7450,7 @@ function beastZoneOpenEditMob(id){
   closeModal("m-beast-zones");
   openEditBeast(id);
 }
-function beastZoneRemoveMob(id, zone){
+async function beastZoneRemoveMob(id, zone){
   if(!can("manage_beasts")){ notif("Permission insuffisante.","err"); return; }
   zone=String(zone||_beastZoneCurrentName()||'').trim();
   if(!zone) return;
@@ -7311,7 +7459,7 @@ function beastZoneRemoveMob(id, zone){
   if(!b) return;
   b.zones=(Array.isArray(b.zones)?b.zones:[]).filter(function(z){ return z!==zone; });
   b.updatedAt=Date.now();
-  sb(beasts);
+  if(!await _confirmDbSave(sb(beasts))) return false;
   renderBeastZoneManager(zone);
   renderBGrid("p-bgrd",false);
   notif((b.nom||"Mob")+" retiré de la zone.","ok");
@@ -7486,12 +7634,12 @@ function renderBeastZoneManager(zone){
   h+='</div>';
   modal.innerHTML=h;
 }
-function saveBeastZoneAssignments(){
+async function saveBeastZoneAssignments(){
   if(!can("manage_beasts")){ notif("Permission insuffisante.","err"); return; }
   var name=String((ge("bz-name")&&ge("bz-name").value)||'').trim();
   var previous=String((ge("bz-select")&&ge("bz-select").value)||'').trim();
   if(!name){ if(ge("bz-err")) ge("bz-err").textContent="Nom de zone requis."; return; }
-  _spawnLabSaveCustomZone(name);
+  if(!await _confirmDbSave(_spawnLabSaveCustomZone(name))) return false;
   var checked=Object.create(null);
   document.querySelectorAll("#m-beast-zones .bz-beast").forEach(function(node){ if(node.checked) checked[String(node.value||'')]=1; });
   var beasts=gb();
@@ -7502,12 +7650,12 @@ function saveBeastZoneAssignments(){
     b.zones=zones;
     b.updatedAt=Date.now();
   });
-  sb(beasts);
+  if(!await _confirmDbSave(sb(beasts))) return false;
   renderBeastZoneManager(name);
   renderBGrid("p-bgrd",false);
   notif("Zone enregistrée.","ok");
 }
-function deleteBeastZone(zone){
+async function deleteBeastZone(zone){
   if(!can("manage_beasts")){ notif("Permission insuffisante.","err"); return; }
   zone=String(zone||'').trim();
   if(!zone) return;
@@ -7517,15 +7665,15 @@ function deleteBeastZone(zone){
     b.zones=(Array.isArray(b.zones)?b.zones:[]).filter(function(z){ return z!==zone; });
     b.updatedAt=Date.now();
   });
-  _spawnLabRemoveCustomZone(zone);
-  sb(beasts);
+  if(!await _confirmDbSave(_spawnLabRemoveCustomZone(zone))) return false;
+  if(!await _confirmDbSave(sb(beasts))) return false;
   renderBeastZoneManager(_beastZoneNames()[0]||'');
   renderBGrid("p-bgrd",false);
   notif("Zone supprimée.","ok");
 }
 
 function _findBeastById(id){ return gb().find(function(x){ return String(x&&x.id||'')===String(id||''); }); }
-function duplicateBeast(id){
+async function duplicateBeast(id){
   if(!can("manage_beasts")){ notif("Permission insuffisante.","err"); return; }
   var src=_findBeastById(id); if(!src) return;
   var copy=JSON.parse(JSON.stringify(src));
@@ -7534,31 +7682,31 @@ function duplicateBeast(id){
   copy.createdAt=Date.now();
   copy.updatedAt=Date.now();
   copy.archived=false;
-  var beasts=gb(); beasts.unshift(copy); sb(beasts);
+  var beasts=gb(); beasts.unshift(copy); if(!await _confirmDbSave(sb(beasts))) return false;
   notif(copy.nom+' créée.','ok');
   renderBGrid("p-bgrd",false);
 }
-function setBeastArchived(id, archived){
+async function setBeastArchived(id, archived){
   if(!can("manage_beasts")){ notif("Permission insuffisante.","err"); return; }
   var beasts=gb();
   var b=beasts.find(function(x){return String(x&&x.id||'')===String(id||'');});
   if(!b) return;
   b.archived=!!archived;
   b.updatedAt=Date.now();
-  sb(beasts);
+  if(!await _confirmDbSave(sb(beasts))) return false;
   notif((b.nom||'Créature')+(b.archived?' archivée.':' restaurée.'),'ok');
   renderBGrid("p-bgrd",false);
 }
 function archiveBeast(id){
   var b=_findBeastById(id); if(!b) return;
   if(!confirm("Archiver cette créature ?")) return;
-  setBeastArchived(id, true);
+  return setBeastArchived(id, true);
 }
-function restoreBeast(id){ setBeastArchived(id, false); }
-function hardDeleteBeast(id){
+function restoreBeast(id){ return setBeastArchived(id, false); }
+async function hardDeleteBeast(id){
   if(!can("delete_beast")){notif("Permission insuffisante.","err");return;}
   if(!confirm("Supprimer définitivement cette créature ? Cette action est irréversible.")) return;
-  sb(gb().filter(function(x){ return String(x&&x.id||'')!==String(id||''); }));
+  if(!await _confirmDbSave(sb(gb().filter(function(x){ return String(x&&x.id||'')!==String(id||''); })))) return false;
   renderBGrid("p-bgrd",false);
   notif("Créature supprimée définitivement.","inf");
 }
@@ -7580,7 +7728,7 @@ function importBeastJson(){
   input.onchange=function(){
     var file=input.files && input.files[0]; if(!file) return;
     var rd=new FileReader();
-    rd.onload=function(){
+    rd.onload=async function(){
       try{
         var parsed=JSON.parse(String(rd.result||''));
         var arr=Array.isArray(parsed)?parsed:[parsed];
@@ -7592,7 +7740,7 @@ function importBeastJson(){
           norm.updatedAt=Date.now();
           beasts.unshift(norm);
         });
-        sb(beasts);
+        if(!await _confirmDbSave(sb(beasts))) return;
         renderBGrid('p-bgrd',false);
         notif(arr.length+' créature(s) importée(s).','ok');
       }catch(e){ notif('JSON invalide.','err'); }
@@ -7627,7 +7775,7 @@ function previewBeastAdmin(id){
   body.innerHTML=''
     +'<div style="display:grid;grid-template-columns:minmax(220px,280px) 1fr;gap:18px;align-items:start;">'
       +'<div style="display:flex;flex-direction:column;gap:12px;">'
-        +(b.img?'<img src="'+esc(b.img)+'" style="width:100%;aspect-ratio:1/1;object-fit:cover;border:1px solid var(--border2);background:var(--bg3);">':'<div style="width:100%;aspect-ratio:1/1;border:1px solid var(--border2);background:var(--bg3);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:42px;color:var(--faint);">'+esc((b.nom||'C').charAt(0).toUpperCase())+'</div>')
+        +(b.img?'<img src="'+_imageAttr(b.img)+'" style="width:100%;aspect-ratio:1/1;object-fit:cover;border:1px solid var(--border2);background:var(--bg3);">':'<div style="width:100%;aspect-ratio:1/1;border:1px solid var(--border2);background:var(--bg3);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:42px;color:var(--faint);">'+esc((b.nom||'C').charAt(0).toUpperCase())+'</div>')
         +'<div style="display:flex;gap:8px;flex-wrap:wrap;">'
           +'<button class="btn btn-sm" onclick="openEditBeast(\''+jsesc(b.id)+'\')"><span>Éditer</span></button>'
           +'<button class="btn btn-sm" onclick="duplicateBeast(\''+jsesc(b.id)+'\')"><span>Dupliquer</span></button>'
@@ -7666,13 +7814,13 @@ function beastSendToCombat(id, qty){
   }, 80);
 }
 
-function toggleBeastHidden(id){
+async function toggleBeastHidden(id){
   if(!can("manage_beasts")){ notif("Permission insuffisante.","err"); return; }
   var beasts=gb();
   var b=beasts.find(function(x){return x.id===id;});
   if(!b) return;
   b.hidden=!b.hidden;
-  sb(beasts);
+  if(!await _confirmDbSave(sb(beasts))) return false;
   notif(b.nom+(b.hidden?" masqué aux joueurs.":" publié."),"ok");
   renderBGrid("p-bgrd",false);
 }
@@ -7766,11 +7914,11 @@ function bCard(b,staff){
     +'</div>';
   var imgH;
   if(canEdit){
-    imgH='<div class="bimg-wrap" onclick="openBeastImgCrop(\''+b.id+'\')" title="Importer / recadrer une image">'
-      +(_imgSrc?'<img src="'+esc(_imgSrc)+'" class="bimg" onerror="this.style.display=\'none\'">':placeholder)
+    imgH='<div class="bimg-wrap" onclick="openBeastImgCrop(\''+jsesc(b.id)+'\')" title="Importer / recadrer une image">'
+      +(_imgSrc?'<img src="'+_imageAttr(_imgSrc)+'" class="bimg" onerror="this.style.display=\'none\'">':placeholder)
       +'<div class="bimg-edit-ov">✎</div></div>';
   } else {
-    imgH=_imgSrc?'<img src="'+esc(_imgSrc)+'" class="bimg" onerror="this.remove();">':placeholder;
+    imgH=_imgSrc?'<img src="'+_imageAttr(_imgSrc)+'" class="bimg" onerror="this.remove();">':placeholder;
   }
   var badges='';
   if(isHidden&&canToggle) badges+='<span style="font-family:var(--fd);font-size:8px;letter-spacing:1.5px;padding:3px 8px;border:1px solid rgba(201,160,76,.45);color:var(--gold);background:rgba(201,160,76,.10);">Masquée</span>';
@@ -8612,7 +8760,7 @@ function renderPendingAccounts(){
   list.innerHTML=pending.map(function(a){
     var opts='<option value="">— Choisir un personnage —</option>';
     opts+=availablePlayers.map(function(p){
-      return '<option value="'+p.id+'">'+esc(p.name)+' — '+esc(p.classe)+'</option>';
+      return '<option value="'+escAttr(p.id)+'">'+esc(p.name)+' — '+esc(p.classe)+'</option>';
     }).join("");
     var date=new Date(a.createdAt).toLocaleDateString("fr-FR")+' — '+new Date(a.createdAt).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
     return '<div style="padding:14px 0;border-bottom:1px solid var(--border);">'
@@ -8620,10 +8768,10 @@ function renderPendingAccounts(){
         +'<div style="font-family:var(--fd);font-size:13px;letter-spacing:1px;flex:1;">'+esc(a.pseudo)+'</div>'
         +'<div style="font-size:14px;color:var(--dim);font-style:italic;">'+date+'</div>'
       +'</div>'
-      +'<select id="link-sel-'+a.id+'" style="width:100%;margin-bottom:10px;font-size:14px;padding:10px 13px;">'+opts+'</select>'
+      +'<select id="link-sel-'+escAttr(a.id)+'" style="width:100%;margin-bottom:10px;font-size:14px;padding:10px 13px;">'+opts+'</select>'
       +'<div style="display:flex;gap:8px;">'
-        +'<button class="btn btn-grn" style="flex:2;padding:10px;" onclick="linkAccount(\''+a.id+'\')"><span>Lier ce compte</span></button>'
-        +'<button class="btn btn-red" style="flex:1;padding:10px;" onclick="deleteAccount(\''+a.id+'\')"><span>Refuser</span></button>'
+        +'<button class="btn btn-grn" style="flex:2;padding:10px;" onclick="linkAccount(\''+jsesc(a.id)+'\')"><span>Lier ce compte</span></button>'
+        +'<button class="btn btn-red" style="flex:1;padding:10px;" onclick="deleteAccount(\''+jsesc(a.id)+'\')"><span>Refuser</span></button>'
       +'</div>'
     +'</div>';
   }).join("");
@@ -8800,7 +8948,7 @@ function _playerAccountAdminBlock(p,accounts){
   var sel='<select class="player-account-select" onchange="setPlayerAccountLink(\''+jsesc(p.id)+'\',this.value)">';
   sel+='<option value="">'+(linked?'— Délier le compte —':'— Lier un compte —')+'</option>';
   choices.forEach(function(a){
-    sel+='<option value="'+jsesc(a.id)+'"'+(linked&&linked.id===a.id?' selected':'')+'>'+esc(a.pseudo||"Compte")+(a.role&&a.role!=="joueur"?" · "+esc(ROLE_LABELS[a.role]||a.role):"")+'</option>';
+    sel+='<option value="'+escAttr(a.id)+'"'+(linked&&linked.id===a.id?' selected':'')+'>'+esc(a.pseudo||"Compte")+(a.role&&a.role!=="joueur"?" · "+esc(ROLE_LABELS[a.role]||a.role):"")+'</option>';
   });
   sel+='</select>';
   var roleSwitches=linked
@@ -8810,7 +8958,7 @@ function _playerAccountAdminBlock(p,accounts){
           var active=role===r;
           var rc=roleCols[r]||"var(--dim)";
           var rLabel={joueur:"Joueur",mj:"MJ",designer:"Designer",admin:"Admin"}[r];
-          return '<button type="button" class="player-role-chip role-'+r+(active?' active':'')+'" aria-pressed="'+(active?'true':'false')+'" onclick="setPlayerAccountRole(\''+jsesc(p.id)+'\',\''+r+'\')" style="--role-col:'+rc+';">'+rLabel+'</button>';
+          return '<button type="button" class="player-role-chip role-'+r+(active?' active':'')+'" aria-pressed="'+(active?'true':'false')+'" onclick="setPlayerAccountRole(\''+jsesc(p.id)+'\',\''+jsesc(r)+'\')" style="--role-col:'+rc+';">'+rLabel+'</button>';
         }).join(""))
     : '<span style="font-size:11px;color:var(--faint);font-style:italic;">Aucun compte lié</span>';
   return '<div class="player-account-tools">'
@@ -8857,20 +9005,20 @@ function renderSPList(){
     return;
   }
   plistEl.innerHTML=players.map(function(p){
-    var av=p.avatar?'<img src="'+p.avatar+'" class="pav" onerror="this.outerHTML=\'<div class=pavph>'+p.name[0]+'</div>\'">'
-      :'<div class="pavph">'+p.name[0]+'</div>';
+    var av=p.avatar?'<img src="'+_imageAttr(p.avatar)+'" class="pav" onerror="this.style.display=\'none\'">'
+      :'<div class="pavph">'+esc(p.name[0])+'</div>';
     var isCurrent=CU&&CU.pid===p.id;
     var btns='';
-    if(canItems) btns+='<button class="btn btn-sm btn-grn" onclick="oAI(\''+p.id+'\')"><span>+Item</span></button><button class="btn btn-sm btn-red" onclick="oRI(\''+p.id+'\')"><span>−Item</span></button>';
-    if(canStats) btns+='<button class="btn btn-sm btn-gold" onclick="oES(\''+p.id+'\')"><span>Stats</span></button>';
-    if(canXP) btns+='<button class="btn btn-sm" onclick="openProgPanel(\''+p.id+'\')"><span>XP</span></button>';
-    btns+='<button class="btn btn-sm" style="border-color:var(--glacier-dim);color:var(--glacier-dim);" onclick="loadPlayer(\''+p.id+'\')"><span>Accéder</span></button>';
-    if(canDel) btns+='<button class="btn btn-sm btn-red" onclick="delP(\''+p.id+'\')"><span>Sup.</span></button>';
+    if(canItems) btns+='<button class="btn btn-sm btn-grn" onclick="oAI(\''+jsesc(p.id)+'\')"><span>+Item</span></button><button class="btn btn-sm btn-red" onclick="oRI(\''+jsesc(p.id)+'\')"><span>−Item</span></button>';
+    if(canStats) btns+='<button class="btn btn-sm btn-gold" onclick="oES(\''+jsesc(p.id)+'\')"><span>Stats</span></button>';
+    if(canXP) btns+='<button class="btn btn-sm" onclick="openProgPanel(\''+jsesc(p.id)+'\')"><span>XP</span></button>';
+    btns+='<button class="btn btn-sm" style="border-color:var(--glacier-dim);color:var(--glacier-dim);" onclick="loadPlayer(\''+jsesc(p.id)+'\')"><span>Accéder</span></button>';
+    if(canDel) btns+='<button class="btn btn-sm btn-red" onclick="delP(\''+jsesc(p.id)+'\')"><span>Sup.</span></button>';
     var linked=_accountForPlayer(p.id,accounts);
     var role=linked?(linked.role||"joueur"):"";
     var roleLabel=role?(ROLE_LABELS[role]||role):"Non lié";
     var roleClass=role||"unlinked";
-    return'<div class="prow player-card'+(isCurrent?" sel":"")+'" id="pr-'+p.id+'">'
+    return'<div class="prow player-card'+(isCurrent?" sel":"")+'" id="pr-'+escAttr(p.id)+'">'
       +'<div class="player-avatar-wrap">'+av+'</div>'
       +'<div class="player-main">'
         +'<div class="player-card-top">'
@@ -8937,7 +9085,7 @@ function renderProgPanel(pid){
   var det=ge("prog-modal-body");if(!det)return;
   _progPid=pid;
   var mobOpts='<option value="">— Choisir un mob —</option>';
-  gb().forEach(function(b){mobOpts+='<option value="'+b.id+'" data-xp="'+b.niv+'" data-nom="'+esc(b.nom)+'">'+esc(b.nom)+' (Niv. '+b.niv+')</option>';});
+  gb().forEach(function(b){mobOpts+='<option value="'+escAttr(b.id)+'" data-xp="'+b.niv+'" data-nom="'+esc(b.nom)+'">'+esc(b.nom)+' (Niv. '+b.niv+')</option>';});
 
   det.innerHTML=
     // En-t_te
@@ -8966,10 +9114,10 @@ function renderProgPanel(pid){
     // Panel XP
     +'<div id="prog-xp" class="prog-panel active">'
     +'<div class="xp-prev"><div class="xp-prev-lbl">XP actuel</div><div class="xp-prev-val" id="xpp-cur">'+p.xp+' / '+p.xpMax+' XP</div><div class="xp-prev-sub">Niveau '+p.level+'</div></div>'
-    +'<div class="frow"><label class="flbl">Mob vaincu</label><select id="xpp-mob" onchange="updateXPPreview(\''+pid+'\')">'+mobOpts+'</select></div>'
-    +'<div><div class="flbl" style="margin-bottom:6px;">Participation du joueur</div><input type="range" class="part-slider" id="xpp-part" min="0" max="100" value="100" oninput="updateXPPreview(\''+pid+'\')"><div class="part-display" id="xpp-pv">100%</div></div>'
+    +'<div class="frow"><label class="flbl">Mob vaincu</label><select id="xpp-mob" onchange="updateXPPreview(\''+jsesc(pid)+'\')">'+mobOpts+'</select></div>'
+    +'<div><div class="flbl" style="margin-bottom:6px;">Participation du joueur</div><input type="range" class="part-slider" id="xpp-part" min="0" max="100" value="100" oninput="updateXPPreview(\''+jsesc(pid)+'\')"><div class="part-display" id="xpp-pv">100%</div></div>'
     +'<div class="xp-prev" id="xpp-res" style="border-color:var(--glacier-dim);"><div class="xp-prev-lbl">XP à attribuer</div><div class="xp-prev-val" id="xpp-gain">—</div><div class="xp-prev-sub" id="xpp-after">Sélectionne un mob</div></div>'
-    +'<button class="btn btn-full btn-grn mt16" onclick="applyXP(\''+pid+'\')"><span>Attribuer l\'XP</span></button>'
+    +'<button class="btn btn-full btn-grn mt16" onclick="applyXP(\''+jsesc(pid)+'\')"><span>Attribuer l\'XP</span></button>'
     +'<p class="errmsg" id="xpp-err"></p>'
     +'</div>'
     // Panel Serment
@@ -8984,7 +9132,7 @@ function renderProgPanel(pid){
     +'<div class="flbl" style="margin-bottom:8px;">Quantité</div>'
     +'<div class="gem-qty-row"><button class="gem-qty-btn" onclick="changeGemQty(-1)">−</button><div class="gem-qty-val" id="gem-qty">1</div><button class="gem-qty-btn" onclick="changeGemQty(1)">+</button></div>'
     +'<div class="xp-prev" style="border-color:var(--glacier-dim);"><div class="xp-prev-lbl">XP Serment à attribuer</div><div class="xp-prev-val" id="sxpp-gain">—</div><div class="xp-prev-sub" id="sxpp-after">Sélectionne une gemme</div></div>'
-    +'<button class="btn btn-full btn-grn mt16" onclick="applySermXP(\''+pid+'\')"><span>Fusionner les gemmes</span></button>'
+    +'<button class="btn btn-full btn-grn mt16" onclick="applySermXP(\''+jsesc(pid)+'\')"><span>Fusionner les gemmes</span></button>'
     +'<p class="errmsg" id="sxpp-err"></p>'
     +'</div>'
     // Panel Ajustement
@@ -8992,25 +9140,25 @@ function renderProgPanel(pid){
     +'<p style="font-size:13px;color:var(--dim);font-style:italic;margin-bottom:16px;">Modification directe. Les level-ups/downs sont recalculés automatiquement.</p>'
     +'<div style="font-family:var(--fd);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text);margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:6px;">Personnage</div>'
     +'<div class="g2" style="margin-bottom:10px;">'
-    +'<div><div class="flbl" style="margin-bottom:6px;">Niveau</div><div style="display:flex;gap:6px;align-items:center;"><button class="gem-qty-btn" onclick="adjVal(\''+pid+'\',\'level\',-1)">−</button><div id="adj-lvl" style="font-family:var(--fm);font-size:16px;color:var(--glacier);min-width:32px;text-align:center;">'+p.level+'</div><button class="gem-qty-btn" onclick="adjVal(\''+pid+'\',\'level\',1)">+</button></div></div>'
-    +'<div><div class="flbl" style="margin-bottom:6px;">XP</div><div style="display:flex;gap:6px;align-items:center;"><button class="gem-qty-btn" onclick="adjVal(\''+pid+'\',\'xp\',-10)">−10</button><div id="adj-xp" style="font-family:var(--fm);font-size:13px;color:var(--glacier);min-width:60px;text-align:center;">'+p.xp+'/'+p.xpMax+'</div><button class="gem-qty-btn" onclick="adjVal(\''+pid+'\',\'xp\',10)">+10</button></div></div>'
+    +'<div><div class="flbl" style="margin-bottom:6px;">Niveau</div><div style="display:flex;gap:6px;align-items:center;"><button class="gem-qty-btn" onclick="adjVal(\''+jsesc(pid)+'\',\'level\',-1)">−</button><div id="adj-lvl" style="font-family:var(--fm);font-size:16px;color:var(--glacier);min-width:32px;text-align:center;">'+p.level+'</div><button class="gem-qty-btn" onclick="adjVal(\''+jsesc(pid)+'\',\'level\',1)">+</button></div></div>'
+    +'<div><div class="flbl" style="margin-bottom:6px;">XP</div><div style="display:flex;gap:6px;align-items:center;"><button class="gem-qty-btn" onclick="adjVal(\''+jsesc(pid)+'\',\'xp\',-10)">−10</button><div id="adj-xp" style="font-family:var(--fm);font-size:13px;color:var(--glacier);min-width:60px;text-align:center;">'+p.xp+'/'+p.xpMax+'</div><button class="gem-qty-btn" onclick="adjVal(\''+jsesc(pid)+'\',\'xp\',10)">+10</button></div></div>'
     +'</div>'
     +'<div class="fx mb16" style="gap:6px;">'
-    +'<button class="btn btn-sm btn-red" onclick="adjVal(\''+pid+'\',\'xp\',-50)"><span>XP −50</span></button>'
-    +'<button class="btn btn-sm btn-red" onclick="adjVal(\''+pid+'\',\'xp\',-100)"><span>XP −100</span></button>'
-    +'<button class="btn btn-sm btn-grn" onclick="adjVal(\''+pid+'\',\'xp\',50)"><span>XP +50</span></button>'
-    +'<button class="btn btn-sm btn-grn" onclick="adjVal(\''+pid+'\',\'xp\',100)"><span>XP +100</span></button>'
+    +'<button class="btn btn-sm btn-red" onclick="adjVal(\''+jsesc(pid)+'\',\'xp\',-50)"><span>XP −50</span></button>'
+    +'<button class="btn btn-sm btn-red" onclick="adjVal(\''+jsesc(pid)+'\',\'xp\',-100)"><span>XP −100</span></button>'
+    +'<button class="btn btn-sm btn-grn" onclick="adjVal(\''+jsesc(pid)+'\',\'xp\',50)"><span>XP +50</span></button>'
+    +'<button class="btn btn-sm btn-grn" onclick="adjVal(\''+jsesc(pid)+'\',\'xp\',100)"><span>XP +100</span></button>'
     +'</div>'
     +'<div style="font-family:var(--fd);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--glacier-bright);margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:6px;">Serment</div>'
     +'<div class="g2" style="margin-bottom:10px;">'
-    +'<div><div class="flbl" style="margin-bottom:6px;">Niveau Serment</div><div style="display:flex;gap:6px;align-items:center;"><button class="gem-qty-btn" onclick="adjVal(\''+pid+'\',\'sLevel\',-1)">−</button><div id="adj-slvl" style="font-family:var(--fm);font-size:16px;color:var(--glacier-bright);min-width:32px;text-align:center;">'+p.sLevel+'</div><button class="gem-qty-btn" onclick="adjVal(\''+pid+'\',\'sLevel\',1)">+</button></div></div>'
-    +'<div><div class="flbl" style="margin-bottom:6px;">XP Serment</div><div style="display:flex;gap:6px;align-items:center;"><button class="gem-qty-btn" onclick="adjVal(\''+pid+'\',\'sXp\',-5)">−5</button><div id="adj-sxp" style="font-family:var(--fm);font-size:13px;color:var(--glacier-bright);min-width:60px;text-align:center;">'+p.sXp+'/'+p.sXpMax+'</div><button class="gem-qty-btn" onclick="adjVal(\''+pid+'\',\'sXp\',5)">+5</button></div></div>'
+    +'<div><div class="flbl" style="margin-bottom:6px;">Niveau Serment</div><div style="display:flex;gap:6px;align-items:center;"><button class="gem-qty-btn" onclick="adjVal(\''+jsesc(pid)+'\',\'sLevel\',-1)">−</button><div id="adj-slvl" style="font-family:var(--fm);font-size:16px;color:var(--glacier-bright);min-width:32px;text-align:center;">'+p.sLevel+'</div><button class="gem-qty-btn" onclick="adjVal(\''+jsesc(pid)+'\',\'sLevel\',1)">+</button></div></div>'
+    +'<div><div class="flbl" style="margin-bottom:6px;">XP Serment</div><div style="display:flex;gap:6px;align-items:center;"><button class="gem-qty-btn" onclick="adjVal(\''+jsesc(pid)+'\',\'sXp\',-5)">−5</button><div id="adj-sxp" style="font-family:var(--fm);font-size:13px;color:var(--glacier-bright);min-width:60px;text-align:center;">'+p.sXp+'/'+p.sXpMax+'</div><button class="gem-qty-btn" onclick="adjVal(\''+jsesc(pid)+'\',\'sXp\',5)">+5</button></div></div>'
     +'</div>'
     +'<div class="fx mb16" style="gap:6px;">'
-    +'<button class="btn btn-sm btn-red" onclick="adjVal(\''+pid+'\',\'sXp\',-20)"><span>sXP −20</span></button>'
-    +'<button class="btn btn-sm btn-red" onclick="adjVal(\''+pid+'\',\'sXp\',-50)"><span>sXP −50</span></button>'
-    +'<button class="btn btn-sm btn-grn" onclick="adjVal(\''+pid+'\',\'sXp\',20)"><span>sXP +20</span></button>'
-    +'<button class="btn btn-sm btn-grn" onclick="adjVal(\''+pid+'\',\'sXp\',50)"><span>sXP +50</span></button>'
+    +'<button class="btn btn-sm btn-red" onclick="adjVal(\''+jsesc(pid)+'\',\'sXp\',-20)"><span>sXP −20</span></button>'
+    +'<button class="btn btn-sm btn-red" onclick="adjVal(\''+jsesc(pid)+'\',\'sXp\',-50)"><span>sXP −50</span></button>'
+    +'<button class="btn btn-sm btn-grn" onclick="adjVal(\''+jsesc(pid)+'\',\'sXp\',20)"><span>sXP +20</span></button>'
+    +'<button class="btn btn-sm btn-grn" onclick="adjVal(\''+jsesc(pid)+'\',\'sXp\',50)"><span>sXP +50</span></button>'
     +'</div>'
     +'<div id="adj-fb" style="font-family:var(--fm);font-size:12px;min-height:18px;font-style:italic;"></div>'
     +'</div>'
@@ -9090,7 +9238,7 @@ function updateXPPreview(pid){
   if(a)a.textContent=lups?"Niveau "+p.level+" → "+simLvl+" !":"XP : "+p.xp+" → "+(p.xp+xpGain)+" / "+p.xpMax;
 }
 
-function applyXP(pid){
+async function applyXP(pid){
   if(!can("manage_xp")){notif("Permission insuffisante.","err");return;}
   var p=gpid(pid);if(!p)return;
   var mobSel=ge("xpp-mob");var partEl=ge("xpp-part");if(!mobSel||!partEl)return;
@@ -9103,7 +9251,7 @@ function applyXP(pid){
   if(xpGain<=0){ge("xpp-err").textContent="XP = 0. Ajuste la participation.";return;}
   p.xp=(p.xp||0)+xpGain;p.history=p.history||[];
   p.history.push({ts:Date.now(),type:"xp",text:"+"+xpGain+" XP ("+nom+", "+part+"%)",by:"MJ "+CU.name});
-  var gained=doLvlUp(p);up(p);
+  var gained=doLvlUp(p);if(!await _confirmDbSave(up(p))) return false;
   var curEl=ge("xpp-cur");if(curEl)curEl.textContent=p.xp+" / "+p.xpMax+" XP";
   var msg=gained.length?"⬆ NIVEAU "+gained[gained.length-1]+" !":"XP attribué.";
   var ae=ge("xpp-after");if(ae)ae.textContent=msg;
@@ -9140,7 +9288,7 @@ function updateSermPreview(){
   if(a)a.textContent=lups?"Serment Niv. "+p.sLevel+" → "+simLvl+(pals.length?" — "+pals[0]+" débloqué !":""):"XP Serment : "+p.sXp+" → "+(p.sXp+total)+" / "+p.sXpMax;
 }
 
-function applySermXP(pid){
+async function applySermXP(pid){
   if(!CU||!can("manage_xp")){ return; }
   if(!can("manage_xp")){notif("Permission insuffisante.","err");return;}
   var p=gpid(pid);if(!p)return;
@@ -9150,7 +9298,7 @@ function applySermXP(pid){
   var total=xpG[type]*qty;
   p.sXp=(p.sXp||0)+total;p.history=p.history||[];
   p.history.push({ts:Date.now(),type:"gemme",text:"+"+total+" XP Serment ("+qty+"× "+gN[type]+")",by:"MJ "+CU.name});
-  var gained=doSLvlUp(p);up(p);
+  var gained=doSLvlUp(p);if(!await _confirmDbSave(up(p))) return false;
   var curEl=ge("sxpp-cur");if(curEl)curEl.textContent=p.sXp+" / "+p.sXpMax+" XP";
   var msg=gained.length?"⬆ Serment Niv. "+gained[gained.length-1].niv+(gained[gained.length-1].palier?" — "+gained[gained.length-1].palier:""):"XP Serment attribué.";
   var ae=ge("sxpp-after");if(ae)ae.textContent=msg;
@@ -9163,7 +9311,7 @@ function applySermXP(pid){
   else notif("+"+total+" XP Serment → "+esc(p.name)+".","ok");
 }
 
-function adjVal(pid,field,delta){
+async function adjVal(pid,field,delta){
   if(!can("adjust_levels")){notif("Réservé à l'Admin.","err");return;}
   var p=gpid(pid);if(!p)return;
   var oldVal=p[field]||0;var newVal=Math.max(0,oldVal+delta);p[field]=newVal;
@@ -9172,7 +9320,7 @@ function adjVal(pid,field,delta){
   p.history=p.history||[];var lbls={level:"Niv. perso",xp:"XP perso",sLevel:"Niv. Serment",sXp:"XP Serment"};
   p.history.push({ts:Date.now(),type:(delta<0?"remove":"add"),text:"Ajust. "+lbls[field]+" : "+oldVal+" → "+p[field],by:"MJ "+CU.name});
   sysLog("adj_"+field,"["+esc(p.name)+"] "+lbls[field]+" : "+oldVal+" → "+p[field]+" (Δ"+(delta>0?"+":"")+delta+")",CU.name);
-  up(p);
+  if(!await _confirmDbSave(up(p))) return false;
   var lvlEl=ge("adj-lvl");if(lvlEl)lvlEl.textContent=p.level;
   var xpEl=ge("adj-xp");if(xpEl)xpEl.textContent=p.xp+"/"+p.xpMax;
   var slvlEl=ge("adj-slvl");if(slvlEl)slvlEl.textContent=p.sLevel;
@@ -9215,12 +9363,13 @@ async function addPlayer(){
   renderSPList();notif(n+" ajouté.","ok");
 }
 
-function delP(id){
+async function delP(id){
   if(!can("delete_player")){notif("Réservé à l'Admin.","err");return;}
   if(!confirm("Supprimer ce joueur ? Irréversible."))return;
   var victim=gpid(id);
   sysLog("personnage_supprime","Personnage '"+(victim?victim.name:id)+"' supprimé",CU?CU.name:"Staff");
-  sp(gp().filter(function(p){return p.id!==id;}));
+  try{ await sp(gp().filter(function(p){return p.id!==id;})); }
+  catch(e){ notif('Suppression non enregistrée : '+e.message,'err'); return; }
   if(ge("m-prog")) closeModal("m-prog");
   if(CU.pid===id){CU.pid=gp()[0]?gp()[0].id:null;if(CU.pid)renderView();}
   renderSPList();notif("Joueur supprimé.","inf");
@@ -9236,7 +9385,7 @@ function oAI(pid){
   ge("ai-n").value="";ge("ai-q").value="1";ge("ai-note").value="";ge("ai-err").textContent="";
   openModal("m-addi");
 }
-function addItem(){
+async function addItem(){
   if(!can("manage_items")){notif("Permission insuffisante.","err");return;}
   var p=gpid(aiPid);var n=ge("ai-n").value.trim();var c=ge("ai-c").value;var q=parseInt(ge("ai-q").value)||1;var note=ge("ai-note").value.trim();
   if(!n){ge("ai-err").textContent="Nom obligatoire.";return;}
@@ -9244,7 +9393,7 @@ function addItem(){
   p.inventory=p.inventory||[];var ex=p.inventory.find(function(i){return i.name===n&&i.category===c;});
   if(ex){ex.qty+=q;}else{p.inventory.push({id:"i"+Date.now(),name:n,category:c,qty:q});}
   p.history=p.history||[];p.history.push({ts:Date.now(),type:"item",text:"Ajout : "+q+"× "+n+(note?" — "+note:""),by:"MJ "+CU.name});
-  up(p);closeModal("m-addi");
+  if(!await _confirmDbSave(up(p))) return false;closeModal("m-addi");
   if(CU.pid===aiPid)renderView();
   renderSPList();notif(q+"× "+n+" → "+esc(p.name)+".","ok");
 }
@@ -9253,10 +9402,10 @@ function oRI(pid){
   riPid=pid;var p=gpid(pid);
   ge("m-remi-t").textContent="Joueur : "+(p?p.name:"");
   var sel=ge("ri-s");sel.innerHTML='<option value="">— Choisir —</option>';
-  (p?p.inventory||[]:[]).filter(function(i){return i.qty>0;}).forEach(function(i){sel.innerHTML+='<option value="'+i.id+'">'+i.name+' (×'+i.qty+')</option>';});
+  (p?p.inventory||[]:[]).filter(function(i){return i.qty>0;}).forEach(function(i){sel.innerHTML+='<option value="'+escAttr(i.id)+'">'+i.name+' (×'+i.qty+')</option>';});
   ge("ri-q").value="1";ge("ri-note").value="";ge("ri-err").textContent="";openModal("m-remi");
 }
-function removeItem(){
+async function removeItem(){
   if(!can("manage_items")){notif("Permission insuffisante.","err");return;}
   var p=gpid(riPid);var iid=ge("ri-s").value;var q=parseInt(ge("ri-q").value)||1;var note=ge("ri-note").value.trim();
   if(!iid){ge("ri-err").textContent="Choisis un item.";return;}
@@ -9264,7 +9413,7 @@ function removeItem(){
   if(!item){ge("ri-err").textContent="Item introuvable.";return;}
   item.qty=Math.max(0,item.qty-q);p.history=p.history||[];
   p.history.push({ts:Date.now(),type:"item",text:"Retrait : "+q+"× "+esc(item.name)+(note?" — "+note:""),by:"MJ "+CU.name});
-  up(p);closeModal("m-remi");
+  if(!await _confirmDbSave(up(p))) return false;closeModal("m-remi");
   if(CU.pid===riPid)renderView();
   renderSPList();notif(q+"× "+esc(item.name)+" retiré.","inf");
 }
@@ -9296,7 +9445,7 @@ function oES(pid){
   openModal("m-edits");
 }
 function selBr(btn){document.querySelectorAll(".bropt").forEach(function(b){b.classList.remove("sel");});btn.classList.add("sel");}
-function saveStats(){
+async function saveStats(){
   if(!can("manage_stats")){notif("Réservé à l'Admin.","err");return;}
   var p=gpid(ePid);if(!p)return;
   var newLevel=parseInt(ge("es-niv").value)||1;
@@ -9324,7 +9473,7 @@ function saveStats(){
   p.equipment={helmet:ge("es-hel").value.trim()||null,chest:ge("es-che").value.trim()||null,legs:ge("es-leg").value.trim()||null};
   p.history=p.history||[];p.history.push({ts:Date.now(),type:"stat",text:"Stats mises à jour — Niveau "+p.level+" (PV:"+p.pvMax+" EP:"+p.epMax+" EM:"+p.emMax+")",by:CU.name});
   sysLog("stats_modif","Stats de '"+esc(p.name)+"' modifiées — Niv."+p.level+" PV:"+p.pvCur+"/"+p.pvMax+" EP:"+p.epCur+"/"+p.epMax+" EM:"+p.emCur+"/"+p.emMax,CU.name);
-  up(p);closeModal("m-edits");
+  if(!await _confirmDbSave(up(p))) return false;closeModal("m-edits");
   if(CU.pid===ePid||_viewPid===ePid)renderView();
   renderSPList();notif("Stats de "+esc(p.name)+" sauvegardées.","ok");
 }
@@ -9332,12 +9481,12 @@ function saveStats(){
 // ==========================================
 // BESTIAIRE
 // ==========================================
-function addBeast(){
+async function addBeast(){
   if(!can("manage_beasts")){notif("Permission insuffisante.","err");return;}
   var n=ge("ab-n").value.trim();if(!n)return;
   var behArr=["","Gibier","Passif","Neutre","Agressif","Très agressif"];
   var b={id:"b"+Date.now(),nom:n,sub:(ge("ab-sub")?ge("ab-sub").value.trim():""),beh:behArr[parseInt(ge("ab-beh").value,10)||3]||"Neutre",niv:(ge("ab-niv")?(parseInt(ge("ab-niv").value)||1):1),pv:parseInt(ge("ab-pv").value)||20,ep:parseInt(ge("ab-ep").value)||20,img:ge("ab-img").value.trim(),zones:_beastZoneInputValues("ab-zones"),frappe:ge("ab-fr").value.trim(),comp:ge("ab-co").value.trim(),drops:ge("ab-dr").value.trim(),gem:ge("ab-gm").value.trim(),desc:ge("ab-de").value.trim(),adminNote:(ge("ab-note")&&ge("ab-note").value||'').trim(),hidden:!!(ge("ab-hidden")&&ge("ab-hidden").checked),archived:!!(ge("ab-archived")&&ge("ab-archived").checked),createdAt:Date.now(),updatedAt:Date.now()};
-  var bs=gb();bs.unshift(b);sb(bs);closeModal("m-addb");
+  var bs=gb();bs.unshift(b);if(!await _confirmDbSave(sb(bs))) return false;closeModal("m-addb");
   ["ab-n","ab-sub","ab-fr","ab-co","ab-dr","ab-gm","ab-de","ab-img","ab-zones","ab-note"].forEach(function(id){if(ge(id)) ge(id).value="";}); if(ge("ab-niv")) ge("ab-niv").value=1; if(ge("ab-hidden")) ge("ab-hidden").checked=false; if(ge("ab-archived")) ge("ab-archived").checked=false;
   renderBGrid("p-bgrd",false);notif(n+" ajouté.","ok");
 }
@@ -9369,7 +9518,7 @@ function openEditBeast(id){
   if(modalEl) _hoistModalToRoot(modalEl);
   openModal("m-editb");
 }
-function saveEditBeast(){
+async function saveEditBeast(){
   if(!CU||!can("manage_beasts")){ return; }
   if(!can("manage_beasts")){notif("Non autorisé.","err");return;}
   var id=ge("eb-id").value;
@@ -9395,7 +9544,7 @@ function saveEditBeast(){
   b.archived=!!(ge("eb-archived")&&ge("eb-archived").checked);
   if(!b.createdAt) b.createdAt=Date.now();
   b.updatedAt=Date.now();
-  sb(beasts);
+  if(!await _confirmDbSave(sb(beasts))) return false;
   closeModal("m-editb");
   renderBGrid("p-bgrd",false);
   notif(b.nom+" mis à jour.","ok");
@@ -9527,13 +9676,13 @@ function renderMJList(){
       :['joueur','mj','designer','admin'].map(function(r){
           var active=role===r;var rc=roleCols[r]||"var(--dim)";
           var rLabel={joueur:"Joueur",mj:"MJ",designer:"Designer",admin:"Admin"}[r];
-          return'<button onclick="setMJRole(\''+m.id+'\',\''+r+'\')" style="padding:5px 10px;font-family:var(--fd);font-size:12px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:1px solid '+(active?rc:'var(--border2)')+';background:'+(active?'rgba(0,0,0,0.2)':'transparent')+';color:'+(active?rc:'var(--dim)')+';transition:all .2s;">'+rLabel+'</button>';
+          return'<button onclick="setMJRole(\''+jsesc(m.id)+'\',\''+jsesc(r)+'\')" style="padding:5px 10px;font-family:var(--fd);font-size:12px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:1px solid '+(active?rc:'var(--border2)')+';background:'+(active?'rgba(0,0,0,0.2)':'transparent')+';color:'+(active?rc:'var(--dim)')+';transition:all .2s;">'+rLabel+'</button>';
         }).join("");
 
-    var pidSel='<select onchange="setMJPid(\''+m.id+'\',this.value)" style="flex:1;font-size:13px;padding:6px 10px;">';
+    var pidSel='<select onchange="setMJPid(\''+jsesc(m.id)+'\',this.value)" style="flex:1;font-size:13px;padding:6px 10px;">';
     pidSel+='<option value="">— Aucun personnage lié —</option>';
     players.forEach(function(p){
-      pidSel+='<option value="'+p.id+'"'+(m.pid===p.id?' selected':'')+'>'+esc(p.name)+' — '+esc(p.classe)+'</option>';
+      pidSel+='<option value="'+escAttr(p.id)+'"'+(m.pid===p.id?' selected':'')+'>'+esc(p.name)+' — '+esc(p.classe)+'</option>';
     });
     pidSel+='</select>';
 
@@ -9549,9 +9698,9 @@ function renderMJList(){
       +(linkedP?'<div style="font-size:14px;color:var(--green);">⇔ '+esc(linkedP.name)+' — '+esc(linkedP.classe)+'</div>':'<div style="font-size:14px;color:var(--faint);font-style:italic;">Aucun personnage</div>')
         +'</div>'
         +'<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">'
-          +'<button class="btn btn-sm" onclick="resetAccountPass(\''+m.id+'\')"><span>Reset</span></button>'
-          +'<button class="btn btn-sm" onclick="openEditPassSafe(\''+m.id+'\',\''+encodeURIComponent(m.pseudo||'')+'\')"><span>MDP</span></button>'
-          +(!isLastAdmin?'<button class="btn btn-sm btn-red" onclick="delMJ(\''+m.id+'\')"><span>Suppr.</span></button>':'')
+          +'<button class="btn btn-sm" onclick="resetAccountPass(\''+jsesc(m.id)+'\')"><span>Reset</span></button>'
+          +'<button class="btn btn-sm" onclick="openEditPassSafe(\''+jsesc(m.id)+'\',\''+encodeURIComponent(m.pseudo||'')+'\')"><span>MDP</span></button>'
+          +(!isLastAdmin?'<button class="btn btn-sm btn-red" onclick="delMJ(\''+jsesc(m.id)+'\')"><span>Suppr.</span></button>':'')
         +'</div>'
       +'</div>'
       +'<div class="fx" style="gap:6px;margin-bottom:8px;">'+roleSwitches+'</div>'
@@ -9602,7 +9751,9 @@ document.body.appendChild(_loaderEl);
   }catch(e){}
 })();
 
+var _bootstrapSessionGeneration = _dbSessionGeneration;
 _dbBootstrap().then(function() {
+  if(_bootstrapSessionGeneration !== _dbSessionGeneration || window.__logoutBusy) return;
   try {
     // Purger les clés privées du localStorage au boot
     // Le cookie httpOnly n'est pas lisible en JS — on purge systématiquement
@@ -9614,6 +9765,8 @@ _dbBootstrap().then(function() {
     _initPublicData();
     // _tryAutoLogin est maintenant async — vérifie le cookie httpOnly via le serveur
     _tryAutoLogin().then(function(loggedIn){
+      if(_bootstrapSessionGeneration !== _dbSessionGeneration || window.__logoutBusy) return;
+      if(loggedIn && _resetAccountId){ _removeLoader(); showScreen('s-reset'); return; }
       if(loggedIn){
         // initStorage() sera appelé par launchApp()
         _removeLoader();
@@ -9631,6 +9784,7 @@ _dbBootstrap().then(function() {
         });
       }
     }).catch(function(err){
+      if(_bootstrapSessionGeneration !== _dbSessionGeneration || window.__logoutBusy) return;
       console.error("Erreur auto-login:", err);
       _removeLoader();
       initHomePage();
@@ -9917,7 +10071,7 @@ function renderNotifPanel(){
   var h='<div style="padding:10px 14px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;">';
   h+='<span style="font-family:var(--fd);font-size:9px;letter-spacing:2px;color:var(--glacier);">NOTIFICATIONS</span>';
   if(notifs.length>0){
-    h+='<button onclick="clearAllNotifs(\''+pid+'\')" style="background:transparent;border:0.5px solid rgba(201,74,74,.35);color:rgba(201,74,74,.7);font-family:var(--fd);font-size:7px;letter-spacing:2px;padding:3px 8px;cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor=\'var(--red)\';this.style.color=\'var(--red)\'" onmouseout="this.style.borderColor=\'rgba(201,74,74,.35)\';this.style.color=\'rgba(201,74,74,.7)\'">TOUT EFFACER</button>';
+    h+='<button onclick="clearAllNotifs(\''+jsesc(pid)+'\')" style="background:transparent;border:0.5px solid rgba(201,74,74,.35);color:rgba(201,74,74,.7);font-family:var(--fd);font-size:7px;letter-spacing:2px;padding:3px 8px;cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor=\'var(--red)\';this.style.color=\'var(--red)\'" onmouseout="this.style.borderColor=\'rgba(201,74,74,.35)\';this.style.color=\'rgba(201,74,74,.7)\'">TOUT EFFACER</button>';
   }
   h+='</div>';
 
@@ -9959,7 +10113,7 @@ function renderNotifPanel(){
       if(n.by) h+='<div style="font-size:10px;color:var(--faint);margin-top:2px;">'+n.by+' · '+fdt(n.ts)+'</div>';
       else h+='<div style="font-size:10px;color:var(--faint);margin-top:2px;">'+fdt(n.ts)+'</div>';
       h+='</div>';
-      h+='<button onclick="deleteNotif(\''+pid+'\','+n.ts+')" title="Effacer" style="background:transparent;border:none;color:var(--faint);cursor:pointer;font-size:14px;line-height:1;padding:2px 4px;flex-shrink:0;transition:color .15s;" onmouseover="this.style.color=\'var(--red)\'" onmouseout="this.style.color=\'var(--faint)\'">✕</button>';
+      h+='<button onclick="deleteNotif(\''+jsesc(pid)+'\','+n.ts+')" title="Effacer" style="background:transparent;border:none;color:var(--faint);cursor:pointer;font-size:14px;line-height:1;padding:2px 4px;flex-shrink:0;transition:color .15s;" onmouseover="this.style.color=\'var(--red)\'" onmouseout="this.style.color=\'var(--faint)\'">✕</button>';
       h+='</div>';
     });
     h+='</div>';
@@ -9990,17 +10144,15 @@ function renderJournal(tid){
 
 function escHtml(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 function escAttr(s){ return escHtml(s).replace(/"/g,"&quot;").replace(/'/g,"&#x27;"); }
-function esc(s){ return escHtml(s); }
+function esc(s){ return escAttr(s); }
 
-function saveJournal(){
-  if(!CU||!CU.pid) return;
-  var txt=ge("journal-text"); if(!txt) return;
-  var players=gp();
-  var idx=players.findIndex(function(x){return x.id===CU.pid;});
-  if(idx<0) return;
-  players[idx].journal=txt.value;
-  sp(players);
-  notif("Journal sauvegardé.","ok");
+async function saveJournal(){
+  if(!CU || !CU.pid) return;
+  var txt=ge('journal-text'); if(!txt) return;
+  try{
+    await _savePlayerPatch(CU.pid, {journal:txt.value});
+    notif('Journal sauvegardé.', 'ok');
+  }catch(e){ notif('Journal non enregistré : '+e.message, 'err'); }
 }
 
 // ==========================================
@@ -10064,7 +10216,7 @@ function renderStats(tid){
   h+='<div style="font-family:var(--fd);font-size:22px;letter-spacing:3px;color:var(--text);">Tableau de Bord</div>';
   h+='</div>';
   h+='<div style="display:flex;gap:8px;">';
-  h+='<button class="btn btn-sm btn-grn" onclick="exportDB()"><span>⬇ Export JSON</span></button>';
+  h+='<button class="btn btn-sm btn-grn" onclick="exportDB()"><span>⬇ Export JSON partiel</span></button>';
   h+='<label class="btn btn-sm" style="cursor:pointer;"><span>⬆ Import JSON</span><input type="file" accept=".json" onchange="importDB(this)" style="display:none;"></label>';
   h+='</div></div>';
 
@@ -10581,7 +10733,9 @@ function renderStats(tid){
 
 function exportDB(){
   var data={
-    version:1,
+    version:2,
+    scope:'functional-export',
+    notice:'Export partiel. Les comptes sont des métadonnées non restaurables, sans mots de passe. Archives, événements et lieux exclus.',
     exported:new Date().toISOString(),
     players:gp(),
     accounts:getAccounts(),
@@ -10591,29 +10745,36 @@ function exportDB(){
   var blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
   var url=URL.createObjectURL(blob);
   var a=document.createElement("a");
-  a.href=url; a.download="nuages-polaires-backup-"+new Date().toISOString().slice(0,10)+".json";
+  a.href=url; a.download="nuages-polaires-export-partiel-"+new Date().toISOString().slice(0,10)+".json";
   a.click(); URL.revokeObjectURL(url);
-  notif("Export téléchargé.","ok");
+  notif("Export partiel téléchargé : personnages, bestiaire, serments et métadonnées des comptes. Ce fichier ne remplace pas une sauvegarde serveur.","inf");
 }
 
 function importDB(input){
   var file=input.files[0]; if(!file) return;
   var reader=new FileReader();
-  reader.onload=function(e){
+  reader.onload=async function(e){
+    var data;
+    try{ data=JSON.parse(e.target.result); }
+    catch(err){ notif('Erreur de lecture JSON.', 'err'); return; }
+    if(!data || !data.version){ notif('Fichier invalide.', 'err'); return; }
+    var entries=[['players',data.players],['beasts',data.beasts],['serments_custom',data.serments_custom]].filter(function(entry){ return entry[1] !== undefined; });
+    if(entries.some(function(entry){ return entry[0] === 'serments_custom' ? (!entry[1] || typeof entry[1] !== 'object' || Array.isArray(entry[1])) : !Array.isArray(entry[1]); })){
+      notif('Format des collections invalide. Aucune donnée importée.', 'err'); return;
+    }
+    if(!entries.length){ notif('Aucune collection importable. Les comptes ne sont jamais restaurés depuis ce fichier.', 'inf'); return; }
+    if(!confirm('Remplacer les collections présentes dans cet export partiel ? Les comptes seront ignorés et leurs mots de passe conservés. Les collections seront enregistrées séparément.')) return;
+    var completed=[];
     try{
-      var data=JSON.parse(e.target.result);
-      if(!data.version){ notif("Fichier invalide.","err"); return; }
-      if(data.players) sp(data.players);
-      if(data.accounts) saveAccounts(data.accounts);
-      if(data.beasts) sb(data.beasts);
-      if(data.serments_custom) ssd(data.serments_custom);
-      notif("Import réussi — "+( data.players?data.players.length:0)+" joueurs, "+(data.beasts?data.beasts.length:0)+" créatures.","ok");
-      window._dbTab="dashboard";
-      renderDatabase();
-    }catch(err){ notif("Erreur de lecture JSON.","err"); }
+      for(var entry of entries){ await sv(entry[0],entry[1]); completed.push(entry[0]); }
+      notif('Import enregistré : '+completed.join(', ')+'. Comptes ignorés ; mots de passe conservés. Ceci est un import partiel.', 'ok');
+      window._dbTab='dashboard'; renderDatabase();
+    }catch(err){
+      notif('Import interrompu. Collections confirmées : '+(completed.join(', ')||'aucune')+'. '+err.message+' Comptes inchangés.', 'err');
+    }
   };
-  reader.readAsText(file);
-  input.value="";
+  reader.onerror=function(){ notif('Impossible de lire le fichier.', 'err'); };
+  reader.readAsText(file); input.value='';
 }
 document.addEventListener("keydown",function(e){
   // Ignorer si focus dans un input/textarea
@@ -10820,6 +10981,7 @@ function combatArchiveExpandForPersist(owner, entry){
       rec._owner = owner;
       return rec;
     }
+    return null;
   }
   var out = _normalizeCombatArchiveRecord(entry, 0);
   out._owner = owner;
@@ -10843,15 +11005,10 @@ function _combatArchivePromoteLegacyOwner(owner){
   if(Array.isArray(idx) && idx.length) return Promise.resolve(false);
   var legacy = sto(combatArchiveStoreKey(owner)) || [];
   if(!Array.isArray(legacy) || !legacy.length) return Promise.resolve(false);
-  var writes = [];
-  var meta = legacy.map(function(arc){ return combatArchiveMetaFromRecord(arc, owner); });
-  writes.push(sv(combatArchiveIndexKey(owner), meta).catch(function(){ return null; }));
-  legacy.forEach(function(arc){
-    var full = combatArchiveExpandForPersist(owner, arc);
-    if(full && full.id) writes.push(sv(combatArchiveRecordKey(owner, full.id), full).catch(function(){ return null; }));
-  });
-  _combatArchivePromotionQueue[owner] = Promise.all(writes).then(function(){ delete _combatArchivePromotionQueue[owner]; return true; }).catch(function(){ delete _combatArchivePromotionQueue[owner]; return false; });
-  return _combatArchivePromotionQueue[owner];
+  var task = saveCombatArchives(legacy, owner);
+  _combatArchivePromotionQueue[owner] = task;
+  task.then(function(){ delete _combatArchivePromotionQueue[owner]; }, function(){ delete _combatArchivePromotionQueue[owner]; });
+  return task;
 }
 function _combatArchiveKnownOwners(){
   var owners=[];
@@ -10859,7 +11016,6 @@ function _combatArchiveKnownOwners(){
   try{ combatArchiveCurrentOwners().forEach(pushOwner); }catch(e){}
   try{ getAccounts().forEach(function(a){ if(!a) return; if(a.role!=="mj" && a.role!=="admin") return; pushOwner(a.pseudo); pushOwner(a.name); }); }catch(e){}
   try{ Object.keys(_dbCache||{}).forEach(function(key){ if(String(key||'').indexOf('combat_arc_idx_')===0) pushOwner(String(key).slice('combat_arc_idx_'.length)); else if(String(key||'').indexOf('combat_arc_')===0 && String(key||'').indexOf('combat_arc_rec_')!==0) pushOwner(String(key).slice('combat_arc_'.length)); }); }catch(e){}
-  try{ for(var i=0;i<localStorage.length;i++){ var key=localStorage.key(i); var match=String(key||'').match(/^(?:np_)?combat_arc_(.+)$/i); if(match && !/^(idx_|rec_)/i.test(String(match[1]||''))) pushOwner(match[1]); } }catch(e){}
   return owners;
 }
 function combatArchiveGetIndex(owner){
@@ -10880,14 +11036,23 @@ function combatArchiveGetRecord(owner, id){
   return null;
 }
 async function combatArchiveFetchRecord(owner, id, fallback){
+  var generation=_dbSessionGeneration;
   owner = combatArchiveOwnerKey(owner); id = String(id||'');
   if(!owner || !id) return null;
-  var cached = combatArchiveGetRecord(owner, id); if(cached) return cached;
   if(_dbToken && !_dbOffline){
-    try{ var recResp = await _dbCall({action:'get', key:combatArchiveRecordKey(owner, id)}, {silent:true}); if(recResp && recResp.value && typeof recResp.value === 'object') return combatArchiveCacheRecord(owner, recResp.value); }catch(e){}
-    try{ var legacyResp = await _dbCall({action:'get', key:combatArchiveStoreKey(owner)}, {silent:true}); var arr = Array.isArray(legacyResp && legacyResp.value) ? legacyResp.value : []; var hit = arr.find(function(a){ return String(a&&a.id||'')===id; }); if(hit) return combatArchiveCacheRecord(owner, hit); }catch(e){}
+    var recResp = await _dbCall({action:'get', key:combatArchiveRecordKey(owner, id)}, {silent:true});
+    _assertDbSessionGeneration(generation);
+    if(!recResp || recResp.ok === false || recResp.status >= 400) throw _dbWriteFailure(combatArchiveRecordKey(owner,id), recResp);
+    if(recResp.value && !Array.isArray(recResp.value)) return combatArchiveCacheRecord(owner, recResp.value);
+    var legacyResp = await _dbCall({action:'get', key:combatArchiveStoreKey(owner)}, {silent:true});
+    _assertDbSessionGeneration(generation);
+    if(!legacyResp || legacyResp.ok === false || legacyResp.status >= 400) throw _dbWriteFailure(combatArchiveStoreKey(owner), legacyResp);
+    var hit = (Array.isArray(legacyResp.value) ? legacyResp.value : []).find(function(a){ return String(a&&a.id||'')===id; });
+    if(hit && !combatArchiveIsStub(hit)) return combatArchiveCacheRecord(owner, hit);
   }
-  if(fallback && !combatArchiveIsStub(fallback)){ var out = _normalizeCombatArchiveRecord(fallback, 0); out._owner = owner; return out; }
+  var cached = combatArchiveGetRecord(owner, id);
+  if(cached && !combatArchiveIsStub(cached)) return cached;
+  if(fallback && !combatArchiveIsStub(fallback)) return combatArchiveCacheRecord(owner, fallback);
   return null;
 }
 function getCombatArchivesForOwner(owner){
@@ -10906,40 +11071,138 @@ function getCombatArchives(){
   combatArchiveCurrentOwners().forEach(function(owner){ merged = _mergeCombatArchiveLists(merged, getCombatArchivesForOwner(owner)); });
   return merged;
 }
+var _combatArchiveSaveQueue = Object.create(null);
+function _sameCombatArchive(a,b){
+  function clean(value){
+    var copy = _cloneForDb(value || {});
+    delete copy._owner; delete copy._stub;
+    return JSON.stringify(copy);
+  }
+  return clean(a) === clean(b);
+}
+function _combatArchiveRevisionSnapshot(key){
+  return {key:key, known:Object.prototype.hasOwnProperty.call(_dbVersions,key), version:_dbVersions[key], value:_cloneForDb(sto(key))};
+}
+function _assertCombatArchiveRevision(snapshot, generation){
+  _assertDbSessionGeneration(generation);
+  if(!_dbToken || _dbOffline || window.__logoutBusy) throw _dbWriteFailure(snapshot.key,{error:'Connexion requise pour sauvegarder les archives.'});
+  if(snapshot.known && _dbVersions[snapshot.key] !== snapshot.version) throw _dbWriteFailure(snapshot.key,{code:'VERSION_CONFLICT'});
+}
+async function _resolveCombatArchiveRevision(snapshot, generation, isRecord, desired){
+  _assertCombatArchiveRevision(snapshot,generation);
+  if(_DB_WRITE_QUEUE[snapshot.key]){
+    await _DB_WRITE_QUEUE[snapshot.key];
+    _assertCombatArchiveRevision(snapshot,generation);
+  }
+  if(snapshot.known) return;
+  var response=await _dbCall({action:'get',key:snapshot.key},{silent:true});
+  _assertDbSessionGeneration(generation);
+  if(!response || response.ok === false || response.status >= 400) throw _dbWriteFailure(snapshot.key,response);
+  var remote=response.value;
+  var same=isRecord
+    ? (!remote || (snapshot.value && _sameCombatArchive(remote,snapshot.value)) || (desired && _sameCombatArchive(remote,desired)))
+    : _sameCombatArchive(remote || [],snapshot.value || []);
+  // An unseen remote version cannot become the base of an older local snapshot.
+  if(!same) throw _dbWriteFailure(snapshot.key,{code:'VERSION_CONFLICT'});
+  snapshot.known=true;
+  snapshot.version=response.version;
+}
+async function _writeCombatArchiveSnapshot(snapshot, value, generation){
+  _assertCombatArchiveRevision(snapshot,generation);
+  var normalized=_normalizeDbValueForKey(snapshot.key,_cloneForDb(value));
+  // Keep the revision paired with the original data, even if a bundle arrives while details save.
+  var response=await _dbCall({action:'set',key:snapshot.key,value:normalized,expectedVersion:snapshot.version},{silent:true});
+  _assertDbSessionGeneration(generation);
+  if(!response || response.ok !== true || response.skipped || response.status >= 400) throw _dbWriteFailure(snapshot.key,response);
+  _dbVersions[snapshot.key]=response.version;
+  _dbCache[snapshot.key]=normalized;
+  snapshot.version=response.version;
+  _reportDbWriteSuccess(snapshot.key);
+  return normalized;
+}
 function saveCombatArchives(arr, ownerOverride){
   var owner = combatArchiveOwnerKey(ownerOverride || (_cs&&_cs._owner) || combatArchiveCurrentOwner());
-  if(!owner) return Promise.resolve({ok:false, skipped:true});
-  var seen = Object.create(null), source = Array.isArray(arr) ? arr : [], next = [];
-  source.forEach(function(entry){ if(!entry || typeof entry !== 'object') return; var id = String(entry.id || ''); if(!id || seen[id]) return; seen[id]=true; next.push(entry); });
-  next.sort(function(a,b){ return (b&&b.savedAt||0) - (a&&a.savedAt||0); });
-  var prevIndex = combatArchiveGetIndex(owner), prevIds = Object.create(null); prevIndex.forEach(function(meta){ prevIds[String(meta&&meta.id||'')] = true; });
-  var nextIds = Object.create(null), nextIndex = [], nextById = Object.create(null);
-  next.forEach(function(entry){ var meta = combatArchiveMetaFromRecord(entry, owner); nextIndex.push(meta); nextIds[meta.id]=true; nextById[meta.id]=entry; });
-  nextIndex.sort(function(a,b){ return (b&&b.savedAt||0) - (a&&a.savedAt||0); });
-  var writes = [];
-  writes.push(sv(combatArchiveStoreKey(owner), next.slice(0,50).map(function(entry){ return combatArchiveExpandForPersist(owner, entry) || entry; })).catch(function(){ return null; }));
-  writes.push(sv(combatArchiveIndexKey(owner), nextIndex).catch(function(){ return null; }));
-  nextIndex.forEach(function(meta){ var full = combatArchiveExpandForPersist(owner, nextById[meta.id] || meta); if(!full || !full.id) return; writes.push(sv(combatArchiveRecordKey(owner, full.id), full).catch(function(){ return null; })); });
-  Object.keys(prevIds).forEach(function(id){ if(nextIds[id]) return; var recKey = combatArchiveRecordKey(owner, id); delete _dbCache[recKey]; if(_dbToken && !_dbOffline) writes.push(_dbCall({action:'delete', key:recKey}, {silent:true}).catch(function(){ return null; })); });
-  if(owner === combatArchiveCurrentOwner()){
-    combatArchiveCurrentOwners().slice(1).forEach(function(alias){ alias = combatArchiveOwnerKey(alias); if(!alias || alias === owner) return; delete _dbCache[combatArchiveStoreKey(alias)]; delete _dbCache[combatArchiveIndexKey(alias)]; if(_dbToken && !_dbOffline){ writes.push(_enqueueDbWrite(combatArchiveStoreKey(alias), []).catch(function(){ return null; })); writes.push(_enqueueDbWrite(combatArchiveIndexKey(alias), []).catch(function(){ return null; })); } });
-  }
-  return Promise.all(writes).then(function(){ return {ok:true, owner:owner}; });
+  if(!owner) return Promise.reject(new Error('Propriétaire de l’archive introuvable.'));
+  var source = _cloneForDb(Array.isArray(arr) ? arr : []);
+  var generation=_dbSessionGeneration;
+  var listSnapshot=_combatArchiveRevisionSnapshot(combatArchiveStoreKey(owner));
+  var indexSnapshot=_combatArchiveRevisionSnapshot(combatArchiveIndexKey(owner));
+  var seen=Object.create(null), next=[];
+  source.forEach(function(entry){
+    if(!entry || !entry.id || seen[entry.id]) return;
+    seen[entry.id]=true;
+    var baseline=combatArchiveGetRecord(owner,entry.id);
+    next.push({entry:entry,baseline:baseline,snapshot:_combatArchiveRevisionSnapshot(combatArchiveRecordKey(owner,entry.id))});
+  });
+  next.sort(function(a,b){ return (b.entry.savedAt||0)-(a.entry.savedAt||0); });
+  var prior = _combatArchiveSaveQueue[owner] || Promise.resolve();
+  var task = prior.then(async function(){
+    // Queued saves retain their own base: a preceding save requires a fresh user snapshot.
+    await _resolveCombatArchiveRevision(listSnapshot,generation,false);
+    await _resolveCombatArchiveRevision(indexSnapshot,generation,false);
+    var confirmed=[];
+    // Confirm each complete record before publishing any index or compatibility list.
+    for(var item of next){
+      var entry=item.entry, snapshot=item.snapshot;
+      var full=combatArchiveIsStub(entry) ? item.baseline : combatArchiveExpandForPersist(owner,entry);
+      await _resolveCombatArchiveRevision(snapshot,generation,true,full);
+      if(!full || combatArchiveIsStub(full)){
+        var existing=sto(snapshot.key);
+        if(!existing || combatArchiveIsStub(existing)) throw _dbWriteFailure(snapshot.key,{error:'Le détail d’une archive est indisponible. La liste existante est conservée.'});
+        full=existing;
+      }
+      if(snapshot.version === null || !_sameCombatArchive(full,sto(snapshot.key))) full=await _writeCombatArchiveSnapshot(snapshot,full,generation);
+      confirmed.push(full);
+    }
+    _assertCombatArchiveRevision(listSnapshot,generation);
+    _assertCombatArchiveRevision(indexSnapshot,generation);
+    next.forEach(function(item){ _assertCombatArchiveRevision(item.snapshot,generation); });
+    var nextIndex=confirmed.map(function(entry){ return combatArchiveMetaFromRecord(entry,owner); });
+    await _writeCombatArchiveSnapshot(listSnapshot,confirmed.slice(0,50),generation);
+    await _writeCombatArchiveSnapshot(indexSnapshot,nextIndex,generation);
+    // Historical aliases and unreferenced details remain recoverable; never erase them during a partial save.
+    return {ok:true,owner:owner};
+  });
+  _combatArchiveSaveQueue[owner]=task;
+  task.then(function(){ if(_combatArchiveSaveQueue[owner]===task) delete _combatArchiveSaveQueue[owner]; }, function(err){
+    if(_combatArchiveSaveQueue[owner]===task) delete _combatArchiveSaveQueue[owner];
+    _reportDbWriteError(combatArchiveStoreKey(owner),err);
+  });
+  return task;
 }
 var _combatArchiveAdminPrimePromise = null;
 function _primeAllCombatArchivesForAdmin(force){
   if(!can("manage_mjs")) return Promise.resolve(false);
   if(!_dbToken || _dbOffline) return Promise.resolve(false);
+  var generation=_dbSessionGeneration;
   var owners = _combatArchiveKnownOwners();
   if(!owners.length) return Promise.resolve(false);
   if(_combatArchiveAdminPrimePromise && !force) return _combatArchiveAdminPrimePromise;
-  _combatArchiveAdminPrimePromise = Promise.all(owners.map(function(owner){
+  var task=Promise.all(owners.map(function(owner){
     return _dbCall({action:"get", key:combatArchiveIndexKey(owner)}, {silent:true}).then(function(resp){
+      _assertDbSessionGeneration(generation);
       if(resp && Array.isArray(resp.value) && resp.value.length){ _dbCache[combatArchiveIndexKey(owner)] = _normalizeDbValueForKey(combatArchiveIndexKey(owner), resp.value || []); return true; }
-      return _dbCall({action:"get", key:combatArchiveStoreKey(owner)}, {silent:true}).then(function(legacyResp){ var normalizedLegacy = _normalizeDbValueForKey(combatArchiveStoreKey(owner), legacyResp.value || []); _dbCache[combatArchiveStoreKey(owner)] = normalizedLegacy; if(Array.isArray(normalizedLegacy) && normalizedLegacy.length){ _dbCache[combatArchiveIndexKey(owner)] = normalizedLegacy.map(function(arc){ return combatArchiveMetaFromRecord(arc, owner); }); _combatArchivePromoteLegacyOwner(owner).catch(function(){}); return true; } return false; }).catch(function(){ return false; });
+      return _dbCall({action:"get", key:combatArchiveStoreKey(owner)}, {silent:true}).then(function(legacyResp){
+        _assertDbSessionGeneration(generation);
+        var normalizedLegacy = _normalizeDbValueForKey(combatArchiveStoreKey(owner), legacyResp.value || []);
+        _dbCache[combatArchiveStoreKey(owner)] = normalizedLegacy;
+        if(Array.isArray(normalizedLegacy) && normalizedLegacy.length){
+          _dbCache[combatArchiveIndexKey(owner)] = normalizedLegacy.map(function(arc){ return combatArchiveMetaFromRecord(arc, owner); });
+          _combatArchivePromoteLegacyOwner(owner).catch(function(){});
+          return true;
+        }
+        return false;
+      }).catch(function(){ return false; });
     }).catch(function(){ return false; });
-  })).then(function(results){ _combatArchiveAdminPrimePromise = null; return results.some(Boolean); }).catch(function(){ _combatArchiveAdminPrimePromise = null; return false; });
-  return _combatArchiveAdminPrimePromise;
+  })).then(function(results){
+    if(_combatArchiveAdminPrimePromise===task) _combatArchiveAdminPrimePromise=null;
+    return generation===_dbSessionGeneration && results.some(Boolean);
+  },function(){
+    if(_combatArchiveAdminPrimePromise===task) _combatArchiveAdminPrimePromise=null;
+    return false;
+  });
+  _combatArchiveAdminPrimePromise=task;
+  return task;
 }
 function getAllCombatArchives(){
   var all=[];
@@ -11360,7 +11623,7 @@ function cRenderAbilityButtons(fi, actLeft, accent, accentDim, accentBorder){
     if(op.targetType==='ally') guard="var _ht=parseInt((document.getElementById('decl-htgt-"+fi+"')&&document.getElementById('decl-htgt-"+fi+"').value)||csGet('h',"+fi+")||-1);if(isNaN(_ht)||_ht<0){return;}window.__cDeclHealTarget=_ht;";
     if(op.targetType==='enemy'&&op.healTargetType==='ally') guard+="var _hel=document.getElementById('decl-htgt-"+fi+"');var _htv=_hel&&_hel.value?parseInt(_hel.value):-1;if(!isNaN(_htv)&&_htv>=0)window.__cDeclHealTarget=_htv;";
     var onclick=guard+"var _o=JSON.parse(this.getAttribute('data-opts'));if(window.__cDeclTarget!==undefined){_o.target=window.__cDeclTarget;window.__cDeclTarget=undefined;}if(window.__cDeclHealTarget!==undefined){_o.healTarget=window.__cDeclHealTarget;window.__cDeclHealTarget=undefined;}cDeclareAction("+fi+",_o.action||'capacite',_o);";
-    h+='<button data-opts=\''+payload+'\' onclick="'+onclick+'" style="width:100%;padding:8px 8px;background:'+bg+';border:1px solid '+bd+';cursor:pointer;text-align:left;transition:all .15s;margin-bottom:6px;" onmouseover="this.style.opacity=\'0.84\'" onmouseout="this.style.opacity=\'1\'">';
+    h+='<button data-opts=\''+jsesc(payload)+'\' onclick="'+onclick+'" style="width:100%;padding:8px 8px;background:'+bg+';border:1px solid '+bd+';cursor:pointer;text-align:left;transition:all .15s;margin-bottom:6px;" onmouseover="this.style.opacity=\'0.84\'" onmouseout="this.style.opacity=\'1\'">';
     h+='<div style="font-size:10px;color:'+col+';display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><span>'+esc(op.label||op.palNom||'Capacité')+'</span>'+(op.value?'<span style="color:var(--text);">'+op.value+' dmg</span>':(op.healAmt?'<span style="color:var(--green);">+'+op.healAmt+' PV</span>':''))+'</div>';
     if(op.descText) h+='<div style="font-size:9px;color:rgba(255,255,255,0.45);margin-top:3px;line-height:1.45;">'+esc(op.descText)+'</div>';
     h+='<div style="font-family:var(--fm);font-size:7px;color:rgba(255,255,255,0.22);margin-top:3px;">'+esc(sub.join(' · '))+'</div>';
@@ -11962,22 +12225,26 @@ function combatResolve(){
 }
 
 // ── Terminer manuellement ─────────────────────────────────────────────────────
-function combatEnd(){
+async function combatEnd(){
   cLog("🏁 Combat terminé — Round "+_cs.round,"round");
+  var players=_cloneForDb(gp());
   _cs.fighters.forEach(function(f){
     if(f.type!=="player") return;
-    var p=gpid(f.pid); if(!p) return;
+    var p=players.find(function(player){ return player.id===f.pid; }); if(!p) return;
     var realPvMax=f.pvMax-(f.pvMaxBonus||0);
     p.pvMax=realPvMax; p.pvCur=Math.min(f.pvCur,realPvMax);
     p.epCur=f.epCur; p.emCur=f.emCur;
     if(f.statuts&&f.statuts.length){ p.statuts=p.statuts||[]; f.statuts.forEach(function(st){ if(!p.statuts.find(function(s){return s.id===st.id;})) p.statuts.push({id:st.id,desc:"",posedBy:CU?CU.name:"MJ",posedAt:Date.now()}); }); }
     p.history=p.history||[];
     p.history.push({ts:Date.now(),type:"combat",text:"⚔ "+_cs.name+" — "+_cs.round+"R · PV:"+f.pvCur+"/"+f.pvMax+" EP:"+f.epCur+"/"+f.epMax,by:"MJ "+(CU?CU.name:"Staff"),combatId:_cs.id});
-    up(p);
+
   });
-  combatSaveArc();
   _cs.active=false; _cs.phase="idle"; _cs._surc={}; _cs._iv={};
-  notif("Combat terminé. Fiches sauvegardées.","ok");
+  try{
+    await combatSaveArc();
+    await sp(players);
+    notif("Combat terminé. Archive et fiches sauvegardées.","ok");
+  }catch(e){ notif('Combat terminé, mais sauvegarde incomplète : '+e.message,'err'); }
   rCombat("p-combat-mj-c");
 }
 
@@ -12129,7 +12396,7 @@ function openDropModal(beast,fi){
     h+='<div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="font-family:var(--fm);font-size:11px;color:var(--faint);">'+r.range+'</span><span style="font-size:12px;color:'+col+';">'+r.gem+'</span></div>';
   });
   h+='</div>';
-  h+='<div id="drop-roll-zone" style="margin-bottom:14px;"><button class="btn" onclick="rollDropDie(\''+beast.bid+'\','+fi+')" style="width:100%;padding:14px;font-size:14px;"><span>🎲 Lancer le D100</span></button></div>';
+  h+='<div id="drop-roll-zone" style="margin-bottom:14px;"><button class="btn" onclick="rollDropDie(\''+jsesc(beast.bid)+'\','+fi+')" style="width:100%;padding:14px;font-size:14px;"><span>🎲 Lancer le D100</span></button></div>';
   h+='<div id="drop-result"></div><div id="drop-attrib"></div>';
   ge("drop-title").textContent="💀 "+beast.name+" KO — Drop ?";
   ge("drop-body").innerHTML=h;
@@ -12149,7 +12416,7 @@ function combatPendingDrops(){
 function combatGemTone(gem){
   return gem==="Aucune"?"var(--faint)":gem.indexOf("Blanche")>-1?"var(--dim)":gem.indexOf("Incarnate")>-1?"var(--purple)":"var(--red)";
 }
-function combatGrantGemToPlayer(pid,gem,bnom,meta){
+async function combatGrantGemToPlayer(pid,gem,bnom,meta){
   var p=gpid(pid); if(!p) return false;
   var ex=(p.inventory||[]).find(function(i){return i.name===gem&&i.category==="Gemme";});
   if(ex) ex.qty=(ex.qty||1)+1;
@@ -12157,7 +12424,7 @@ function combatGrantGemToPlayer(pid,gem,bnom,meta){
   p.history=p.history||[];
   var suffix=(meta&&meta.roll)?(" · "+meta.roll+"/100"):"";
   p.history.push({ts:Date.now(),type:"gemme",text:"💎 "+gem+" (sur "+bnom+suffix+")",by:"MJ "+(CU?CU.name:"Staff")});
-  up(p);
+  if(!await _confirmDbSave(up(p))) return false;
   cLog("💎 "+gem+" → "+p.name+((meta&&meta.pending)?" (drop différé)":""),"spell");
   notif(gem+" attribuée à "+esc(p.name)+" ✓","ok");
   try{ combatQueueAutosave((meta&&meta.pending)?'pending_drop_attributed':'drop_attributed', 60); }catch(_e){}
@@ -12182,12 +12449,12 @@ function queuePendingDropDecision(beastId,gem,roll,fi){
   closeModal("m-drop");
   rCombat("p-combat-mj-c");
 }
-function attributePendingDrop(dropId,pid){
+async function attributePendingDrop(dropId,pid){
   var list=combatPendingDrops();
   var idx=list.findIndex(function(x){ return String(x&&x.id||'')===String(dropId||''); });
   if(idx<0) return;
   var drop=list[idx];
-  if(!combatGrantGemToPlayer(pid, drop.gem, drop.beastName, {roll:drop.roll,pending:true})) return;
+  if(!await combatGrantGemToPlayer(pid, drop.gem, drop.beastName, {roll:drop.roll,pending:true})) return;
   list.splice(idx,1);
   try{ combatQueueAutosave('pending_drop_resolved', 60); }catch(_e){}
   rCombat("p-combat-mj-c");
@@ -12224,8 +12491,8 @@ function rollDropDie(beastId,fi){
   h+='</div>';
   ge("drop-attrib").innerHTML=h;
 }
-function attributeDrop(pid,gem,bnom,roll,pendingId){
-  if(!combatGrantGemToPlayer(pid,gem,bnom,{roll:roll,pending:!!pendingId})) return;
+async function attributeDrop(pid,gem,bnom,roll,pendingId){
+  if(!await combatGrantGemToPlayer(pid,gem,bnom,{roll:roll,pending:!!pendingId})) return;
   if(pendingId){
     var list=combatPendingDrops();
     var idx=list.findIndex(function(x){ return String(x&&x.id||'')===String(pendingId||''); });
@@ -12287,7 +12554,11 @@ function _copyFallback(text){
 }
 
 // ── Notes + Archives ──────────────────────────────────────────────────────────
-function combatSaveNotes(){ var a=ge("c-notes"); if(a) _cs.notes=a.value; if(_cs.id) combatSaveArc({manual:false,reason:'notes'}); notif("Notes sauvegardées.","ok"); }
+async function combatSaveNotes(){
+  var a=ge('c-notes'); if(a) _cs.notes=a.value;
+  try{ await combatSaveArc({manual:false,reason:'notes'}); notif('Notes sauvegardées.','ok'); }
+  catch(e){ notif('Notes non enregistrées : '+e.message,'err'); }
+}
 function combatNewFromArchive(opts){
   opts=opts||{};
   _cs=combatBlankState();
@@ -12309,10 +12580,13 @@ function combatSaveArc(opts){
   arc._inProgress=combatIsInProgressState(arc);
   arc._draft=arc._inProgress || !!arc._new;
   if(i>=0) arr[i]=arc; else arr.unshift(arc);
-  saveCombatArchives(arr, owner).catch(function(){});
-  return arc;
+  return saveCombatArchives(arr, owner).then(function(){ return arc; });
 }
-function combatSaveArchive(){ combatSaveArc({manual:true,reason:'manual_save'}); notif("Combat sauvegardé.","ok"); }
+async function combatSaveArchive(){
+  try{ await combatSaveArc({manual:true,reason:'manual_save'}); notif('Combat sauvegardé.','ok'); }
+  catch(e){ notif('Combat non enregistré : '+e.message,'err'); }
+}
+
 async function combatLoadArchive(id){
   var source=(can("manage_mjs")?getAllCombatArchives():getCombatArchives());
   var arc=source.find(function(a){return a.id===id;});
@@ -12352,17 +12626,8 @@ async function combatDeleteArchive(id){
     await Promise.all(touched.map(function(targetOwner){
       var before=getCombatArchivesForOwner(targetOwner);
       var remaining=before.filter(function(a){return String(a&&a.id||'')!==id;});
-      try{ localStorage.removeItem("np_"+combatArchiveRecordKey(targetOwner,id)); }catch(_e){}
-      delete _dbCache[combatArchiveRecordKey(targetOwner,id)];
       return saveCombatArchives(remaining, targetOwner);
     }));
-    if(_dbToken && !_dbOffline){
-      var directDeletes=[];
-      touched.forEach(function(targetOwner){
-        directDeletes.push(_dbCall({action:'delete', key:combatArchiveRecordKey(targetOwner,id)}, {silent:true}).catch(function(){ return null; }));
-      });
-      await Promise.all(directDeletes);
-    }
     if(String(_arcSelectedId||'')===id) _arcSelectedId='';
     if(_cs&&String(_cs.id||'')===id) combatNewFromArchive({skipRender:true});
     notif("Archive supprimée.","inf");
@@ -12387,7 +12652,7 @@ function renderStatutsFiche(p){
       var def=STATUT_EFFECTS[st.id]||{label:st.id,col:"var(--dim)"};var col=def.col||"var(--dim)";
       h+='<div style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid '+col+';color:'+col+';font-family:var(--fd);font-size:9px;letter-spacing:1px;text-transform:uppercase;">'+def.label;
       if(st.desc) h+=' <span style="font-family:var(--fb);font-size:11px;font-style:italic;text-transform:none;opacity:.7;">('+st.desc+')</span>';
-      if(cm) h+='<button onclick="removeStatutFiche(\''+p.id+'\','+si+')" style="background:transparent;border:none;cursor:pointer;font-size:12px;padding:0;opacity:.5;color:'+col+';">✕</button>';
+      if(cm) h+='<button onclick="removeStatutFiche(\''+jsesc(p.id)+'\','+si+')" style="background:transparent;border:none;cursor:pointer;font-size:12px;padding:0;opacity:.5;color:'+col+';">✕</button>';
       h+='</div>';
     });
     el.innerHTML=h+'</div>';
@@ -12396,13 +12661,13 @@ function renderStatutsFiche(p){
     if(cm){
       var opts=Object.keys(STATUT_EFFECTS).map(function(k){return'<option value="'+k+'">'+STATUT_EFFECTS[k].label+'</option>';}).join("");
       adminEl.style.display="flex";adminEl.style.gap="6px";adminEl.style.flexWrap="wrap";
-      adminEl.innerHTML='<select id="statut-add-sel-'+p.id+'" style="font-size:12px;padding:4px 8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);"><option value="">+ Ajouter…</option>'+opts+'</select>'
-        +'<input type="text" id="statut-add-desc-'+p.id+'" placeholder="Note (optionnel)" style="font-size:12px;padding:4px 8px;width:150px;">'
-        +'<button class="btn btn-sm" onclick="addStatutFiche(\''+p.id+'\')" style="border-color:var(--glacier-dim);color:var(--glacier-dim);"><span>Poser</span></button>';
+      adminEl.innerHTML='<select id="statut-add-sel-'+escAttr(p.id)+'" style="font-size:12px;padding:4px 8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);"><option value="">+ Ajouter…</option>'+opts+'</select>'
+        +'<input type="text" id="statut-add-desc-'+escAttr(p.id)+'" placeholder="Note (optionnel)" style="font-size:12px;padding:4px 8px;width:150px;">'
+        +'<button class="btn btn-sm" onclick="addStatutFiche(\''+jsesc(p.id)+'\')" style="border-color:var(--glacier-dim);color:var(--glacier-dim);"><span>Poser</span></button>';
     } else adminEl.style.display="none";
   }
 }
-function addStatutFiche(pid){
+async function addStatutFiche(pid){
   var p=gpid(pid); if(!p) return;
   var sel=ge("statut-add-sel-"+pid); if(!sel||!sel.value) return;
   var descEl=ge("statut-add-desc-"+pid),desc=descEl?descEl.value.trim():"";
@@ -12411,16 +12676,16 @@ function addStatutFiche(pid){
   if(ex){if(desc) ex.desc=desc;} else p.statuts.push({id:sel.value,desc,posedBy:CU?CU.name:"MJ",posedAt:Date.now()});
   var lbl=(STATUT_EFFECTS[sel.value]||{}).label||sel.value;
   p.history=p.history||[];p.history.push({ts:Date.now(),type:"stat",text:"⚠ "+lbl+(desc?" ("+desc+")":""),by:CU?CU.name:"MJ"});
-  up(p);if(descEl) descEl.value="";sel.value="";
+  if(!await _confirmDbSave(up(p))) return false;if(descEl) descEl.value="";sel.value="";
   notif(lbl+" posé.","ok");renderStatutsFiche(p);
 }
-function removeStatutFiche(pid,si){
+async function removeStatutFiche(pid,si){
   var p=gpid(pid); if(!p) return;
   var st=p.statuts[si]; if(!st) return;
   var lbl=(STATUT_EFFECTS[st.id]||{}).label||st.id;
   p.statuts.splice(si,1);
   p.history=p.history||[];p.history.push({ts:Date.now(),type:"stat",text:"✓ Retiré : "+lbl,by:CU?CU.name:"MJ"});
-  up(p);notif(lbl+" retiré.","ok");renderStatutsFiche(p);
+  if(!await _confirmDbSave(up(p))) return false;notif(lbl+" retiré.","ok");renderStatutsFiche(p);
 }
 function addNotifToPlayer(pid,text,by){
   var p=gpid(pid); if(!p) return;
@@ -12939,9 +13204,9 @@ body .nav-group-menu .nav-section-header{
       var inC=_cs.fighters.some(function(f){return f.pid===p.id;});
       var pvPct=Math.round(p.pvCur/p.pvMax*100);
       var pvC=pvPct>60?"var(--green)":pvPct>30?"var(--gold)":"var(--red)";
-      h+='<div class="sim-select-row" onclick="combatToggleFighter(\''+p.id+'\',\'player\')" style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:'+(inC?"rgba(126,184,212,0.06)":"transparent")+';border:1px solid '+(inC?"rgba(126,184,212,0.3)":"rgba(255,255,255,0.05)")+';cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor=\'rgba(126,184,212,0.2)\'" onmouseout="this.style.borderColor=\''+(inC?"rgba(126,184,212,0.3)":"rgba(255,255,255,0.05)")+'\'">';
-      if(p.avatar) h+='<div style="width:30px;height:30px;flex-shrink:0;overflow:hidden;border:1px solid '+(inC?"var(--glacier-dim)":"rgba(255,255,255,0.08)")+';"><img src="'+p.avatar+'" style="width:100%;height:100%;object-fit:cover;"></div>';
-      else h+='<div style="width:30px;height:30px;flex-shrink:0;border:1px solid '+(inC?"var(--glacier-dim)":"rgba(255,255,255,0.08)")+';display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:11px;color:'+(inC?"var(--glacier)":"var(--faint)")+';">'+p.name[0]+'</div>';
+      h+='<div class="sim-select-row" onclick="combatToggleFighter(\''+jsesc(p.id)+'\',\'player\')" style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:'+(inC?"rgba(126,184,212,0.06)":"transparent")+';border:1px solid '+(inC?"rgba(126,184,212,0.3)":"rgba(255,255,255,0.05)")+';cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor=\'rgba(126,184,212,0.2)\'" onmouseout="this.style.borderColor=\''+(inC?"rgba(126,184,212,0.3)":"rgba(255,255,255,0.05)")+'\'">';
+      if(p.avatar) h+='<div style="width:30px;height:30px;flex-shrink:0;overflow:hidden;border:1px solid '+(inC?"var(--glacier-dim)":"rgba(255,255,255,0.08)")+';"><img src="'+_imageAttr(p.avatar)+'" style="width:100%;height:100%;object-fit:cover;"></div>';
+      else h+='<div style="width:30px;height:30px;flex-shrink:0;border:1px solid '+(inC?"var(--glacier-dim)":"rgba(255,255,255,0.08)")+';display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:11px;color:'+(inC?"var(--glacier)":"var(--faint)")+';">'+esc(p.name[0])+'</div>';
       h+='<div style="flex:1;min-width:0;">';
       h+='<div style="font-family:var(--fd);font-size:11px;letter-spacing:1px;color:'+(inC?"var(--text)":"var(--faint)")+';">'+esc(p.name)+'</div>';
       h+='<div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:1px;">'+esc(p.classe)+' · Niv. '+p.level+'</div>';
@@ -12961,8 +13226,8 @@ body .nav-group-menu .nav-section-header{
     h+='<div style="display:flex;flex-direction:column;gap:4px;">';
     beasts.forEach(function(b){
       var inC=_cs.fighters.some(function(f){return f.bid===b.id;});
-      h+='<div class="sim-select-row" onclick="combatToggleFighter(\''+b.id+'\',\'beast\')" style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:'+(inC?"rgba(201,74,74,0.06)":"transparent")+';border:1px solid '+(inC?"rgba(201,74,74,0.3)":"rgba(255,255,255,0.05)")+';cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor=\'rgba(201,74,74,0.2)\'" onmouseout="this.style.borderColor=\''+(inC?"rgba(201,74,74,0.3)":"rgba(255,255,255,0.05)")+'\'">';
-      if(b.img) h+='<div style="width:30px;height:30px;flex-shrink:0;overflow:hidden;border:1px solid '+(inC?"rgba(201,74,74,0.4)":"rgba(255,255,255,0.08)")+';"><img src="'+esc(b.img)+'" style="width:100%;height:100%;object-fit:cover;"></div>';
+      h+='<div class="sim-select-row" onclick="combatToggleFighter(\''+jsesc(b.id)+'\',\'beast\')" style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:'+(inC?"rgba(201,74,74,0.06)":"transparent")+';border:1px solid '+(inC?"rgba(201,74,74,0.3)":"rgba(255,255,255,0.05)")+';cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor=\'rgba(201,74,74,0.2)\'" onmouseout="this.style.borderColor=\''+(inC?"rgba(201,74,74,0.3)":"rgba(255,255,255,0.05)")+'\'">';
+      if(b.img) h+='<div style="width:30px;height:30px;flex-shrink:0;overflow:hidden;border:1px solid '+(inC?"rgba(201,74,74,0.4)":"rgba(255,255,255,0.08)")+';"><img src="'+_imageAttr(b.img)+'" style="width:100%;height:100%;object-fit:cover;"></div>';
       else h+='<div style="width:30px;height:30px;flex-shrink:0;border:1px solid '+(inC?"rgba(201,74,74,0.4)":"rgba(255,255,255,0.08)")+';display:flex;align-items:center;justify-content:center;font-size:14px;">👾</div>';
       h+='<div style="flex:1;min-width:0;">';
       h+='<div style="font-family:var(--fd);font-size:11px;letter-spacing:1px;color:'+(inC?"var(--text)":"var(--faint)")+';">'+esc(b.nom)+'</div>';
@@ -13018,7 +13283,7 @@ body .nav-group-menu .nav-section-header{
       if(isCurDecl) h+='<div style="position:absolute;top:0;left:0;right:0;height:2px;background:'+accent+';"></div>';
       if(done&&!ko) h+='<div style="position:absolute;top:0;left:0;right:0;height:2px;background:rgba(90,170,122,0.6);"></div>';
       h+='<div style="font-family:var(--fm);font-size:9px;font-weight:700;color:'+(isCurDecl?accent:done?"rgba(90,170,122,0.5)":"rgba(255,255,255,0.2)")+';">'+(pos+1)+'</div>';
-      if(f.img) h+='<div style="width:44px;height:44px;margin:5px auto 4px;overflow:hidden;border-radius:50%;border:2px solid '+(isCurDecl?accent:(done?"rgba(90,170,122,0.4)":"rgba(255,255,255,0.1)"))+';"><img src="'+f.img+'" style="width:100%;height:100%;object-fit:cover;"></div>';
+      if(f.img) h+='<div style="width:44px;height:44px;margin:5px auto 4px;overflow:hidden;border-radius:50%;border:2px solid '+(isCurDecl?accent:(done?"rgba(90,170,122,0.4)":"rgba(255,255,255,0.1)"))+';"><img src="'+_imageAttr(f.img)+'" style="width:100%;height:100%;object-fit:cover;"></div>';
       else h+='<div style="width:44px;height:44px;margin:5px auto 4px;border-radius:50%;border:2px solid '+(isCurDecl?accent:(done?"rgba(90,170,122,0.4)":"rgba(255,255,255,0.1)"))+';display:flex;align-items:center;justify-content:center;font-size:'+(isJ?15:20)+'px;background:rgba(255,255,255,0.02);">'+(isJ?'<span style="font-family:var(--fd);font-size:12px;color:'+accent+';">'+f.name[0]+'</span>':'👾')+'</div>';
       h+='<div style="font-family:var(--fd);font-size:7px;letter-spacing:1px;color:'+(isCurDecl?accent:"var(--dim)")+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;">'+f.name.split(" ")[0]+'</div>';
       // Barre PV
@@ -13083,7 +13348,7 @@ body .nav-group-menu .nav-section-header{
 
       // Avatar + Nom
       h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-right:80px;">';
-      if(f.img) h+='<div style="width:42px;height:42px;flex-shrink:0;overflow:hidden;border:1px solid '+(isCurDecl?accent:accentBorder)+';"><img src="'+f.img+'" style="width:100%;height:100%;object-fit:cover;"></div>';
+      if(f.img) h+='<div style="width:42px;height:42px;flex-shrink:0;overflow:hidden;border:1px solid '+(isCurDecl?accent:accentBorder)+';"><img src="'+_imageAttr(f.img)+'" style="width:100%;height:100%;object-fit:cover;"></div>';
       else h+='<div style="width:42px;height:42px;flex-shrink:0;border:1px solid '+(isCurDecl?accent:accentBorder)+';display:flex;align-items:center;justify-content:center;font-size:'+(isJ?15:20)+'px;">'+(isJ?'<span style="font-family:var(--fd);color:'+accent+';font-size:13px;">'+f.name[0]+'</span>':'👾')+'</div>';
       h+='<div>';
       h+='<div style="font-family:var(--fd);font-size:12px;letter-spacing:1.5px;color:'+(isCurDecl?accent:"var(--text)")+';">'+esc(f.name)+'</div>';
@@ -13240,7 +13505,7 @@ body .nav-group-menu .nav-section-header{
             :needsTgt
             ?"var _t=parseInt(document.getElementById('decl-tgt-"+fi+"').value);if(isNaN(_t)){var _s=document.getElementById('decl-tgt-"+fi+"');_s.style.borderColor='var(--red)';_s.style.boxShadow='0 0 0 2px rgba(201,74,74,0.4)';setTimeout(function(){_s.style.borderColor='';_s.style.boxShadow='';},1500);return;}cDeclareAction("+fi+",'"+(btn.a)+"',{target:_t,value:"+val+"})"
             :"cDeclareAction("+fi+",'"+(btn.a)+"',{target:undefined,value:"+val+"})";
-          h+='<button '+(isDisabled?'disabled aria-disabled="true" title="'+esc(btn.disabledReason||'Action indisponible')+'" ':'')+'onclick="'+onclickCode+'" style="padding:7px 4px;background:'+baseBg+';border:1px solid '+borderCol+';cursor:'+(isDisabled?'not-allowed':'pointer')+';text-align:center;transition:all .15s;opacity:'+(isDisabled?'.55':'1')+';" onmouseover="this.style.background=\''+hoverBg+'\'" onmouseout="this.style.background=\''+baseBg+'\'">'
+          h+='<button '+(isDisabled?'disabled aria-disabled="true" title="'+esc(btn.disabledReason||'Action indisponible')+'" ':'')+'onclick="'+onclickCode+'" style="padding:7px 4px;background:'+baseBg+';border:1px solid '+borderCol+';cursor:'+(isDisabled?'not-allowed':'pointer')+';text-align:center;transition:all .15s;opacity:'+(isDisabled?'.55':'1')+';" onmouseover="this.style.background=\''+jsesc(hoverBg)+'\'" onmouseout="this.style.background=\''+jsesc(baseBg)+'\'">'
             +'<div style="font-size:11px;color:'+textCol+';">'+btn.l+'</div>'
             +(btn.sub?'<div style="font-family:var(--fm);font-size:8px;color:'+subCol+';margin-top:1px;">'+btn.sub+'</div>':"")
             +'</button>';
@@ -13270,7 +13535,7 @@ body .nav-group-menu .nav-section-header{
               if(op.targetType==='enemy') guard="var _s=document.getElementById('decl-tgt-"+fi+"');var _t=parseInt(((_s&&_s.value)||csGet('t',"+fi+")||-1),10);if(isNaN(_t)||_t<0){if(_s){_s.style.borderColor='var(--red)';_s.style.boxShadow='0 0 0 2px rgba(201,74,74,0.4)';setTimeout(function(){_s.style.borderColor='';_s.style.boxShadow='';},1500);}return;}window.__cDeclTarget=_t;";
               if(op.targetType==='ally') guard="var _hs=document.getElementById('decl-htgt-"+fi+"');var _ht=parseInt(((_hs&&_hs.value)||csGet('h',"+fi+")||-1),10);if(isNaN(_ht)||_ht<0){if(_hs){_hs.style.borderColor='var(--green)';_hs.style.boxShadow='0 0 0 2px rgba(90,170,122,0.35)';setTimeout(function(){_hs.style.borderColor='';_hs.style.boxShadow='';},1500);}return;}window.__cDeclHealTarget=_ht;";
               var onclick=guard+"var _o=JSON.parse(this.getAttribute('data-opts'));if(window.__cDeclTarget!==undefined){_o.target=window.__cDeclTarget;window.__cDeclTarget=undefined;}if(window.__cDeclHealTarget!==undefined){_o.healTarget=window.__cDeclHealTarget;window.__cDeclHealTarget=undefined;}cDeclareAction("+fi+",_o.action||'capacite',_o);";
-              h+='<button data-opts=\''+payload+'\' onclick="'+onclick+'" style="width:100%;padding:8px;background:rgba(201,74,74,0.06);border:1px solid rgba(201,74,74,0.2);cursor:pointer;text-align:left;transition:all .15s;margin-bottom:6px;" onmouseover="this.style.background=\'rgba(201,74,74,0.12)\'" onmouseout="this.style.background=\'rgba(201,74,74,0.06)\'">';
+              h+='<button data-opts=\''+jsesc(payload)+'\' onclick="'+onclick+'" style="width:100%;padding:8px;background:rgba(201,74,74,0.06);border:1px solid rgba(201,74,74,0.2);cursor:pointer;text-align:left;transition:all .15s;margin-bottom:6px;" onmouseover="this.style.background=\'rgba(201,74,74,0.12)\'" onmouseout="this.style.background=\'rgba(201,74,74,0.06)\'">';
               h+='<div style="font-size:10px;color:var(--red);display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><span>'+esc(op.label||'⚡ Compétence')+'</span>'+(op.value?'<span style="color:var(--text);">'+op.value+' dmg</span>':(op.healAmt?'<span style="color:var(--green);">+'+op.healAmt+' PV</span>':''))+'</div>';
               if(op.descText) h+='<div style="font-size:9px;color:rgba(255,255,255,0.45);margin-top:3px;line-height:1.45;">'+esc(op.descText)+'</div>';
               h+='<div style="font-family:var(--fm);font-size:7px;color:rgba(255,255,255,0.22);margin-top:3px;">'+esc(sub.join(' · '))+'</div>';
@@ -13495,13 +13760,8 @@ function _spawnLabNormalizeGlobal(raw){
   out.lastDbSyncAt=Date.now();
   return out;
 }
-function _spawnLabReadLocalGlobalRaw(){
-  try{
-    var localRaw=localStorage.getItem("np_"+_spawnLabStoreKey);
-    if(localRaw) return JSON.parse(localRaw);
-  }catch(_e){}
-  return null;
-}
+function _spawnLabReadLocalGlobalRaw(){ return null; }
+
 function _spawnLabMergeRuns(aRuns, bRuns){
   var seen=Object.create(null), out=[];
   function push(list){
@@ -13541,12 +13801,7 @@ function _spawnLabSaveGlobal(global){
   global=global&&typeof global==='object'&&!Array.isArray(global)?global:{};
   if(!Array.isArray(global.customZones)) global.customZones=previous.customZones||_spawnLabDefaultZones.slice();
   global=_spawnLabNormalizeGlobal(global);
-  try{ localStorage.setItem("np_"+_spawnLabStoreKey, JSON.stringify(global)); }catch(_e){}
-  sv(_spawnLabStoreKey, global).catch(function(err){
-    console.warn('spawn_lab_staff save failed', err);
-    try{ notif('Apparitions générées, mais synchronisation globale impossible.','err'); }catch(_e){}
-  });
-  return global;
+  return sv(_spawnLabStoreKey, global);
 }
 function _spawnLabCustomZones(){
   return _spawnLabNormalizeZoneList((_spawnLabGlobal()||{}).customZones);
@@ -13556,7 +13811,7 @@ function _spawnLabSaveCustomZone(zone){
   if(!zone) return;
   var global=_spawnLabGlobal();
   global.customZones=_spawnLabNormalizeZoneList((global.customZones||[]).concat([zone]));
-  _spawnLabSaveGlobal(global);
+  return _spawnLabSaveGlobal(global);
 }
 function _spawnLabRemoveCustomZone(zone){
   zone=String(zone||'').trim();
@@ -13565,21 +13820,9 @@ function _spawnLabRemoveCustomZone(zone){
   var defaults=Object.create(null);
   _spawnLabDefaultZones.forEach(function(z){ defaults[z]=1; });
   global.customZones=_spawnLabNormalizeZoneList(global.customZones).filter(function(z){ return z!==zone || defaults[z]; });
-  _spawnLabSaveGlobal(global);
+  return _spawnLabSaveGlobal(global);
 }
-function _spawnLabLoadUi(){
-  var base=_spawnLabDefaults();
-  try{
-    var raw=localStorage.getItem(_spawnLabUiKey) || localStorage.getItem(_spawnLabLegacyKey);
-    if(raw){
-      var data=JSON.parse(raw);
-      if(data && typeof data==='object'){
-        ['zone'].forEach(function(k){ if(data[k]!==undefined) base[k]=data[k]; });
-      }
-    }
-  }catch(_e){}
-  return base;
-}
+function _spawnLabLoadUi(){ return _spawnLabDefaults(); }
 function _spawnLabLoad(){
   var base=_spawnLabLoadUi();
   var global=_spawnLabGlobal();
@@ -13606,9 +13849,7 @@ function _spawnLabEnsure(){
   return _spawnLabState;
 }
 function _spawnLabSaveUi(){
-  if(!_spawnLabState) return;
-  var ui={zone:_spawnLabState.zone||''};
-  try{ localStorage.setItem(_spawnLabUiKey, JSON.stringify(ui)); localStorage.removeItem(_spawnLabLegacyKey); }catch(_e){}
+  try{ localStorage.removeItem(_spawnLabUiKey); localStorage.removeItem(_spawnLabLegacyKey); }catch(e){}
 }
 function _spawnLabSyncInputs(){
   var s=_spawnLabEnsure();
@@ -13824,7 +14065,7 @@ function _spawnLabRunTimeLabel(ts){
   try{ return new Date(ts).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }
   catch(_e){ return 'Date inconnue'; }
 }
-function spawnLabGenerate(){
+async function spawnLabGenerate(){
   var s=_spawnLabEnsure();
   _spawnLabSyncInputs();
   var beasts=gb().slice();
@@ -13853,17 +14094,17 @@ function spawnLabGenerate(){
   s.lastRuns=runs.concat(Array.isArray(global.lastRuns)?global.lastRuns:[]).slice(0,24);
   s.lastGlobalAt=Date.now();
   _spawnLabSaveUi();
-  _spawnLabSaveGlobal({
+  if(!await _confirmDbSave(_spawnLabSaveGlobal({
     totals: totals,
     lastRuns: s.lastRuns,
     totalDraws: (parseInt(global.totalDraws,10)||0) + runs.length,
     lastGeneratedAt: s.lastGlobalAt,
     lastGeneratedBy: (CU && (CU.login || CU.name || CU.role)) || 'staff'
-  });
+  }))) return false;
   renderSpawnLab('p-apparitions-c');
   notif(runs.length ? 'Apparitions générées et poids globaux synchronisés.' : 'Aucun tirage possible.', runs.length ? 'ok' : 'err');
 }
-function spawnLabDeleteHistory(id){
+async function spawnLabDeleteHistory(id){
   if(!can("manage_beasts")){ notif("Réservé à l’admin.","err"); return; }
   id=String(id||'');
   if(!id){ notif("Entrée introuvable.","err"); return; }
@@ -13874,13 +14115,13 @@ function spawnLabDeleteHistory(id){
   runs=runs.filter(function(run, idx){ return String(run&&run.id||idx)!==String(id); });
   if(runs.length===before){ notif("Entrée introuvable.","err"); return; }
   s.lastRuns=runs;
-  _spawnLabSaveGlobal({
+  if(!await _confirmDbSave(_spawnLabSaveGlobal({
     totals: global.totals||{},
     lastRuns: runs,
     totalDraws: parseInt(global.totalDraws,10)||0,
     lastGeneratedAt: global.lastGeneratedAt||Date.now(),
     lastGeneratedBy: (CU && (CU.login || CU.name || CU.role)) || 'staff'
-  });
+  }))) return false;
   renderSpawnLab('p-apparitions-c');
   notif("Roll supprimé de l’historique.","ok");
 }
@@ -13900,13 +14141,13 @@ if(!window.__spawnLabHistoryDeleteBound){
     spawnLabDeleteHistoryClick(ev,id);
   },true);
 }
-function spawnLabResetHistory(){
+async function spawnLabResetHistory(){
   if(!_spawnLabCanResetGlobal()){ notif("Réservé au fondateur.","err"); return; }
   var s=_spawnLabEnsure();
   s.totals={};
   s.lastRuns=[];
   s.lastGlobalAt=Date.now();
-  _spawnLabSaveGlobal({totals:{},lastRuns:[],totalDraws:0,lastGeneratedAt:s.lastGlobalAt,lastGeneratedBy:(CU && (CU.login || CU.name || CU.role)) || 'staff'});
+  if(!await _confirmDbSave(_spawnLabSaveGlobal({totals:{},lastRuns:[],totalDraws:0,lastGeneratedAt:s.lastGlobalAt,lastGeneratedBy:(CU && (CU.login || CU.name || CU.role)) || 'staff'}))) return false;
   renderSpawnLab('p-apparitions-c');
   notif('Historique global d’apparition réinitialisé.','inf');
 }
@@ -14627,7 +14868,7 @@ var EV_TYPES={
 };
 
 function getEvents(){ return sto("events")||[]; }
-function saveEvents(arr){ sv("events",arr); }
+function saveEvents(arr){ return sv("events",arr); }
 
 function renderEvents(tid){
   var el=ge(tid); if(!el) return;
@@ -14712,18 +14953,18 @@ function renderEventCard(ev,canEdit,isStaff,isPast){
   h+='<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0;">';
   if(!isPast&&!isStaff){
     if(isInscrit){
-      h+='<button onclick="eventDesinscrit(\''+ev.id+'\')" class="btn btn-sm" style="border-color:var(--red);color:var(--red);font-size:9px;"><span>Se désinscrire</span></button>';
+      h+='<button onclick="eventDesinscrit(\''+jsesc(ev.id)+'\')" class="btn btn-sm" style="border-color:var(--red);color:var(--red);font-size:9px;"><span>Se désinscrire</span></button>';
     } else if(!isFull){
-      h+='<button onclick="eventInscrit(\''+ev.id+'\')" class="btn btn-sm btn-grn" style="font-size:9px;"><span>✓ Participer</span></button>';
+      h+='<button onclick="eventInscrit(\''+jsesc(ev.id)+'\')" class="btn btn-sm btn-grn" style="font-size:9px;"><span>✓ Participer</span></button>';
     } else {
       h+='<span style="font-family:var(--fd);font-size:8px;letter-spacing:1px;color:var(--red);">COMPLET</span>';
     }
   }
   if(canEdit){
     // Toggle publié/masqué
-    h+='<button onclick="toggleEventHidden(\''+ev.id+'\')" class="btn btn-sm" style="font-size:9px;'+(isHidden?'border-color:var(--gold);color:var(--gold);':'border-color:var(--glacier-dim);color:var(--glacier-dim);')+'"><span>'+(isHidden?'👁 Publier':'🔒 Masquer')+'</span></button>';
-    h+='<button onclick="openEventModal(\''+ev.id+'\')" class="btn btn-sm" style="font-size:9px;"><span>✎ Modifier</span></button>';
-    h+='<button onclick="deleteEvent(\''+ev.id+'\')" class="btn btn-sm" style="font-size:9px;border-color:rgba(201,74,74,.4);color:var(--red);"><span>Supprimer</span></button>';
+    h+='<button onclick="toggleEventHidden(\''+jsesc(ev.id)+'\')" class="btn btn-sm" style="font-size:9px;'+(isHidden?'border-color:var(--gold);color:var(--gold);':'border-color:var(--glacier-dim);color:var(--glacier-dim);')+'"><span>'+(isHidden?'👁 Publier':'🔒 Masquer')+'</span></button>';
+    h+='<button onclick="openEventModal(\''+jsesc(ev.id)+'\')" class="btn btn-sm" style="font-size:9px;"><span>✎ Modifier</span></button>';
+    h+='<button onclick="deleteEvent(\''+jsesc(ev.id)+'\')" class="btn btn-sm" style="font-size:9px;border-color:rgba(201,74,74,.4);color:var(--red);"><span>Supprimer</span></button>';
   }
   h+='</div>';
   h+='</div></div>';
@@ -14753,7 +14994,7 @@ function openEventModal(id){
   setTimeout(function(){ ge("ev-nom").focus(); },100);
 }
 
-function saveEvent(){
+async function saveEvent(){
   var nom=ge("ev-nom").value.trim();
   if(!nom){ notif("Donne un titre à l'événement.","err"); return; }
   var dateVal=ge("ev-date").value;
@@ -14776,7 +15017,7 @@ function saveEvent(){
   };
   var isNew=existing<0;
   if(existing>=0) arr[existing]=ev; else arr.push(ev);
-  saveEvents(arr);
+  if(!await _confirmDbSave(saveEvents(arr))) return false;
   sysLog(isNew?"event_cree":"event_modif","Événement '"+nom+"'"+(date?" le "+new Date(date).toLocaleDateString("fr-FR"):""),CU?CU.name:"Staff");
   // Notifier tous les joueurs si nouvel événement publié
   if(isNew&&!isHidden){
@@ -14786,7 +15027,7 @@ function saveEvent(){
       p.history=p.history||[];
       p.history.push({ts:Date.now(),type:"event",text:"📅 Nouvel événement : "+nom+dateLabel,by:CU?CU.name:"Staff"});
     });
-    sp(players);
+    if(!await _confirmDbSave(sp(players))) return false;
     sysLog("event_notif","Notification envoyée à "+players.length+" joueur(s) pour '"+nom+"'",CU?CU.name:"Staff");
   }
   closeModal("m-event");
@@ -14794,26 +15035,26 @@ function saveEvent(){
   renderEvents("p-events-c");
 }
 
-function toggleEventHidden(id){
+async function toggleEventHidden(id){
   var arr=getEvents();
   var ev=arr.find(function(e){return e.id===id;}); if(!ev) return;
   ev.hidden=!ev.hidden;
-  saveEvents(arr);
+  if(!await _confirmDbSave(saveEvents(arr))) return false;
   sysLog("event_visibilite","Événement '"+ev.nom+"' "+(ev.hidden?"masqué":"publié"),CU?CU.name:"Staff");
   notif(ev.hidden?"Événement masqué aux joueurs.":"Événement publié.","ok");
   renderEvents("p-events-c");
 }
 
-function deleteEvent(id){
+async function deleteEvent(id){
   if(!confirm("Supprimer cet événement ?")) return;
   var ev=getEvents().find(function(e){return e.id===id;});
   sysLog("event_supprime","Événement '"+(ev?ev.nom:id)+"' supprimé",CU?CU.name:"Staff");
-  saveEvents(getEvents().filter(function(e){return e.id!==id;}));
+  if(!await _confirmDbSave(saveEvents(getEvents().filter(function(e){return e.id!==id;})))) return false;
   notif("Événement supprimé.","inf");
   renderEvents("p-events-c");
 }
 
-function eventInscrit(id){
+async function eventInscrit(id){
   var myName=CU&&CU.pid?(gpid(CU.pid)||{}).name||CU.name:CU?CU.name:"";
   if(!myName){ notif("Connecte-toi pour t'inscrire.","err"); return; }
   var arr=getEvents();
@@ -14822,19 +15063,19 @@ function eventInscrit(id){
   if(ev.inscrits.indexOf(myName)>-1){ notif("Déjà inscrit.","inf"); return; }
   if(ev.max>0&&ev.inscrits.length>=ev.max){ notif("Événement complet.","err"); return; }
   ev.inscrits.push(myName);
-  saveEvents(arr);
+  if(!await _confirmDbSave(saveEvents(arr))) return false;
   sysLog("event_inscription",myName+" s'est inscrit à '"+ev.nom+"'",myName);
   notif("Inscription confirmée — "+ev.nom+" ✓","ok");
   renderEvents("p-events-c");
 }
 
-function eventDesinscrit(id){
+async function eventDesinscrit(id){
   var myName=CU&&CU.pid?(gpid(CU.pid)||{}).name||CU.name:CU?CU.name:"";
   if(!myName) return;
   var arr=getEvents();
   var ev=arr.find(function(e){return e.id===id;}); if(!ev) return;
   ev.inscrits=(ev.inscrits||[]).filter(function(n){return n!==myName;});
-  saveEvents(arr);
+  if(!await _confirmDbSave(saveEvents(arr))) return false;
   sysLog("event_desinscription",myName+" s'est désinscrit de '"+ev.nom+"'",myName);
   notif("Désinscription effectuée.","inf");
   renderEvents("p-events-c");
@@ -14858,7 +15099,7 @@ var LIEU_TYPES={
 };
 
 function getLieux(){ return sto("lieux")||[]; }
-function saveLieux(arr){ sv("lieux",arr); }
+function saveLieux(arr){ return sv("lieux",arr); }
 
 function renderCarte(tid){
   var el=ge(tid); if(!el) return;
@@ -15038,10 +15279,10 @@ function _renderMarkers(isStaff){
     if(isStaff){
       if(l.notes) popHtml+='<div style="font-size:11px;color:#585878;border-top:1px solid #1a3040;padding-top:6px;margin-bottom:8px;font-style:italic;">'+escHtml(l.notes).replace(/\n/g,"<br>")+'</div>';
       popHtml+='<div style="display:flex;gap:6px;">';
-      popHtml+='<button onclick="_editLieu(\''+l.id+'\')" style="flex:1;background:transparent;border:1px solid #7eb8d4;color:#7eb8d4;font-size:10px;padding:4px;cursor:pointer;">✎ Modifier</button>';
-      popHtml+='<button onclick="_deleteLieu(\''+l.id+'\')" style="flex:1;background:transparent;border:1px solid #c94a4a;color:#c94a4a;font-size:10px;padding:4px;cursor:pointer;">✕ Supprimer</button>';
-      if(!l.visible) popHtml+='<button onclick="_toggleLieuVisible(\''+l.id+'\')" style="flex:1;background:transparent;border:1px solid #c9a84c;color:#c9a84c;font-size:10px;padding:4px;cursor:pointer;">👁 Révéler</button>';
-      else popHtml+='<button onclick="_toggleLieuVisible(\''+l.id+'\')" style="flex:1;background:transparent;border:1px solid #585878;color:#585878;font-size:10px;padding:4px;cursor:pointer;">🌫 Masquer</button>';
+      popHtml+='<button onclick="_editLieu(\''+jsesc(l.id)+'\')" style="flex:1;background:transparent;border:1px solid #7eb8d4;color:#7eb8d4;font-size:10px;padding:4px;cursor:pointer;">✎ Modifier</button>';
+      popHtml+='<button onclick="_deleteLieu(\''+jsesc(l.id)+'\')" style="flex:1;background:transparent;border:1px solid #c94a4a;color:#c94a4a;font-size:10px;padding:4px;cursor:pointer;">✕ Supprimer</button>';
+      if(!l.visible) popHtml+='<button onclick="_toggleLieuVisible(\''+jsesc(l.id)+'\')" style="flex:1;background:transparent;border:1px solid #c9a84c;color:#c9a84c;font-size:10px;padding:4px;cursor:pointer;">👁 Révéler</button>';
+      else popHtml+='<button onclick="_toggleLieuVisible(\''+jsesc(l.id)+'\')" style="flex:1;background:transparent;border:1px solid #585878;color:#585878;font-size:10px;padding:4px;cursor:pointer;">🌫 Masquer</button>';
       popHtml+='</div>';
     }
     popHtml+='</div>';
@@ -15096,7 +15337,7 @@ function _openLieuModal(id,lat,lng){
   setTimeout(function(){ ge("lieu-nom").focus(); },100);
 }
 
-function saveLieu(){
+async function saveLieu(){
   var nom=(ge("lieu-nom").value||"").trim();
   if(!nom){ notif("Donne un nom au lieu.","err"); return; }
   var m=ge("m-lieu");
@@ -15114,7 +15355,7 @@ function saveLieu(){
     lat:lat, lng:lng
   };
   if(existing>=0) lieux[existing]=lieu; else lieux.push(lieu);
-  saveLieux(lieux);
+  if(!await _confirmDbSave(saveLieux(lieux))) return false;
   closeModal("m-lieu");
   notif((existing>=0?"Lieu modifié":"Lieu ajouté")+" — "+nom,"ok");
   var isStaff=CU&&CU.role&&CU.role!=="joueur";
@@ -15126,21 +15367,21 @@ function _editLieu(id){
   _openLieuModal(id);
 }
 
-function _deleteLieu(id){
+async function _deleteLieu(id){
   if(!confirm("Supprimer ce lieu ?")) return;
-  saveLieux(getLieux().filter(function(l){return l.id!==id;}));
+  if(!await _confirmDbSave(saveLieux(getLieux().filter(function(l){return l.id!==id;})))) return false;
   notif("Lieu supprimé.","inf");
   var isStaff=CU&&CU.role&&CU.role!=="joueur";
   if(_carteMap) _carteMap.closePopup();
   _renderMarkers(isStaff);
 }
 
-function _toggleLieuVisible(id){
+async function _toggleLieuVisible(id){
   var lieux=getLieux();
   var l=lieux.find(function(x){return x.id===id;});
   if(!l) return;
   l.visible=!l.visible;
-  saveLieux(lieux);
+  if(!await _confirmDbSave(saveLieux(lieux))) return false;
   if(_carteMap) _carteMap.closePopup();
   var isStaff=CU&&CU.role&&CU.role!=="joueur";
   _renderMarkers(isStaff);

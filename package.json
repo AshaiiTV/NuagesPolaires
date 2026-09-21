@@ -1,17 +1,24 @@
 {
   "name": "nuages-polaires",
-  "version": "278.0.0",
+  "version": "290.0.0",
   "description": "Compagnon officiel — Nuages Polaires",
   "packageManager": "npm@10.9.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=24 <25"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4"
   },
   "private": true,
   "scripts": {
-    "check": "node --check assets/js/main.js && node --check assets/js/ui-patches.js && node --check assets/js/beast-admin.js && node --check assets/js/bestiary-admin-pass2.js && node --check assets/js/finish-audit.js && node --check assets/js/theme-max.js && node --check assets/js/home-readability-polish.js && node --check assets/js/api-hardening.js && node --check assets/js/diagnostics.js && node --check assets/js/site-self-test.js && node --check assets/js/admin-dashboard.js && node --check assets/js/theme-regression.js && node --check assets/js/staff-navigation.js && node --check assets/js/connected-pages-polish.js && node --check assets/js/mobile-polish.js && node --check assets/js/visual-audit-polish.js && node --check assets/js/database-admin-polish.js && node --check netlify/functions/auth.js && node --check netlify/functions/db.js && node --check scripts/test-auth-flows.js && node scripts/check-api-hardening-wrapper.js",
-    "test:auth": "node scripts/test-auth-flows.js"
+    "check": "node scripts/check.js",
+    "test:auth": "node scripts/test-auth-flows.js",
+    "test": "node --test scripts/test-auth-security.js scripts/test-db-security.js scripts/test-integration.js scripts/test-beast-persistence.js scripts/test-archive-persistence.js scripts/test-session-isolation.js scripts/test-legacy-recovery.js scripts/test-system-log.js",
+    "test:browser": "node scripts/test-browser.js",
+    "build": "npm run check && npm test && node scripts/build.js"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "playwright": "^1.62.1"
   }
 }

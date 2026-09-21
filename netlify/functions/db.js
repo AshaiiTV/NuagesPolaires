@@ -70,7 +70,12 @@ function isTrustedOrigin(event) {
 }
 
 const COOKIE_NAME = "np_session";
-const PRIVATE_KEYS = ["accounts", "players", "np_audit_log", "np_rate_auth", "themes_admin_store", "spawn_lab_staff"];
+// Only these stores may be read without a session. New/internal keys stay private.
+const PUBLIC_KEYS = new Set([
+  "beasts", "serments_custom", "events", "lieux", "event_themes",
+  "theme_visibility", "theme_catalog", "serment_catalog", "page_content"
+]);
+const CRITICAL_COLLECTION_KEYS = new Set(["accounts", "players", ...PUBLIC_KEYS, "spawn_lab_staff", "np_syslog", "np_syslog_archive"]);
 const AUDIT_KEY = "np_audit_log";
 const MAX_REQUEST_BODY = 1024 * 1024;
 const MAX_VALUE_SIZE = 4 * 1024 * 1024;
@@ -82,7 +87,7 @@ const MAX_DEPTH = 24;
 
 const EXACT_WRITE_RULES = {
   admin: new Set([
-    "accounts", "players", "beasts", "serments_custom", "events", "np_syslog",
+    "players", "beasts", "serments_custom", "events", "np_syslog", "np_syslog_archive",
     "lieux", "event_themes", "theme_visibility", "theme_catalog",
     "serment_catalog", "page_content", "spawn_lab_staff"
   ]),
@@ -94,7 +99,7 @@ const PREFIX_WRITE_RULES = {
   mj: ["combat_arc_"],
   designer: []
 };
-const BLOCKED_CLIENT_KEYS = new Set(["np_audit_log", "np_rate_auth", "themes_admin_store", "np_syslog_archive"]);
+const BLOCKED_CLIENT_KEYS = new Set(["np_audit_log", "np_rate_auth", "themes_admin_store"]);
 
 function isPlainObject(value) {
   return !!value && Object.prototype.toString.call(value) === "[object Object]";
@@ -111,11 +116,10 @@ function isValidKey(key) {
   if (!k || k.length > 180) return false;
   if (BLOCKED_CLIENT_KEYS.has(k)) return false;
   if (k.startsWith("combat_arc_") || k.startsWith("combat_arc_idx_") || k.startsWith("combat_arc_rec_")) return true;
-  return ["accounts", "players", "beasts", "serments_custom", "events", "np_syslog", "lieux", "event_themes", "theme_visibility", "theme_catalog", "serment_catalog", "page_content", "spawn_lab_staff"].includes(k);
+  return ["accounts", "players", "beasts", "events", "np_syslog_archive", "serments_custom", "np_syslog", "lieux", "event_themes", "theme_visibility", "theme_catalog", "serment_catalog", "page_content", "spawn_lab_staff"].includes(k);
 }
 function isPublicKey(key) {
-  const k = String(key || "");
-  return !PRIVATE_KEYS.includes(k) && k !== "np_syslog" && k !== "np_syslog_archive" && !k.startsWith("combat_arc_") && !k.startsWith("combat_arc_idx_") && !k.startsWith("combat_arc_rec_");
+  return PUBLIC_KEYS.has(normalizeKey(key));
 }
 function listAllowedCombatArchiveOwners(caller) {
   const out = [];
@@ -130,7 +134,7 @@ function listAllowedCombatArchiveOwners(caller) {
   push(caller.name);
   return out;
 }
-function isOwnCombatArchiveKey(caller, key) {
+function combatArchiveOwner(key) {
   const k = normalizeKey(key);
   let owner = "";
   if (k.startsWith("combat_arc_rec_")) {
@@ -140,10 +144,13 @@ function isOwnCombatArchiveKey(caller, key) {
   } else if (k.startsWith("combat_arc_")) {
     owner = k.slice("combat_arc_".length);
   } else {
-    return false;
+    return "";
   }
-  if (!owner) return false;
-  return listAllowedCombatArchiveOwners(caller).includes(owner);
+  return owner;
+}
+function isOwnCombatArchiveKey(caller, key) {
+  const owner = combatArchiveOwner(key);
+  return !!owner && listAllowedCombatArchiveOwners(caller).includes(owner);
 }
 function canRead(caller, key) {
   const role = String((caller && caller.role) || "").toLowerCase();
@@ -154,12 +161,12 @@ function canRead(caller, key) {
   if (key === "np_syslog_archive") return role === "admin";
   if (key === "np_syslog") return role === "admin" || role === "mj";
   if (String(key || "").startsWith("combat_arc_") || String(key || "").startsWith("combat_arc_idx_") || String(key || "").startsWith("combat_arc_rec_")) return role === "admin" || role === "mj" || isOwnCombatArchiveKey(caller, key);
-  return true;
+  return isPublicKey(key);
 }
 function canWrite(caller, key) {
   const role = normalizeRole(caller && caller.role);
   const k = normalizeKey(key);
-  if (!isValidKey(k)) return false;
+  if (!caller || k === "accounts" || !isValidKey(k)) return false;
   if ((k.startsWith("combat_arc_") || k.startsWith("combat_arc_idx_") || k.startsWith("combat_arc_rec_")) && role === "joueur") return isOwnCombatArchiveKey(caller, k);
   const exact = EXACT_WRITE_RULES[role];
   const prefixes = PREFIX_WRITE_RULES[role] || [];
@@ -181,8 +188,8 @@ async function canReadResolved(caller, key) {
   if (canRead(caller, key)) return true;
   const role = normalizeRole(caller && caller.role);
   const k = normalizeKey(key);
-  if (role !== "joueur" || !k.startsWith("combat_arc_")) return false;
-  const owner = normalizeKey(k.slice("combat_arc_".length));
+  if (!caller || role !== "joueur" || !k.startsWith("combat_arc_")) return false;
+  const owner = combatArchiveOwner(k);
   if (!owner) return false;
   const linkedPlayerName = await getLinkedPlayerName(caller);
   return !!linkedPlayerName && owner === linkedPlayerName;
@@ -191,8 +198,8 @@ async function canWriteResolved(caller, key) {
   if (canWrite(caller, key)) return true;
   const role = normalizeRole(caller && caller.role);
   const k = normalizeKey(key);
-  if (role !== "joueur" || !k.startsWith("combat_arc_")) return false;
-  const owner = normalizeKey(k.slice("combat_arc_".length));
+  if (!caller || role !== "joueur" || !k.startsWith("combat_arc_")) return false;
+  const owner = combatArchiveOwner(k);
   if (!owner) return false;
   const linkedPlayerName = await getLinkedPlayerName(caller);
   return !!linkedPlayerName && owner === linkedPlayerName;
@@ -246,7 +253,7 @@ function sanitizeDeep(value, depth = 0) {
   return null;
 }
 function enforceShape(key, value) {
-  if (key === "accounts" || key === "players" || key === "beasts") {
+  if (key === "accounts" || key === "players" || key === "beasts" || key === "np_syslog_archive") {
     if (!Array.isArray(value)) throw new Error("La valeur doit être une liste.");
     return value;
   }
@@ -258,12 +265,12 @@ function enforceShape(key, value) {
     if (!Array.isArray(value) && !isPlainObject(value)) throw new Error("La valeur doit être un objet ou une liste.");
     return value;
   }
-  if (key.startsWith("combat_arc_idx_") || key.startsWith("combat_arc_")) {
-    if (!Array.isArray(value)) throw new Error("Les archives de combat doivent être une liste.");
-    return value;
-  }
   if (key.startsWith("combat_arc_rec_")) {
     if (!isPlainObject(value)) throw new Error("Une archive de combat doit être un objet.");
+    return value;
+  }
+  if (key.startsWith("combat_arc_")) {
+    if (!Array.isArray(value)) throw new Error("Les archives de combat doivent être une liste.");
     return value;
   }
   return value;
@@ -320,18 +327,103 @@ function normalizeStoreValue(key, value) {
     Object.keys(raw).forEach(themeId => { map[String(themeId).trim().toLowerCase().replace(/^theme-/, "")] = !!raw[themeId]; });
     return map;
   }
-  if (key === "np_syslog") return (Array.isArray(value) ? value : []).slice(-500);
-  if (String(key || "").startsWith("combat_arc_idx_")) return (Array.isArray(value) ? value : []).slice(-5000);
-  if (String(key || "").startsWith("combat_arc_")) return (Array.isArray(value) ? value : []).slice(-500);
+  if (key === "np_syslog") return (Array.isArray(value) ? value : []).slice(0, 500);
+  if (key === "np_syslog_archive") return (Array.isArray(value) ? value : []).slice(0, 50);
   if (String(key || "").startsWith("combat_arc_rec_")) return isPlainObject(value) ? value : {};
+  if (String(key || "").startsWith("combat_arc_idx_")) return (Array.isArray(value) ? value : []).slice(0, 5000);
+  if (String(key || "").startsWith("combat_arc_")) return (Array.isArray(value) ? value : []).slice(0, 500);
   return value;
 }
 function sanitizeForKey(key, value) {
+  if (key.startsWith("combat_arc_") && !key.startsWith("combat_arc_rec_") && Array.isArray(value)) {
+    value = value.slice(0, key.startsWith("combat_arc_idx_") ? 5000 : 500);
+  }
+  if (key === "players" && Array.isArray(value)) {
+    value.forEach(player => {
+      if (player && Object.prototype.hasOwnProperty.call(player, "avatar")) validateAvatar(player.avatar);
+    });
+  }
   const cleaned = sanitizeDeep(value, 0);
   const shaped = enforceShape(key, cleaned);
   const normalized = normalizeStoreValue(key, shaped);
   if (!validateSize(normalized)) throw new Error("Valeur trop volumineuse.");
   return normalized;
+}
+function isStaff(caller) {
+  return !!caller && ["admin", "mj", "designer"].includes(caller.role);
+}
+function stripInternalNotes(value) {
+  if (Array.isArray(value)) return value.map(stripInternalNotes);
+  if (!isPlainObject(value)) return value;
+  const out = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (/^(?:adminNotes?|noteAdmin|staffNotes?|mjNotes?)$/i.test(key)) continue;
+    if (["__proto__", "prototype", "constructor"].includes(key)) continue;
+    out[key] = stripInternalNotes(child);
+  }
+  return out;
+}
+function validateAvatar(value) {
+  if (typeof value !== "string") throw new Error("L'avatar doit être une URL d'image.");
+  const url = value.trim();
+  if (!url) return "";
+  if (url.length > MAX_IMAGE_DATA_URL_LENGTH || /[<>"'`\\\x00-\x20\x7f]/.test(url)) {
+    throw new Error("URL d'avatar invalide.");
+  }
+  if (isSafeDataImageUrl(url)) return url;
+  if (/^https?:\/\//i.test(url)) {
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname && !parsed.username && !parsed.password) return url;
+    } catch {}
+  } else if (!/^[a-z][a-z0-9+.-]*:/i.test(url) && !url.startsWith("//") && !url.includes("&")) {
+    return url;
+  }
+  throw new Error("URL d'avatar invalide : image HTTPS, HTTP, locale ou raster intégrée attendue.");
+}
+const MJ_PLAYER_FIELDS = new Set([
+  "xp", "xpMax", "level", "sXp", "sXpMax", "sLevel",
+  "pvCur", "pvMax", "epCur", "epMax", "emCur", "emMax",
+  "inventory", "history", "equipment", "statuts"
+]);
+function stableValue(value) {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (!isPlainObject(value)) return value;
+  return Object.fromEntries(Object.keys(value).sort().map(key => [key, stableValue(value[key])]));
+}
+function playerPermissionValue(player, field) {
+  const value = player[field];
+  if (["avatar", "journal", "arme"].includes(field)) return value || "";
+  if (field === "branch") return value || "Aucune";
+  if (["unlockedThemes", "blockedThemes"].includes(field)) return value || [];
+  return value;
+}
+function validatePlayerWrite(caller, previous, next) {
+  if (caller.role !== "mj") return;
+  const incoming = new Map(next.map(player => [player.id, player]));
+  for (const oldPlayer of previous) {
+    const newPlayer = incoming.get(oldPlayer.id);
+    if (!newPlayer) throw new Error("La suppression d'un personnage est réservée à l'admin.");
+    for (const field of new Set([...Object.keys(oldPlayer), ...Object.keys(newPlayer)])) {
+      if (MJ_PLAYER_FIELDS.has(field)) continue;
+      if (oldPlayer.id === caller.pid && ["avatar", "journal"].includes(field)) continue;
+      if (JSON.stringify(stableValue(playerPermissionValue(oldPlayer, field))) !== JSON.stringify(stableValue(playerPermissionValue(newPlayer, field)))) {
+        throw new Error("Modification réservée à l'admin : " + field + ".");
+      }
+    }
+  }
+  // New characters remain available to MJ. Progression and combat currently share
+  // the fields above; their server-side business actions are a separate migration.
+}
+function hasExpectedVersion(body) {
+  return Object.prototype.hasOwnProperty.call(body, "expectedVersion") &&
+    (body.expectedVersion === null || (typeof body.expectedVersion === "string" && /^[a-f0-9]{32}$/.test(body.expectedVersion)));
+}
+function versionRequiredResponse(headers) {
+  return { statusCode: 428, headers, body: JSON.stringify({ ok: false, code: "VERSION_REQUIRED", error: "Recharge les données avant de les modifier (version attendue requise)." }) };
+}
+function conflictResponse(headers, key) {
+  return { statusCode: 409, headers, body: JSON.stringify({ ok: false, code: "VERSION_CONFLICT", key, error: "Ces données ont été modifiées par une autre session. Recharge-les avant de réessayer." }) };
 }
 function summarizeValue(value) {
   if (Array.isArray(value)) {
@@ -368,7 +460,9 @@ function b64url(buf) {
 function verifyToken(token) {
   if (!SECRET || SECRET.length < 32) return null;
   try {
-    const [header, body, sig] = token.split(".");
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const [header, body, sig] = parts;
     if (!header || !body || !sig) return null;
     const expected = b64url(crypto.createHmac("sha256", SECRET).update(header + "." + body).digest());
     const sigBuf = Buffer.from(sig, "utf8");
@@ -376,7 +470,7 @@ function verifyToken(token) {
     if (sigBuf.length !== expectedBuf.length) return null;
     if (!crypto.timingSafeEqual(sigBuf, expectedBuf)) return null;
     const payload = JSON.parse(Buffer.from(body, "base64").toString());
-    if (payload.exp && Date.now() > payload.exp) return null;
+    if (!Number.isFinite(payload.exp) || Date.now() >= payload.exp) return null;
     return payload;
   } catch {
     return null;
@@ -398,22 +492,44 @@ async function ensureTable() {
 }
 async function readStore(key, fallback) {
   const rows = await sql`SELECT value FROM np_store WHERE key = ${key}`;
-  return normalizeStoreValue(key, rows.length ? rows[0].value : fallback);
+  return rows.length ? normalizeStoreValue(key, rows[0].value) : fallback;
 }
-async function writeStore(key, value) {
-  const normalized = normalizeStoreValue(key, value);
-  await sql`
-    INSERT INTO np_store (key, value, updated_at)
-    VALUES (${key}, ${JSON.stringify(normalized)}, now())
-    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
+async function readVersionedStore(key, fallback) {
+  const rows = await sql`SELECT value, md5(value::text) AS version FROM np_store WHERE key = ${key}`;
+  return { value: rows.length ? normalizeStoreValue(key, rows[0].value) : fallback, rawValue: rows.length ? rows[0].value : fallback, version: rows.length ? rows[0].version : null };
+}
+async function compareAndSetStore(key, value, expectedVersion) {
+  // The predicate lives in the write statement: a read/check/write sequence alone
+  // would still allow two clients to overwrite each other's changes.
+  if (expectedVersion === null) {
+    return sql`
+      INSERT INTO np_store (key, value, updated_at)
+      VALUES (${key}, ${JSON.stringify(value)}::jsonb, now())
+      ON CONFLICT (key) DO NOTHING
+      RETURNING updated_at, md5(value::text) AS version
+    `;
+  }
+  return sql`
+    UPDATE np_store SET value = ${JSON.stringify(value)}::jsonb, updated_at = now()
+    WHERE key = ${key} AND md5(value::text) = ${expectedVersion}
+    RETURNING updated_at, md5(value::text) AS version
   `;
 }
 async function appendAuditLog(entry) {
-  const current = await readStore(AUDIT_KEY, []);
-  const logs = Array.isArray(current) ? current : [];
-  logs.unshift(entry);
-  if (logs.length > 1000) logs.length = 1000;
-  await writeStore(AUDIT_KEY, logs);
+  await sql`
+    INSERT INTO np_store (key, value, updated_at)
+    VALUES (${AUDIT_KEY}, jsonb_build_array(${JSON.stringify(entry)}::jsonb), now())
+    ON CONFLICT (key) DO UPDATE SET value = (
+      SELECT COALESCE(jsonb_agg(item.entry ORDER BY item.position), '[]'::jsonb)
+      FROM (
+        SELECT entry, position
+        FROM jsonb_array_elements(EXCLUDED.value ||
+          CASE WHEN jsonb_typeof(np_store.value) = 'array' THEN np_store.value ELSE '[]'::jsonb END
+        ) WITH ORDINALITY AS entries(entry, position)
+        ORDER BY position LIMIT 1000
+      ) AS item
+    ), updated_at = now()
+  `;
 }
 async function auditDb(event, caller, action, details = {}) {
   const req = getRequestMeta(event);
@@ -440,6 +556,9 @@ async function resolveCaller(event) {
   if (!Array.isArray(accounts)) return null;
   const account = accounts.find(a => a && a.id === payload.sub);
   if (!account) return null;
+  const accountVersion = Number.isSafeInteger(account.sessionVersion) ? account.sessionVersion : 0;
+  const tokenVersion = Number.isSafeInteger(payload.sessionVersion) ? payload.sessionVersion : 0;
+  if (accountVersion !== tokenVersion || account.forcePasswordReset || payload.forcePasswordReset) return null;
 
   return {
     sub: account.id,
@@ -453,10 +572,18 @@ function stripAccountSensitive(account) {
   if (!account || typeof account !== "object") return account;
   const copy = { ...account };
   delete copy.pass;
+  delete copy.sessionVersion;
+  delete copy.resetExpiresAt;
   return copy;
 }
 function filterValueForCaller(caller, key, value) {
   if (value === null || value === undefined) return value;
+  if (isPublicKey(key) && !isStaff(caller)) {
+    const publicValue = key === "beasts"
+      ? (Array.isArray(value) ? value : []).filter(beast => beast && !beast.hidden && !beast.archived)
+      : value;
+    return stripInternalNotes(publicValue);
+  }
   if (key === "accounts") {
     if (!caller) return undefined;
     const accounts = Array.isArray(value) ? value : [];
@@ -501,7 +628,10 @@ exports.handler = async (event) => {
     if (!contentType.includes("application/json")) return { statusCode: 415, headers, body: JSON.stringify({ error: "Content-Type invalide" }) };
     if (event.body && event.body.length > MAX_REQUEST_BODY) return { statusCode: 413, headers, body: JSON.stringify({ error: "Requête trop volumineuse" }) };
 
-    const body = event.body ? JSON.parse(event.body) : {};
+    let body;
+    try { body = event.body ? JSON.parse(event.body) : {}; }
+    catch { return { statusCode: 400, headers, body: JSON.stringify({ ok: false, error: "JSON invalide" }) }; }
+    if (!isPlainObject(body)) return { statusCode: 400, headers, body: JSON.stringify({ ok: false, error: "Objet JSON attendu" }) };
     const action = typeof body.action === "string" ? body.action.trim() : "";
     const key = normalizeKey(body.key);
     const caller = await resolveCaller(event);
@@ -513,21 +643,23 @@ exports.handler = async (event) => {
     if (action === "get") {
       if (!key) return { statusCode: 400, headers, body: JSON.stringify({ error: "key requis" }) };
       if (!(await canReadResolved(caller, key))) return { statusCode: 401, headers, body: JSON.stringify({ error: "Authentification requise" }) };
-      const rawValue = await readStore(key, null);
-      const filtered = filterValueForCaller(caller, key, rawValue);
-      return { statusCode: 200, headers, body: JSON.stringify({ value: filtered === undefined ? null : filtered, key }) };
+      const snapshot = await readVersionedStore(key, null);
+      const filtered = filterValueForCaller(caller, key, snapshot.value);
+      return { statusCode: 200, headers, body: JSON.stringify({ value: filtered === undefined ? null : filtered, key, version: snapshot.version }) };
     }
 
     if (action === "get_public_bundle") {
-      const rows = await sql`SELECT key, value FROM np_store`;
+      const rows = await sql`SELECT key, value, md5(value::text) AS version FROM np_store`;
       const result = {};
+      const versions = {};
       const rowMap = {};
       const warnings = [];
       rows.forEach(r => {
         try {
           rowMap[r.key] = r.value;
           if (!isPublicKey(r.key)) return;
-          result[r.key] = r.value;
+          result[r.key] = filterValueForCaller(caller, r.key, r.value);
+          versions[r.key] = r.version;
         } catch (err) {
           warnings.push({ key: String((r && r.key) || "unknown"), error: String((err && err.message) || err) });
         }
@@ -590,7 +722,7 @@ exports.handler = async (event) => {
         creatureKills: Math.max(creatureKills, 0)
       };
 
-      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, data: result, source: "db", warnings }) };
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, data: result, versions, source: "db", warnings }) };
     }
 
     if (action === "get_audit_log") {
@@ -605,14 +737,18 @@ exports.handler = async (event) => {
       if (!caller || !["admin", "mj", "designer"].includes(role)) {
         return { statusCode: 403, headers, body: JSON.stringify({ error: "Action non autorisée" }) };
       }
-      const rows = await sql`SELECT key, value FROM np_store`;
+      const rows = await sql`SELECT key, value, md5(value::text) AS version FROM np_store`;
       const result = {};
+      const versions = {};
       rows.forEach(r => {
         if (!canRead(caller, r.key)) return;
         const filtered = filterValueForCaller(caller, r.key, r.value);
-        if (filtered !== undefined) result[r.key] = filtered;
+        if (filtered !== undefined) {
+          result[r.key] = filtered;
+          versions[r.key] = r.version;
+        }
       });
-      return { statusCode: 200, headers, body: JSON.stringify({ data: result, source: "db" }) };
+      return { statusCode: 200, headers, body: JSON.stringify({ data: result, versions, source: "db" }) };
     }
 
     if (!caller) return { statusCode: 401, headers, body: JSON.stringify({ error: "Non authentifié" }) };
@@ -631,12 +767,18 @@ exports.handler = async (event) => {
         return { statusCode: 400, headers, body: JSON.stringify({ error: e.message || "Valeur invalide" }) };
       }
 
-      const savedRows = await sql`
-        INSERT INTO np_store (key, value, updated_at)
-        VALUES (${key}, ${JSON.stringify(sanitized)}, now())
-        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
-        RETURNING updated_at
-      `;
+      if (!hasExpectedVersion(body)) return versionRequiredResponse(headers);
+      if (key === "players" && caller.role === "mj") {
+        const snapshot = await readVersionedStore(key, []);
+        if (snapshot.version !== body.expectedVersion) return conflictResponse(headers, key);
+        try { validatePlayerWrite(caller, snapshot.value, sanitized); }
+        catch (err) {
+          await auditDb(event, caller, "db_set_denied", { key, reason: err.message });
+          return { statusCode: 403, headers, body: JSON.stringify({ ok: false, error: err.message }) };
+        }
+      }
+      const savedRows = await compareAndSetStore(key, sanitized, body.expectedVersion);
+      if (!savedRows.length) return conflictResponse(headers, key);
       await auditDb(event, caller, "db_set", { key, summary: summarizeValue(sanitized) });
       const filtered = filterValueForCaller(caller, key, sanitized);
       return {
@@ -646,20 +788,55 @@ exports.handler = async (event) => {
           ok: true,
           key,
           value: filtered === undefined ? null : filtered,
+          version: savedRows[0].version,
           updatedAt: savedRows[0] && savedRows[0].updated_at ? savedRows[0].updated_at : null
         })
       };
     }
 
+    if (action === "patch_own_player") {
+      if (!caller.pid) return { statusCode: 403, headers, body: JSON.stringify({ error: "Aucun personnage lié." }) };
+      if (!isPlainObject(body.patch) || !Object.keys(body.patch).length || Object.keys(body.patch).some(field => !["journal", "avatar"].includes(field))) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: "Seuls le journal et l'avatar peuvent être modifiés." }) };
+      }
+      if (!hasExpectedVersion(body)) return versionRequiredResponse(headers);
+      const patch = {};
+      try {
+        if (Object.prototype.hasOwnProperty.call(body.patch, "journal")) {
+          if (typeof body.patch.journal !== "string" || body.patch.journal.length > MAX_STRING_LENGTH) throw new Error("Journal invalide ou trop long.");
+          patch.journal = sanitizeText(body.patch.journal);
+        }
+        if (Object.prototype.hasOwnProperty.call(body.patch, "avatar")) patch.avatar = validateAvatar(body.patch.avatar);
+      } catch (err) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: err.message }) };
+      }
+      const snapshot = await readVersionedStore("players", []);
+      if (snapshot.version !== body.expectedVersion) return conflictResponse(headers, "players");
+      const players = Array.isArray(snapshot.rawValue) ? snapshot.rawValue : [];
+      const playerIndex = players.findIndex(player => player && player.id === caller.pid);
+      if (playerIndex < 0) return { statusCode: 404, headers, body: JSON.stringify({ error: "Personnage introuvable." }) };
+      players[playerIndex] = { ...players[playerIndex], ...patch };
+      if (!validateSize(players)) return { statusCode: 400, headers, body: JSON.stringify({ error: "Valeur trop volumineuse." }) };
+      const savedRows = await compareAndSetStore("players", players, body.expectedVersion);
+      if (!savedRows.length) return conflictResponse(headers, "players");
+      await auditDb(event, caller, "db_patch_own_player", { pid: caller.pid, fields: Object.keys(patch) });
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, key: "players", value: [players[playerIndex]], version: savedRows[0].version, updatedAt: savedRows[0].updated_at }) };
+    }
+
     if (action === "delete") {
       if (!key) return { statusCode: 400, headers, body: JSON.stringify({ error: "key requis" }) };
-      if (!(await canWriteResolved(caller, key))) {
+      if (CRITICAL_COLLECTION_KEYS.has(key) || !(await canWriteResolved(caller, key))) {
         await auditDb(event, caller, "db_delete_denied", { key });
         return { statusCode: 403, headers, body: JSON.stringify({ error: "Permission refusée" }) };
       }
-      await sql`DELETE FROM np_store WHERE key = ${key}`;
+      if (!hasExpectedVersion(body)) return versionRequiredResponse(headers);
+      const deletedRows = await sql`
+        DELETE FROM np_store WHERE key = ${key} AND md5(value::text) = ${body.expectedVersion}
+        RETURNING key
+      `;
+      if (!deletedRows.length) return conflictResponse(headers, key);
       await auditDb(event, caller, "db_delete", { key });
-      return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, key, value: null, version: null }) };
     }
 
     return { statusCode: 400, headers, body: JSON.stringify({ error: "action inconnue" }) };
