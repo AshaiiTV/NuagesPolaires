@@ -2267,6 +2267,7 @@ function loginUnified(){
 function _finishLogin(serverResp, id){
   if(window.__logoutBusy) return;
   var sessionGeneration = ++_dbSessionGeneration;
+  if(typeof window.npResetRpgSession === 'function') window.npResetRpgSession();
   _purgePrivateBrowserStorage();
   _dbCache = Object.create(null);
   _dbVersions = Object.create(null);
@@ -2406,6 +2407,7 @@ function loginStaff(){ loginUnified(); }
 
 var ROLE_LABELS={joueur:"Joueur",admin:"Admin",mj:"MJ",designer:"Designer"};
 function updateHdrProfile(){
+  if(!CU || window.__logoutBusy) return;
   // Avatar
   var av=ge("hdr-av"); var avTxt=ge("hdr-av-txt");
   var p=CU.pid?gpid(CU.pid):null;
@@ -5233,6 +5235,7 @@ async function logout(){
   if(window.__logoutBusy) return;
   window.__logoutBusy = true;
   _dbSessionGeneration++;
+  if(typeof window.npResetRpgSession === 'function') window.npResetRpgSession();
   _dbSetToken(null);
   if(window._offlineRetryInterval){ clearInterval(window._offlineRetryInterval); window._offlineRetryInterval=null; }
   _purgePrivateBrowserStorage();
@@ -9207,9 +9210,10 @@ function sxpReq(l){return l*10;}
 
 function doLvlUp(p){
   var gained=[];
+  var s=getAllSD()[p.classe];
   while(p.xp>=p.xpMax){
     p.xp-=p.xpMax;p.level++;p.xpMax=xpReq(p.level);
-    var s=SD[p.classe];if(s){p.pvMax+=s.pvN;p.pvCur=p.pvMax;p.epMax+=s.epN;p.epCur=p.epMax;p.emMax+=s.emN;p.emCur=p.emMax;}
+    if(s){p.pvMax+=s.pvN;p.pvCur=p.pvMax;p.epMax+=s.epN;p.epCur=p.epMax;p.emMax+=s.emN;p.emCur=p.emMax;}
     gained.push(p.level);
     p.history.push({ts:Date.now(),type:"level",text:"⬆ Niveau "+p.level+" ! PV:"+p.pvMax+" EP:"+p.epMax+" EM:"+p.emMax,by:"Système"});
   }
@@ -9321,7 +9325,7 @@ async function adjVal(pid,field,delta){
   if(!can("adjust_levels")){notif("Réservé à l'Admin.","err");return;}
   var p=gpid(pid);if(!p)return;
   var oldVal=p[field]||0;var newVal=Math.max(0,oldVal+delta);p[field]=newVal;
-  if(field==="level"){p.level=Math.max(1,newVal);p.xpMax=xpReq(p.level);var s=SD[p.classe];if(s){p.pvMax=30+(p.level-1)*s.pvN;p.pvCur=Math.min(p.pvCur,p.pvMax);p.epMax=50+(p.level-1)*s.epN;p.epCur=Math.min(p.epCur,p.epMax);p.emMax=20+(p.level-1)*s.emN;p.emCur=Math.min(p.emCur,p.emMax);}}
+  if(field==="level"){p.level=Math.max(1,newVal);p.xpMax=xpReq(p.level);var s=getAllSD()[p.classe];if(s){p.pvMax=30+(p.level-1)*s.pvN;p.pvCur=Math.min(p.pvCur,p.pvMax);p.epMax=50+(p.level-1)*s.epN;p.epCur=Math.min(p.epCur,p.epMax);p.emMax=20+(p.level-1)*s.emN;p.emCur=Math.min(p.emCur,p.emMax);}}
   if(field==="sLevel"){p.sLevel=Math.max(1,newVal);p.sXpMax=sxpReq(p.sLevel);}
   p.history=p.history||[];var lbls={level:"Niv. perso",xp:"XP perso",sLevel:"Niv. Serment",sXp:"XP Serment"};
   p.history.push({ts:Date.now(),type:(delta<0?"remove":"add"),text:"Ajust. "+lbls[field]+" : "+oldVal+" → "+p[field],by:"MJ "+CU.name});
@@ -9777,7 +9781,7 @@ _dbBootstrap().then(function() {
         // initStorage() sera appelé par launchApp()
         _removeLoader();
         launchApp();
-        setTimeout(function(){ updateHdrProfile(); }, 200);
+        setTimeout(function(){ if(_bootstrapSessionGeneration === _dbSessionGeneration && CU && !window.__logoutBusy) updateHdrProfile(); }, 200);
       } else {
         _removeLoader();
         initHomePage();
@@ -12232,10 +12236,18 @@ function combatResolve(){
 
 // ── Terminer manuellement ─────────────────────────────────────────────────────
 async function combatEnd(){
+  if(combatEnd._pending) return false;
+  if(_DB_WRITE_QUEUE.players || !Object.prototype.hasOwnProperty.call(_dbVersions,'players')){
+    notif('Attends la sauvegarde des fiches ou recharge-les avant de terminer le combat.','err');
+    return false;
+  }
+  var sessionGeneration=_dbSessionGeneration;
+  var playersVersion=_dbVersions.players;
+  var originalPlayers=_cloneForDb(gp());
   cLog("🏁 Combat terminé — Round "+_cs.round,"round");
-  var players=_cloneForDb(gp());
+  var players=_cloneForDb(originalPlayers);
   _cs.fighters.forEach(function(f){
-    if(f.type!=="player") return;
+    if(f.type!=="player" || f.isSummon) return;
     var p=players.find(function(player){ return player.id===f.pid; }); if(!p) return;
     var realPvMax=f.pvMax-(f.pvMaxBonus||0);
     p.pvMax=realPvMax; p.pvCur=Math.min(f.pvCur,realPvMax);
@@ -12246,12 +12258,26 @@ async function combatEnd(){
 
   });
   _cs.active=false; _cs.phase="idle"; _cs._surc={}; _cs._iv={};
+  combatEnd._pending=true;
+  var saved=false;
   try{
     await combatSaveArc();
+    _assertDbSessionGeneration(sessionGeneration);
+    // The revision belongs to the original fiches, not to a refresh or another
+    // queued write that happened while the archive was being saved.
+    if(_DB_WRITE_QUEUE.players || _dbVersions.players!==playersVersion || JSON.stringify(gp())!==JSON.stringify(originalPlayers)){
+      throw _dbWriteFailure('players',{code:'VERSION_CONFLICT'});
+    }
     await sp(players);
+    _assertDbSessionGeneration(sessionGeneration);
     notif("Combat terminé. Archive et fiches sauvegardées.","ok");
-  }catch(e){ notif('Combat terminé, mais sauvegarde incomplète : '+e.message,'err'); }
-  rCombat("p-combat-mj-c");
+    saved=true;
+  }catch(e){
+    if(sessionGeneration===_dbSessionGeneration && !window.__logoutBusy) notif('Combat terminé, mais sauvegarde incomplète : '+e.message,'err');
+  }
+  finally{ combatEnd._pending=false; }
+  if(sessionGeneration===_dbSessionGeneration && !window.__logoutBusy) rCombat("p-combat-mj-c");
+  return saved;
 }
 
 // ── Combattants ───────────────────────────────────────────────────────────────

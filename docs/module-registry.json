@@ -1,5 +1,5 @@
 {
-  "version": "v290",
+  "version": "v296",
   "runtime_scripts": [
     "./assets/js/main.js",
     "./assets/js/ui-patches.js",
@@ -17,7 +17,8 @@
     "./assets/js/connected-pages-polish.js",
     "./assets/js/mobile-polish.js",
     "./assets/js/visual-audit-polish.js",
-    "./assets/js/database-admin-polish.js"
+    "./assets/js/database-admin-polish.js",
+    "./assets/js/rpg-prototype.js"
   ],
   "cleanup": [
     "removed obsolete separate Console tab leftovers",

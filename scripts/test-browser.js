@@ -12,7 +12,7 @@ const {createLocalApp}=require('./helpers/local-app');
  try{
   browser=await chromium.launch({headless:true});
   const page=await browser.newPage({viewport:{width:1440,height:1000}});const errors=[];
-  page.on('pageerror',e=>errors.push(e.message));
+  page.on('pageerror',e=>errors.push(e.stack||e.message));
   await page.route('https://**/*',route=>route.abort());
   // Old staff caches are purged; historical combat recovery has its own regression tests.
   await page.addInitScript(()=>{localStorage.setItem('np_spawn_lab_staff',JSON.stringify({private:true}));});
@@ -62,7 +62,7 @@ const {createLocalApp}=require('./helpers/local-app');
   await page.evaluate(async()=>{await logout();});
   assert.ok((await app.call('auth',{action:'verify'},oldCookie)).status>=400);
   assert.equal(await page.evaluate(()=>Object.keys(localStorage).some(k=>/combat_arc|spawn_lab_staff/.test(k))),false);
-  const adminPage=await browser.newPage({viewport:{width:1440,height:1000}});adminPage.on('pageerror',e=>errors.push(e.message));await adminPage.route('https://**/*',route=>route.abort());
+  const adminPage=await browser.newPage({viewport:{width:1440,height:1000}});adminPage.on('pageerror',e=>errors.push(e.stack||e.message));await adminPage.route('https://**/*',route=>route.abort());
   const adminCookie=await app.cookie('admin');await adminPage.context().addCookies([{name:'np_session',value:adminCookie.slice('np_session='.length),url:app.origin,httpOnly:true,sameSite:'Strict'}]);
   await adminPage.goto(app.origin);await adminPage.waitForFunction(()=>window.CU&&CU.role==='admin');
   const originalAccounts=(await app.read('accounts')).value.map(a=>({id:a.id,pass:a.pass,role:a.role}));

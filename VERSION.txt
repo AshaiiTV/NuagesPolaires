@@ -1,6 +1,6 @@
-Nuages Polaires v290 — Corrections audit sécurité et sauvegardes
-- Sessions révocables, récupération limitée et mots de passe temporaires aléatoires
-- Permissions serveur, données publiques filtrées, avatars sécurisés
-- Écritures concurrentes protégées, archives détaillées, journal/avatar joueur
-- Import fonctionnel préservant les comptes et récupération des archives locales
-- Tests locaux PostgreSQL/Chromium, build statique dist, Node 24
+Nuages Polaires v296 — Reprise du projet après audit
+- Évolutions v290–v295 et prototype RPG conservés
+- Sessions révocables, récupération limitée, permissions serveur
+- Écritures concurrentes protégées, archives et profils fiabilisés
+- Persistance RPG isolée par compte et corrections fin de combat/progression
+- Tests locaux SQL/Chromium et sauvegarde logique vérifiable

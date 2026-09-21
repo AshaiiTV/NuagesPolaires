@@ -1,4 +1,4 @@
-# Préparer la mise en ligne — v290
+# Préparer la mise en ligne — v296
 
 La préparation locale n'effectue aucun déploiement. Le contrat API versionné doit être livré avec les fichiers front de la même version.
 
@@ -15,7 +15,7 @@ La configuration `netlify.toml` utilise Node 24, la commande `npm run build`, le
 
 ## Environnement
 
-Définir `NETLIFY_DATABASE_URL`, `NP_JWT_SECRET` et `NP_SITE_URL`. L'origine doit correspondre à l'URL réelle, et à l'URL de recette lors d'un test sur environnement isolé. Vérifier également toute surcharge `AWS_LAMBDA_JS_RUNTIME` déjà présente dans le dashboard : le dépôt cible Node 24.
+Définir `NETLIFY_DATABASE_URL`, `NP_JWT_SECRET` et `NP_SITE_URL` dans le scope **Functions**. Les `devDependencies` doivent être installées au build, car les tests utilisent PGlite ; ne pas utiliser `--omit=dev` ni une configuration npm qui les exclut. L'origine doit correspondre à l'URL réelle, et à l'URL de recette lors d'un test sur environnement isolé. Chaque preview doit avoir une base et un secret de session dédiés : ne pas hériter des variables de production ni supposer que le pilote Neon crée une branche automatiquement. Vérifier également toute surcharge `AWS_LAMBDA_JS_RUNTIME` déjà présente dans le dashboard : le dépôt cible Node 24.
 
 ## Sauvegarde et récupération
 

@@ -1,6 +1,6 @@
 {
   "name": "nuages-polaires",
-  "version": "290.0.0",
+  "version": "296.0.0",
   "description": "Compagnon officiel — Nuages Polaires",
   "packageManager": "npm@10.9.0",
   "engines": {
@@ -13,9 +13,11 @@
   "scripts": {
     "check": "node scripts/check.js",
     "test:auth": "node scripts/test-auth-flows.js",
-    "test": "node --test scripts/test-auth-security.js scripts/test-db-security.js scripts/test-integration.js scripts/test-beast-persistence.js scripts/test-archive-persistence.js scripts/test-session-isolation.js scripts/test-legacy-recovery.js scripts/test-system-log.js",
-    "test:browser": "node scripts/test-browser.js",
-    "build": "npm run check && npm test && node scripts/build.js"
+    "test": "node --test scripts/test-auth-security.js scripts/test-db-security.js scripts/test-integration.js scripts/test-beast-persistence.js scripts/test-archive-persistence.js scripts/test-session-isolation.js scripts/test-legacy-recovery.js scripts/test-system-log.js scripts/test-auth-target.js scripts/test-gameplay-persistence.js scripts/test-rpg-persistence.js scripts/test-store-backup.js",
+    "test:browser": "node scripts/test-browser.js && node scripts/test-rpg-browser.js",
+    "build": "npm run check && npm test && node scripts/build.js",
+    "backup:store": "node scripts/backup-store.js",
+    "backup:verify": "node scripts/verify-backup.js"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",

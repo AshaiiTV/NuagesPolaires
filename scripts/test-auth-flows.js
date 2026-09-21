@@ -3,7 +3,7 @@
 
 const crypto = require("crypto");
 
-const baseUrl = String(process.env.NP_TEST_BASE_URL || process.env.URL || "").replace(/\/+$/, "");
+const baseUrl = String(process.env.NP_TEST_BASE_URL || "").replace(/\/+$/, "");
 const adminPseudo = process.env.NP_TEST_ADMIN_PSEUDO || "";
 const adminPassword = process.env.NP_TEST_ADMIN_PASSWORD || "";
 
@@ -54,6 +54,14 @@ async function expect(label, fn) {
 async function main() {
   if (!baseUrl) {
     console.error("Usage: NP_TEST_BASE_URL=https://your-site.netlify.app node scripts/test-auth-flows.js");
+    process.exit(2);
+  }
+
+  try {
+    const target = new URL(baseUrl);
+    if (!["http:", "https:"].includes(target.protocol) || target.username || target.password || target.origin !== baseUrl) throw new Error("Invalid origin");
+  } catch (_) {
+    console.error("NP_TEST_BASE_URL doit être une origine http(s) sans identifiants, chemin ni paramètres.");
     process.exit(2);
   }
 

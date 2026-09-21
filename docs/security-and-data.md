@@ -1,6 +1,6 @@
-# Sécurité et données — v290
+# Sécurité et données — v296
 
-Les corrections conservent la table `np_store` et les formats JSON existants. Elles changent le contrat de l'API et doivent donc être livrées avec le front correspondant. Aucun script de migration ni aucune modification de base réelle n'a été exécuté pendant leur préparation.
+Les corrections conservent la table `np_store` et les formats JSON existants. Elles changent le contrat de l'API et doivent donc être livrées avec le front correspondant. Aucun script de migration ni aucune écriture dans la base réelle n’a été exécuté pendant leur préparation. La vérification d’infrastructure et la sauvegarde utilisent des transactions explicitement en lecture seule.
 
 ## Sessions et récupération
 
@@ -42,10 +42,16 @@ Les nouvelles données privées (comptes, fiches, logs, archives et données sta
 
 Les réponses réseau et transitions de connexion sont liées à la session qui les a déclenchées. Une réponse tardive ne peut rétablir les caches ou l’identité après déconnexion ou connexion d’un autre compte.
 
+## Combat, progression et prototype RPG
+
+La fin de combat exclut les invocations de la synchronisation des fiches de leurs propriétaires. Elle garde l’instantané et la révision des personnages avant l’attente d’archivage, puis refuse une écriture si la fiche, sa révision, sa file de sauvegarde ou la session ont changé. Archive et fiches restent deux opérations distinctes : un échec partiel est annoncé. Les gains des niveaux utilisent les définitions de serments effectivement en vigueur, y compris les serments personnalisés.
+
+Le prototype RPG de la v295 reste disponible. Les nouvelles sauvegardes authentifiées restent en mémoire et sur le serveur, avec une version propre à chaque personnage : une modification d’un autre compte ne doit pas être effacée. Les anciennes copies locales du prototype sont conservées sans réimport automatique, car leur propriétaire n’était pas identifié. Les règles et récompenses de ce prototype restent calculées dans le client et ne constituent pas encore une économie multijoueur vérifiée au serveur.
+
 ## Vérification et travail restant
 
 `npm test` utilise des comptes fictifs et PostgreSQL en mémoire. PGlite vérifie la syntaxe/les opérations JSONB et les conditions SQL, mais sa connexion unique ne reproduit pas toute la concurrence d'un cluster Neon ; la recette finale devra utiliser une base PostgreSQL isolée. `npm run test:browser` utilise le vrai code front et les handlers branchés sur cette base locale. Les polices externes sont bloquées pendant les captures de test.
 
-À traiter ensuite : vérification de la configuration et des sauvegardes Neon réelles, recherche des archives historiques manquantes, opérations métier serveur pour XP/statistiques, tests de toutes les mécaniques de combat/thèmes, consolidation des modules et mesure des performances du bundle public. Les requêtes publiques parcourent encore l'ensemble de `np_store` pour certains agrégats.
+À traiter ensuite : correction des contextes Netlify, environnement PostgreSQL distant isolé, vérification de la rétention des sauvegardes Neon natives, recherche des archives historiques manquantes, opérations métier serveur pour XP/statistiques, tests de toutes les mécaniques de combat/thèmes, consolidation des modules et mesure des performances du bundle public. Les requêtes publiques parcourent encore l'ensemble de `np_store` pour certains agrégats.
 
 Le build utilise Node 24 LTS et publie uniquement `dist/`. Node 20 est en fin de vie selon le [calendrier Node.js](https://nodejs.org/en/about/previous-releases). Le choix de version est compatible avec la [configuration actuelle du runtime Netlify](https://docs.netlify.com/build/functions/configuration/#nodejs-version-for-runtime) ; une éventuelle surcharge existante dans le dashboard reste à vérifier lors de la recette de déploiement.

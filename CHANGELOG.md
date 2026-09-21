@@ -1,6 +1,16 @@
 # Changelog
 
-## v290 — Sécurité et fiabilité après audit
+## v296 — Reprise sur la version publiée
+
+- Intégration de toutes les évolutions v290–v295 du prototype RPG depuis `origin/main`.
+- Sauvegarde du personnage RPG isolée par propriétaire, conflits détectés et réponses de session périmées ignorées.
+- Fin de combat : les invocations ne remplacent plus les statistiques du propriétaire ; une fiche actualisée pendant l’archivage est conservée.
+- Gains de niveaux alignés sur les serments personnalisés et les modifications des serments natifs.
+- Cible explicite obligatoire pour les tests distants créant des comptes.
+- Outils de sauvegarde logique de `np_store` et de restauration de vérification en base locale éphémère.
+- Revue de la configuration Netlify/Neon et préparation des environnements de recette.
+
+## Préparation locale sur v289 — Sécurité et fiabilité après audit
 
 - Accès publics limités aux contenus publiés ; clés internes et notes staff filtrées.
 - Sessions révocables au changement/récupération du mot de passe et à la déconnexion ; reset temporaire aléatoire, expirant et à usage unique.

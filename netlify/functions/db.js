@@ -351,6 +351,7 @@ function normalizeRpgCharacter(entry, idx = 0) {
   out.ownerPid = sanitizeText(raw.ownerPid || "").slice(0, 128);
   out.ownerPseudo = sanitizeText(raw.ownerPseudo || "").slice(0, 64);
   out.schemaVersion = Math.max(1, Math.floor(Number(raw.schemaVersion) || 1));
+  out.sourcePlayerId = sanitizeText(raw.sourcePlayerId || "").slice(0, 128);
   out.created = !!raw.created;
   out.name = sanitizeText(raw.name || "Voyageur").slice(0, 32);
   out.oath = sanitizeText(raw.oath || "Duelliste").slice(0, 80);
@@ -369,6 +370,7 @@ function normalizeRpgCharacter(entry, idx = 0) {
   out.inv = raw.inv && typeof raw.inv === "object" && !Array.isArray(raw.inv) ? raw.inv : {};
   out.equip = raw.equip && typeof raw.equip === "object" && !Array.isArray(raw.equip) ? raw.equip : { weapon: null, armor: null, trinket: null };
   out.combat = raw.combat && typeof raw.combat === "object" && !Array.isArray(raw.combat) ? raw.combat : null;
+  out.result = raw.result && typeof raw.result === "object" && !Array.isArray(raw.result) ? raw.result : null;
   out.visited = raw.visited && typeof raw.visited === "object" && !Array.isArray(raw.visited) ? raw.visited : {};
   out.flags = raw.flags && typeof raw.flags === "object" && !Array.isArray(raw.flags) ? raw.flags : {};
   out.log = Array.isArray(raw.log) ? raw.log.slice(0, 12).map(line => sanitizeText(line).slice(0, 240)) : [];
@@ -556,6 +558,33 @@ async function compareAndSetStore(key, value, expectedVersion) {
     RETURNING updated_at, md5(value::text) AS version
   `;
 }
+// The public revision describes only this owner's character, so unrelated owners
+// can save independently. The collection CAS still protects every other record.
+function rpgCharacterVersion(character) {
+  return character ? crypto.createHash("md5").update(JSON.stringify(stableValue(character))).digest("hex") : null;
+}
+function ownRpgCharacter(records, ownerId) {
+  return (Array.isArray(records) ? records : []).find(character => character && character.ownerId === ownerId) || null;
+}
+async function saveOwnRpgCharacter(caller, character, expectedVersion) {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const snapshot = await readVersionedStore("rpg_characters", []);
+    // A malformed existing store must never be silently replaced with a new list.
+    if (!Array.isArray(snapshot.rawValue)) return null;
+    const own = ownRpgCharacter(snapshot.rawValue, caller.sub);
+    if (rpgCharacterVersion(own) !== expectedVersion) return null;
+    const saved = { ...character, id: own && own.id || "rpg_" + caller.sub };
+    const next = snapshot.rawValue.slice();
+    const index = next.findIndex(entry => entry && entry.ownerId === caller.sub);
+    if (index < 0) next.push(saved); else next[index] = saved;
+    if (!validateSize(next)) throw new Error("Valeur trop volumineuse.");
+    const result = await compareAndSetStore("rpg_characters", next, snapshot.version);
+    if (result.length) return { character: saved, version: rpgCharacterVersion(saved) };
+    // Retry only if our own character has not changed. Unrelated owners' raw
+    // records (including unknown legacy fields) are retained from the fresh read.
+  }
+  return null;
+}
 async function appendAuditLog(entry) {
   await sql`
     INSERT INTO np_store (key, value, updated_at)
@@ -683,28 +712,24 @@ exports.handler = async (event) => {
 
     if (action === "rpg_get_character") {
       if (!caller) return { statusCode: 401, headers, body: JSON.stringify({ ok: false, error: "Authentification requise" }) };
-      const chars = await readStore("rpg_characters", []);
-      const own = (Array.isArray(chars) ? chars : []).find(ch => ch && ch.ownerId === caller.sub) || null;
-      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, character: own }) };
+      const snapshot = await readVersionedStore("rpg_characters", []);
+      const own = ownRpgCharacter(snapshot.rawValue, caller.sub);
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, character: own ? normalizeRpgCharacter(own) : null, version: rpgCharacterVersion(own) }) };
     }
 
     if (action === "rpg_save_character") {
       if (!caller) return { statusCode: 401, headers, body: JSON.stringify({ ok: false, error: "Authentification requise" }) };
-      const input = body.character && typeof body.character === "object" && !Array.isArray(body.character) ? body.character : {};
-      const normalized = normalizeRpgCharacter(sanitizeDeep(input, 0), 0);
-      normalized.id = normalized.id || ("rpg_" + caller.sub);
+      if (!hasExpectedVersion(body)) return versionRequiredResponse(headers);
+      if (!isPlainObject(body.character)) return { statusCode: 400, headers, body: JSON.stringify({ ok: false, error: "Personnage RPG invalide" }) };
+      const normalized = normalizeRpgCharacter(sanitizeDeep(body.character, 0), 0);
       normalized.ownerId = caller.sub;
       normalized.ownerPid = caller.pid || "";
       normalized.ownerPseudo = caller.pseudo || caller.name || "Joueur";
       normalized.updatedAt = Date.now();
-      const chars = await readStore("rpg_characters", []);
-      const list = Array.isArray(chars) ? chars : [];
-      const idx = list.findIndex(ch => ch && ch.ownerId === caller.sub);
-      if (idx >= 0) list[idx] = normalized;
-      else list.push(normalized);
-      await writeStore("rpg_characters", list);
+      const saved = await saveOwnRpgCharacter(caller, normalized, body.expectedVersion);
+      if (!saved) return conflictResponse(headers, "rpg_characters");
       try { await auditDb(event, caller, "rpg_save_character", { character: normalized.name, level: normalized.level, loc: normalized.loc }); } catch (_) {}
-      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, character: normalized }) };
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, ...saved }) };
     }
 
     if (action === "get") {

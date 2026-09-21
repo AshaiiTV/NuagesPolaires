@@ -1,6 +1,6 @@
 # Nuages Polaires
 
-Compagnon de jeu et portail staff Nuages Polaires. Version locale **v290**, issue de la v289 avec corrections de sécurité et de sauvegarde.
+Compagnon de jeu et portail staff Nuages Polaires. Version locale **v296**, intégrant les évolutions RPG de la v295 et les corrections de sécurité, de sauvegarde et de combat issues de l’audit.
 
 ## Démarrer
 
@@ -39,10 +39,12 @@ La configuration versionnée utilise `npm run build`, publie `dist/` et garde le
 
 Définir dans Netlify : `NETLIFY_DATABASE_URL`, `NP_JWT_SECRET` (au moins 32 caractères) et `NP_SITE_URL` (origine publique exacte). Voir `.env.example` et `docs/env-vars.md`. Ne jamais ajouter les vraies valeurs au dépôt.
 
-Les variables `NP_ADMIN_PSEUDO`, `NP_ADMIN_PASSWORD` et `NP_ADMIN_RECOVERY` servent uniquement à la récupération contrôlée d'un accès admin. Les anciennes réinitialisations sans échéance doivent être renouvelées. Voir `docs/deploy-netlify.md` avant une mise en ligne.
+Les variables `NP_ADMIN_PSEUDO`, `NP_ADMIN_PASSWORD` et `NP_ADMIN_RECOVERY` servent uniquement à la récupération contrôlée d'un accès admin. Les anciennes réinitialisations sans échéance doivent être renouvelées. Voir `docs/deploy-netlify.md` et `docs/infrastructure-review-2026-09-21.md` avant une mise en ligne.
 
 ## Sauvegardes
 
 L'export JSON de l'interface est **partiel**. Les comptes qu'il contient sont des métadonnées, sans mots de passe, et sont ignorés à l'import. Une sauvegarde complète doit être faite côté PostgreSQL/Neon et sa restauration testée sur une base isolée.
 
 Les conflits de version sont refusés par le serveur. Conserver son brouillon, recharger les données puis réappliquer la modification ; le client ne force pas l'écrasement d'une modification concurrente.
+
+Les commandes `npm run backup:store -- --output <nouveau-fichier>` et `npm run backup:verify -- --input <fichier>` permettent un snapshot logique complet de `np_store` et une restauration de vérification locale. Voir `docs/backups.md` pour la connexion source explicite et les précautions de conservation.
