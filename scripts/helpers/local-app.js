@@ -63,7 +63,7 @@ async function createLocalApp() {
     const relative=url.pathname==='/'?'index.html':decodeURIComponent(url.pathname).slice(1);
     const file=path.resolve(ROOT,relative);
     if(!(relative==='index.html'||relative.startsWith('assets/'))||!file.startsWith(ROOT+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end();return;}
-    const type=file.endsWith('.js')?'application/javascript':file.endsWith('.svg')?'image/svg+xml':file.endsWith('.css')?'text/css':'text/html';
+    const type=file.endsWith('.js')?'application/javascript':file.endsWith('.svg')?'image/svg+xml':file.endsWith('.css')?'text/css':file.endsWith('.jpg')?'image/jpeg':file.endsWith('.woff2')?'font/woff2':'text/html';
     const headers={'Content-Type':type};
     if(file.endsWith('.html')){const match=fs.readFileSync(path.join(ROOT,'netlify.toml'),'utf8').match(/Content-Security-Policy = "([^"]+)"/);if(match)headers['Content-Security-Policy']=match[1];}
     res.writeHead(200,headers);res.end(fs.readFileSync(file));

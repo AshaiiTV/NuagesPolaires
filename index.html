@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-np-design="polar">
 <head>
 <meta charset="UTF-8">
 <!-- NP v3.6.5 — 2026-04-01 -->
@@ -7,7 +7,8 @@
 <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
 <link rel="shortcut icon" href="./assets/favicon.svg">
 <link rel="apple-touch-icon" href="./assets/favicon.svg">
-<meta name="theme-color" content="#06130b">
+<meta name="theme-color" content="#091519">
+<meta name="description" content="Nuages Polaires, un univers original de roleplay textuel sur Discord. Un futur inconnu, des Serments et une histoire à écrire ensemble.">
 <title>Le Compagnon — Nuages Polaires</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -183,6 +184,16 @@ textarea{resize:vertical;min-height:72px;font-size:15px;}
 .nav-item-sep{height:1px;background:rgba(255,255,255,0.04);margin:4px 18px;}
 /* Legacy — garder pour compat */
 .nav-dropdown{position:relative;display:inline-flex;align-items:center;height:52px;}
+/* Keep the drawer's stacking context above the content and header in every theme. */
+#s-app > #mobile-drawer-root{position:relative;z-index:20070 !important;}
+/* Full navigation, including staff tools, needs more width than the page content. */
+@media(max-width:1200px){
+  #s-app .hdr-nav{display:none!important;}
+  #s-app #burger-btn{display:flex!important;}
+  #s-app .hdr-l{min-width:0;}
+}
+#dd-aventure{display:none;}
+.is-player #dd-aventure,.is-staff #dd-aventure{display:inline-flex;}
 .nav-dropdown-btn{padding:0 14px;height:52px;font-family:var(--fd);font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;color:var(--dim);border:none;background:transparent;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:5px;}
 .nav-dropdown-btn:after{content:'▾';font-size:8px;transition:transform .2s;}
 .nav-dropdown-btn.open:after{transform:rotate(180deg);}
@@ -6530,130 +6541,81 @@ body.theme-aquaris .home-title{
 }
 </style>
 
+<link rel="preload" href="./assets/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="./assets/fonts/cormorant-garamond-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="./assets/css/polar-identity.css">
+<link rel="stylesheet" href="./assets/css/polar-connected.css">
 </head>
 <body>
 
-<!-- ACCUEIL -->
-<div id="s-home" class="screen active">
+<!-- ACCUEIL — identité Mystique polaire -->
+<section id="s-home" class="screen active" aria-label="Bienvenue dans Nuages Polaires">
+  <a class="np-skip" href="#np-home-content">Aller au contenu</a>
+  <header class="np-masthead">
+    <a class="np-wordmark" href="./" aria-label="Nuages Polaires, accueil">
+      <img src="./assets/favicon.svg" width="44" height="44" alt="">
+      <span>Nuages<br>Polaires<span class="np-wordmark-note">LE COMPAGNON</span></span>
+    </a>
+    <nav class="np-public-nav" aria-label="Navigation de l'accueil">
+      <button type="button" onclick="document.getElementById('np-univers').scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})">L’univers</button>
+      <button type="button" onclick="document.getElementById('np-serments').scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})">Les Serments</button>
+      <button type="button" class="np-nav-login" onclick="showScreen('s-login')">Espace joueur <span aria-hidden="true">↗</span></button>
+    </nav>
+  </header>
 
-  <!-- Fond atmosphérique -->
-  <div class="home-bg">
-    <div class="home-fog home-fog-1"></div>
-    <div class="home-fog home-fog-2"></div>
-    <div class="home-fog home-fog-3"></div>
-    <div class="home-particles" id="home-particles"></div>
-    <div class="home-horizon"></div>
-  </div>
-
-  <!-- Contenu central -->
-  <div class="home-inner">
-
-    <!-- Logo / Titre -->
-    <div class="home-logo-block">
-      <div class="home-clouds" style="height:auto;margin-bottom:8px;"><svg class="home-emblem" viewBox="0 0 340 320" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="hls" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#d4eef8"/>
-      <stop offset="100%" stop-color="#7eb8d4"/>
-    </linearGradient>
-    <linearGradient id="hlr" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#7eb8d4" stop-opacity="0.9"/>
-      <stop offset="50%" stop-color="#4a7d96" stop-opacity="0.3"/>
-      <stop offset="100%" stop-color="#7eb8d4" stop-opacity="0.9"/>
-    </linearGradient>
-  </defs>
-  <g transform="translate(170,155)">
-    <circle cx="0" cy="0" r="110" fill="none" stroke="url(#hlr)" stroke-width="0.8" opacity="0.5"/>
-    <circle cx="0" cy="0" r="115" fill="none" stroke="#7eb8d4" stroke-width="0.3" stroke-dasharray="4 10" opacity="0.3"/>
-    <line x1="0"    y1="-115" x2="0"    y2="-155" stroke="#7eb8d4" stroke-width="0.6" opacity="0.45"/>
-    <line x1="81"   y1="-81"  x2="110"  y2="-110" stroke="#7eb8d4" stroke-width="0.5" opacity="0.35"/>
-    <line x1="115"  y1="0"    x2="155"  y2="0"    stroke="#7eb8d4" stroke-width="0.6" opacity="0.45"/>
-    <line x1="81"   y1="81"   x2="110"  y2="110"  stroke="#7eb8d4" stroke-width="0.5" opacity="0.35"/>
-    <line x1="0"    y1="115"  x2="0"    y2="155"  stroke="#7eb8d4" stroke-width="0.6" opacity="0.45"/>
-    <line x1="-81"  y1="81"   x2="-110" y2="110"  stroke="#7eb8d4" stroke-width="0.5" opacity="0.35"/>
-    <line x1="-115" y1="0"    x2="-155" y2="0"    stroke="#7eb8d4" stroke-width="0.6" opacity="0.45"/>
-    <line x1="-81"  y1="-81"  x2="-110" y2="-110" stroke="#7eb8d4" stroke-width="0.5" opacity="0.35"/>
-    <polygon points="0,-88 10,-34 0,-22 -10,-34" fill="url(#hls)" opacity="0.95"/>
-    <polygon points="88,0 34,10 22,0 34,-10" fill="url(#hls)" opacity="0.95"/>
-    <polygon points="0,88 10,34 0,22 -10,34" fill="url(#hls)" opacity="0.95"/>
-    <polygon points="-88,0 -34,10 -22,0 -34,-10" fill="url(#hls)" opacity="0.95"/>
-    <polygon points="62,-62 17,-27 10,-10 27,-17" fill="#b0d8ee" opacity="0.8"/>
-    <polygon points="62,62 27,17 10,10 17,27" fill="#b0d8ee" opacity="0.8"/>
-    <polygon points="-62,62 -17,27 -10,10 -27,17" fill="#b0d8ee" opacity="0.8"/>
-    <polygon points="-62,-62 -27,-17 -10,-10 -17,-27" fill="#b0d8ee" opacity="0.8"/>
-    <rect x="-16" y="-16" width="32" height="32" fill="#09090f" stroke="#7eb8d4" stroke-width="1.2" transform="rotate(45)"/>
-    <rect x="-9"  y="-9"  width="18" height="18" fill="url(#hls)" transform="rotate(45)" opacity="0.9"/>
-    <polygon points="46,-64 76,-46 58,-34 37,-49" fill="#7eb8d4" opacity="0.25"/>
-    <line x1="46" y1="-64" x2="76" y2="-46" stroke="#d4eef8" stroke-width="0.8" opacity="0.5"/>
-  </g>
-  <!-- Nuage stylisé bas -->
-  <g transform="translate(170,278)" opacity="0.7">
-    <path d="M-140,0 Q-140,-20 -120,-20 Q-116,-34 -98,-34 Q-84,-48 -64,-40 Q-52,-56 -30,-50 Q-16,-64 6,-54 Q20,-66 40,-56 Q56,-70 76,-58 Q90,-68 106,-56 Q120,-64 136,-50 Q148,-36 140,-20 Q150,-14 148,0 Z" fill="#4a7d96" opacity="0.15"/>
-    <path d="M-140,0 Q-140,-20 -120,-20 Q-116,-34 -98,-34 Q-84,-48 -64,-40 Q-52,-56 -30,-50 Q-16,-64 6,-54 Q20,-66 40,-56 Q56,-70 76,-58 Q90,-68 106,-56 Q120,-64 136,-50 Q148,-36 140,-20 Q150,-14 148,0" fill="none" stroke="#7eb8d4" stroke-width="0.8" opacity="0.5"/>
-    <line x1="-64" y1="0" x2="-80" y2="-38" stroke="#7eb8d4" stroke-width="0.4" opacity="0.25"/>
-    <line x1="6"   y1="0" x2="-6"  y2="-52" stroke="#7eb8d4" stroke-width="0.4" opacity="0.25"/>
-    <line x1="76"  y1="0" x2="58"  y2="-56" stroke="#7eb8d4" stroke-width="0.4" opacity="0.25"/>
-  </g>
-</svg></div>
-      <div class="home-eyebrow">LE COMPAGNON OFFICIEL</div>
-      <h1 class="home-title">
-        <span class="home-title-line home-title-1">NUAGES</span>
-        <span class="home-title-line home-title-2">POLAIRES</span>
-      </h1>
-      <div class="home-ruler"></div>
-      <p class="home-sub">
-        <em>« Nul ne choisit son Serment.</em><br>
-        <em>C'est le Serment qui reconnaît son porteur. »</em>
-      </p>
-    </div>
-
-    <!-- Actions -->
-    <div class="home-actions">
-      <button class="home-btn home-btn-primary" onclick="showScreen('s-hrp')">
-        <span class="home-btn-glow"></span>
-        <span class="home-btn-label">Rejoindre l'aventure</span>
-        <span class="home-btn-arrow">→</span>
-      </button>
-      <button class="home-btn home-btn-secondary" onclick="openRpgPrototype()">
-        <span class="home-btn-label">Prototype RPG</span>
-        <span style="font-size:11px;opacity:.4;">*</span>
-      </button>
-      <button class="home-btn home-btn-secondary" onclick="showScreen('s-login')">
-        <span class="home-btn-label">Espace joueur</span>
-        <span style="font-size:11px;opacity:.4;">↗</span>
-      </button>
-    </div>
-
-    <!-- Bas de page -->
-    <div class="home-footer">
-      <div class="home-footer-item">
-        <span class="home-footer-num" id="hf-serments">10</span>
-        <span class="home-footer-lbl">Serments</span>
+  <main id="np-home-content" tabindex="-1">
+    <section class="np-hero" aria-labelledby="np-home-title">
+      <img class="np-hero-landscape" src="./assets/images/nuages-polaires-horizon.jpg" width="1672" height="941" alt="Un vaste paysage naturel se dessine sous d’immenses nuages blancs, éclairés d’une lueur froide." fetchpriority="high">
+      <div class="np-hero-shade" aria-hidden="true"></div>
+      <div class="np-hero-copy">
+        <p class="np-eyebrow"><span class="np-signal" aria-hidden="true"></span> ROLEPLAY TEXTUEL · UNIVERS ORIGINAL</p>
+        <h1 id="np-home-title">Nuages<br><em>Polaires.</em></h1>
+        <p class="np-hero-tagline">Le monde attend.<br>Votre histoire commence.</p>
+        <p class="np-hero-description">Un futur inconnu. Une marque en vous.<br>Et tout ce qui reste à écrire, ensemble.</p>
+        <div class="np-hero-actions">
+          <button type="button" class="np-action np-action-primary" onclick="showScreen('s-hrp')">Rejoindre l’aventure <span aria-hidden="true">↗</span></button>
+          <button type="button" class="np-action np-action-quiet" onclick="document.getElementById('np-univers').scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})">Découvrir l’univers <span aria-hidden="true">↓</span></button>
+        </div>
+        <p class="np-platform-note">Une histoire collective, sur Discord.</p>
       </div>
-      <div class="home-footer-sep"></div>
-      <div class="home-footer-item">
-        <span class="home-footer-num" id="hf-joueurs">—</span>
-        <span class="home-footer-lbl">Élèves invoqués</span>
-      </div>
-      <div class="home-footer-sep"></div>
-      <div class="home-footer-item">
-        <span class="home-footer-num" id="hf-creatures">—</span>
-        <span class="home-footer-lbl">Créatures tuées</span>
-      </div>
-      <div class="home-footer-sep"></div>
-      <div class="home-footer-item">
-        <span class="home-footer-num" id="hf-actifs">—</span>
-        <span class="home-footer-lbl">Actifs cette semaine</span>
-      </div>
-      <div class="home-footer-sep"></div>
-      <div class="home-footer-item">
-        <span class="home-footer-num" id="hf-gemmes">—</span>
-        <span class="home-footer-lbl">Gemmes distribuées</span>
-      </div>
-    </div>
+      <div class="np-hero-coordinate" aria-hidden="true"><span>NP / 01</span><i></i><span>APRÈS LE BASCULEMENT</span></div>
+      <div class="np-hero-caption"><span class="np-caption-rule" aria-hidden="true"></span><p>« Le monde n’est pas mort.<br><em>Il attend.</em> »</p></div>
+    </section>
 
-  </div>
-</div>
+    <section class="np-community" aria-label="La vie du serveur">
+      <div class="np-community-title"><span class="np-eyebrow">LES TRACES DE NOTRE PASSAGE</span><span>Un monde qui s’écrit à plusieurs.</span></div>
+      <div class="np-metrics">
+        <div class="np-metric"><span id="hf-serments">—</span><span>Serments</span></div>
+        <div class="np-metric"><span id="hf-joueurs">—</span><span>Élèves invoqués</span></div>
+        <div class="np-metric"><span id="hf-creatures">—</span><span>Créatures vaincues</span></div>
+        <div class="np-metric"><span id="hf-actifs">—</span><span>Actifs cette semaine</span></div>
+        <div class="np-metric"><span id="hf-gemmes">—</span><span>Gemmes distribuées</span></div>
+      </div>
+    </section>
+
+    <section class="np-story np-section" id="np-univers" aria-labelledby="np-story-title">
+      <div class="np-section-label"><span>01</span> L’UNIVERS</div>
+      <div class="np-story-heading"><h2 id="np-story-title">Tout commence<br><em>après la chute.</em></h2><p class="np-story-marginal">Le passé s’est dérobé.<br>Le reste vous appartient.</p></div>
+      <div class="np-story-text">
+        <p>L’Argonaute a perdu. Le Dimenséa a changé de mains. Alors les nuages ont couvert le ciel, et la réalité s’est pliée.</p>
+        <p>L’humanité s’éveille dans un futur lointain. Les anciens repères se sont effacés. Un horizon méconnaissable s’étend dans le silence. Parmi les survivants, certains portent une marque intérieure : un <strong>Serment</strong>.</p>
+        <p class="np-story-end">Ce qui reste à écrire dépend de ceux qui se relèvent.</p>
+      </div>
+    </section>
+
+    <section class="np-oath np-section" id="np-serments" aria-labelledby="np-oath-title">
+      <div class="np-section-label"><span>02</span> LES SERMENTS</div>
+      <div class="np-oath-visual" aria-hidden="true"><div class="np-oath-orbit"></div><img src="./assets/favicon.svg" alt="" width="260" height="260"><span>LE LIEN · LE CHOIX · LA TRACE</span></div>
+      <div class="np-oath-copy"><p class="np-eyebrow">CE QUI VOUS LIE À CE MONDE</p><h2 id="np-oath-title">Une marque.<br><em>Un chemin.</em></h2><blockquote>« Nul ne choisit son Serment.<br>C’est le Serment qui reconnaît son porteur. »</blockquote><p>Votre Serment grandit à travers vos choix, vos sorties et vos combats. Ici, votre personnage se construit autant dans l’histoire que vous écrivez que dans les pouvoirs qu’il découvre.</p><button type="button" class="np-text-link" onclick="showScreen('s-hrp')">Faire le premier pas <span aria-hidden="true">↗</span></button></div>
+    </section>
+
+    <section class="np-invitation np-section" aria-labelledby="np-invitation-title">
+      <span class="np-eyebrow">LA SUITE N’EST PAS ENCORE ÉCRITE</span><h2 id="np-invitation-title">Laissez votre trace.</h2><p>Découvrez les règles, créez votre compte et rejoignez une histoire collective.</p><button type="button" class="np-action np-action-primary" onclick="showScreen('s-hrp')">Commencer l’aventure <span aria-hidden="true">↗</span></button>
+    </section>
+  </main>
+
+  <footer class="np-colophon"><span>NUAGES POLAIRES <small>Le compagnon d’un monde à écrire.</small></span><div><button type="button" onclick="showScreen('s-hrp')">Règlement</button><button type="button" onclick="openRpgPrototype()">RPG — expérimental <span aria-hidden="true">↗</span></button></div></footer>
+</section>
 
 <!-- RÈGLEMENT HRP — avant inscription -->
 <div id="s-hrp" class="screen">
@@ -7004,6 +6966,7 @@ body.theme-aquaris .home-title{
   <rect x="41" y="41" width="18" height="18" fill="#09090f" stroke="#7eb8d4" stroke-width="1" transform="rotate(45,50,50)"/>
   <rect x="45" y="45" width="10" height="10" fill="#7eb8d4" transform="rotate(45,50,50)" opacity="0.9"/>
 </svg>
+      <span class="hdr-logo np-app-wordmark">Nuages Polaires<small>Le Compagnon</small></span>
       <!-- BURGER — visible mobile uniquement -->
       <button id="burger-btn" onclick="toggleMobileDrawer()" style="display:none;background:transparent;border:0.5px solid rgba(126,184,212,0.2);color:var(--glacier);cursor:pointer;width:34px;height:34px;flex-shrink:0;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:0;transition:border-color .2s;" title="Menu">
         <span class="burger-line" style="display:block;width:16px;height:1px;background:currentColor;transition:all .25s;"></span>
@@ -7017,26 +6980,32 @@ body.theme-aquaris .home-title{
       <!-- Séparateur gauche -->
       <div class="nav-sep" style="height:18px;width:1px;background:var(--border2);margin:0 6px;"></div>
 
-      <!-- ══ UNIVERS (public) ══ -->
-      <div class="nav-group-label">Univers</div>
+      <div class="nav-dropdown" id="dd-aventure">
+        <button class="nav-dropdown-btn" onclick="toggleNavDrop('dd-aventure')" id="dd-aventure-btn"><span class="nav-icon">⌂</span> Mon aventure</button>
+        <div class="nav-dropdown-menu nav-section-public" id="dd-aventure-menu">
+          <div class="nav-section-header">MON AVENTURE</div>
+          <button class="nav-dropdown-item" onclick="switchDropTab('accueil',this,'dd-aventure')">Tableau de bord</button>
+          <button class="nav-dropdown-item" onclick="_closeAllNavDrops();forceOpenOwnProfile();">Mon personnage</button>
+        </div>
+      </div>
+
+      <!-- ══ UNIVERS ET RÈGLES ══ -->
       <div class="nav-dropdown" id="dd-joueurs">
-        <button class="nav-dropdown-btn" onclick="toggleNavDrop('dd-joueurs')" id="dd-joueurs-btn"><span class="nav-icon">◎</span> Explorer</button>
+        <button class="nav-dropdown-btn" onclick="toggleNavDrop('dd-joueurs')" id="dd-joueurs-btn"><span class="nav-icon">◎</span> Univers</button>
         <div class="nav-dropdown-menu nav-section-public" id="dd-joueurs-menu">
           <div class="nav-section-header">UNIVERS</div>
-          <button class="nav-dropdown-item" onclick="switchDropTab('accueil',this,'dd-joueurs')"><span class="nav-item-icon">⌂</span>Accueil</button>
           <button class="nav-dropdown-item" onclick="switchDropTab('synopsis',this,'dd-joueurs')"><span class="nav-item-icon">✦</span>Synopsis</button>
           <button class="nav-dropdown-item" onclick="switchDropTab('serments',this,'dd-joueurs')"><span class="nav-item-icon">⚜</span>Serments</button>
           <button class="nav-dropdown-item" onclick="switchDropTab('bestiaire',this,'dd-joueurs')"><span class="nav-item-icon">◈</span>Bestiaire</button>
-          <button class="nav-dropdown-item" onclick="switchDropTab('rpg-prototype',this,'dd-joueurs')"><span class="nav-item-icon">*</span>Prototype RPG</button>
           <div class="nav-divider"></div>
           <div class="nav-section-header">RÈGLES</div>
           <button class="nav-dropdown-item" onclick="switchDropTab('combat',this,'dd-joueurs')"><span class="nav-item-icon">⚔</span>Système de jeu</button>
-          <button class="nav-dropdown-item" onclick="switchDropTab('evenements',this,'dd-joueurs')"><span class="nav-item-icon">📅</span>Événements</button>
           <button class="nav-dropdown-item" onclick="switchDropTab('reglement',this,'dd-joueurs');scrollTo(0,0);"><span class="nav-item-icon">§</span>Règlement HRP</button>
         </div>
       </div>
 
-      <button class="rpg-nav-btn" onclick="openRpgPrototype()"><span class="nav-icon">*</span> Jeu RPG</button>
+      <button class="rpg-nav-btn" data-app-tab="evenements" onclick="switchDropTab('evenements',null,'')"><span class="nav-icon">📅</span> Événements</button>
+      <button class="rpg-nav-btn" data-app-tab="rpg-prototype" onclick="openRpgPrototype()"><span class="nav-icon">*</span> RPG — expérimental</button>
 
       <div id="staff-nav-placeholder"></div>
           </nav>
@@ -7050,10 +7019,12 @@ body.theme-aquaris .home-title{
       <div class="nav-dropdown staff-only" id="dd-staff" style="display:flex;align-items:center;">
         <button class="nav-dropdown-btn nav-staff-btn" onclick="toggleNavDrop('dd-staff')" id="dd-staff-btn"><span class="nav-icon" style="color:var(--gold);">⚙</span> Outils<span id="nav-pending-badge" style="display:none;background:var(--red);color:#fff;font-size:8px;min-width:16px;height:16px;border-radius:99px;display:inline-flex;align-items:center;justify-content:center;font-family:var(--fd);margin-left:5px;padding:0 3px;vertical-align:middle;"></span></button>
         <div class="nav-dropdown-menu nav-section-staff" id="dd-staff-menu">
-          <div class="nav-section-header" style="color:rgba(201,168,76,0.6);">MJ</div>
-          <button class="nav-dropdown-item perm-mj" onclick="switchDropTab('joueurs',this,'dd-staff')"><span class="nav-item-icon">👥</span>Joueurs<span id="dd-joueurs-pending-badge" style="display:none;background:var(--red);color:#fff;font-size:8px;padding:1px 5px;border-radius:99px;margin-left:auto;font-family:var(--fd);"></span></button>
+          <div class="nav-section-header perm-mj" style="color:rgba(201,168,76,0.6);">MAÎTRISER UNE PARTIE</div>
+          <button class="nav-dropdown-item perm-mj" onclick="switchDropTab('joueurs',this,'dd-staff')"><span class="nav-item-icon">👥</span>Personnages<span id="dd-joueurs-pending-badge" style="display:none;background:var(--red);color:#fff;font-size:8px;padding:1px 5px;border-radius:99px;margin-left:auto;font-family:var(--fd);"></span></button>
           <button class="nav-dropdown-item perm-mj" onclick="switchDropTab('combat-mj',this,'dd-staff')"><span class="nav-item-icon">⚔</span>Simulation</button>
           <button class="nav-dropdown-item perm-mj" onclick="switchDropTab('apparitions',this,'dd-staff')"><span class="nav-item-icon">🜂</span>Apparitions</button>
+          <div class="nav-divider perm-designer"></div>
+          <div class="nav-section-header perm-designer">CRÉATION</div>
           <button class="nav-dropdown-item perm-designer" onclick="switchDropTab('bestiaire-admin',this,'dd-staff')"><span class="nav-item-icon">✦</span>Atelier bestiaire</button>
           <button class="nav-dropdown-item perm-admin" onclick="switchDropTab('serments-admin',this,'dd-staff')"><span class="nav-item-icon">⚜</span>Atelier serments</button>
           <div class="nav-divider perm-admin"></div>
@@ -7078,7 +7049,7 @@ body.theme-aquaris .home-title{
           <span class="hdr-badge" id="hdr-badge">Joueur</span>
         </div>
       </div>
-      <button class="hdr-settings" id="hdr-settings-btn" onclick="openSettings()" title="Paramètres du compte" style="display:none;">⚙</button>
+      <button class="hdr-settings" id="hdr-settings-btn" onclick="openSettings()" title="Mon compte et ma collection" aria-label="Mon compte et ma collection" style="display:none;">⚙</button>
     </div>
   </header>
 
@@ -7092,30 +7063,36 @@ body.theme-aquaris .home-title{
       <button onclick="closeMobileDrawer()" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:18px;line-height:1;padding:2px;">✕</button>
     </div>
     <div style="padding:8px 0;">
-      <button onclick="switchDropTab('accueil',null,'dd-joueurs');closeMobileDrawer();" class="drawer-item">Accueil</button>
-      <button onclick="switchTab('fiche',null);closeMobileDrawer();" class="drawer-item drawer-player-only"><span style="color:var(--glacier);">✦</span> Ma Fiche</button>
+      <div class="nav-section-header">MON AVENTURE</div>
+      <button onclick="switchDropTab('accueil',null,'dd-aventure');closeMobileDrawer();" class="drawer-item">Tableau de bord</button>
+      <button onclick="forceOpenOwnProfile();closeMobileDrawer();" class="drawer-item drawer-player-only"><span style="color:var(--glacier);">✦</span> Mon personnage</button>
+      <button onclick="switchDropTab('evenements',null,'');closeMobileDrawer();" class="drawer-item">Événements</button>
     </div>
     <div style="padding:4px 0;border-top:0.5px solid rgba(126,184,212,0.07);">
       <div style="font-family:var(--fd);font-size:8px;letter-spacing:3px;color:var(--faint);padding:10px 20px 6px;">UNIVERS</div>
       <button onclick="switchDropTab('synopsis',null,'dd-joueurs');closeMobileDrawer();" class="drawer-item">Synopsis</button>
       <button onclick="switchDropTab('serments',null,'dd-joueurs');closeMobileDrawer();" class="drawer-item">Serments</button>
       <button onclick="switchDropTab('bestiaire',null,'dd-joueurs');closeMobileDrawer();" class="drawer-item">Bestiaire</button>
-      <button onclick="switchDropTab('rpg-prototype',null,'dd-joueurs');closeMobileDrawer();" class="drawer-item">Prototype RPG</button>
+      <div class="nav-section-header">RÈGLES</div>
       <button onclick="switchDropTab('combat',null,'dd-joueurs');closeMobileDrawer();" class="drawer-item">Système de jeu</button>
-      <button onclick="switchDropTab('evenements',null,'dd-joueurs');closeMobileDrawer();" class="drawer-item">Événements</button>
       <button onclick="switchDropTab('reglement',null,'dd-joueurs');closeMobileDrawer();" class="drawer-item">Règlement HRP</button>
+    </div>
+    <div style="padding:4px 0;border-top:0.5px solid rgba(126,184,212,0.07);">
+      <button onclick="openRpgPrototype();closeMobileDrawer();" class="drawer-item">RPG — expérimental</button>
     </div>
     <div id="drawer-staff-section" style="padding:4px 0;border-top:0.5px solid rgba(126,184,212,0.07);display:none;">
       <div style="font-family:var(--fd);font-size:8px;letter-spacing:3px;color:var(--gold);padding:10px 20px 6px;">STAFF</div>
-      <button onclick="switchDropTab('joueurs',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-mj">Joueurs</button>
+      <div class="nav-section-header perm-mj">MAÎTRISER UNE PARTIE</div>
+      <button onclick="switchDropTab('joueurs',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-mj">Personnages</button>
       <button onclick="switchDropTab('combat-mj',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-mj">Simulation</button>
       <button onclick="switchDropTab('apparitions',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-mj">Apparitions</button>
+      <div class="nav-section-header perm-designer">CRÉATION</div>
       <button onclick="switchDropTab('bestiaire-admin',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-designer">Atelier bestiaire</button>
       <button onclick="switchDropTab('serments-admin',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-admin">Atelier serments</button>
       <button onclick="switchDropTab('database',null,'dd-staff');closeMobileDrawer();" class="drawer-item perm-admin">Administration</button>
     </div>
     <div style="margin-top:auto;padding:16px 20px;border-top:0.5px solid rgba(126,184,212,0.07);">
-      <button onclick="openSettings();closeMobileDrawer();" class="drawer-item" style="color:var(--dim);">⚙ Paramètres</button>
+      <button onclick="openSettings();closeMobileDrawer();" class="drawer-item" style="color:var(--dim);">⚙ Mon compte et ma collection</button>
       <button onclick="logout();" class="drawer-item" style="color:var(--red);">← Déconnexion</button>
     </div>
   </div>
@@ -9016,7 +8993,6 @@ body[class*="theme-"] ::selection{
 </style>
 
 <script src="./assets/js/theme-max.js"></script>
-<script src="./assets/js/home-readability-polish.js"></script>
 <script src="./assets/js/api-hardening.js"></script>
 <script src="./assets/js/diagnostics.js"></script>
 <script src="./assets/js/site-self-test.js"></script>

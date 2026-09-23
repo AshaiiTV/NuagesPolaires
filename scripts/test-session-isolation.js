@@ -205,3 +205,86 @@ test('A password hash completing after logout cannot start a new login request',
   assert.equal(f.requests.length, 0);
   assert.equal(f.context._authEntryPending, false);
 });
+
+// Exercise the actual resilience wrappers as well as the base API functions:
+// wrapping must not turn an expected cancellation into a new-account outage.
+const hardeningSource = fs.readFileSync(path.join(__dirname, '../assets/js/api-hardening.js'), 'utf8');
+const hardeningFrom = hardeningSource.indexOf('  function apiSessionGeneration(){');
+const hardeningTo = hardeningSource.indexOf('  async function rawPost(', hardeningFrom);
+assert.ok(hardeningFrom >= 0 && hardeningTo > hardeningFrom);
+function hardeningFixture() {
+  const requests = [], failures = [];
+  const context = {
+    Promise, _dbSessionGeneration: 1, WRAP_TIMER: null, STATE: { db: 'unknown', auth: 'unknown' },
+    clearTimeout() {}, setTimeout() {},
+    classifyFunctionUrl: url => url.includes('/db') ? 'db' : 'auth',
+    handleFailure: (...args) => failures.push(args),
+    safeErrorPayload: (status, error) => ({ ok: false, offline: true, status, error }),
+    _dbCall: () => new Promise((resolve, reject) => requests.push({ resolve, reject })),
+    fetch: () => new Promise((resolve, reject) => requests.push({ resolve, reject }))
+  };
+  context.window = context;
+  vm.createContext(context);
+  vm.runInContext(hardeningSource.slice(hardeningFrom, hardeningTo), context);
+  context.wrapApiFunctions(); context.wrapFetch();
+  return { context, requests, failures };
+}
+
+test('API wrappers retain SESSION_CHANGED as a silent rejection', async () => {
+  const f = hardeningFixture();
+  const pending = f.context._dbCall({ action: 'set' });
+  const rejected = assert.rejects(pending, { code: 'SESSION_CHANGED' });
+  await tick();
+  const cancellation = Object.assign(new Error('La session a changé pendant le chargement.'), { code: 'SESSION_CHANGED' });
+  f.requests[0].reject(cancellation);
+  await rejected;
+  assert.deepEqual(f.failures, []);
+  assert.equal(f.context.STATE.db, 'unknown');
+});
+
+test('API wrappers discard an old-session 503 before announcing service failure', async () => {
+  const f = hardeningFixture();
+  const pending = f.context._dbCall({ action: 'set' });
+  const rejected = assert.rejects(pending, { code: 'SESSION_CHANGED' });
+  await tick(); f.context._dbSessionGeneration++;
+  f.requests[0].resolve({ ok: false, status: 503, offline: true, error: 'Service unavailable' });
+  await rejected;
+  assert.deepEqual(f.failures, []);
+  assert.equal(f.context.STATE.db, 'unknown');
+});
+
+test('An API call superseded before its wrapper starts never reaches the underlying function', async () => {
+  const f = hardeningFixture();
+  const pending = f.context._dbCall({ action: 'set' });
+  f.context._dbSessionGeneration++;
+  await assert.rejects(pending, { code: 'SESSION_CHANGED' });
+  assert.equal(f.requests.length, 0);
+  assert.deepEqual(f.failures, []);
+});
+
+for (const outcome of ['server', 'network']) {
+  test(`The fetch wrapper ignores an old-session ${outcome} failure`, async () => {
+    const f = hardeningFixture();
+    const pending = f.context.fetch('/.netlify/functions/db');
+    f.context._dbSessionGeneration++;
+    if (outcome === 'server') {
+      f.requests[0].resolve({ status: 503, ok: false });
+      assert.equal((await pending).status, 503);
+    } else {
+      const rejected = assert.rejects(pending, /Failed to fetch/);
+      f.requests[0].reject(new Error('Failed to fetch'));
+      await rejected;
+    }
+    assert.deepEqual(f.failures, []);
+    assert.equal(f.context.STATE.db, 'unknown');
+  });
+}
+
+test('The fetch wrapper still reports a current-session server failure', async () => {
+  const f = hardeningFixture();
+  const pending = f.context.fetch('/.netlify/functions/db');
+  f.requests[0].resolve({ status: 503, ok: false });
+  await pending;
+  assert.equal(f.failures.length, 1);
+  assert.equal(f.failures[0][0], 'db');
+});

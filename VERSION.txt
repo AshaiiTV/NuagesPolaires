@@ -4,3 +4,9 @@ Nuages Polaires v296 — Reprise du projet après audit
 - Écritures concurrentes protégées, archives et profils fiabilisés
 - Persistance RPG isolée par compte et corrections fin de combat/progression
 - Tests locaux SQL/Chromium et sauvegarde logique vérifiable
+- Consommations, notifications et inscriptions joueur sauvegardées par actions dédiées
+- Accueil et agenda cohérents, navigation Mon aventure / Univers / Événements
+- Présence simulée du RPG et visibilité du journal explicitement indiquées
+- Navigation tablette adaptée et erreurs d'affichage du tableau de bord administrateur corrigées
+- Identité Mystique polaire : accueil illustré original, palette encre/aurore/ivoire et carnet de voyage connecté
+- Typographies locales, composants graphiques unifiés et paysage sans constructions conforme au lore précisé

@@ -1129,6 +1129,9 @@ function saveSysLog(arr){ return sv(_LOG_KEY,arr); }
 function getSysLogArchive(){ return sto(_LOG_ARCHIVE_KEY)||[]; }
 function saveSysLogArchive(arr){ return sv(_LOG_ARCHIVE_KEY,arr); }
 function sysLog(action,detail,actor){
+  // Authentication and own-player actions are already audited by the server.
+  // Only the roles allowed to maintain the staff log may write this collection.
+  if(!CU || ['admin','mj'].indexOf(roleKey(CU))<0) return;
   var entry={ts:Date.now(),action:action||"",detail:detail||"",actor:actor||(window.CU?CU.name:"Système")};
   var log=getSysLog(); log.unshift(entry);
   if(log.length>2000) log=log.slice(0,2000);
@@ -1485,24 +1488,39 @@ function _enqueueDbMutation(key, payload){
   var sessionGeneration = _dbSessionGeneration;
   var previous = _DB_WRITE_QUEUE[key];
   var expected = Object.prototype.hasOwnProperty.call(_dbVersions, key) ? _dbVersions[key] : null;
+  var ownAction=['consume_own_item','dismiss_notifications','set_event_participation'].indexOf(payload.action)>=0;
   var request = (previous || Promise.resolve()).then(function(previousResult){
-    if(sessionGeneration !== _dbSessionGeneration || !_dbToken || _dbOffline || window.__logoutBusy) throw _dbWriteFailure(key, {error:'Connexion requise pour enregistrer.'});
+    _assertDbSessionGeneration(sessionGeneration);
+    if(!_dbToken || _dbOffline) throw _dbWriteFailure(key, {error:'Connexion requise pour enregistrer.'});
+    // A full staff snapshot taken before an own-player command cannot reuse its
+    // confirmed revision: it would restore the old inventory, notifications or participants.
+    if(payload.action==='set' && (key==='players'||key==='events') && previous && previous._containsOwnPlayerMutation && previousResult && previousResult.version!==expected){
+      throw _dbWriteFailure(key,{code:'VERSION_CONFLICT'});
+    }
     var nextPayload = Object.assign({}, payload, {
       expectedVersion: previousResult && Object.prototype.hasOwnProperty.call(previousResult, 'version') ? previousResult.version : expected
     });
     return _dbCall(nextPayload, {silent:true}).then(function(resp){
-      if(!resp || resp.ok !== true || resp.skipped || resp.status >= 400) throw _dbWriteFailure(key, resp);
-      if(sessionGeneration !== _dbSessionGeneration) throw new Error('La session a changé pendant l’enregistrement.');
+      _assertDbSessionGeneration(sessionGeneration);
+      if(!resp || resp.ok !== true || resp.skipped || resp.status >= 400){
+        var failure=_dbWriteFailure(key,resp);
+        var rejectedBeforeWrite=resp && ([400,403,404].indexOf(resp.status)>=0 || (resp.status===409 && ['ITEM_UNAVAILABLE','EVENT_CLOSED','EVENT_FULL','EVENT_UNAVAILABLE'].indexOf(resp.code)>=0));
+        // A confirmed business refusal made no write. Other failures keep the queue blocked for reload.
+        if(ownAction && rejectedBeforeWrite) failure._ownActionRejected=true;
+        throw failure;
+      }
       _dbVersions[key] = resp.version;
       _reportDbWriteSuccess(key);
       return resp;
     });
   });
+  request._containsOwnPlayerMutation=!!(ownAction || payload.action==='patch_own_player' || (previous && previous._containsOwnPlayerMutation));
   _DB_WRITE_QUEUE[key] = request;
   // Mark the rejection handled for legacy fire-and-forget callers, without changing the returned promise.
   request.catch(function(err){
     request._failed = true;
-    if(!err.code) _reportDbWriteError(key, err);
+    if(err._ownActionRejected && _DB_WRITE_QUEUE[key]===request) delete _DB_WRITE_QUEUE[key];
+    if(sessionGeneration===_dbSessionGeneration && !window.__logoutBusy && !err.code) _reportDbWriteError(key, err);
   });
   request.then(function(){ if(_DB_WRITE_QUEUE[key] === request) delete _DB_WRITE_QUEUE[key]; }, function(){});
   return request;
@@ -4318,6 +4336,8 @@ var _lastAppTabKey="np_last_app_tab";
 var _tabMemorySuspended=false;
 
 function _tabDropIdFor(id){
+  if(id==='accueil'||id==='fiche') return 'dd-aventure';
+  if(id==='evenements'||id==='rpg-prototype') return '';
   var staffTabs=["joueurs","combat-mj","apparitions","bestiaire-admin","serments-admin","database"];
   return staffTabs.indexOf(id)>=0 ? "dd-staff" : "dd-joueurs";
 }
@@ -4537,7 +4557,7 @@ initStorage(); }
         +'</div>'
         +'<div style="font-size:14px;color:var(--text);line-height:1.7;">'
         +'Bienvenue, <strong style="color:var(--glacier);">'+esc(CU.pseudo||CU.name)+'</strong>. '
-        +'Un Maître du Jeu doit lier ton compte à un personnage avant que tu puisses accéder à ta fiche.'
+        +'Un administrateur doit lier ton compte à un personnage avant que tu puisses accéder à ta fiche.'
         +'</div>'
         +'<div style="font-size:12px;color:var(--faint);margin-top:8px;font-style:italic;">Rafraîchis la page une fois la liaison effectuée.</div>';
       var accueilEl=ge("p-accueil-c");
@@ -5525,6 +5545,13 @@ function switchTab(id, btn, _isBack){
   var prevActiveId=prevActiveEl?prevActiveEl.id:null;
   document.querySelectorAll("#main-tabs .nav-tab, #main-tabs .nav-dropdown-item").forEach(function(t){t.classList.remove("active");});
   document.querySelectorAll("#main-tabs .nav-dropdown-btn.has-active").forEach(function(t){t.classList.remove("has-active");});
+  var activeDrop=ge(_tabDropIdFor(id)+'-btn');
+  if(activeDrop) activeDrop.classList.add('has-active');
+  document.querySelectorAll('[data-app-tab]').forEach(function(t){
+    var active=t.getAttribute('data-app-tab')===id;
+    t.classList.toggle('active',active);
+    if(active) t.setAttribute('aria-current','page'); else t.removeAttribute('aria-current');
+  });
   document.querySelectorAll(".tab-content").forEach(function(t){
     t.classList.remove("active");
     t.style.display="";
@@ -5781,7 +5808,7 @@ function renderJournalFiche(p){
   if(canEdit){
     // Zone éditable
     contentEl.innerHTML='<textarea id="journal-fiche-text" style="width:100%;min-height:180px;background:var(--bg4);border:1px solid var(--border2);color:var(--text);font-family:var(--fb);font-size:14px;line-height:1.8;padding:14px;resize:vertical;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor=\'var(--glacier-dim)\'" onblur="this.style.borderColor=\'var(--border2)\'" placeholder="Notes personnelles, lore, secrets…">'+escHtml(journal)+'</textarea>'
-      +'<p style="font-size:11px;color:var(--faint);font-style:italic;margin-top:6px;">'+(isAdmin&&!isOwner?'Vous lisez le journal de '+esc(p.name)+' en tant qu\'Admin.':'Visible uniquement par toi et les administrateurs.')+'</p>';
+      +'<p style="font-size:11px;color:var(--faint);font-style:italic;margin-top:6px;">'+(isAdmin&&!isOwner?'Vous lisez le journal de '+esc(p.name)+' en tant qu\'Admin.':'Visible par toi, les maîtres du jeu et les administrateurs.')+'</p>';
     if(btnsEl) btnsEl.innerHTML='<button class="btn btn-sm btn-grn" onclick="saveJournalFiche(\''+jsesc(p.id)+'\')"><span>Sauvegarder</span></button>';
   } else {
     // Lecture seule pour MJ
@@ -5892,6 +5919,7 @@ function renderInv(p){
   }
   var sel=ge("p-csel");sel.innerHTML='<option value="">— Choisir —</option>';
   inv.filter(function(i){return i.qty>0;}).forEach(function(i){sel.innerHTML+='<option value="'+escAttr(i.id)+'">'+i.name+' (×'+i.qty+')</option>';});
+  _refreshOwnPlayerActionControls();
   var canDelHist=can("manage_players");
   var allHist=[...(p.history||[])].reverse();
   // Construire les filtres disponibles selon les types présents
@@ -5964,14 +5992,82 @@ async function delHistEntry(pid,idx){
   renderInv(p);
 }
 
+// Dedicated own-player actions only update the cache after server confirmation.
+var _OWN_PLAYER_ACTIONS=Object.create(null);
+function _ownPlayerActionBusy(key){
+  return !!(_OWN_PLAYER_ACTIONS[key] && _OWN_PLAYER_ACTIONS[key].generation===_dbSessionGeneration);
+}
+function _refreshOwnPlayerActionControls(){
+  document.querySelectorAll('[data-own-player-action]').forEach(function(button){
+    var busy=_ownPlayerActionBusy(button.getAttribute('data-own-player-action'));
+    button.disabled=busy;
+    button.setAttribute('aria-busy',busy?'true':'false');
+  });
+  var consume=document.querySelector('[onclick="playerConsume()"]');
+  var ownView=CU&&CU.pid&&String(getViewPid())===String(CU.pid);
+  var consumeBusy=_ownPlayerActionBusy('consume');
+  if(consume){
+    consume.disabled=!ownView||consumeBusy;
+    consume.setAttribute('aria-busy',consumeBusy?'true':'false');
+    consume.title=ownView?'':'La consommation se déclare depuis ton propre personnage.';
+  }
+  ['p-csel','p-cnote'].forEach(function(id){ var field=ge(id); if(field) field.disabled=!ownView||consumeBusy; });
+}
+async function _runOwnPlayerMutation(key,payload,lockKey,onSaved){
+  if(!CU||!CU.pid||!gpid(CU.pid)){
+    notif(CU?'Ton compte doit être lié à un personnage pour effectuer cette action.':'Connecte-toi pour effectuer cette action.','err');
+    return false;
+  }
+  if(_ownPlayerActionBusy(lockKey)) return false;
+  var operation={generation:_dbSessionGeneration,pid:String(CU.pid)};
+  _OWN_PLAYER_ACTIONS[lockKey]=operation;
+  _refreshOwnPlayerActionControls();
+  try{
+    var response=await _enqueueDbMutation(key,payload);
+    _assertDbSessionGeneration(operation.generation);
+    if(!CU||String(CU.pid)!==operation.pid) throw _dbSessionChangedError();
+    if(!Array.isArray(response.value) || response.key!==key) throw _dbWriteFailure(key,{error:'Réponse de sauvegarde invalide. Recharge la page pour vérifier la modification.'});
+    if(key==='players'){
+      var saved=response.value.map(_normalizePlayerRecord);
+      if(!saved.some(function(player){ return String(player.id)===operation.pid; })) throw _dbWriteFailure(key,{error:'Personnage absent de la réponse. Recharge la page pour vérifier la modification.'});
+      // Staff responses can contain only their own character: retain the other visible records.
+      var savedIds=saved.map(function(player){ return String(player.id); });
+      _dbCache.players=gp().filter(function(player){ return savedIds.indexOf(String(player.id))===-1; }).concat(saved);
+    } else {
+      _dbCache[key]=_cloneForDb(response.value);
+    }
+    if(onSaved) onSaved(response);
+    return true;
+  }catch(error){
+    if(operation.generation===_dbSessionGeneration && !window.__logoutBusy) notif('Modification non enregistrée : '+error.message,'err');
+    return false;
+  }finally{
+    if(_OWN_PLAYER_ACTIONS[lockKey]===operation) delete _OWN_PLAYER_ACTIONS[lockKey];
+    if(operation.generation===_dbSessionGeneration && !window.__logoutBusy) _refreshOwnPlayerActionControls();
+  }
+}
 async function playerConsume(){
-  var p=gpid(CU.pid);var id=ge("p-csel").value;var note=ge("p-cnote").value.trim();
-  if(!id){ge("p-cerr").textContent="Choisis un item.";return;}
-  var item=(p.inventory||[]).find(function(i){return i.id===id;});
-  if(!item||item.qty<=0){ge("p-cerr").textContent="Item indisponible.";return;}
-  item.qty--;p.history=p.history||[];
-  p.history.push({ts:Date.now(),type:"item",text:"Consommé : "+esc(item.name)+(note?" — "+note:""),by:p.name+" (joueur)"});
-  if(!await _confirmDbSave(up(p))) return false;ge("p-cerr").textContent="";ge("p-cnote").value="";renderInv(p);notif(item.name+" consommé.","ok");
+  var p=CU&&CU.pid?gpid(CU.pid):null;
+  if(!p){ notif('Ton compte doit être lié à un personnage pour déclarer une consommation.','err'); return false; }
+  if(String(getViewPid())!==String(p.id)){ notif('La consommation se déclare depuis ton propre personnage.','err'); return false; }
+  if(_ownPlayerActionBusy('consume')) return false;
+  var select=ge('p-csel'), noteField=ge('p-cnote'), errorField=ge('p-cerr');
+  var id=select.value, note=noteField.value.trim(), draft=noteField.value;
+  if(!id){errorField.textContent='Choisis un item.';return false;}
+  if(note.length>2000){errorField.textContent='La note ne doit pas dépasser 2 000 caractères.';return false;}
+  var item=(p.inventory||[]).find(function(i){return String(i.id)===String(id);});
+  if(!item||item.qty<=0){errorField.textContent='Item indisponible.';return false;}
+  errorField.textContent='';
+  return _runOwnPlayerMutation('players',{action:'consume_own_item',itemId:id,note:note},'consume',function(){
+    // A navigation during the request must not replace the profile now being read.
+    if(String(getViewPid())===String(p.id)){
+      if(noteField.value===draft) noteField.value='';
+      renderInv(gpid(p.id));
+    }
+    updateNotifBadge();
+    if(_notifPanelOpen) renderNotifPanel();
+    notif(item.name+' consommé.','ok');
+  });
 }
 
 var WEAPON_ICONS={
@@ -8004,18 +8100,10 @@ function renderAccueil(tid){
   var players=[];
   var accounts=[];
   var events=[];
-  var beasts=[];
   try{ players=Array.isArray(gp())?gp():[]; }catch(e){ players=[]; }
   try{ accounts=Array.isArray(getAccounts())?getAccounts():[]; }catch(e){ accounts=[]; }
   try{ events=(typeof getEvents==='function'&&Array.isArray(getEvents()))?getEvents():[]; }catch(e){ events=[]; }
-  try{ beasts=(typeof gb==='function'&&Array.isArray(gb()))?gb():[]; }catch(e){ beasts=[]; }
 
-  function fmtMiniDate(ts){
-    ts=Number(ts)||0;
-    if(!ts) return '—';
-    try{ return new Date(ts).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }
-    catch(e){ return '—'; }
-  }
   function arcFighters(arc){
     return Array.isArray(arc&&arc.fighters) ? arc.fighters : [];
   }
@@ -8037,7 +8125,6 @@ function renderAccueil(tid){
   var allArcs=[];
   try{ allArcs=isAdmin?getAllCombatArchives():(getCombatArchives?getCombatArchives():[]); }catch(e){ allArcs=[]; }
   if(!Array.isArray(allArcs)) allArcs=[];
-  var cleanArcs=allArcs.filter(function(arc){ return arc && typeof arc==='object' && !arc._draft; });
   var myPid=CU?CU.pid:null;
   var myArcs=myPid?allArcs.filter(function(arc){
     return arcFighters(arc).some(function(f){return f&&f.type==="player"&&f.pid===myPid;});
@@ -8046,18 +8133,12 @@ function renderAccueil(tid){
   if(!Array.isArray(myArcs)) myArcs=[];
   var combatCount=myArcs.length;
 
-  var gemTotal=0;
-  if(myPid){
-    var myPlayer=gpid(myPid);
-    if(myPlayer){
-      gemTotal=(myPlayer.history||[]).filter(function(h){return h.type==="gemme";}).length;
-      if(!gemTotal) gemTotal=(myPlayer.inventory||[]).filter(function(i){return i.category==="Gemme";}).reduce(function(s,i){return s+(i.qty||1);},0);
-    }
-  } else {
-    players.forEach(function(p){ gemTotal+=(p.history||[]).filter(function(h){return h.type==="gemme";}).length; });
-  }
+  var myCharacter=myPid?gpid(myPid):null;
+  var gemTotal=myCharacter&&Array.isArray(myCharacter.inventory)?myCharacter.inventory.filter(function(item){
+    return item&&item.category==="Gemme";
+  }).reduce(function(total,item){ return total+(Number(item.qty)||0); },0):0;
 
-  var eventsAVenir=events.filter(function(e){return e.published&&e.dateTs&&e.dateTs>Date.now();}).sort(function(a,b){return a.dateTs-b.dateTs;});
+  var eventsAVenir=events.filter(function(e){return !e.hidden&&e.date&&e.date>Date.now();}).sort(function(a,b){return a.date-b.date;});
   var prochainEvent=eventsAVenir[0]||null;
   var derniersCombats=myArcs.slice(0,3);
   var myStatuts=[];
@@ -8069,102 +8150,123 @@ function renderAccueil(tid){
 
   var adminPendingCount=accounts.filter(function(a){return (a.role==="joueur"||!a.role)&&!a.pid;}).length;
 
-  var h='<div style="max-width:1040px;padding:0 0 48px;">';
+  var canLead=can("manage_players");
+  var h='<div class="np-logbook">';
 
-  h+='<div style="margin-bottom:32px;padding-bottom:24px;border-bottom:0.5px solid rgba(126,184,212,0.08);">';
-  h+='<div style="font-family:var(--fd);font-size:8px;letter-spacing:5px;text-transform:uppercase;color:rgba(126,184,212,0.3);margin-bottom:8px;">Nuages Polaires</div>';
-  h+='<div style="font-family:var(--fd);font-size:24px;letter-spacing:2px;color:var(--text);">'+greet+', <span style="color:var(--glacier);">'+esc(displayName)+'</span></div>';
-  if(myStatuts.length){
-    h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;">';
-    myStatuts.forEach(function(st){
-      var def=STATUT_EFFECTS[st.id]||{label:st.id,col:"var(--dim)"};
-      h+='<span style="font-family:var(--fd);font-size:8px;letter-spacing:1.5px;text-transform:uppercase;padding:3px 10px;border:0.5px solid '+def.col+';color:'+def.col+';border-radius:2px;opacity:.9;">'+esc(def.label)+'</span>';
-    });
-    h+='</div>';
-  }
-  h+='</div>';
+  h+='<header class="np-logbook-heading">';
+  h+='<div><p class="np-eyebrow">Le Compagnon <span aria-hidden="true">/</span> Tableau de bord</p>';
+  h+='<h1>L’aventure continue<span class="np-title-stop">.</span></h1>';
+  h+='<p class="np-logbook-welcome">'+greet+(displayName?', '+esc(displayName):'')+'. '+(isStaff?'Retrouve les récits et les rendez-vous du serveur.':'Ton personnage, tes rendez-vous, la suite de ton histoire.')+'</p></div>';
+  h+='<img class="np-logbook-seal" src="./assets/favicon.svg" alt="" width="100" height="100">';
+  h+='</header>';
 
-  var stats=[
-    {val:joueurTotal,lbl:"Élèves du Serment",col:"var(--glacier)"},
-    {val:actifsS||"—",lbl:"Actifs cette semaine",col:"var(--green)"},
-    {val:combatCount,lbl:"Combats réalisés",col:"var(--gold)"},
-    {val:gemTotal||"—",lbl:"Gemmes distribuées",col:"var(--purple)"},
+  var stats=isStaff?[
+    {val:joueurTotal,lbl:"Personnages",note:"Dans le registre"},
+    {val:actifsS,lbl:"Comptes actifs",note:"Ces sept derniers jours"},
+    {val:combatCount,lbl:"Combats archivés",note:myPid?"Avec ton personnage":"Dans tes archives"},
+    {val:eventsAVenir.length,lbl:"Rendez-vous",note:"À venir"}
+  ]:[
+    {val:myCharacter?myCharacter.level:'—',lbl:"Niveau",note:"De ton personnage"},
+    {val:combatCount,lbl:"Combats archivés",note:"Avec ton personnage"},
+    {val:gemTotal,lbl:"Gemmes en réserve",note:"Dans ton inventaire"},
+    {val:eventsAVenir.length,lbl:"Rendez-vous",note:"À venir"}
   ];
-  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:24px;">';
+  h+='<dl class="np-logbook-stats">';
   stats.forEach(function(s){
-    h+='<div style="background:rgba(7,8,16,0.85);border:1px solid rgba(126,184,212,0.14);padding:16px 18px;border-radius:2px;position:relative;overflow:hidden;">';
-    h+='<div style="font-family:var(--fd);font-size:32px;letter-spacing:1px;color:'+s.col+';line-height:1;margin-bottom:6px;">'+s.val+'</div>';
-    h+='<div style="font-family:var(--fd);font-size:8px;letter-spacing:2.5px;text-transform:uppercase;color:var(--faint);">'+esc(s.lbl)+'</div>';
-    h+='</div>';
+    h+='<div><dt>'+esc(s.lbl)+'</dt><dd>'+esc(String(s.val==null?'—':s.val))+'</dd><dd class="np-stat-note">'+esc(s.note)+'</dd></div>';
   });
-  h+='</div>';
+  h+='</dl>';
 
-  h+='<div class="home-duo-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:20px;align-items:stretch;">';
-
-  h+='<div class="card home-duo-card">';
-  h+='<div class="card-title">Prochain événement</div>';
+  h+='<div class="np-logbook-grid"><div class="np-logbook-main">';
+  h+='<section class="card np-event-card" aria-labelledby="np-next-event-title">';
+  h+='<div class="np-section-heading"><h2 id="np-next-event-title">Prochain événement</h2><span class="np-section-number" aria-hidden="true">01</span></div>';
   if(prochainEvent){
     var etype=EV_TYPES&&EV_TYPES[prochainEvent.type]?EV_TYPES[prochainEvent.type]:{icon:"☁",col:"var(--glacier)",label:"Événement"};
-    var evDate=new Date(prochainEvent.dateTs);
+    var evDate=new Date(prochainEvent.date);
     var evDateStr=evDate.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
-    var diff=Math.ceil((prochainEvent.dateTs-Date.now())/(1000*60*60*24));
-    h+='<span style="font-family:var(--fd);font-size:8px;letter-spacing:2px;text-transform:uppercase;padding:3px 10px;border:0.5px solid '+etype.col+';color:'+etype.col+';border-radius:2px;display:inline-block;margin-bottom:10px;">'+etype.icon+' '+esc(etype.label)+'</span>';
-    h+='<div style="font-family:var(--fd);font-size:14px;letter-spacing:1px;color:var(--text);margin-bottom:5px;line-height:1.3;">'+esc(prochainEvent.titre)+'</div>';
-    h+='<div style="font-size:12px;color:var(--dim);margin-bottom:4px;">'+evDateStr+'</div>';
-    h+='<div style="font-family:var(--fm);font-size:11px;color:var(--gold);margin-bottom:10px;">Dans '+diff+' jour'+(diff>1?'s':'')+'</div>';
-    if(prochainEvent.desc) h+='<div style="font-size:12px;color:var(--faint);font-style:italic;line-height:1.6;margin-bottom:12px;">'+esc(prochainEvent.desc.substring(0,120))+(prochainEvent.desc.length>120?'…':'')+'</div>';
-    h+='<button class="btn btn-sm" onclick="switchDropTab(\'evenements\',null,\'dd-joueurs\')"><span>Voir les événements →</span></button>';
+    var diff=Math.ceil((prochainEvent.date-Date.now())/(1000*60*60*24));
+    h+='<div class="np-event-feature"><div class="np-event-calendar" aria-hidden="true"><span>'+evDate.toLocaleDateString('fr-FR',{month:'short'})+'</span><strong>'+evDate.getDate()+'</strong><span>'+evDate.getFullYear()+'</span></div>';
+    h+='<div class="np-event-copy"><p class="np-eyebrow">'+esc(etype.label)+' <span aria-hidden="true">·</span> Dans '+diff+' jour'+(diff>1?'s':'')+'</p>';
+    h+='<h3>'+esc(prochainEvent.nom)+'</h3><p class="np-event-date">'+esc(evDateStr)+' à '+evDate.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'</p>';
+    if(prochainEvent.desc) h+='<p class="np-event-description">'+esc(prochainEvent.desc.substring(0,180))+(prochainEvent.desc.length>180?'…':'')+'</p>';
+    h+='<button class="btn np-quiet-button" onclick="switchDropTab(\'evenements\',null,\'\')"><span>Voir les événements</span><span aria-hidden="true">↗</span></button></div></div>';
   } else {
-    h+='<div class="empty-state" style="padding:20px 0;"><div class="empty-state-icon">📅</div><div class="empty-state-title">Aucun événement</div><div class="empty-state-sub">Aucun événement à venir pour le moment.</div></div>';
+    h+='<div class="np-calm-empty"><h3>Un nouveau chapitre se prépare.</h3><p>Aucun événement à venir pour le moment. Les prochains rendez-vous seront affichés ici.</p><button class="btn np-quiet-button" onclick="switchDropTab(\'evenements\',null,\'\')"><span>Ouvrir l’agenda</span><span aria-hidden="true">↗</span></button></div>';
   }
-  h+='</div>';
+  h+='</section>';
 
-  h+='<div class="card home-duo-card">';
-  h+='<div class="card-title">Derniers combats</div>';
+  h+='<section class="card np-combat-card" aria-labelledby="np-recent-combats-title"><div class="np-section-heading"><h2 id="np-recent-combats-title">Derniers combats</h2><span class="np-section-number" aria-hidden="true">02</span></div>';
   if(derniersCombats.length){
+    h+='<ul class="np-combat-list">';
     derniersCombats.forEach(function(arc){
       var result=combatResultMeta(arc);
-      h+='<div style="display:flex;align-items:center;gap:10px;padding:9px 10px;background:rgba(7,8,16,0.6);border:0.5px solid rgba(126,184,212,0.07);border-radius:2px;margin-bottom:6px;transition:border-color .15s;" onmouseover="this.style.borderColor=\'rgba(126,184,212,0.18)\'" onmouseout="this.style.borderColor=\'rgba(126,184,212,0.07)\'">';
-      h+='<div style="flex:1;min-width:0;">';
-      h+='<div style="font-family:var(--fd);font-size:10px;letter-spacing:1px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(arc.name)+'</div>';
-      h+='<div style="font-size:10px;color:var(--faint);margin-top:2px;">'+fdt(arc.savedAt)+' · Round '+arc.round+'</div>';
-      h+='</div>';
-      h+='<span style="font-family:var(--fd);font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:'+result.col+';padding:2px 8px;border:0.5px solid '+result.col+';border-radius:2px;flex-shrink:0;">'+esc(result.txt)+'</span>';
-      h+='</div>';
+      h+='<li><div><h3>'+esc(arc.name||'Combat sans titre')+'</h3><p>'+esc(fdt(arc.savedAt))+' · Round '+esc(String(arc.round==null?'—':arc.round))+'</p></div><span class="np-combat-result" style="--result-color:'+result.col+'">'+esc(result.txt)+'</span></li>';
     });
-    if(isStaff) h+='<button class="btn btn-sm" onclick="switchDropTab(\'combat-mj\',null,\'dd-staff\')" style="margin-top:6px;"><span>Simulation →</span></button>';
+    h+='</ul>';
+    if(canLead) h+='<button class="btn np-quiet-button" onclick="switchDropTab(\'combat-mj\',null,\'dd-staff\')"><span>Ouvrir la simulation</span><span aria-hidden="true">↗</span></button>';
   } else {
-    h+='<div class="empty-state" style="padding:20px 0;"><div class="empty-state-icon">⚔</div><div class="empty-state-title">Aucun combat</div><div class="empty-state-sub">Les combats archivés apparaîtront ici.</div></div>';
+    h+='<div class="np-calm-empty"><h3>Les récits restent à écrire.</h3><p>Les combats archivés apparaîtront ici, avec leur résultat et leur date.</p></div>';
   }
-  h+='</div>';
-  h+='</div>';
+  h+='</section></div>';
 
-  h+='<div class="card">';
-  h+='<div class="card-title">Accès rapide</div>';
-  h+='<div style="display:flex;flex-wrap:wrap;gap:8px;">';
-  if(CU&&CU.pid) h+='<button class="btn btn-sm" onclick="switchTab(\'fiche\',null)" style="border-color:rgba(126,184,212,0.4);color:var(--glacier);"><span>✦ Ma fiche</span></button>';
-  h+='<button class="btn btn-sm" onclick="switchDropTab(\'serments\',null,\'dd-joueurs\')"><span>Serments</span></button>';
-  h+='<button class="btn btn-sm" onclick="switchDropTab(\'bestiaire\',null,\'dd-joueurs\')"><span>Bestiaire</span></button>';
-  h+='<button class="btn btn-sm" onclick="switchDropTab(\'evenements\',null,\'dd-joueurs\')"><span>Événements</span></button>';
-  h+='<button class="btn btn-sm" onclick="switchDropTab(\'combat\',null,\'dd-joueurs\')"><span>Système de jeu</span></button>';
-  h+='<button class="btn btn-sm" onclick="switchDropTab(\'reglement\',null,\'dd-joueurs\')"><span>Règlement</span></button>';
+  h+='<aside class="np-logbook-aside">';
+  h+='<section class="card np-character-card" aria-labelledby="np-character-title">';
+  h+='<p class="np-eyebrow">'+(myCharacter?(isStaff?'Personnage consulté':'Ton personnage'):isStaff?'Dans les coulisses':'Tes premiers pas')+'</p>';
+  if(myCharacter){
+    h+='<div class="np-character-portrait"><span aria-hidden="true">'+esc(String(myCharacter.name||'?').charAt(0))+'</span>';
+    if(myCharacter.avatar) h+='<img src="'+_imageAttr(myCharacter.avatar)+'" alt="" onerror="this.style.display=\'none\'">';
+    h+='</div><h2 id="np-character-title">'+esc(myCharacter.name)+'</h2>';
+    h+='<p class="np-character-oath">'+esc(myCharacter.classe||'Serment à définir')+'</p>';
+    if(myCharacter.branch&&myCharacter.branch!=='Aucune') h+='<p class="np-character-branch">'+esc(myCharacter.branch)+'</p>';
+    if(myStatuts.length){
+      h+='<ul class="np-character-status" aria-label="Statuts du personnage">';
+      myStatuts.forEach(function(st){
+        var def=STATUT_EFFECTS[st.id]||{label:st.id,col:"var(--dim)"};
+        h+='<li style="--status-color:'+def.col+'">'+esc(def.label)+'</li>';
+      });
+      h+='</ul>';
+    }
+    h+='<button class="btn np-primary-button" onclick="forceOpenOwnProfile()"><span>'+(isStaff?'Ouvrir la fiche':'Ouvrir mon personnage')+'</span><span aria-hidden="true">↗</span></button>';
+  } else if(isStaff){
+    h+='<h2 id="np-character-title">L’atelier du monde.</h2><p class="np-character-note">'+esc(ROLE_LABELS[roleKey(CU)]||'Staff')+' · Tes outils de création et de gestion sont accessibles depuis le menu Outils.</p>';
+    if(canLead) h+='<button class="btn np-primary-button" onclick="switchDropTab(\'joueurs\',null,\'dd-staff\')"><span>Voir les personnages</span><span aria-hidden="true">↗</span></button>';
+    else if(can('manage_beasts')) h+='<button class="btn np-primary-button" onclick="switchDropTab(\'bestiaire-admin\',null,\'dd-staff\')"><span>Ouvrir l’atelier bestiaire</span><span aria-hidden="true">↗</span></button>';
+  } else {
+    h+='<h2 id="np-character-title">Le premier chapitre.</h2><p class="np-character-note">Ton compte attend d’être lié à ton personnage par un administrateur. En attendant, découvre les serments et l’univers.</p>';
+    h+='<button class="btn np-primary-button" onclick="switchDropTab(\'serments\',null,\'dd-joueurs\')"><span>Découvrir les serments</span><span aria-hidden="true">↗</span></button>';
+  }
+  h+='</section>';
+
+  h+='<section class="np-explore" aria-labelledby="np-explore-title"><div class="np-section-heading"><h2 id="np-explore-title">Les pages du monde</h2></div>';
+  var links=[
+    {title:'Les serments',sub:'Voies et héritages',tab:'serments'},
+    {title:'Le bestiaire',sub:'Créatures et rencontres',tab:'bestiaire'},
+    {title:'Le système de jeu',sub:'Mécaniques et combats',tab:'combat'},
+    {title:'Le règlement',sub:'Le cadre de nos histoires',tab:'reglement'}
+  ];
+  h+='<div class="np-explore-links">';
+  links.forEach(function(link){
+    h+='<button onclick="switchDropTab(\''+link.tab+'\',null,\'dd-joueurs\')"><span><strong>'+esc(link.title)+'</strong><small>'+esc(link.sub)+'</small></span><span aria-hidden="true">↗</span></button>';
+  });
+  h+='</div></section></aside></div>';
+
   if(isStaff){
-    h+='<button class="btn btn-sm" style="border-color:rgba(201,168,76,.4);color:var(--gold);" onclick="switchDropTab(\'combat-mj\',null,\'dd-staff\')"><span>Simulation</span></button>';
-    h+='<button class="btn btn-sm" style="border-color:rgba(201,168,76,.4);color:var(--gold);" onclick="switchDropTab(\'apparitions\',null,\'dd-staff\')"><span>Apparitions</span></button>';
-    h+='<button class="btn btn-sm" style="border-color:rgba(201,168,76,.4);color:var(--gold);" onclick="switchDropTab(\'joueurs\',null,\'dd-staff\')"><span>Joueurs</span></button>';
+    h+='<section class="np-staff-shortcuts" aria-label="Accès rapides staff"><p class="np-eyebrow">Au service des histoires</p><div>';
+    if(canLead){
+      h+='<button class="btn" onclick="switchDropTab(\'combat-mj\',null,\'dd-staff\')"><span>Simulation</span></button>';
+      h+='<button class="btn" onclick="switchDropTab(\'apparitions\',null,\'dd-staff\')"><span>Apparitions</span></button>';
+      h+='<button class="btn" onclick="switchDropTab(\'joueurs\',null,\'dd-staff\')"><span>Personnages</span></button>';
+    }
+    if(isAdmin){
+      h+='<button class="btn" onclick="switchDropTab(\'database\',null,\'dd-staff\')"><span>Administration</span></button>';
+      if(adminPendingCount>0) h+='<button class="btn" onclick="switchDropTab(\'joueurs\',null,\'dd-staff\')"><span>'+adminPendingCount+' compte'+(adminPendingCount>1?'s':'')+' en attente</span></button>';
+    }
+    h+='</div></section>';
   }
-  if(isAdmin){
-    h+='<button class="btn btn-sm" style="border-color:rgba(201,168,76,.5);color:var(--gold);" onclick="switchDropTab(\'database\',null,\'dd-staff\')"><span>Administration</span></button>';
-    if(adminPendingCount>0) h+='<button class="btn btn-sm" style="border-color:rgba(201,74,74,.5);color:var(--red);" onclick="switchDropTab(\'joueurs\',null,\'dd-staff\')"><span>'+adminPendingCount+' en attente</span></button>';
-  }
-  h+='</div>';
-  h+='</div>';
-
   h+='</div>';
   el.innerHTML=h;
   renderAppearanceSection();
 }
-
 
 function renderSynopsis(tid){
   var el=ge(tid); if(!el) return;
@@ -8185,7 +8287,7 @@ function renderSynopsis(tid){
   h+='<p>Il n\'y eut ni incendie, ni tonnerre. Juste une pression derrière les yeux, dans la gorge, dans les os. Le cœur rata une seconde. Les voix se coupèrent. Les distances cessèrent d\'avoir un sens.</p>';
   h+='<p class="synopsis-line">Puis la réalité s\'est pliée.</p>';
   h+='<p><span class="synopsis-beat">Le réveil</span> L\'humanité fut projetée dans un futur lointain. Beaucoup n\'ont pas survécu au passage. Ceux qui ouvrent les yeux découvrent un monde trop propre, trop immobile, presque poli par l\'absence.</p>';
-  h+='<p>Les villes, si elles existent encore, ne sont que silhouettes lointaines. Les routes ne mènent plus nulle part. Les bâtisses s\'ouvrent comme des crânes vides. Le monde n\'est pas mort : il attend.</p>';
+  h+='<p>Les anciens repères se sont effacés. Les constructions ont presque toutes disparu, laissant place à de vastes étendues silencieuses. Le monde n\'est pas mort : il attend.</p>';
   h+='<p>Et dans certains survivants, quelque chose répond. Une marque intérieure. Un serment muet. Une cicatrice qui ne se voit pas, mais qui grandit à chaque choix, à chaque sortie, à chaque combat.</p>';
   h+='<h2>Ce qui reste à écrire dépend de ceux qui se relèvent.</h2>';
   h+='</article>';
@@ -9834,10 +9936,19 @@ var _notifPanelOpen=false;
 function _getNotifDeleted(pid){
   var p=gpid(pid); return p?(p.notifDeleted||[]):[];
 }
-function _saveNotifDeleted(pid,arr){
-  var p=gpid(pid); if(!p) return;
-  p.notifDeleted=arr;
-  up(p);
+async function _saveNotifDeleted(pid,selection){
+  if(!CU||!CU.pid||String(pid)!==String(CU.pid)){
+    notif('Tu peux effacer uniquement tes propres notifications.','err');
+    return false;
+  }
+  var payload={action:'dismiss_notifications'};
+  if(selection===true) payload.all=true;
+  else payload.timestamp=selection;
+  return _runOwnPlayerMutation('players',payload,'notifications',function(){
+    updateNotifBadge();
+    renderNotifPanel();
+    if(selection===true) notif('Notifications effacées.','ok');
+  });
 }
 
 function getPlayerNotifs(pid){
@@ -9849,23 +9960,12 @@ function getPlayerNotifs(pid){
   }).sort(function(a,b){return b.ts-a.ts;}).slice(0,50);
 }
 
-function deleteNotif(pid,ts){
-  var deleted=_getNotifDeleted(pid);
-  if(deleted.indexOf(ts)===-1) deleted.push(ts);
-  // Garder max 200 entrées
-  if(deleted.length>200) deleted=deleted.slice(-200);
-  _saveNotifDeleted(pid,deleted);
-  updateNotifBadge();
-  renderNotifPanel();
+async function deleteNotif(pid,ts){
+  return _saveNotifDeleted(pid,ts);
 }
 
-function clearAllNotifs(pid){
-  var p=gpid(pid); if(!p) return;
-  var allTs=(p.history||[]).map(function(h){return h.ts;});
-  _saveNotifDeleted(pid,allTs);
-  updateNotifBadge();
-  renderNotifPanel();
-  notif("Notifications effacées.","ok");
+async function clearAllNotifs(pid){
+  return _saveNotifDeleted(pid,true);
 }
 
 function notifType(n){
@@ -10033,6 +10133,7 @@ function toggleNavDrop(ddId){
 }
 
 function switchDropTab(id,item,ddId){
+  ddId=_tabDropIdFor(id);
   // Fermer le dropdown
   var menu=ge(ddId+"-menu"); var btn=ge(ddId+"-btn");
   try{ _closeAllNavDrops(); }catch(_e){ if(menu){ menu.classList.remove("open"); _restoreNavDrop(menu); } if(btn){ btn.classList.remove("open"); } _openDrop=null; }
@@ -10081,7 +10182,7 @@ function renderNotifPanel(){
   var h='<div style="padding:10px 14px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;">';
   h+='<span style="font-family:var(--fd);font-size:9px;letter-spacing:2px;color:var(--glacier);">NOTIFICATIONS</span>';
   if(notifs.length>0){
-    h+='<button onclick="clearAllNotifs(\''+jsesc(pid)+'\')" style="background:transparent;border:0.5px solid rgba(201,74,74,.35);color:rgba(201,74,74,.7);font-family:var(--fd);font-size:7px;letter-spacing:2px;padding:3px 8px;cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor=\'var(--red)\';this.style.color=\'var(--red)\'" onmouseout="this.style.borderColor=\'rgba(201,74,74,.35)\';this.style.color=\'rgba(201,74,74,.7)\'">TOUT EFFACER</button>';
+    h+='<button data-own-player-action="notifications" '+(_ownPlayerActionBusy('notifications')?'disabled aria-busy="true" ':'')+'onclick="clearAllNotifs(\''+jsesc(pid)+'\')" style="background:transparent;border:0.5px solid rgba(201,74,74,.35);color:rgba(201,74,74,.7);font-family:var(--fd);font-size:7px;letter-spacing:2px;padding:3px 8px;cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor=\'var(--red)\';this.style.color=\'var(--red)\'" onmouseout="this.style.borderColor=\'rgba(201,74,74,.35)\';this.style.color=\'rgba(201,74,74,.7)\'">TOUT EFFACER</button>';
   }
   h+='</div>';
 
@@ -10123,7 +10224,7 @@ function renderNotifPanel(){
       if(n.by) h+='<div style="font-size:10px;color:var(--faint);margin-top:2px;">'+n.by+' · '+fdt(n.ts)+'</div>';
       else h+='<div style="font-size:10px;color:var(--faint);margin-top:2px;">'+fdt(n.ts)+'</div>';
       h+='</div>';
-      h+='<button onclick="deleteNotif(\''+jsesc(pid)+'\','+n.ts+')" title="Effacer" style="background:transparent;border:none;color:var(--faint);cursor:pointer;font-size:14px;line-height:1;padding:2px 4px;flex-shrink:0;transition:color .15s;" onmouseover="this.style.color=\'var(--red)\'" onmouseout="this.style.color=\'var(--faint)\'">✕</button>';
+      h+='<button data-own-player-action="notifications" '+(_ownPlayerActionBusy('notifications')?'disabled aria-busy="true" ':'')+'onclick="deleteNotif(\''+jsesc(pid)+'\','+n.ts+')" title="Effacer" style="background:transparent;border:none;color:var(--faint);cursor:pointer;font-size:14px;line-height:1;padding:2px 4px;flex-shrink:0;transition:color .15s;" onmouseover="this.style.color=\'var(--red)\'" onmouseout="this.style.color=\'var(--faint)\'">✕</button>';
       h+='</div>';
     });
     h+='</div>';
@@ -14899,7 +15000,18 @@ var EV_TYPES={
   autre:{icon:"☁️",col:"var(--faint)",label:"Autre"}
 };
 
-function getEvents(){ return sto("events")||[]; }
+function getEvents(){
+  var stored=sto("events");
+  return (Array.isArray(stored)?stored:[]).filter(function(ev){return ev&&typeof ev==='object'&&!Array.isArray(ev);}).map(function(ev){
+    var date=Number(ev.date!=null?ev.date:ev.dateTs);
+    return Object.assign({},ev,{
+      nom:String(ev.nom||ev.titre||'Sans titre'),
+      date:Number.isFinite(date)&&date>0?date:null,
+      hidden:ev.hidden===undefined?ev.published===false:!!ev.hidden,
+      inscrits:Array.isArray(ev.inscrits)?ev.inscrits.slice():[]
+    });
+  });
+}
 function saveEvents(arr){ return sv("events",arr); }
 
 function renderEvents(tid){
@@ -14910,8 +15022,8 @@ function renderEvents(tid){
   // Les joueurs ne voient pas les événements masqués
   if(!canEdit) events=events.filter(function(e){ return !e.hidden; });
   var now=Date.now();
-  var upcoming=events.filter(function(e){ return (e.date||0)>=now-3600000; });
-  var past=events.filter(function(e){ return (e.date||0)<now-3600000; });
+  var upcoming=events.filter(function(e){ return !e.date||e.date>=now; });
+  var past=events.filter(function(e){ return e.date&&e.date<now; });
 
   var h='<div style="max-width:860px;">';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">';
@@ -14950,9 +15062,12 @@ function renderEventCard(ev,canEdit,isStaff,isPast){
   var inscrits=ev.inscrits||[];
   var max=ev.max||0;
   var isFull=max>0&&inscrits.length>=max;
-  var myName=CU&&CU.pid?(gpid(CU.pid)||{}).name||CU.name:CU?CU.name:"";
+  var linkedPlayer=CU&&CU.pid?gpid(CU.pid):null;
+  var myName=linkedPlayer?linkedPlayer.name:"";
   var isInscrit=myName&&inscrits.indexOf(myName)>-1;
   var isHidden=!!ev.hidden;
+  var participationBusy=_ownPlayerActionBusy('event:'+ev.id);
+  var participationAttrs=' data-own-player-action="'+escAttr('event:'+ev.id)+'"'+(participationBusy?' disabled aria-busy="true"':'');
 
   var cardStyle="background:var(--bg2);border:1px solid var(--border);border-left:3px solid "+type.col+";padding:16px 18px;"+(isHidden&&canEdit?"opacity:.65;":"");
   var h='<div style="'+cardStyle+'">';
@@ -14983,11 +15098,15 @@ function renderEventCard(ev,canEdit,isStaff,isPast){
 
   // Actions
   h+='<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0;">';
-  if(!isPast&&!isStaff){
-    if(isInscrit){
-      h+='<button onclick="eventDesinscrit(\''+jsesc(ev.id)+'\')" class="btn btn-sm" style="border-color:var(--red);color:var(--red);font-size:9px;"><span>Se désinscrire</span></button>';
+  if(!isPast&&!isStaff&&!isHidden){
+    if(!linkedPlayer){
+      h+='<span style="font-size:11px;color:var(--faint);max-width:190px;">Un personnage doit être lié à ton compte pour participer.</span>';
+    } else if(!date || !Number.isFinite(date.getTime()) || date.getTime()<Date.now()){
+      h+='<span style="font-size:11px;color:var(--faint);">Inscriptions fermées — date à confirmer.</span>';
+    } else if(isInscrit){
+      h+='<button'+participationAttrs+' onclick="eventDesinscrit(\''+jsesc(ev.id)+'\')" class="btn btn-sm" style="border-color:var(--red);color:var(--red);font-size:9px;"><span>Se désinscrire</span></button>';
     } else if(!isFull){
-      h+='<button onclick="eventInscrit(\''+jsesc(ev.id)+'\')" class="btn btn-sm btn-grn" style="font-size:9px;"><span>✓ Participer</span></button>';
+      h+='<button'+participationAttrs+' onclick="eventInscrit(\''+jsesc(ev.id)+'\')" class="btn btn-sm btn-grn" style="font-size:9px;"><span>✓ Participer</span></button>';
     } else {
       h+='<span style="font-family:var(--fd);font-size:8px;letter-spacing:1px;color:var(--red);">COMPLET</span>';
     }
@@ -15086,31 +15205,25 @@ async function deleteEvent(id){
   renderEvents("p-events-c");
 }
 
+async function _setOwnEventParticipation(id,participating){
+  var player=CU&&CU.pid?gpid(CU.pid):null;
+  if(!player){
+    notif(CU?'Ton compte doit être lié à un personnage pour participer aux événements.':"Connecte-toi pour t'inscrire.",'err');
+    return false;
+  }
+  var event=getEvents().find(function(entry){return String(entry.id)===String(id);});
+  if(!event){ notif('Événement introuvable. Recharge la page.','err'); return false; }
+  return _runOwnPlayerMutation('events',{action:'set_event_participation',eventId:id,participating:participating},'event:'+id,function(){
+    notif(participating?'Inscription confirmée — '+event.nom+' ✓':'Désinscription effectuée.',participating?'ok':'inf');
+    renderEvents('p-events-c');
+  });
+}
 async function eventInscrit(id){
-  var myName=CU&&CU.pid?(gpid(CU.pid)||{}).name||CU.name:CU?CU.name:"";
-  if(!myName){ notif("Connecte-toi pour t'inscrire.","err"); return; }
-  var arr=getEvents();
-  var ev=arr.find(function(e){return e.id===id;}); if(!ev) return;
-  ev.inscrits=ev.inscrits||[];
-  if(ev.inscrits.indexOf(myName)>-1){ notif("Déjà inscrit.","inf"); return; }
-  if(ev.max>0&&ev.inscrits.length>=ev.max){ notif("Événement complet.","err"); return; }
-  ev.inscrits.push(myName);
-  if(!await _confirmDbSave(saveEvents(arr))) return false;
-  sysLog("event_inscription",myName+" s'est inscrit à '"+ev.nom+"'",myName);
-  notif("Inscription confirmée — "+ev.nom+" ✓","ok");
-  renderEvents("p-events-c");
+  return _setOwnEventParticipation(id,true);
 }
 
 async function eventDesinscrit(id){
-  var myName=CU&&CU.pid?(gpid(CU.pid)||{}).name||CU.name:CU?CU.name:"";
-  if(!myName) return;
-  var arr=getEvents();
-  var ev=arr.find(function(e){return e.id===id;}); if(!ev) return;
-  ev.inscrits=(ev.inscrits||[]).filter(function(n){return n!==myName;});
-  if(!await _confirmDbSave(saveEvents(arr))) return false;
-  sysLog("event_desinscription",myName+" s'est désinscrit de '"+ev.nom+"'",myName);
-  notif("Désinscription effectuée.","inf");
-  renderEvents("p-events-c");
+  return _setOwnEventParticipation(id,false);
 }
 
 

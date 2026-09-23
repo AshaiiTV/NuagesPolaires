@@ -18,16 +18,16 @@
   var CONFIG = {
     dark: {
       id:'dark', label:'Nuages Polaires', cls:'', rarity:'Base', category:'Base',
-      tagline:"L’identité Nuages Polaires.",
-      desc:'Le thème original, sobre, sombre et lisible.',
-      colors:['#0d0e18','#7eb8d4','#c9a84c'],
+      tagline:'Mystique polaire — un monde à écrire.',
+      desc:'Nuit d’encre, lumière d’aurore et ivoire. La signature visuelle de Nuages Polaires.',
+      colors:['#091519','#95cdbb','#c6b38b'],
       tone:'dark',
       vars:{
-        bg:'#0d0e18', bg2:'#141725', bg3:'#1b2033', bg4:'#232b43',
-        text:'#f5f7fb', dim:'#c7d4df', faint:'#8c9aaa',
-        accent:'#7eb8d4', accentDim:'#477f9c', accentBright:'#c9a84c',
-        accentRgb:'126,184,212', accent2Rgb:'201,168,76',
-        pageBg:'radial-gradient(circle at 18% 12%, rgba(126,184,212,.13), transparent 24rem),radial-gradient(circle at 82% 82%, rgba(201,168,76,.09), transparent 26rem),linear-gradient(180deg,#0d0e18 0%,#141725 52%,#080a12 100%)'
+        bg:'#091519', bg2:'#102327', bg3:'#172e32', bg4:'#213b3e',
+        text:'#f0eee5', dim:'#bdcdc8', faint:'#92aaa3',
+        accent:'#95cdbb', accentDim:'#648f83', accentBright:'#c6b38b',
+        accentRgb:'149,205,187', accent2Rgb:'198,179,139',
+        pageBg:'radial-gradient(ellipse at 90% 0%,rgba(149,205,187,.07),transparent 40rem),linear-gradient(180deg,#091519,#0b1a1d)'
       }
     },
     light: {

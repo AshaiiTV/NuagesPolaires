@@ -468,6 +468,29 @@ function versionRequiredResponse(headers) {
 function conflictResponse(headers, key) {
   return { statusCode: 409, headers, body: JSON.stringify({ ok: false, code: "VERSION_CONFLICT", key, error: "Ces données ont été modifiées par une autre session. Recharge-les avant de réessayer." }) };
 }
+function playerActionError(headers, statusCode, error, code) {
+  return { statusCode, headers, body: JSON.stringify({ ok: false, error, ...(code ? { code } : {}) }) };
+}
+function validActionId(value) {
+  return typeof value === "string" && value.length > 0 && value.length <= 180 && value.trim() === value && !/[\u0000-\u001f\u007f]/.test(value);
+}
+function hasOnlyActionFields(body, fields) {
+  return Object.keys(body).every(field => ["action", "expectedVersion", ...fields].includes(field));
+}
+function escapeHistoryText(value) {
+  // History entries are rendered as HTML by the legacy client. Sanitizing script
+  // tags alone does not neutralize event attributes or other active markup.
+  return sanitizeText(String(value == null ? "" : value)).replace(/[&<>"']/g, character => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[character]));
+}
+function isEventHidden(event) {
+  return event.hidden === undefined ? event.published === false : !!event.hidden;
+}
+function eventDate(event) {
+  const value = Number(event.date != null ? event.date : event.dateTs);
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
 function summarizeValue(value) {
   if (Array.isArray(value)) {
     return {
@@ -651,7 +674,7 @@ function filterValueForCaller(caller, key, value) {
   if (isPublicKey(key) && !isStaff(caller)) {
     const publicValue = key === "beasts"
       ? (Array.isArray(value) ? value : []).filter(beast => beast && !beast.hidden && !beast.archived)
-      : value;
+      : key === "events" ? (Array.isArray(value) ? value : []).filter(event => event && !isEventHidden(event)) : value;
     return stripInternalNotes(publicValue);
   }
   if (key === "accounts") {
@@ -844,6 +867,89 @@ exports.handler = async (event) => {
     }
 
     if (!caller) return { statusCode: 401, headers, body: JSON.stringify({ error: "Non authentifié" }) };
+
+    if (["consume_own_item", "dismiss_notifications", "set_event_participation"].includes(action)) {
+      if (!caller.pid) return playerActionError(headers, 403, "Aucun personnage lié.");
+      if (!hasExpectedVersion(body)) return versionRequiredResponse(headers);
+      const isParticipation = action === "set_event_participation";
+      const actionKey = isParticipation ? "events" : "players";
+      const fields = isParticipation ? ["eventId", "participating"] : action === "consume_own_item" ? ["itemId", "note"] : ["timestamp", "all"];
+      if (!hasOnlyActionFields(body, fields)) return playerActionError(headers, 400, "Paramètres non autorisés pour cette action.");
+      if (action === "consume_own_item" && (!validActionId(body.itemId) || (body.note !== undefined && (typeof body.note !== "string" || body.note.length > 2000)))) {
+        return playerActionError(headers, 400, "Item ou note invalide (2 000 caractères maximum).");
+      }
+      if (isParticipation && (!validActionId(body.eventId) || typeof body.participating !== "boolean")) {
+        return playerActionError(headers, 400, "Événement ou participation invalide.");
+      }
+      if (action === "dismiss_notifications") {
+        const single = Number.isSafeInteger(body.timestamp) && body.timestamp > 0 && !Object.prototype.hasOwnProperty.call(body, "all");
+        const all = body.all === true && !Object.prototype.hasOwnProperty.call(body, "timestamp");
+        if (!single && !all) return playerActionError(headers, 400, "Choisis une notification ou toutes les notifications.");
+      }
+      const snapshot = await readVersionedStore(actionKey, []);
+      if (snapshot.version !== body.expectedVersion) return conflictResponse(headers, actionKey);
+      const players = isParticipation ? await readStore("players", []) : snapshot.rawValue;
+      const playerIndex = Array.isArray(players) ? players.findIndex(player => player && player.id === caller.pid) : -1;
+      if (playerIndex < 0) return playerActionError(headers, 404, "Personnage introuvable.");
+      const player = players[playerIndex];
+      let nextValue = snapshot.rawValue;
+      let details = { pid: caller.pid };
+      if (action === "consume_own_item") {
+        const inventory = Array.isArray(player.inventory) ? player.inventory.slice() : [];
+        const itemIndex = inventory.findIndex(item => item && item.id === body.itemId);
+        if (itemIndex < 0) return playerActionError(headers, 404, "Item introuvable dans ton inventaire.");
+        const item = inventory[itemIndex];
+        if (!Number.isSafeInteger(item.qty) || item.qty <= 0) return playerActionError(headers, 409, "Cet item n'est plus disponible.", "ITEM_UNAVAILABLE");
+        inventory[itemIndex] = { ...item, qty: item.qty - 1 };
+        const history = Array.isArray(player.history) ? player.history.slice() : [];
+        const note = escapeHistoryText((body.note || "").trim());
+        let timestamp = Date.now();
+        const historyTimestamps = new Set(history.map(entry => entry && entry.ts));
+        while (historyTimestamps.has(timestamp)) timestamp++;
+        history.push({ ts: timestamp, type: "item", text: "Consommé : " + escapeHistoryText(item.name || "Item") + (note ? " — " + note : ""), by: escapeHistoryText(player.name) + " (joueur)" });
+        nextValue[playerIndex] = { ...player, inventory, history };
+        details.itemId = body.itemId;
+      } else if (action === "dismiss_notifications") {
+        const timestamps = new Set((Array.isArray(player.history) ? player.history : []).map(entry => entry && entry.ts).filter(ts => Number.isSafeInteger(ts) && ts > 0));
+        if (body.all !== true && !timestamps.has(body.timestamp)) return playerActionError(headers, 404, "Notification introuvable.");
+        const deleted = new Set((Array.isArray(player.notifDeleted) ? player.notifDeleted : []).filter(ts => timestamps.has(ts)));
+        if (body.all === true) timestamps.forEach(ts => deleted.add(ts));
+        else deleted.add(body.timestamp);
+        nextValue[playerIndex] = { ...player, notifDeleted: [...deleted] };
+        details.all = body.all === true;
+      } else {
+        const events = Array.isArray(snapshot.rawValue) ? snapshot.rawValue : [];
+        const eventIndex = events.findIndex(entry => entry && entry.id === body.eventId);
+        if (eventIndex < 0) return playerActionError(headers, 404, "Événement introuvable.");
+        const selectedEvent = events[eventIndex];
+        const name = typeof player.name === "string" ? player.name : "";
+        if (!name.trim()) return playerActionError(headers, 400, "Ton personnage doit avoir un nom pour participer.");
+        // The legacy participant list contains names, not character IDs. Refuse
+        // ambiguous updates until staff has distinguished homonymous characters.
+        if (players.filter(entry => entry && entry.name === name).length > 1) return playerActionError(headers, 409, "Plusieurs personnages portent ton nom : demande à l'équipe de les distinguer avant de modifier ta participation.", "EVENT_UNAVAILABLE");
+        if (selectedEvent.inscrits != null && !Array.isArray(selectedEvent.inscrits)) return playerActionError(headers, 409, "La liste des participants doit être corrigée par l'équipe.", "EVENT_UNAVAILABLE");
+        const participants = Array.isArray(selectedEvent.inscrits) ? selectedEvent.inscrits.slice() : [];
+        if (body.participating) {
+          if (isEventHidden(selectedEvent)) return playerActionError(headers, 404, "Événement introuvable.");
+          const date = eventDate(selectedEvent);
+          if (!date || date < Date.now()) return playerActionError(headers, 409, "Les inscriptions à cet événement sont fermées.", "EVENT_CLOSED");
+          if (!participants.includes(name)) {
+            const maximum = selectedEvent.max === undefined || selectedEvent.max === null ? 0 : Number(selectedEvent.max);
+            if (!Number.isSafeInteger(maximum) || maximum < 0) return playerActionError(headers, 409, "La capacité de cet événement doit être corrigée par l'équipe.", "EVENT_UNAVAILABLE");
+            if (maximum > 0 && participants.length >= maximum) return playerActionError(headers, 409, "Événement complet.", "EVENT_FULL");
+            participants.push(name);
+          }
+        }
+        events[eventIndex] = { ...selectedEvent, inscrits: body.participating ? participants : participants.filter(participant => participant !== name) };
+        nextValue = events;
+        details = { ...details, eventId: body.eventId, participating: body.participating };
+      }
+      if (!validateSize(nextValue)) return playerActionError(headers, 400, "Valeur trop volumineuse.");
+      const savedRows = await compareAndSetStore(actionKey, nextValue, body.expectedVersion);
+      if (!savedRows.length) return conflictResponse(headers, actionKey);
+      await auditDb(event, caller, action, details);
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, key: actionKey, value: filterValueForCaller(caller, actionKey, nextValue), version: savedRows[0].version, updatedAt: savedRows[0].updated_at }) };
+    }
 
     if (action === "set") {
       if (!key || !Object.prototype.hasOwnProperty.call(body, "value")) return { statusCode: 400, headers, body: JSON.stringify({ error: "key et value requis" }) };

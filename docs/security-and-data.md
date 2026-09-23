@@ -12,13 +12,27 @@ Les comptes historiques marqués `forcePasswordReset` sans `resetExpiresAt` vali
 
 ## Lectures et permissions
 
-Les clés publiques sont explicites. Les créatures masquées/archivées et les notes admin/MJ/staff sont retirées des lectures publiques. Les bundles staff incluent les contenus complets nécessaires à l'administration. Les comptes ne quittent le serveur que sans leur hash de mot de passe.
+Les clés publiques sont explicites. Les créatures masquées/archivées, les événements masqués et les notes admin/MJ/staff sont retirés des lectures publiques et joueur. Les bundles staff incluent les contenus complets nécessaires à l'administration. Les comptes ne quittent le serveur que sans leur hash de mot de passe.
 
 Les opérations génériques `set`/`delete` ne modifient plus les comptes ; les suppressions des collections critiques sont refusées. Un MJ ne peut supprimer des personnages existants ni changer leur identité, serment ou journal. La progression et les statistiques de combat restent permises pour préserver les mécaniques historiques : elles devront être remplacées par des opérations métier calculées au serveur dans une prochaine étape.
 
 `patch_own_player` accepte uniquement `journal` et `avatar` pour le personnage associé au demandeur, sans altérer les autres fiches. Il n'ouvre pas l'écriture générique de toute la collection aux joueurs.
 
 ## Écritures et conflits
+
+### Actions du joueur — reprise du 23 septembre 2026
+
+Trois commandes dédiées complètent les modifications du journal et de l'avatar :
+
+- `consume_own_item` : retire une unité d'un objet existant du personnage lié et ajoute une entrée d'historique échappée côté serveur, sans changer ses statistiques.
+- `dismiss_notifications` : masque une notification existante ou toutes les notifications du personnage, sans supprimer l'historique.
+- `set_event_participation` : inscrit/désinscrit le personnage lié, en vérifiant visibilité, date, capacité et révision des événements.
+
+Le serveur dérive le personnage et son nom depuis la session ; un identifiant de personnage, une quantité ou un nom supplémentaire fourni dans ces commandes est refusé. Elles nécessitent `expectedVersion` et ne donnent aucun droit d'écriture générique aux joueurs. Les réponses sont filtrées selon le rôle. Les inscriptions historiques restent identifiées par nom : les homonymes sont refusés avec une explication ; renommer un personnage ne migre pas ses inscriptions anciennes.
+
+L'interface applique ces changements uniquement après confirmation, bloque les doubles clics et ignore les réponses d'une session terminée. Les refus métier sans écriture permettent une nouvelle tentative ; un conflit de révision ou une réponse incertaine impose de recharger les données. Une sauvegarde complète préparée avant une action dédiée ne peut pas réutiliser la révision de celle-ci pour effacer ses effets.
+
+Le journal du personnage reste lisible par son propriétaire, les MJ et les administrateurs ; le texte de l'interface indique désormais ce périmètre. Les connexions et les actions dédiées sont auditées sur le serveur. Les joueurs et designers ne tentent plus d'écrire le journal système réservé aux MJ/administrateurs.
 
 Les lectures DB et les bundles renvoient une version opaque par clé. `set`, `delete` et `patch_own_player` exigent `expectedVersion` ; `null` signifie une clé encore absente. La condition est vérifiée dans la requête SQL d'écriture. Une version périmée donne HTTP 409 `VERSION_CONFLICT`, sans remplacement de la donnée concurrente. Le hash MD5 sert ici d'identifiant de contenu, pas de protection cryptographique de mot de passe.
 

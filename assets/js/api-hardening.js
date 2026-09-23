@@ -295,15 +295,28 @@
     }
   }
 
+  function apiSessionGeneration(){
+    return typeof window._dbSessionGeneration === 'number' ? window._dbSessionGeneration : null;
+  }
+  function apiSessionIsStale(generation){
+    return generation !== null && generation !== apiSessionGeneration();
+  }
+  function apiSessionChangedError(){
+    var error = new Error('La session a changé pendant le chargement.');
+    error.code = 'SESSION_CHANGED';
+    return error;
+  }
+
   function wrapFetch(){
     if(!window.fetch || window.fetch.__npApiHardeningV259) return;
     var nativeFetch = window.fetch;
     var wrapped = function(input, init){
       var url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
       var service = classifyFunctionUrl(url);
+      var generation = apiSessionGeneration();
 
       return nativeFetch.apply(this, arguments).then(function(res){
-        if(service){
+        if(service && !apiSessionIsStale(generation)){
           if(res.status >= 500 || res.status === 503){
             handleFailure(service, res.status, 'Erreur serveur');
           }else if(res.ok){
@@ -313,7 +326,7 @@
         }
         return res;
       }).catch(function(err){
-        if(service){
+        if(service && !apiSessionIsStale(generation) && !(err && err.code === 'SESSION_CHANGED')){
           handleFailure(service, 0, err && err.message ? err.message : String(err));
         }
         throw err;
@@ -344,11 +357,21 @@
         var wrapped = function(payload, opts){
           var ctx = this;
           var args = Array.prototype.slice.call(arguments);
+          var generation = apiSessionGeneration();
           opts = opts || {};
           return Promise.resolve()
-            .then(function(){ return fn.apply(ctx, args); })
-            .then(function(data){ return normalizeResult(data, service, payload); })
+            .then(function(){
+              if(apiSessionIsStale(generation)) throw apiSessionChangedError();
+              return fn.apply(ctx, args);
+            })
+            .then(function(data){
+              if(apiSessionIsStale(generation)) throw apiSessionChangedError();
+              return normalizeResult(data, service, payload);
+            })
             .catch(function(err){
+              // Session cancellations are expected, not a service failure in the new account.
+              if(err && err.code === 'SESSION_CHANGED') throw err;
+              if(apiSessionIsStale(generation)) throw apiSessionChangedError();
               var message = err && err.message ? err.message : String(err);
               handleFailure(service, 0, message);
               if(opts && opts.throwOnError) throw err;

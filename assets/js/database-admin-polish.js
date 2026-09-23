@@ -271,7 +271,7 @@
 
   function activeTabLabel(){
     var key = window._dbTab || 'comptes';
-    var map = { comptes:'Comptes', themes:'Thèmes', historiques:'Log' };
+    var map = { dashboard:'Vue d’ensemble', comptes:'Comptes', themes:'Thèmes', historiques:'Log' };
     return map[key] || key;
   }
 
@@ -321,10 +321,10 @@
       label.className = 'np-db-admin-section-label';
       label.setAttribute('data-db-section-label','content');
       label.textContent = activeTabLabel();
-      root.insertBefore(label, cards[0]);
+      cards[0].parentNode.insertBefore(label, cards[0]);
     }else{
       var lab = root.querySelector('[data-db-section-label="content"]');
-      if(lab) lab.textContent = activeTabLabel();
+      if(lab && lab.textContent !== activeTabLabel()) lab.textContent = activeTabLabel();
     }
   }
 
@@ -346,7 +346,7 @@
     };
     Object.keys(map).forEach(function(k){
       var el = root.querySelector('[data-db-status="'+k+'"]');
-      if(el) el.textContent = map[k];
+      if(el && el.textContent !== map[k]) el.textContent = map[k];
     });
   }
 

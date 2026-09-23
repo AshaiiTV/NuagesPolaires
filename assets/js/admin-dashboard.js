@@ -969,9 +969,9 @@
 
   function ensureOverview(){
     if(!isAdmin()) return;
-    var root = document.getElementById(dashboardTargetId());
+    var root = document.getElementById('p-admin-dashboard-c');
     if(!root) return;
-    root.classList.add('np-dashboard-polished');
+    if(!root.classList.contains('np-dashboard-polished')) root.classList.add('np-dashboard-polished');
 
     var existing = root.querySelector('#np-admin-dashboard-overview');
     var st = getStatus();
@@ -991,7 +991,7 @@
       box.className = 'np-admin-dashboard-overview';
       box.innerHTML = html;
       root.insertBefore(box, root.firstChild);
-    }else{
+    }else if(existing.innerHTML !== html){
       existing.innerHTML = html;
     }
 
@@ -1007,7 +1007,7 @@
         div.className = 'np-admin-dashboard-divider';
         div.setAttribute('data-dashboard-divider','stats');
         div.textContent = 'Statistiques serveur';
-        root.insertBefore(div, firstAfterOverview.nextSibling);
+        firstAfterOverview.parentNode.insertBefore(div, firstAfterOverview.nextSibling);
       }
     }
 

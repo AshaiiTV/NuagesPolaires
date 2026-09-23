@@ -292,7 +292,7 @@ body.np-is-admin #dd-staff-menu .perm-designer{
     hint.className = 'np-staff-menu-hint';
     hint.innerHTML = isAdmin()
       ? '<strong>Admin</strong> · outils de gestion, données et santé technique.'
-      : '<strong>Staff</strong> · outils MJ disponibles selon ton rôle.';
+      : '<strong>Staff</strong> · outils disponibles selon ton rôle.';
 
     var firstHeader = menu.querySelector('.nav-section-header');
     if(firstHeader) menu.insertBefore(hint, firstHeader);
@@ -304,7 +304,7 @@ body.np-is-admin #dd-staff-menu .perm-designer{
     if(!menu) return;
 
     var labels = [
-      ['joueurs','Joueurs'],
+      ['joueurs','Personnages'],
       ['combat-mj','Simulation'],
       ['apparitions','Apparitions'],
       ['bestiaire-admin','Atelier bestiaire'],
