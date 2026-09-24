@@ -1,0 +1,234 @@
+/* Nuages Polaires — Les ouvrages du compagnon.
+ * Read-only Serments, Bestiaire and game-system documentation. Deliberately
+ * excludes creation workshops, character sheets and the combat simulator.
+ * Personal themes supply the colors; the polar layer supplies the typography.
+ */
+html[data-np-design="polar"] #s-app :is(#serments,#bestiaire,#p-combat-c) {
+  min-width: 0;
+  color: var(--text) !important;
+}
+html[data-np-design="polar"] #s-app :is(#p-serments-c,#bestiaire) {
+  max-width: 1200px;
+  margin-inline: auto;
+}
+html[data-np-design="polar"] #s-app :is(#p-serments-c,#p-combat-c) { clear: both; padding: 0 !important; width: 100%; }
+
+/* Serments: a readable catalogue, with the branches kept progressively openable. */
+html[data-np-design="polar"] #s-app #serments .serm-shell { gap: 28px; }
+html[data-np-design="polar"] #s-app #serments .serm-rarity-guide {
+  padding: 4px 0 26px;
+  border: 0;
+  border-bottom: 1px solid var(--border2);
+  border-radius: 0;
+  background: none !important;
+  box-shadow: none;
+}
+html[data-np-design="polar"] #s-app #serments .serm-rarity-copy > span {
+  font: 500 clamp(32px,3.5vw,48px)/1.13 var(--np-editorial);
+  letter-spacing: -.015em;
+  text-transform: none;
+  color: var(--text) !important;
+  margin-bottom: 16px;
+}
+html[data-np-design="polar"] #s-app #serments .serm-rarity-copy p {
+  max-width: 82ch;
+  color: var(--dim) !important;
+  font: 400 14px/1.85 var(--fb);
+}
+html[data-np-design="polar"] #s-app #serments .serm-rarity-copy strong { color: var(--text) !important; font-weight: 600; }
+html[data-np-design="polar"] #s-app #serments .serm-toolbar {
+  align-items: flex-start;
+  gap: 24px;
+  padding: 0 0 26px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: none !important;
+  box-shadow: none;
+  overflow: visible;
+}
+html[data-np-design="polar"] #s-app #serments :is(.serm-rarity-guide,.serm-toolbar,.serm-card-premium)::before,
+html[data-np-design="polar"] #s-app #serments .serm-card-premium::after { display: none; }
+html[data-np-design="polar"] #s-app #serments .serm-filter-block { gap: 10px; min-width: 0; flex: 1 1 400px; }
+html[data-np-design="polar"] #s-app #serments .serm-filter-block > span {
+  font: 600 10px/1.5 var(--fb);
+  letter-spacing: .1em;
+  color: var(--dim) !important;
+}
+html[data-np-design="polar"] #s-app #serments .serm-filter { gap: 8px; flex-wrap: wrap; padding: 0; }
+html[data-np-design="polar"] #s-app #serments .serm-filter .btn {
+  min-height: 44px;
+  width: auto !important;
+  min-width: 0 !important;
+  flex: 0 1 auto !important;
+  padding: 10px 14px !important;
+  font-size: 12px !important;
+  background: transparent !important;
+}
+html[data-np-design="polar"] #s-app #serments .serm-filter .btn.active {
+  color: var(--text) !important;
+  background: var(--bg3) !important;
+  border-color: var(--glacier) !important;
+  box-shadow: inset 0 -2px var(--glacier) !important;
+}
+html[data-np-design="polar"] #s-app #serments .serm-grid {
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 24px;
+  align-items: start;
+}
+html[data-np-design="polar"] #s-app #serments .serm-card-premium {
+  padding: 28px;
+  border: 1px solid var(--border2) !important;
+  border-top: 2px solid var(--glacier) !important;
+  border-radius: 3px;
+  background: var(--bg2) !important;
+  box-shadow: none;
+  transform: none !important;
+}
+html[data-np-design="polar"] #s-app #serments .serm-head { gap: 16px; padding-right: 0 !important; margin-bottom: 16px; }
+html[data-np-design="polar"] #s-app #serments .serm-icon {
+  width: 46px; height: 52px;
+  border: 1px solid var(--border2);
+  border-radius: 22px 22px 2px 2px;
+  font-size: 24px;
+  background: var(--bg);
+  color: var(--glacier) !important;
+  box-shadow: none;
+}
+html[data-np-design="polar"] #s-app #serments .snm {
+  font: 500 clamp(28px,2.6vw,36px)/1.1 var(--np-editorial);
+  letter-spacing: -.01em;
+  text-transform: none;
+  color: var(--text) !important;
+}
+html[data-np-design="polar"] #s-app #serments .swp { font: 400 12px/1.65 var(--fb); color: var(--dim) !important; margin-top: 8px; }
+html[data-np-design="polar"] #s-app #serments .serm-lineage { color: var(--dim) !important; flex-wrap: wrap; line-height: 1.6; }
+html[data-np-design="polar"] #s-app #serments .serm-lineage b { font: 500 11px/1.5 var(--fb); letter-spacing: 0; text-transform: none; white-space: normal; }
+html[data-np-design="polar"] #s-app #serments :is(.serm-level-pill,.serm-cat,.serm-badge-new) {
+  font: 500 10px/1.6 var(--fb);
+  letter-spacing: .02em;
+  color: var(--glacier) !important;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 2px;
+  box-shadow: none;
+  text-transform: none;
+}
+html[data-np-design="polar"] #s-app #serments .serm-cat { position: static; display: inline-flex; width: fit-content; padding: 3px 9px; margin: 0 0 16px 62px; }
+html[data-np-design="polar"] #s-app #serments .serm-badge-new { position: static; width: fit-content; margin: 0 0 16px; padding: 3px 9px; color: var(--gold) !important; }
+html[data-np-design="polar"] #s-app #serments .serm-lore {
+  font: 400 13px/1.85 var(--fb);
+  color: var(--dim) !important;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  margin: 0 0 24px;
+  padding: 0;
+}
+html[data-np-design="polar"] #s-app #serments .serm-stats { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 0; margin-bottom: 24px; padding: 16px 0; border-block: 1px solid var(--border); }
+html[data-np-design="polar"] #s-app #serments .sst { padding: 0 10px; border: 0; border-left: 1px solid var(--border); border-radius: 0; background: none; box-shadow: none; }
+html[data-np-design="polar"] #s-app #serments .sst:first-child { border-left: 0; }
+html[data-np-design="polar"] #s-app #serments .sstv { font: 500 27px/1.2 var(--np-editorial); color: var(--text) !important; font-variant-numeric: lining-nums tabular-nums; }
+html[data-np-design="polar"] #s-app #serments .sstl { font: 500 10px/1.6 var(--fb); letter-spacing: .03em; color: var(--dim) !important; margin-top: 3px; }
+html[data-np-design="polar"] #s-app #serments .serm-branch-list { gap: 10px; }
+html[data-np-design="polar"] #s-app #serments .serm-branch { padding: 0 !important; border: 1px solid var(--border); border-radius: 3px; background: var(--bg); box-shadow: none; }
+html[data-np-design="polar"] #s-app #serments .serm-branch-head { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px 12px; padding: 15px 16px; min-height: 58px; }
+html[data-np-design="polar"] #s-app #serments .serm-branch-title { font: 500 13px/1.55 var(--fb); letter-spacing: 0; }
+html[data-np-design="polar"] #s-app #serments .serm-branch-style { grid-column: 1; width: fit-content; max-width: 100%; font: 500 10px/1.5 var(--fb); letter-spacing: .02em; color: var(--dim) !important; border-color: var(--border2) !important; }
+html[data-np-design="polar"] #s-app #serments .serm-branch-head::after { grid-column: 2; grid-row: 1 / span 2; border: 0; font: 400 21px var(--fb); color: var(--glacier) !important; }
+html[data-np-design="polar"] #s-app #serments :is(.serm-branch-phys,.serm-branch-desc) { margin: 0 16px 16px; padding: 0 0 0 12px; border-radius: 0; background: none; font: 400 12px/1.85 var(--fb); color: var(--dim) !important; border-left: 1px solid var(--border2) !important; }
+html[data-np-design="polar"] #s-app #serments .serm-branch-progress { margin: 0 16px 16px; border-top: 1px solid var(--border2); }
+html[data-np-design="polar"] #s-app #serments .serm-branch-progress > summary { min-height: 48px; color: var(--text) !important; gap: 8px; }
+html[data-np-design="polar"] #s-app #serments .serm-branch-progress > summary span { font: 500 11px/1.6 var(--fb); letter-spacing: 0; text-transform: none; }
+html[data-np-design="polar"] #s-app #serments .serm-branch-progress > summary strong { font: 400 10px/1.6 var(--fb); color: var(--dim) !important; }
+html[data-np-design="polar"] #s-app #serments .serm-palier-rail { display: grid; grid-template-columns: 1fr; gap: 8px; padding: 0; overflow: visible; }
+html[data-np-design="polar"] #s-app #serments .serm-palier-chip { min-width: 0; padding: 12px; border: 1px solid var(--border); border-radius: 2px; background: var(--bg2); color: var(--dim) !important; }
+html[data-np-design="polar"] #s-app #serments .serm-palier-chip b { font: 500 10px/1.6 var(--fb); letter-spacing: .025em; color: var(--glacier) !important; }
+html[data-np-design="polar"] #s-app #serments .serm-palier-chip em { font: 500 12px/1.7 var(--fb); color: var(--text) !important; }
+html[data-np-design="polar"] #s-app #serments .serm-palier-chip small { font: 400 11px/1.7 var(--fb); color: var(--dim) !important; }
+html[data-np-design="polar"] #s-app #serments .serm-palier-chip :is(b,em,small) { white-space: normal; overflow-wrap: anywhere; }
+html[data-np-design="polar"] #s-app #serments .serm-palier-description { display: block; width: 100%; max-width: 100%; margin-top: 4px; font: 400 12px/1.85 var(--fb); color: var(--dim) !important; white-space: normal; overflow-wrap: anywhere; }
+
+/* Bestiary: spacious field notes with ordinary, tappable filter controls. */
+html[data-np-design="polar"] #s-app #bestiaire > div:has(> #beast-search-input) { margin-bottom: 16px !important; }
+html[data-np-design="polar"] #s-app #bestiaire #beast-search-input { padding: 14px 16px !important; min-height: 50px !important; border-radius: 3px !important; }
+html[data-np-design="polar"] #s-app #bestiaire #beast-filters { display: flex !important; flex-wrap: wrap; align-items: center; gap: 8px !important; margin-bottom: 28px !important; padding: 0 0 24px !important; border: 0; border-bottom: 1px solid var(--border2); border-radius: 0; background: none !important; }
+html[data-np-design="polar"] #s-app #bestiaire #beast-filters > div { display: none; }
+html[data-np-design="polar"] #s-app #bestiaire #beast-filters .bfilt { width: auto !important; flex: 0 1 auto !important; min-height: 44px !important; padding: 10px 13px; font: 500 12px/1.5 var(--fb); letter-spacing: 0 !important; text-transform: none; border: 1px solid var(--border2); border-radius: 3px !important; color: var(--dim) !important; background: transparent !important; box-shadow: none !important; }
+html[data-np-design="polar"] #s-app #bestiaire #beast-filters .bfilt:hover { color: var(--text) !important; border-color: var(--glacier) !important; }
+html[data-np-design="polar"] #s-app #bestiaire #beast-filters .bfilt.active { color: var(--text) !important; border-color: var(--glacier) !important; background: var(--bg3) !important; box-shadow: inset 0 -2px var(--glacier) !important; }
+html[data-np-design="polar"] #s-app #bestiaire .bgrd { grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: 24px; align-items: start; }
+html[data-np-design="polar"] #s-app #bestiaire .bcrd { min-width: 0; padding: 0 !important; margin: 0 !important; background: var(--bg2) !important; border: 1px solid var(--border2) !important; border-radius: 3px !important; box-shadow: none !important; transform: none !important; }
+html[data-np-design="polar"] #s-app #bestiaire .bcrd::before,
+html[data-np-design="polar"] #s-app #bestiaire .bcrd::after { display: none; }
+html[data-np-design="polar"] #s-app #bestiaire .bimg { height: 230px; object-fit: cover; filter: none !important; border-bottom: 1px solid var(--border); }
+html[data-np-design="polar"] #s-app #bestiaire .bimg-ph { height: 144px; background: var(--bg3); border-bottom: 1px solid var(--border); }
+html[data-np-design="polar"] #s-app #bestiaire .bimg-ph > div:first-child { font: 500 48px/1.15 var(--np-editorial) !important; color: var(--glacier) !important; }
+html[data-np-design="polar"] #s-app #bestiaire .bimg-ph > div:last-child { font: 500 10px/1.6 var(--fb) !important; letter-spacing: .1em !important; color: var(--dim) !important; opacity: 1 !important; text-align: center; padding-inline: 16px; }
+html[data-np-design="polar"] #s-app #bestiaire .bbody { padding: 26px 28px; }
+html[data-np-design="polar"] #s-app #bestiaire .bnm { font: 500 clamp(29px,2.8vw,38px)/1.13 var(--np-editorial); letter-spacing: -.01em; text-transform: none; color: var(--text) !important; margin-bottom: 8px; }
+html[data-np-design="polar"] #s-app #bestiaire .bsub { font: 400 12px/1.7 var(--fb); color: var(--dim) !important; margin-bottom: 16px; }
+html[data-np-design="polar"] #s-app #bestiaire .bsub + div { flex-wrap: wrap; gap: 8px; margin-bottom: 14px !important; }
+html[data-np-design="polar"] #s-app #bestiaire .bsub + div > span { font: 500 11px/1.6 var(--fb) !important; letter-spacing: .02em !important; color: var(--dim) !important; }
+html[data-np-design="polar"] #s-app #bestiaire .bsub + div > span:first-child { color: var(--text) !important; background: var(--bg) !important; padding: 3px 8px !important; }
+html[data-np-design="polar"] #s-app #bestiaire .bdesc { font: 400 13px/1.85 var(--fb); color: var(--dim) !important; margin-bottom: 22px; }
+html[data-np-design="polar"] #s-app #bestiaire :is(.bnm,.bsub,.bdesc,.bcomp,.bdrop) { overflow-wrap: anywhere; }
+html[data-np-design="polar"] #s-app #bestiaire .btbl { border-radius: 2px !important; display: table; width: 100%; margin: 0 0 22px; background: transparent; border-collapse: collapse; }
+html[data-np-design="polar"] #s-app #bestiaire .btbl td { padding: 10px 8px; border-color: var(--border); font-size: 12px; line-height: 1.65; color: var(--dim) !important; }
+html[data-np-design="polar"] #s-app #bestiaire .bcomp { font: 400 13px/1.8 var(--fb); background: var(--bg); color: var(--text) !important; padding: 15px 16px; margin: 0 0 12px; border: 1px solid var(--border2) !important; border-radius: 2px; }
+html[data-np-design="polar"] #s-app #bestiaire .bclbl { font: 500 10px/1.6 var(--fb); letter-spacing: .07em; color: var(--glacier) !important; display: block; margin-bottom: 8px; }
+html[data-np-design="polar"] #s-app #bestiaire .bdrop { font: 400 12px/1.75 var(--fb); color: var(--dim) !important; padding: 12px 0 0; border-top: 1px solid var(--border); margin-top: 12px; }
+html[data-np-design="polar"] #s-app #bestiaire .bdrop > span { display: block; font: 500 10px/1.7 var(--fb); color: var(--gold) !important; letter-spacing: .06em; margin-bottom: 4px; }
+html[data-np-design="polar"] #s-app #bestiaire .bgrd > p:only-child { grid-column: 1 / -1; padding: 32px 0 !important; color: var(--dim) !important; font: 400 14px/1.8 var(--fb); }
+
+/* Theme accents remain decorative; small labels need body-text contrast. */
+html[data-np-design="polar"] body[data-theme-tone="light"] #s-app #serments :is(.serm-level-pill,.serm-cat,.serm-badge-new,.serm-palier-chip b),
+html[data-np-design="polar"] body[data-theme-tone="light"] #s-app #bestiaire :is(.bclbl,.bdrop > span) { color: var(--dim) !important; }
+
+/* System documentation only. #combat-mj and its interactive controls stay intact. */
+html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system { max-width: 960px; gap: 36px; padding: 0 0 28px; }
+html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system .rsec { max-width: none; padding: 0 0 32px; margin: 0; border: 0 !important; border-bottom: 1px solid var(--border2) !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; backdrop-filter: none; min-width: 0; }
+html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system .rsec::before { display: none; }
+html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system h2 { font: 500 clamp(38px,4.5vw,56px)/1.08 var(--np-editorial); letter-spacing: -.02em; text-transform: none; color: var(--text) !important; border: 0; padding: 0; margin: 0 0 22px; text-shadow: none; }
+html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system h3 { font: 500 clamp(25px,2.7vw,33px)/1.25 var(--np-editorial); letter-spacing: 0; text-transform: none; color: var(--text) !important; padding: 0; margin: 28px 0 18px; }
+html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system .rsec > h3:first-child { margin-top: 0; }
+html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system h4 { font: 600 13px/1.7 var(--fb); letter-spacing: .01em; text-transform: none; color: var(--text) !important; margin: 28px 0 12px; border-left-color: var(--glacier) !important; }
+html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system :is(p,li) { font: 400 14px/1.85 var(--fb); color: var(--dim) !important; max-width: 82ch; margin-bottom: 14px; }
+html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system .quote { font: italic 400 25px/1.45 var(--np-editorial); color: var(--glacier) !important; border: 0; border-left: 1px solid var(--gold); border-radius: 0; padding: 4px 0 4px 20px; margin: 0 0 28px; background: none; }
+html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system :is(.hlbox,.warnbox) { font: 400 13px/1.85 var(--fb); color: var(--dim) !important; background: var(--bg2) !important; border: 1px solid var(--border) !important; border-left: 2px solid var(--glacier) !important; border-radius: 2px !important; padding: 18px 22px; margin: 20px 0; box-shadow: none !important; }
+html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system .warnbox { border-left-color: var(--gold) !important; }
+html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system :is(.hlbox,.warnbox) strong { color: var(--text) !important; font-weight: 600; }
+html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system .rtbl { width: 100%; border-collapse: collapse; border-radius: 2px !important; margin: 22px 0; background: var(--bg2) !important; }
+html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system .rtbl :is(th,td) { padding: 13px 15px; border: 1px solid var(--border); text-align: left; font: 400 12px/1.75 var(--fb); color: var(--dim) !important; }
+html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system .rtbl th { font-size: 11px; font-weight: 600; letter-spacing: .02em !important; text-transform: none; background: var(--bg3) !important; color: var(--text) !important; }
+html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system .rtbl td:first-child { color: var(--text) !important; }
+
+@media (max-width: 900px) {
+  html[data-np-design="polar"] #s-app #serments .serm-grid { grid-template-columns: 1fr; }
+  html[data-np-design="polar"] #s-app #serments .serm-toolbar { gap: 20px; }
+  html[data-np-design="polar"] #s-app #bestiaire .bbody { padding: 22px; }
+  html[data-np-design="polar"] #s-app #bestiaire .bimg { height: 180px; }
+}
+@media (max-width: 640px) {
+  html[data-np-design="polar"] #s-app #serments .serm-shell { gap: 24px; }
+  html[data-np-design="polar"] #s-app #serments .serm-card-premium { padding: 22px 18px; }
+  html[data-np-design="polar"] #s-app #serments .serm-rarity-copy p { font-size: 13px; }
+  html[data-np-design="polar"] #s-app #serments .serm-filter .btn { flex: 0 1 auto; font-size: 11px !important; padding-inline: 12px !important; }
+  html[data-np-design="polar"] #s-app #serments .serm-branch-head { padding: 14px 12px; }
+  html[data-np-design="polar"] #s-app #serments .serm-branch-title { font-size: 12px; }
+  html[data-np-design="polar"] #s-app #serments .serm-stats { gap: 0; }
+  html[data-np-design="polar"] #s-app #serments .sst { padding-inline: 5px; }
+  html[data-np-design="polar"] #s-app #serments .sstl { font-size: 9px; }
+  html[data-np-design="polar"] #s-app #bestiaire .bgrd { grid-template-columns: 1fr !important; gap: 24px; }
+  html[data-np-design="polar"] #s-app #bestiaire #beast-filters { gap: 7px !important; margin-bottom: 24px !important; }
+  html[data-np-design="polar"] #s-app #bestiaire #beast-filters .bfilt { padding: 9px 11px; font-size: 11px; }
+  html[data-np-design="polar"] #s-app #bestiaire .bbody { padding: 24px 20px; }
+  html[data-np-design="polar"] #s-app #bestiaire .bimg { height: 205px; }
+  html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system { gap: 28px; }
+  html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system .rsec { padding-bottom: 26px; }
+  html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system :is(p,li) { font-size: 13px; }
+  html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system :is(.hlbox,.warnbox) { padding: 16px; font-size: 12px; }
+  html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system .rtbl { display: block; overflow-x: auto; overscroll-behavior-inline: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: var(--glacier) var(--bg3); }
+  html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system .rtbl :is(th,td) { min-width: 95px; padding: 10px 12px; font-size: 12px; word-break: normal; overflow-wrap: normal; }
+  html[data-np-design="polar"] #s-app #p-combat-c .premium-doc-system .rtbl td:last-child { min-width: 160px; }
+}

@@ -1,6 +1,7 @@
 
 const { neon } = require("@neondatabase/serverless");
 const crypto = require("crypto");
+const progression = require("../../assets/js/progression");
 
 let _npSqlClient = null;
 function _getDatabaseUrl() {
@@ -275,7 +276,7 @@ function enforceShape(key, value) {
   }
   return value;
 }
-function normalizeStoreValue(key, value) {
+function normalizeStoreValue(key, value, serments = {}) {
   if (key === "accounts") {
     const seen = new Set();
     return (Array.isArray(value) ? value : []).map((entry, idx) => {
@@ -301,7 +302,7 @@ function normalizeStoreValue(key, value) {
       out.history = Array.isArray(out.history) ? out.history.slice(-200) : [];
       out.statuts = Array.isArray(out.statuts) ? out.statuts.slice(0, 64) : [];
       out.equipment = out.equipment && typeof out.equipment === "object" && !Array.isArray(out.equipment) ? { helmet: out.equipment.helmet || null, chest: out.equipment.chest || null, legs: out.equipment.legs || null } : { helmet: null, chest: null, legs: null };
-      return out;
+      return progression.normalizePlayer(out, progression.effectiveDefinition(out.classe, serments));
     }).filter(item => { if (seen.has(item.id)) return false; seen.add(item.id); return true; });
   }
   if (key === "beasts") {
@@ -377,7 +378,7 @@ function normalizeRpgCharacter(entry, idx = 0) {
   out.updatedAt = Number.isFinite(Number(raw.updatedAt)) ? Number(raw.updatedAt) : Date.now();
   return out;
 }
-function sanitizeForKey(key, value) {
+function sanitizeForKey(key, value, serments = {}) {
   if (key.startsWith("combat_arc_") && !key.startsWith("combat_arc_rec_") && Array.isArray(value)) {
     value = value.slice(0, key.startsWith("combat_arc_idx_") ? 5000 : 500);
   }
@@ -388,7 +389,7 @@ function sanitizeForKey(key, value) {
   }
   const cleaned = sanitizeDeep(value, 0);
   const shaped = enforceShape(key, cleaned);
-  const normalized = normalizeStoreValue(key, shaped);
+  const normalized = normalizeStoreValue(key, shaped, serments);
   if (!validateSize(normalized)) throw new Error("Valeur trop volumineuse.");
   return normalized;
 }
@@ -425,7 +426,7 @@ function validateAvatar(value) {
   throw new Error("URL d'avatar invalide : image HTTPS, HTTP, locale ou raster intégrée attendue.");
 }
 const MJ_PLAYER_FIELDS = new Set([
-  "xp", "xpMax", "level", "sXp", "sXpMax", "sLevel",
+  "xp", "xpMax", "level",
   "pvCur", "pvMax", "epCur", "epMax", "emCur", "emMax",
   "inventory", "history", "equipment", "statuts"
 ]);
@@ -558,11 +559,14 @@ async function ensureTable() {
 }
 async function readStore(key, fallback) {
   const rows = await sql`SELECT value FROM np_store WHERE key = ${key}`;
-  return rows.length ? normalizeStoreValue(key, rows[0].value) : fallback;
+  const serments = key === "players" && rows.length ? await readStore("serments_custom", {}) : {};
+  return rows.length ? normalizeStoreValue(key, rows[0].value, serments) : fallback;
 }
 async function readVersionedStore(key, fallback) {
   const rows = await sql`SELECT value, md5(value::text) AS version FROM np_store WHERE key = ${key}`;
-  return { value: rows.length ? normalizeStoreValue(key, rows[0].value) : fallback, rawValue: rows.length ? rows[0].value : fallback, version: rows.length ? rows[0].version : null };
+  const serments = key === "players" && rows.length ? await readStore("serments_custom", {}) : {};
+  // Normalize the response only: optimistic versions must still describe stored JSON.
+  return { value: rows.length ? normalizeStoreValue(key, rows[0].value, serments) : fallback, rawValue: rows.length ? rows[0].value : fallback, version: rows.length ? rows[0].version : null, serments };
 }
 async function compareAndSetStore(key, value, expectedVersion) {
   // The predicate lives in the write statement: a read/check/write sequence alone
@@ -794,7 +798,7 @@ exports.handler = async (event) => {
           const inv = Array.isArray(p && p.inventory) ? p.inventory : [];
           return acc + inv
             .filter(i => i && i.category === "Gemme")
-            .reduce((s, i) => s + (Number(i.qty) || 1), 0);
+            .reduce((s, i) => s + Math.max(0, Number(i.qty) || 0), 0);
         }, 0);
         gemmesFusionnees = players.reduce((acc, p) => {
           const hist = Array.isArray(p && p.history) ? p.history : [];
@@ -855,9 +859,11 @@ exports.handler = async (event) => {
       const rows = await sql`SELECT key, value, md5(value::text) AS version FROM np_store`;
       const result = {};
       const versions = {};
+      const custom = rows.find(row => row.key === "serments_custom");
       rows.forEach(r => {
         if (!canRead(caller, r.key)) return;
-        const filtered = filterValueForCaller(caller, r.key, r.value);
+        const value = r.key === "players" ? normalizeStoreValue(r.key, r.value, custom && custom.value || {}) : r.value;
+        const filtered = filterValueForCaller(caller, r.key, value);
         if (filtered !== undefined) {
           result[r.key] = filtered;
           versions[r.key] = r.version;
@@ -948,7 +954,7 @@ exports.handler = async (event) => {
       const savedRows = await compareAndSetStore(actionKey, nextValue, body.expectedVersion);
       if (!savedRows.length) return conflictResponse(headers, actionKey);
       await auditDb(event, caller, action, details);
-      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, key: actionKey, value: filterValueForCaller(caller, actionKey, nextValue), version: savedRows[0].version, updatedAt: savedRows[0].updated_at }) };
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, key: actionKey, value: filterValueForCaller(caller, actionKey, actionKey === "players" ? normalizeStoreValue("players", nextValue, snapshot.serments) : nextValue), version: savedRows[0].version, updatedAt: savedRows[0].updated_at }) };
     }
 
     if (action === "set") {
@@ -959,7 +965,8 @@ exports.handler = async (event) => {
       }
       let sanitized;
       try {
-        sanitized = sanitizeForKey(key, body.value);
+        const serments = key === "players" ? await readStore("serments_custom", {}) : {};
+        sanitized = sanitizeForKey(key, body.value, serments);
       } catch (e) {
         await auditDb(event, caller, "db_set_rejected", { key, reason: e.message || "validation_error" });
         return { statusCode: 400, headers, body: JSON.stringify({ error: e.message || "Valeur invalide" }) };
@@ -1018,7 +1025,7 @@ exports.handler = async (event) => {
       const savedRows = await compareAndSetStore("players", players, body.expectedVersion);
       if (!savedRows.length) return conflictResponse(headers, "players");
       await auditDb(event, caller, "db_patch_own_player", { pid: caller.pid, fields: Object.keys(patch) });
-      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, key: "players", value: [players[playerIndex]], version: savedRows[0].version, updatedAt: savedRows[0].updated_at }) };
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, key: "players", value: normalizeStoreValue("players", [players[playerIndex]], snapshot.serments), version: savedRows[0].version, updatedAt: savedRows[0].updated_at }) };
     }
 
     if (action === "delete") {

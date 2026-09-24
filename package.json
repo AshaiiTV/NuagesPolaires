@@ -1,6 +1,6 @@
 {
   "name": "nuages-polaires",
-  "version": "296.0.0",
+  "version": "297.0.0",
   "description": "Compagnon officiel — Nuages Polaires",
   "packageManager": "npm@10.9.0",
   "engines": {
@@ -13,8 +13,8 @@
   "scripts": {
     "check": "node scripts/check.js",
     "test:auth": "node scripts/test-auth-flows.js",
-    "test": "node --test scripts/test-auth-security.js scripts/test-db-security.js scripts/test-integration.js scripts/test-beast-persistence.js scripts/test-archive-persistence.js scripts/test-session-isolation.js scripts/test-legacy-recovery.js scripts/test-system-log.js scripts/test-auth-target.js scripts/test-gameplay-persistence.js scripts/test-rpg-persistence.js scripts/test-store-backup.js scripts/test-player-actions.js scripts/test-player-actions-front.js",
-    "test:browser": "node scripts/test-browser.js && node scripts/test-rpg-browser.js && node scripts/test-player-actions-browser.js",
+    "test": "node --test scripts/test-auth-security.js scripts/test-db-security.js scripts/test-integration.js scripts/test-beast-persistence.js scripts/test-archive-persistence.js scripts/test-session-isolation.js scripts/test-legacy-recovery.js scripts/test-system-log.js scripts/test-auth-target.js scripts/test-gameplay-persistence.js scripts/test-rpg-persistence.js scripts/test-store-backup.js scripts/test-player-actions.js scripts/test-player-actions-front.js scripts/test-event-staff.js scripts/test-first-steps.js scripts/test-unified-progression.js scripts/test-progression-concurrency.js scripts/test-progression-reads.js",
+    "test:browser": "node scripts/test-browser.js && node scripts/test-rpg-browser.js && node scripts/test-player-actions-browser.js && node scripts/test-event-staff-browser.js && node scripts/test-adventure-browser.js && node scripts/test-account-keyboard-browser.js && node scripts/test-unified-progression-browser.js",
     "build": "npm run check && npm test && node scripts/build.js",
     "backup:store": "node scripts/backup-store.js",
     "backup:verify": "node scripts/verify-backup.js"

@@ -1,6 +1,8 @@
 # Nuages Polaires
 
-Compagnon de jeu et portail staff Nuages Polaires. Version locale **v296**, intégrant les évolutions RPG de la v295 et les corrections de sécurité, de sauvegarde et de combat issues de l’audit.
+Compagnon de jeu et portail staff Nuages Polaires. Version **v297** : guide de démarrage, archives accessibles, événements staff fiabilisés et refonte Mystique polaire étendue aux références, à la fiche personnage, à l'agenda et au compte.
+
+Le compagnon utilise un niveau et une barre d'XP communs aux statistiques et aux capacités du serment. La reprise des anciennes fiches conserve la progression la plus avancée. Règles et migration : [docs/fusion-xp.md](docs/fusion-xp.md).
 
 ## Démarrer
 
@@ -32,6 +34,7 @@ Le test démarre une application locale avec les véritables handlers serveur et
 - `netlify/functions/_shared/` : persistance atomique partagée.
 - `scripts/` : contrôles, tests locaux et génération du site statique.
 - `docs/security-and-data.md` : contrat de sauvegarde, récupération et limites restantes.
+- `docs/fusion-xp.md` : progression commune du compagnon et conversion des anciennes fiches.
 
 ## Configuration Netlify
 

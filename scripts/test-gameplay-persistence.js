@@ -19,7 +19,7 @@ function deferred() {
   return { promise, resolve };
 }
 
-const progressionCode = section('function doLvlUp(p){', 'function doSLvlUp(p){') +
+const progressionCode = section('function doLvlUp(p){', '// Save a detached draft;') +
   section('async function adjVal(pid,field,delta){', '// ==========================================\n// PLAYER MGMT');
 for (const classe of ['Custom', 'Native']) {
   test('XP and manual levels use the current ' + classe + ' serment definition', async () => {
@@ -30,7 +30,9 @@ for (const classe of ['Custom', 'Native']) {
       xpReq: level => level * 30, can: () => true, gpid: () => player,
       CU: { name: 'Admin', pid: 'another-player' }, esc: value => value,
       sysLog() {}, ge: () => null, renderSPList() {}, notif() {},
-      up: async () => ({ ok: true }), _confirmDbSave: async promise => (await promise).ok
+      up: async () => ({ ok: true }), _confirmDbSave: async promise => (await promise).ok,
+      _npClone: value => value, getSermPalierDefsFor: () => [],
+      _progPid: null, saveProgressionPlayer: async () => true, refreshProgressionPanel() {}, switchProgTab() {}
     };
     vm.createContext(context);
     vm.runInContext(progressionCode, context);

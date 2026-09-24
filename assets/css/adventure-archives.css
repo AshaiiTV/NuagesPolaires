@@ -1,0 +1,41 @@
+#s-app.is-designer .np-archives-entry{display:none!important}
+html[data-np-design="polar"] #p-archives-c{max-width:1200px;margin:0 auto;padding:32px 0 56px;color:var(--text)}
+#p-archives-c .np-archives-heading{max-width:760px;margin-bottom:32px}
+#p-archives-c h1{font-family:'Cormorant Garamond',serif;font-size:clamp(38px,5vw,64px);font-weight:500;letter-spacing:-.025em;line-height:1.1;margin:10px 0 16px}
+#p-archives-c h2{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:500;line-height:1.15;margin:8px 0 14px;overflow-wrap:anywhere}
+#p-archives-c h3{font-size:15px;font-weight:600;margin:28px 0 16px}
+#p-archives-c .np-archive-muted{color:var(--dim);line-height:1.8;font-size:13px}
+#p-archives-c .np-archives-toolbar{display:grid;grid-template-columns:minmax(0,1fr) minmax(160px,240px) auto;gap:20px;align-items:end;padding-bottom:24px;border-bottom:1px solid var(--border)}
+#p-archives-c label{font-size:12px;display:grid;gap:10px;color:var(--dim)}
+#p-archives-c input,#p-archives-c select{width:100%;min-width:0;min-height:46px;border:1px solid var(--border2);background:var(--bg2);color:var(--text);padding:10px 12px;font:inherit;border-radius:3px}
+#p-archives-c .np-archive-count{font-size:12px;color:var(--dim);padding-bottom:4px;white-space:nowrap}
+#p-archives-c .np-archives-layout{display:grid;grid-template-columns:minmax(260px,.8fr) minmax(0,1.4fr);gap:28px;margin-top:28px;align-items:start}
+#p-archives-c .np-archives-list{display:grid;gap:10px}
+#p-archives-c .np-archive-item{display:grid;gap:8px;text-align:left;padding:18px 20px;min-height:105px;background:var(--bg2);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:inherit;cursor:pointer;overflow-wrap:anywhere}
+#p-archives-c .np-archive-item small{color:var(--glacier);font-size:10px;letter-spacing:.12em;text-transform:uppercase}
+#p-archives-c .np-archive-item strong{font-size:14px;font-weight:500;line-height:1.6}
+#p-archives-c .np-archive-item span{color:var(--dim);font-size:11px}
+#p-archives-c .np-archive-item:hover,#p-archives-c .np-archive-item[aria-pressed="true"]{border-color:var(--glacier);background:var(--bg3)}
+html[data-np-design="polar"] #s-app #p-archives-c .np-archive-item{border-radius:3px!important}
+#p-archives-c .np-archive-detail{min-width:0;padding:28px;background:var(--bg2);border:1px solid var(--border);border-radius:3px;overflow-wrap:anywhere}
+#p-archives-c .np-archive-detail:empty{display:none}
+#p-archives-c .np-archive-text{white-space:pre-wrap;color:var(--text);font-size:14px;line-height:1.9}
+#p-archives-c .np-archive-fighters{list-style:none;padding:0;margin:24px 0;display:grid;gap:8px}
+#p-archives-c .np-archive-fighters li{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding:12px 0;font-size:12px}
+#p-archives-c .np-archive-fighters strong{font-weight:500}
+#p-archives-c .np-archive-fighters span{color:var(--dim)}
+#p-archives-c .np-archive-log{font-size:13px;line-height:1.8;color:var(--dim);padding-left:22px;max-height:600px;overflow:auto;margin-bottom:24px;overscroll-behavior:contain}
+#p-archives-c .np-archive-log li{padding:6px 0 6px 4px;white-space:pre-wrap}
+#p-archives-c .np-archives-pagination{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:20px;font-size:12px;color:var(--dim)}
+#p-archives-c .np-archives-pagination[hidden]{display:none}
+#p-archives-c button.btn{min-height:44px;text-transform:none;font-family:inherit;font-size:12px;letter-spacing:0}
+#p-archives-c button:disabled{opacity:.45;cursor:default}
+#p-archives-c .np-archive-tools{margin-top:28px}
+#p-archives-c :is(button,input,select):focus-visible{outline:2px solid var(--glacier);outline-offset:4px}
+@media(max-width:760px){
+  html[data-np-design="polar"] #p-archives-c{padding-top:20px}
+  #p-archives-c .np-archives-toolbar{grid-template-columns:1fr;gap:16px}
+  #p-archives-c .np-archives-layout{grid-template-columns:1fr;gap:20px}
+  #p-archives-c .np-archive-detail{padding:20px}
+  #p-archives-c .np-archives-list{max-height:410px;overflow:auto;padding:4px;overscroll-behavior:contain}
+}

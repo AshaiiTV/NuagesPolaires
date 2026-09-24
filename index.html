@@ -6545,8 +6545,17 @@ body.theme-aquaris .home-title{
 <link rel="preload" href="./assets/fonts/cormorant-garamond-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="./assets/css/polar-identity.css">
 <link rel="stylesheet" href="./assets/css/polar-connected.css">
+<link rel="stylesheet" href="./assets/css/polar-reference.css">
+<link rel="stylesheet" href="./assets/css/first-steps.css">
+<link rel="stylesheet" href="./assets/css/adventure-archives.css">
+<link rel="stylesheet" href="./assets/css/polar-sheet.css">
+<link rel="stylesheet" href="./assets/css/polar-events.css">
+<link rel="stylesheet" href="./assets/css/polar-account.css">
 </head>
 <body>
+<section id="s-first-steps" class="screen" aria-label="Premiers pas dans Nuages Polaires">
+  <main id="public-first-steps-c" class="np-first-steps-public"></main>
+</section>
 
 <!-- ACCUEIL — identité Mystique polaire -->
 <section id="s-home" class="screen active" aria-label="Bienvenue dans Nuages Polaires">
@@ -6576,7 +6585,7 @@ body.theme-aquaris .home-title{
           <button type="button" class="np-action np-action-primary" onclick="showScreen('s-hrp')">Rejoindre l’aventure <span aria-hidden="true">↗</span></button>
           <button type="button" class="np-action np-action-quiet" onclick="document.getElementById('np-univers').scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})">Découvrir l’univers <span aria-hidden="true">↓</span></button>
         </div>
-        <p class="np-platform-note">Une histoire collective, sur Discord.</p>
+        <p class="np-platform-note">Une histoire collective, sur Discord. <button type="button" class="np-guide-link" onclick="openFirstSteps()">Comment commencer ?</button></p>
       </div>
       <div class="np-hero-coordinate" aria-hidden="true"><span>NP / 01</span><i></i><span>APRÈS LE BASCULEMENT</span></div>
       <div class="np-hero-caption"><span class="np-caption-rule" aria-hidden="true"></span><p>« Le monde n’est pas mort.<br><em>Il attend.</em> »</p></div>
@@ -6986,6 +6995,7 @@ body.theme-aquaris .home-title{
           <div class="nav-section-header">MON AVENTURE</div>
           <button class="nav-dropdown-item" onclick="switchDropTab('accueil',this,'dd-aventure')">Tableau de bord</button>
           <button class="nav-dropdown-item" onclick="_closeAllNavDrops();forceOpenOwnProfile();">Mon personnage</button>
+          <button class="nav-dropdown-item np-archives-entry" onclick="switchDropTab('archives',this,'dd-aventure')">Archives de combat</button>
         </div>
       </div>
 
@@ -6999,6 +7009,7 @@ body.theme-aquaris .home-title{
           <button class="nav-dropdown-item" onclick="switchDropTab('bestiaire',this,'dd-joueurs')"><span class="nav-item-icon">◈</span>Bestiaire</button>
           <div class="nav-divider"></div>
           <div class="nav-section-header">RÈGLES</div>
+          <button class="nav-dropdown-item" onclick="openFirstSteps()"><span class="nav-item-icon">◇</span>Premiers pas</button>
           <button class="nav-dropdown-item" onclick="switchDropTab('combat',this,'dd-joueurs')"><span class="nav-item-icon">⚔</span>Système de jeu</button>
           <button class="nav-dropdown-item" onclick="switchDropTab('reglement',this,'dd-joueurs');scrollTo(0,0);"><span class="nav-item-icon">§</span>Règlement HRP</button>
         </div>
@@ -7066,6 +7077,7 @@ body.theme-aquaris .home-title{
       <div class="nav-section-header">MON AVENTURE</div>
       <button onclick="switchDropTab('accueil',null,'dd-aventure');closeMobileDrawer();" class="drawer-item">Tableau de bord</button>
       <button onclick="forceOpenOwnProfile();closeMobileDrawer();" class="drawer-item drawer-player-only"><span style="color:var(--glacier);">✦</span> Mon personnage</button>
+      <button onclick="switchDropTab('archives',null,'dd-aventure');closeMobileDrawer();" class="drawer-item np-archives-entry">Archives de combat</button>
       <button onclick="switchDropTab('evenements',null,'');closeMobileDrawer();" class="drawer-item">Événements</button>
     </div>
     <div style="padding:4px 0;border-top:0.5px solid rgba(126,184,212,0.07);">
@@ -7074,6 +7086,7 @@ body.theme-aquaris .home-title{
       <button onclick="switchDropTab('serments',null,'dd-joueurs');closeMobileDrawer();" class="drawer-item">Serments</button>
       <button onclick="switchDropTab('bestiaire',null,'dd-joueurs');closeMobileDrawer();" class="drawer-item">Bestiaire</button>
       <div class="nav-section-header">RÈGLES</div>
+      <button onclick="openFirstSteps();closeMobileDrawer();" class="drawer-item">Premiers pas</button>
       <button onclick="switchDropTab('combat',null,'dd-joueurs');closeMobileDrawer();" class="drawer-item">Système de jeu</button>
       <button onclick="switchDropTab('reglement',null,'dd-joueurs');closeMobileDrawer();" class="drawer-item">Règlement HRP</button>
     </div>
@@ -7109,20 +7122,27 @@ body.theme-aquaris .home-title{
   <div class="app-body" id="app-root">
 
     <!-- FICHE -->
-    <!-- ACCUEIL / DASHBOARD -->
+<!-- ACCUEIL / DASHBOARD -->
     <div id="accueil" class="tab-content">
       <div id="p-accueil-c"></div>
     </div>
+    <div id="premiers-pas" class="tab-content" data-private="true">
+      <div id="p-first-steps-c"></div>
+    </div>
+    <div id="archives" class="tab-content" data-private="true">
+      <div id="p-archives-c"></div>
+    </div>
 
     <div id="fiche" class="tab-content active" data-private="true">
-      <div class="shero">
+      <header class="shero np-sheet-hero">
         <div id="p-av" style="position:relative;">
           <!-- Bouton recadrage avatar (molette uniquement) -->
         </div>
         <div class="sinfo">
           <div class="sheet-head">
             <div class="sheet-identity">
-              <h2 id="p-nom"></h2>
+              <p class="np-sheet-kicker">Le Compagnon <span aria-hidden="true">/</span> Dossier de personnage</p>
+              <h1 id="p-nom"></h1>
               <div class="sicls" id="p-cls"></div>
               <div class="siwpn" id="p-wpn"></div>
               <div id="p-br"></div>
@@ -7131,8 +7151,15 @@ body.theme-aquaris .home-title{
             <div id="shero-admin-btns" class="panel-admin sheet-admin-actions" style="display:none;"></div>
           </div>
         </div>
-      </div>
-      <div class="g2">
+      </header>
+      <nav class="np-sheet-nav" aria-label="Sections de la fiche">
+        <button type="button" onclick="scrollFicheSection('np-sheet-resources')"><span>01</span> Ressources</button>
+        <button type="button" onclick="scrollFicheSection('np-sheet-equipment')"><span>02</span> Équipement</button>
+        <button type="button" onclick="scrollFicheSection('np-sheet-stories')"><span>03</span> Journal</button>
+        <button type="button" onclick="scrollFicheSection('np-sheet-oath')"><span>04</span> Serment</button>
+      </nav>
+      <section id="np-sheet-resources" class="np-sheet-chapter" tabindex="-1" aria-labelledby="np-sheet-resources-title"><div class="np-sheet-section-heading"><div><p class="np-eyebrow">CHAPITRE 01</p><h2 id="np-sheet-resources-title">Les forces du moment.</h2><p>Ressources, progression et état du personnage.</p></div><span class="np-sheet-chapter-mark" aria-hidden="true">01</span></div>
+      <div class="g2 np-sheet-resource-grid">
         <div class="card">
           <div class="card-title">Statistiques</div>
           <div class="sr"><div class="sh"><span class="sl">Points de Vie</span><span class="sv" id="pv-v"></span></div><div class="bar"><div class="bf bpv" id="pv-b"></div></div></div>
@@ -7141,14 +7168,12 @@ body.theme-aquaris .home-title{
         </div>
         <div class="card">
           <div class="card-title">Progression</div>
-          <div class="sr"><div class="sh"><span class="sl">Niveau Personnage</span><span class="sv" id="p-niv"></span></div></div>
-          <div class="sr"><div class="sh"><span class="sl">XP Personnage</span><span class="sv" id="xp-v"></span></div><div class="bar"><div class="bf bxp" id="xp-b"></div></div></div>
-          <div class="dv"></div>
-          <div class="sr"><div class="sh"><span class="sl">Niveau Serment</span><span class="sv" id="p-sniv"></span></div></div>
-          <div class="sr"><div class="sh"><span class="sl">XP Serment</span><span class="sv" id="sxp-v"></span></div><div class="bar"><div class="bf bxp" id="sxp-b"></div></div></div>
+          <div class="sr"><div class="sh"><span class="sl">Niveau</span><span class="sv" id="p-niv"></span></div></div>
+          <div class="sr"><div class="sh"><span class="sl">Expérience</span><span class="sv" id="xp-v"></span></div><div class="bar"><div class="bf bxp" id="xp-b"></div></div></div>
+          <p style="color:var(--dim);font-size:13px;line-height:1.7;">Un seul niveau fait progresser tes statistiques et les capacités de ton serment.</p>
         </div>
       </div>
-      <div class="card mt16"><div class="card-title">Gemmes de Sang</div><div class="fx" id="p-gems"></div></div>
+      <div class="np-sheet-status-grid"><div class="card mt16"><div class="card-title">Gemmes de Sang</div><div class="fx" id="p-gems"></div></div>
 
       <!-- STATUTS IRP -->
       <div class="card mt16" id="p-statuts-card">
@@ -7158,7 +7183,10 @@ body.theme-aquaris .home-title{
         </div>
         <div id="p-statuts-content"></div>
       </div>
-      <div class="card mt16">
+      </div>
+      </section>
+      <section id="np-sheet-equipment" class="np-sheet-chapter" tabindex="-1" aria-labelledby="np-sheet-equipment-title"><div class="np-sheet-section-heading"><div><p class="np-eyebrow">CHAPITRE 02</p><h2 id="np-sheet-equipment-title">Ce que tu emportes.</h2><p>Équipement, objets et traces de leurs usages.</p></div><span class="np-sheet-chapter-mark" aria-hidden="true">02</span></div>
+      <div class="card mt16 np-sheet-equipment-card">
         <div class="card-title">Équipement</div>
         <div class="ewrap">
           <div class="esil">
@@ -7183,14 +7211,14 @@ body.theme-aquaris .home-title{
       </div>
       <!-- INVENTAIRE (intégré) -->
       <div class="dv mt16" style="margin-bottom:20px;"></div>
-      <div class="g2">
+      <div class="g2 np-sheet-inventory-grid">
         <div>
           <div class="card"><div class="card-title">Inventaire</div><div id="p-inv-c"></div></div>
           <div class="card mt16">
             <div class="card-title">Déclarer une consommation</div>
-            <div class="frow"><label class="flbl">Item</label><select id="p-csel"></select></div>
-            <div class="frow"><label class="flbl">Note IRP</label><textarea id="p-cnote" placeholder="Contexte IRP..."></textarea></div>
-            <button class="btn btn-full" onclick="playerConsume()"><span>Déclarer</span></button>
+            <div class="frow"><label class="flbl" for="p-csel">Objet à consommer</label><select id="p-csel"></select></div>
+            <div class="frow"><label class="flbl" for="p-cnote">Contexte de la consommation</label><textarea id="p-cnote" placeholder="Décris quand et comment ton personnage utilise cet objet…"></textarea></div>
+            <button class="btn btn-full" onclick="playerConsume()"><span>Confirmer la consommation</span></button>
             <p class="errmsg" id="p-cerr"></p>
           </div>
           <div class="staff-panel panel-mj mt16">
@@ -7206,8 +7234,10 @@ body.theme-aquaris .home-title{
           <div class="hist" id="p-hist"></div></div>
       </div>
 
+      </section>
+      <section id="np-sheet-stories" class="np-sheet-chapter" tabindex="-1" aria-labelledby="np-sheet-stories-title"><div class="np-sheet-section-heading"><div><p class="np-eyebrow">CHAPITRE 03</p><h2 id="np-sheet-stories-title">Les traces du voyage.</h2><p>Notes de personnage et comptes rendus des combats.</p></div><span class="np-sheet-chapter-mark" aria-hidden="true">03</span></div>
+      <div class="np-sheet-stories-grid">
       <!-- JOURNAL DE BORD (intégré à la fiche) -->
-      <div class="dv mt16" style="margin-bottom:20px;"></div>
       <div class="card mt16" id="p-journal-fiche">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
           <div class="card-title">Journal de bord</div>
@@ -7217,16 +7247,15 @@ body.theme-aquaris .home-title{
       </div>
 
       <!-- HISTORIQUE DE COMBAT -->
-      <div class="dv mt16" style="margin-bottom:20px;"></div>
       <div class="card mt16" id="p-combat-hist-card">
         <div class="card-title" style="margin-bottom:14px;">Historique de combat</div>
         <div id="p-combat-hist-content"></div>
       </div>
 
-      <!-- MON SERMENT (intégré) -->
-      <div class="dv mt16" style="margin-bottom:20px;"></div>
+      </div></section>
+      <section id="np-sheet-oath" class="np-sheet-chapter" tabindex="-1" aria-labelledby="np-sheet-oath-title"><div class="np-sheet-section-heading"><div><p class="np-eyebrow">CHAPITRE 04</p><h2 id="np-sheet-oath-title">Le lien qui te définit.</h2><p>Ton serment, ses branches et les capacités débloquées par ton niveau.</p></div><span class="np-sheet-chapter-mark" aria-hidden="true">04</span></div>
       <div id="p-serm-c"></div>
-
+      </section>
     </div>
 
     <!-- SYNOPSIS -->
@@ -7432,7 +7461,10 @@ body.theme-aquaris .home-title{
 </div>
 
 
+<script src="./assets/js/progression.js"></script>
 <script src="./assets/js/main.js"></script>
+<script src="./assets/js/first-steps.js"></script>
+<script src="./assets/js/adventure-archives.js"></script>
 <!-- TRANSITION CONNEXION -->
 <div id="login-transition-overlay">
   <div id="lto-logo">

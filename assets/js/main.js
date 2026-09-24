@@ -554,22 +554,48 @@ async function _jsonPost(url, payload, opts){
   }
   return data;
 }
+function _playerReadSnapshot(){
+  var pending=typeof _DB_WRITE_QUEUE!=='undefined'&&_DB_WRITE_QUEUE.players;
+  return {version:_dbVersions.players,pending:!!(pending&&!pending._failed)};
+}
+function _protectPlayerReadResponse(response){
+  var snapshot=response&&response.__npPlayerRead;
+  if(!snapshot)return response;
+  var current=_playerReadSnapshot();
+  if(!snapshot.pending&&!current.pending&&snapshot.version===current.version)return response;
+  // A read overlapping a write cannot replace its optimistic data or confirmed revision.
+  if(snapshot.direct){delete response.value;delete response.version;response.skipped=true;}
+  if(response.data)delete response.data.players;
+  if(response.versions)delete response.versions.players;
+  return response;
+}
 async function _authCall(payload, opts){
   var sessionGeneration = _dbSessionGeneration;
+  var playerRead=payload.action==='session_bundle'?_playerReadSnapshot():null;
   var response = await _jsonPost('/.netlify/functions/auth', payload, opts);
   _assertDbSessionGeneration(sessionGeneration, payload && payload.action === 'logout');
+  if(playerRead){Object.defineProperty(response,'__npPlayerRead',{value:playerRead});_protectPlayerReadResponse(response);}
   return response;
 }
 async function _dbCall(payload, opts){
   var sessionGeneration = _dbSessionGeneration;
+  var playerRead=payload.action==='get_all'||(payload.action==='get'&&payload.key==='players')?_playerReadSnapshot():null;
+  if(playerRead)playerRead.direct=payload.action==='get';
   var resp = await _jsonPost('/.netlify/functions/db', payload, opts);
   _assertDbSessionGeneration(sessionGeneration);
+  if(playerRead){Object.defineProperty(resp,'__npPlayerRead',{value:playerRead});_protectPlayerReadResponse(resp);}
   if(resp && resp.ok !== false && resp.status < 400){
     if(payload.action === 'get' && Object.prototype.hasOwnProperty.call(resp, 'version')){
-      _dbVersions[payload.key] = resp.version;
+      var readVersion={};readVersion[payload.key]=resp.version;_rememberDbVersions(readVersion);
       _dbCache[payload.key] = resp.value == null ? null : _normalizeDbValueForKey(payload.key, resp.value);
     }
-    if(resp.versions) _rememberDbVersions(resp.versions);
+    if(resp.versions){
+      var readVersions=Object.assign({},resp.versions);
+      // get_all applies the player snapshot and its revision together during hydration.
+      if(payload.action==='get_all')delete readVersions.players;
+      _rememberDbVersions(readVersions);
+    }
+    if(playerRead)playerRead.version=_dbVersions.players;
   }
   return resp;
 }
@@ -683,7 +709,7 @@ function _normalizePlayerRecord(player, idx){
   out.id = String(out.id || _slugDataId('p_', out.name || idx, idx));
   out.name = String(out.name || ('Joueur ' + (idx+1))).trim().slice(0, 80);
   out.classe = String(out.classe || out.class || '').trim();
-  out.level = Math.max(1, Math.floor(_safeFiniteNumber(out.level, 1)));
+  out = NPProgression.normalizePlayer(out, getAllSD()[out.classe]);
   out.xpMax = Math.max(1, Math.floor(_safeFiniteNumber(out.xpMax, 30)));
   out.xp = Math.max(0, Math.floor(_safeFiniteNumber(out.xp, 0)));
   out.pvMax = Math.max(1, Math.floor(_safeFiniteNumber(out.pvMax, _safeFiniteNumber(out.pvCur, 30))));
@@ -692,9 +718,6 @@ function _normalizePlayerRecord(player, idx){
   out.epCur = Math.max(0, Math.floor(_safeFiniteNumber(out.epCur, out.epMax)));
   out.emMax = Math.max(0, Math.floor(_safeFiniteNumber(out.emMax, _safeFiniteNumber(out.emCur, 20))));
   out.emCur = Math.max(0, Math.floor(_safeFiniteNumber(out.emCur, out.emMax)));
-  out.sLevel = Math.max(1, Math.floor(_safeFiniteNumber(out.sLevel, 1)));
-  out.sXpMax = Math.max(1, Math.floor(_safeFiniteNumber(out.sXpMax, 10)));
-  out.sXp = Math.max(0, Math.floor(_safeFiniteNumber(out.sXp, 0)));
   out.avatar = _normalizeImageDataUrl(out.avatar);
   out.arme = String(out.arme || '').trim();
   out.branch = String(out.branch || 'Aucune').trim();
@@ -838,10 +861,12 @@ function _hydrateBundleData(bundle, sessionGeneration){
   if(sessionGeneration !== undefined) _assertDbSessionGeneration(sessionGeneration);
   try{
     if(!bundle) return bundle;
+    _protectPlayerReadResponse(bundle);
     if(bundle.versions) _rememberDbVersions(bundle.versions);
     var data = bundle.data || bundle;
     if(!data || typeof data !== 'object') return bundle;
     data = _npClone(data);
+    if(data.serments_custom && typeof data.serments_custom === 'object') _dbCache.serments_custom = data.serments_custom;
     Object.keys(data).forEach(function(key){ data[key] = _normalizeDbValueForKey(key, data[key]); });
     ['players','accounts','beasts','events','serments_custom','lieux','event_themes','np_syslog','np_syslog_archive'].forEach(function(k){
       if(Object.prototype.hasOwnProperty.call(data, k)) _dbCache[k] = data[k];
@@ -1724,7 +1749,9 @@ function closeModal(id){
     var secretField = ge('password-recovery-secret');
     if(secretField) secretField.value = '';
   }
-var el=ge(id);if(el){el.classList.remove("open");try{el.style.zIndex='';var md=el.querySelector('.modal');if(md) md.style.zIndex='';}catch(_e){}}try{ _reconcileScrollLocks(); }catch(_e){}}
+var el=ge(id);if(el){el.classList.remove("open");try{el.style.zIndex='';var md=el.querySelector('.modal');if(md) md.style.zIndex='';}catch(_e){}}try{ _reconcileScrollLocks(); }catch(_e){}
+  if(id==='m-avatar-crop') _restoreAvatarModalFocus();
+}
 function _isElementActuallyOpen(el){
   if(!el) return false;
   try{
@@ -2023,7 +2050,7 @@ function updateHomeCounters(){
     var gemmesStock=(players||[]).reduce(function(acc,p){
       return acc + (p.inventory||[])
         .filter(function(i){ return i && i.category==="Gemme"; })
-        .reduce(function(s,i){ return s + (Number(i.qty)||1); },0);
+        .reduce(function(s,i){ return s + Math.max(0,Number(i.qty)||0); },0);
     },0);
     var gemmesFusionnees=(players||[]).reduce(function(acc,p){
       return acc + (p.history||[]).filter(function(h){ return h && h.type==="gemme"; }).length;
@@ -2618,13 +2645,60 @@ function _bindCropEvents(){
     e.preventDefault();
   };
 }
+var _avatarModalFocusReturn=null;
+function _avatarModalFocusable(modal){
+  return Array.prototype.filter.call(modal.querySelectorAll('button,a[href],input:not([type="hidden"]),select,textarea,[tabindex]'),function(el){
+    return !el.disabled&&el.tabIndex>=0&&el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden';
+  });
+}
+function _focusAvatarModal(modal){
+  var targets=_avatarModalFocusable(modal);
+  var target=targets[0]||modal.querySelector('.modal')||modal;
+  if(!targets.length) target.setAttribute('tabindex','-1');
+  target.focus({preventScroll:true});
+}
+function _restoreAvatarModalFocus(){
+  var saved=_avatarModalFocusReturn;
+  _avatarModalFocusReturn=null;
+  if(!saved||saved.generation!==_dbSessionGeneration||!saved.element.isConnected||!saved.element.getClientRects().length) return;
+  saved.element.focus({preventScroll:true});
+}
+document.addEventListener('focusin',function(e){
+  var modal=ge('m-avatar-crop');
+  if(modal&&modal.classList.contains('open')&&!modal.contains(e.target)) _focusAvatarModal(modal);
+},true);
+document.addEventListener('keydown',function(e){
+  var modal=ge('m-avatar-crop');
+  if(!modal||!modal.classList.contains('open')) return;
+  if(e.key==='Escape'){
+    e.preventDefault();e.stopImmediatePropagation();closeModal('m-avatar-crop');return;
+  }
+  if(!modal.contains(e.target)){
+    e.preventDefault();e.stopImmediatePropagation();_focusAvatarModal(modal);return;
+  }
+  if(e.key!=='Tab') return;
+  var targets=_avatarModalFocusable(modal);
+  var first=targets[0],last=targets[targets.length-1];
+  if(!first){e.preventDefault();_focusAvatarModal(modal);return;}
+  if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+  else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+},true);
 function _openCropModal(title){
+  var modal=ge('m-avatar-crop');
+  if(modal&&!modal.classList.contains('open')) _avatarModalFocusReturn={element:document.activeElement,generation:_dbSessionGeneration};
   _resetCropState();
   if(ge("m-avatar-crop") && ge("m-avatar-crop").querySelector(".mtit")) ge("m-avatar-crop").querySelector(".mtit").textContent=title||"Recadrer l'avatar";
   openModal("m-avatar-crop");
   _initCropCanvas();
   _bindCropEvents();
   _renderCropRecentImages();
+  if(modal&&modal.classList.contains('open')){
+    var dialog=modal.querySelector('.modal')||modal;
+    var heading=modal.querySelector('.mtit');
+    dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');
+    if(heading){heading.id='np-avatar-modal-title';dialog.setAttribute('aria-labelledby',heading.id);}
+    _focusAvatarModal(modal);
+  }
 }
 
 function openBeastImgCrop(bid){
@@ -3020,140 +3094,77 @@ function renderProfil(){
   if(!CU){ el.innerHTML=''; return; }
   var account=getAccountByPseudo(CU.pseudo||CU.name);
   var roleCols={admin:"var(--red)",mj:"var(--gold)",designer:"var(--purple)",joueur:"var(--glacier)"};
-  var roleLabels={admin:"Admin",mj:"MJ",designer:"Designer",joueur:"Joueur"};
+  var roleLabels={admin:"Administrateur",mj:"Maître du jeu",designer:"Designer",joueur:"Joueur"};
   var role=roleKey(CU);
   var col=roleCols[role]||"var(--glacier)";
-
-  var isCollectionTab = (_settingsTab === "collection");
-  var h='<div class="'+(isCollectionTab?'profile-collection-shell':'np-account-shell')+'" style="max-width:'+(isCollectionTab?'1320px':'1120px')+';">';
-  h+='<style id="np-account-layout-polish">'
-      +'.np-account-shell{width:min(100%,1120px);}'
-      +'.np-account-shell .settings-tabs{margin-bottom:18px;}'
-      +'.np-account-top{display:grid;grid-template-columns:minmax(300px,1fr) minmax(320px,520px);gap:16px;align-items:stretch;margin-bottom:16px;}'
-      +'.np-account-top-solo{grid-template-columns:1fr;}'
-      +'.np-account-identity{display:flex;align-items:center;gap:18px;min-width:0;padding:8px 0;}'
-      +'.np-account-avatar{width:96px;height:96px;background:var(--bg4);border:1px solid var(--border2);flex-shrink:0;overflow:hidden;position:relative;}'
-      +'.np-account-name{font-family:var(--fd);font-size:24px;letter-spacing:2px;margin-bottom:10px;line-height:1.05;}'
-      +'.np-account-hint{font-size:12px;color:var(--dim);margin-top:8px;cursor:pointer;line-height:1.4;}'
-      +'.np-account-export{min-height:112px;display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 !important;}'
-      +'.np-account-export-title{font-family:var(--fd);font-size:13px;letter-spacing:1.8px;text-transform:uppercase;margin-bottom:5px;}'
-      +'.np-account-card{margin-top:0 !important;}'
-      +'.np-account-password-card{padding:20px !important;}'
-      +'.np-account-password-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px;}'
-      +'.np-account-password-grid .frow{margin:0 !important;}'
-      +'.np-account-password-grid input{height:46px;}'
-      +'.np-account-password-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:14px;}'
-      +'.np-account-password-footer .errmsg{margin:0;flex:1;min-height:18px;}'
-      +'.np-account-actions-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;align-items:stretch;}'
-      +'.np-account-session-card,.np-account-danger-card{margin:0 !important;}'
-      +'.np-account-session-row{display:flex;align-items:center;justify-content:space-between;gap:18px;}'
-      +'.np-account-danger-card{border-color:rgba(201,74,74,.25) !important;background:rgba(201,74,74,.03) !important;}'
-      +'.np-account-danger-title{font-family:var(--fd);font-size:9px;letter-spacing:3px;color:var(--red);margin-bottom:8px;text-transform:uppercase;}'
-      +'.np-account-danger-sub{font-size:12px;color:var(--dim);line-height:1.45;margin-bottom:10px;}'
-      +'@media(max-width:980px){.np-account-top,.np-account-actions-grid{grid-template-columns:1fr;}.np-account-password-grid{grid-template-columns:1fr;}.np-account-export{min-height:auto;}.np-account-avatar{width:78px;height:78px;}.np-account-name{font-size:22px;}}'
-      +'@media(max-width:560px){.np-account-identity{align-items:flex-start;}.np-account-export,.np-account-session-row,.np-account-password-footer{flex-direction:column;align-items:stretch;}.np-account-export .btn,.np-account-password-footer .btn{width:100%;}.np-account-avatar{width:68px;height:68px;}}'
-      +'</style>';
-  h+='<div class="settings-tabs">';
-  h+='<button type="button" class="settings-tab'+(!isCollectionTab?' active':'')+'" onclick="switchSettingsTab(\'compte\')">Compte</button>';
-  h+='<button type="button" class="settings-tab'+(isCollectionTab?' active':'')+'" onclick="switchSettingsTab(\'collection\')">Collection</button>';
-  h+='</div>';
-
+  var isCollectionTab=(_settingsTab==="collection");
   var hasPerso=!!CU.pid;
   var p2=hasPerso?gpid(CU.pid):null;
+  var name=String((account&&account.pseudo)||CU.pseudo||CU.name||'Voyageur');
+  var initial=esc(name.charAt(0).toUpperCase()||'?');
   var avInner=p2&&p2.avatar
-    ?'<img src="'+_imageAttr(p2.avatar)+'" style="width:100%;height:100%;object-fit:cover;">'
-    :'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:28px;color:var(--dim);">'+(CU.name[0]||"?").toUpperCase()+'</div>';
-  if(!isCollectionTab) h+='<div class="np-account-top'+((hasPerso&&p2)?'':' np-account-top-solo')+'">';
-  h+='<div class="np-account-identity">';
+    ?'<img src="'+_imageAttr(p2.avatar)+'" alt="" width="88" height="100">'
+    :'<span class="np-account-initial" aria-hidden="true">'+initial+'</span>';
+
+  var h='<div class="np-account-view '+(isCollectionTab?'profile-collection-shell':'np-account-shell')+'">';
+  h+='<header class="np-account-heading"><p class="np-account-eyebrow">Espace personnel <span aria-hidden="true">/</span> '+(isCollectionTab?'Collection':'Compte')+'</p>';
+  h+='<h1>'+(isCollectionTab?'Les couleurs du voyage.':'Un espace à toi.')+'</h1>';
+  h+='<p>'+(isCollectionTab?'Retrouve tes thèmes et choisis l’atmosphère qui accompagne tes récits.':'Ton identité, ton accès au compagnon et les réglages de ta session.')+'</p></header>';
+  h+='<nav class="settings-tabs np-account-tabs" aria-label="Rubriques de ton espace">';
+  h+='<button type="button" class="settings-tab'+(!isCollectionTab?' active':'')+'" aria-pressed="'+(!isCollectionTab)+'" onclick="switchSettingsTab(\'compte\')">Mon compte</button>';
+  h+='<button type="button" class="settings-tab'+(isCollectionTab?' active':'')+'" aria-pressed="'+isCollectionTab+'" onclick="switchSettingsTab(\'collection\')">Ma collection</button></nav>';
+
+  h+='<div class="np-account-top'+((!isCollectionTab&&hasPerso&&p2)?'':' np-account-top-solo')+'">';
+  h+='<section class="np-account-identity" aria-label="Identité du compte">';
   if(hasPerso){
-    h+='<div class="np-account-avatar" onclick="openAvatarCrop()" title="Recadrer l\'avatar" style="cursor:pointer;transition:border-color .2s;" onmouseover="this.querySelector(\'.av-overlay\').style.opacity=1" onmouseout="this.querySelector(\'.av-overlay\').style.opacity=0">'
-      +avInner
-      +'<div class="av-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;font-size:20px;">✎</div>'
-      +'</div>';
-  } else {
-    h+='<div class="np-account-avatar" style="display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:28px;color:var(--dim);">'+(CU.name[0]||"?").toUpperCase()+'</div>';
+    h+='<button type="button" class="np-account-avatar" onclick="openAvatarCrop()" aria-label="Importer ou recadrer l’avatar" title="Importer ou recadrer l’avatar">'+avInner+'<span class="av-overlay" aria-hidden="true">✎</span></button>';
+  }else{
+    h+='<div class="np-account-avatar np-account-avatar-static">'+avInner+'</div>';
   }
-  h+='<div>';
-  h+='<div class="np-account-name">'+esc(CU.name)+'</div>';
-  h+='<span style="font-family:var(--fd);font-size:10px;letter-spacing:2px;padding:3px 10px;border:1px solid '+col+';color:'+col+';">'+(roleLabels[role]||role)+'</span>';
-  if(hasPerso) h+='<div class="np-account-hint" onclick="openAvatarCrop()">Cliquer sur l\'avatar pour l\'importer ou le recadrer</div>';
-  h+='</div></div>';
+  h+='<div class="np-account-identity-copy"><p class="np-account-eyebrow">Ton compte</p><h2 class="np-account-name">'+esc(name)+'</h2>';
+  h+='<span class="np-account-role" style="--account-role-color:'+col+';">'+esc(roleLabels[role]||role)+'</span>';
+  if(p2) h+='<p class="np-account-character">'+(role==='joueur'?'Personnage lié':'Fiche consultée')+' <span aria-hidden="true">·</span> <strong>'+esc(p2.name||'Personnage')+'</strong></p>';
+  else if(role==='joueur') h+='<p class="np-account-character">'+(hasPerso?'Ta fiche est indisponible pour le moment.':'Ton compte attend sa liaison à un personnage par un administrateur.')+'</p>';
+  if(hasPerso) h+='<button type="button" class="np-account-text-action" onclick="openAvatarCrop()">Modifier l’avatar <span aria-hidden="true">↗</span></button>';
+  h+='</div></section>';
+
+  if(!isCollectionTab&&hasPerso&&p2){
+    h+='<section class="np-account-export" aria-labelledby="np-account-export-title"><div><p class="np-account-eyebrow">Une trace à emporter</p><h2 id="np-account-export-title">Ta fiche, avec toi.</h2><p>Télécharge la fiche complète de ton personnage au format PDF.</p></div>';
+    h+='<button type="button" class="btn np-account-secondary" onclick="exportFichePDF()"><span>Télécharger le PDF</span><span aria-hidden="true">↓</span></button></section>';
+  }
+  h+='</div>';
 
   if(!isCollectionTab){
-  // Export PDF — uniquement si personnage lié
-  if(hasPerso&&p2){
-    h+='<div class="card np-account-export">';
-    h+='<div>';
-    h+='<div class="np-account-export-title">Exporter mon personnage</div>';
-    h+='<div style="font-size:12px;color:var(--dim);">Télécharge la fiche complète en PDF</div>';
-    h+='</div>';
-    h+='<button class="btn btn-sm" style="border-color:var(--glacier-dim);color:var(--glacier);flex-shrink:0;" onclick="exportFichePDF()"><span>↓ PDF</span></button>';
-    h+='</div>';
+    h+='<div class="np-account-settings-grid"><section class="np-account-panel np-account-password-card" aria-labelledby="np-account-password-title">';
+    h+='<div class="np-account-section-head"><span class="np-account-section-number" aria-hidden="true">01</span><div><p class="np-account-eyebrow">Mot de passe</p><h2 id="np-account-password-title">Sécuriser l’accès.</h2></div></div>';
+    h+='<p class="np-account-description">Pour modifier ton mot de passe, confirme d’abord celui que tu utilises actuellement.</p>';
+    h+='<div class="np-account-password-grid">';
+    h+='<div class="frow"><label class="flbl" for="mp-old">Mot de passe actuel</label><input type="password" id="mp-old" autocomplete="current-password" placeholder="Ton mot de passe actuel"></div>';
+    h+='<div class="frow"><label class="flbl" for="mp-new">Nouveau mot de passe</label><input type="password" id="mp-new" autocomplete="new-password" placeholder="Ton nouveau mot de passe"></div>';
+    h+='<div class="frow"><label class="flbl" for="mp-new2">Confirmer le nouveau mot de passe</label><input type="password" id="mp-new2" autocomplete="new-password" placeholder="Une seconde fois" onkeydown="if(event.key===\'Enter\')saveMyPass()"></div></div>';
+    h+='<div class="np-account-password-footer"><p class="errmsg" id="mp-err" role="status"></p><button type="button" class="btn np-account-primary" onclick="saveMyPass()"><span>Enregistrer le mot de passe</span><span aria-hidden="true">↗</span></button></div></section>';
+
+    var hasSession=false;
+    try{hasSession=!!localStorage.getItem("np_session_flag");}catch(e){}
+    h+='<section class="np-account-panel np-account-session-card" aria-labelledby="np-account-session-title"><div class="np-account-section-head"><span class="np-account-section-number" aria-hidden="true">02</span><div><p class="np-account-eyebrow">Session</p><h2 id="np-account-session-title">Revenir simplement.</h2></div></div>';
+    h+='<div class="np-account-session-row"><div><h3 id="np-session-label">Rester connecté</h3><p>Se souvenir de moi pendant 30 jours sur ce navigateur.</p></div><label class="toggle-sw" id="tog-session"><input type="checkbox" aria-labelledby="np-session-label" '+(hasSession?'checked':'')+' onchange="toggleSession(this)"><div class="toggle-track"></div><div class="toggle-knob"></div></label></div>';
+    h+='<div class="np-account-session-footer"><p>Tu peux fermer ta session à tout moment.</p><button type="button" class="btn np-account-secondary" onclick="logout()"><span>Se déconnecter</span><span aria-hidden="true">↗</span></button></div></section></div>';
+
+    h+='<section class="np-account-danger-card" aria-labelledby="np-account-danger-title"><div class="np-account-danger-intro"><p class="np-account-eyebrow">Suppression du compte</p><h2 id="np-account-danger-title">Une décision définitive.</h2>';
+    if(isAdminRole(CU)){
+      h+='<p>Le compte administrateur ne peut pas être supprimé.</p></div>';
+    }else{
+      h+='<p>La suppression de ton compte est irréversible. Ton personnage lié et tout ton historique seront définitivement perdus.</p></div>';
+      h+='<button type="button" class="btn np-account-danger-action" id="del-account-open" onclick="toggleDeleteAccount()"><span>Supprimer mon compte</span></button>';
+      h+='<div id="del-account-form" class="np-account-delete-form" style="display:none;"><label class="flbl" for="del-account-pass">Ton mot de passe pour confirmer</label><input type="password" id="del-account-pass" autocomplete="current-password" placeholder="Mot de passe" onkeydown="if(event.key===\'Enter\')deleteMyAccount()"><p class="errmsg" id="del-account-err" role="status"></p><button type="button" class="btn np-account-danger-confirm" onclick="deleteMyAccount()"><span>Confirmer la suppression définitive</span></button></div>';
+    }
+    h+='</section>';
+  }else{
+    h+='<section class="np-account-collection" aria-labelledby="np-account-collection-title"><div class="np-account-collection-heading"><div><p class="np-account-eyebrow">Ta galerie</p><h2 id="np-account-collection-title">Choisis ton atmosphère.</h2></div><p>Équipe un thème possédé ou retrouve les thèmes à débloquer. Le thème actif est indiqué dans la collection.</p></div><div id="appearance-section"></div></section>';
   }
-  h+='</div>';
-
-  // Modifier mot de passe
-  h+='<div class="card np-account-card np-account-password-card">';
-  h+='<div class="card-title">Modifier mon mot de passe</div>';
-  h+='<div class="np-account-password-grid">';
-  h+='<div class="frow"><label class="flbl">Mot de passe actuel</label><input type="password" id="mp-old" placeholder="••••••••"></div>';
-  h+='<div class="frow"><label class="flbl">Nouveau mot de passe</label><input type="password" id="mp-new" placeholder="••••••••"></div>';
-  h+='<div class="frow"><label class="flbl">Confirmer</label><input type="password" id="mp-new2" placeholder="••••••••" onkeydown="if(event.key===\'Enter\')saveMyPass()"></div>';
-  h+='</div>';
-  h+='<div class="np-account-password-footer">';
-  h+='<p class="errmsg" id="mp-err"></p>';
-  h+='<button class="btn btn-sm btn-grn" onclick="saveMyPass()"><span>Enregistrer</span></button>';
-  h+='</div>';
-  h+='</div>';
-
-  h+='<div class="np-account-actions-grid">';
-  // Rester connecté
-  var hasSession=false;
-  try{ hasSession=!!localStorage.getItem("np_session_flag"); }catch(e){}
-  h+='<div class="card np-account-session-card">';
-  h+='<div class="card-title">Session</div>';
-  h+='<div class="np-account-session-row">';
-  h+='<div>';
-  h+='<div style="font-family:var(--fd);font-size:13px;letter-spacing:1px;margin-bottom:3px;">Rester connecté</div>';
-  h+='<div style="font-size:13px;color:var(--dim);">Se souvenir de moi pendant 30 jours</div>';
-  h+='</div>';
-  h+='<label class="toggle-sw" id="tog-session"><input type="checkbox" '+(hasSession?'checked':'')+' onchange="toggleSession(this)"><div class="toggle-track"></div><div class="toggle-knob"></div></label>';
-  h+='</div>';
-  h+='</div>';
-
-  // Zone de danger — suppression de compte (masquée pour l'admin)
-  if(isAdminRole(CU)){
-    h+='<div class="card np-account-danger-card">';
-    h+='<div class="np-account-danger-title" style="color:var(--faint);">Suppression de compte</div>';
-    h+='<div style="font-size:12px;color:var(--faint);font-style:italic;">Le compte administrateur ne peut pas être supprimé.</div>';
-    h+='</div>';
-  } else {
-    h+='<div class="card np-account-danger-card">';
-    h+='<div class="np-account-danger-title">Suppression de compte</div>';
-    h+='<div class="np-account-danger-sub">La suppression de ton compte est <strong style="color:var(--red);">irréversible</strong>. Ton personnage lié et tout ton historique seront définitivement perdus.</div>';
-    h+='<button class="btn btn-sm" id="del-account-open" style="border-color:rgba(201,74,74,.5);color:var(--red);font-size:11px;width:100%;" onclick="toggleDeleteAccount()"><span>Supprimer mon compte</span></button>';
-    h+='<div id="del-account-form" style="display:none;margin-top:12px;">';
-    h+='<div style="font-size:12px;color:var(--dim);margin-bottom:8px;">Entre ton mot de passe pour confirmer :</div>';
-    h+='<input type="password" id="del-account-pass" placeholder="Mot de passe" style="width:100%;margin-bottom:8px;border-color:rgba(201,74,74,.5);" onkeydown="if(event.key===\'Enter\')deleteMyAccount()">';
-    h+='<p class="errmsg" id="del-account-err" style="color:var(--red);margin-bottom:8px;"></p>';
-    h+='<button class="btn btn-full" style="background:var(--red);border-color:var(--red);color:#fff;" onclick="deleteMyAccount()"><span>⚠ Confirmer la suppression définitive</span></button>';
-    h+='</div>';
-    h+='</div>';
-  }
-  h+='</div>';
-  h+='<div style="margin-top:16px;">';
-  h+='<button class="btn btn-full" style="border-color:rgba(201,74,74,0.4);color:rgba(201,74,74,0.75);letter-spacing:3px;" onclick="logout()"><span>Déconnexion</span></button>';
-  h+='</div>';
-  } else {
-    h+='<div class="card" style="margin-bottom:16px;">';
-    h+='<div id="appearance-section"></div>';
-    h+='</div>';
-  }
-
   h+='</div>';
   el.innerHTML=h;
   if(isCollectionTab) renderAppearanceSection();
-
 }
 function saveMyPass(){
   if(!CU){ return; }
@@ -3253,10 +3264,8 @@ function _buildStaffModals(){
     +'<div class="frow"><label class="flbl">EP max</label><input type="number" id="es-epm" min="0"></div>'
     +'<div class="frow"><label class="flbl">EM actuels</label><input type="number" id="es-emc" min="0"></div>'
     +'<div class="frow"><label class="flbl">EM max</label><input type="number" id="es-emm" min="0"></div>'
-    +'<div class="frow"><label class="flbl">Niveau</label><input type="number" id="es-niv" min="1" max="10"></div>'
-    +'<div class="frow"><label class="flbl">XP Perso</label><input type="number" id="es-xp" min="0"></div>'
-    +'<div class="frow"><label class="flbl">Niveau Serment</label><input type="number" id="es-sniv" min="1" max="4"></div>'
-    +'<div class="frow"><label class="flbl">XP Serment</label><input type="number" id="es-sxp" min="0"></div>'
+    +'<div class="frow"><label class="flbl">Niveau</label><input type="number" id="es-niv" min="1"></div>'
+    +'<div class="frow"><label class="flbl">XP</label><input type="number" id="es-xp" min="0"></div>'
   +'</div>'
   +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;">'
     +'<div class="frow"><label class="flbl">Casque</label><input type="text" id="es-hel" placeholder="—"></div>'
@@ -3473,7 +3482,7 @@ function _buildStaffModals(){
     +'<div class="frow"><label class="flbl">Icône</label><input type="text" id="mserm-icon" placeholder="✦"></div>'
     +'<div class="frow"><label class="flbl">Arme liée</label><input type="text" id="mserm-arme" placeholder="Épée du serment"></div>'
     +'<div class="frow"><label class="flbl">Catégorie</label><select id="mserm-cat"><option value="mêlée">Mêlée</option><option value="distance">Distance</option><option value="magie">Magie</option><option value="soutien">Soutien</option></select></div>'
-    +'<div class="frow"><label class="flbl">Niveau du Serment</label><select id="mserm-level"><option value="basic">Basique</option><option value="seasoned">Aguerri</option><option value="emeritus">Émérite</option><option value="singular">Singulier</option><option value="transcended">Transcendé</option><option value="corrupted">Corrompu</option><option value="other">Autre</option></select></div>'
+    +'<div class="frow"><label class="flbl">Rang du serment</label><select id="mserm-level"><option value="basic">Basique</option><option value="seasoned">Aguerri</option><option value="emeritus">Émérite</option><option value="singular">Singulier</option><option value="transcended">Transcendé</option><option value="corrupted">Corrompu</option><option value="other">Autre</option></select></div>'
     +'<div class="frow"><label class="flbl">PV/niv</label><input type="number" id="mserm-pvN" value="3" min="1"></div>'
     +'<div class="frow"><label class="flbl">EP/niv</label><input type="number" id="mserm-epN" value="5" min="1"></div>'
     +'<div class="frow"><label class="flbl">EM/niv</label><input type="number" id="mserm-emN" value="2" min="0"></div>'
@@ -3524,17 +3533,20 @@ function _buildStaffModals(){
   +'<input type="hidden" id="ev-id">'
   +'<div class="frow"><label class="flbl">Titre</label><input type="text" id="ev-nom" placeholder="Nom de l\'événement"></div>'
   +'<div class="frow"><label class="flbl">Type</label>'
-    +'<select id="ev-type"><option value="combat">Combat</option><option value="exploration">Exploration</option><option value="social">Social</option><option value="autre">Autre</option></select>'
+    +'<select id="ev-type"><option value="combat">Combat</option><option value="exploration">Exploration</option><option value="social">Social</option><option value="evenement">Événement majeur</option><option value="autre">Autre</option></select>'
   +'</div>'
-  +'<div class="frow"><label class="flbl">Date</label><input type="datetime-local" id="ev-date"></div>'
+  +'<div class="frow"><label class="flbl" for="ev-date">Date</label><input type="datetime-local" id="ev-date"></div>'
+  +'<div class="frow"><label class="flbl" for="ev-max">Places disponibles</label><input type="number" id="ev-max" min="0" step="1" value="0" aria-describedby="ev-max-help"><small id="ev-max-help" style="color:var(--dim);">0 = sans limite. Les inscriptions existantes sont conservées.</small></div>'
   +'<div class="frow"><label class="flbl">Description</label><textarea id="ev-desc" style="min-height:72px;" placeholder="Description..."></textarea></div>'
   +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">'
     +'<label class="toggle-sw"><input type="checkbox" id="ev-published" onchange="var l=ge(\'ev-published-lbl\');if(l)l.textContent=this.checked?\'Publié — visible par tous les joueurs\':\'Masqué — visible staff uniquement\';"><div class="toggle-track"></div><div class="toggle-knob"></div></label>'
     +'<span id="ev-published-lbl" style="font-family:var(--fd);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);">Publié</span>'
   +'</div>'
+  +'<label id="ev-notify-row" style="display:flex;gap:8px;align-items:center;margin-bottom:14px;"><input type="checkbox" id="ev-notify">Notifier les joueurs à la création, si publié</label>'
+  +'<p id="ev-notify-help" style="font-size:12px;color:var(--dim);"></p>'
   +'<div class="factions">'
     +'<button class="btn btn-sm" onclick="closeModal(\'m-event\')"><span>Annuler</span></button>'
-    +'<button class="btn btn-sm btn-grn" onclick="saveEvent()"><span>Enregistrer</span></button>'
+    +'<button class="btn btn-sm btn-grn" data-event-staff-action onclick="saveEvent()"><span>Enregistrer</span></button>'
   +'</div>'
   +'</div></div>'
 
@@ -3901,8 +3913,9 @@ function renderThemeGrid(containerId){
 
     var featured = (rarity === 'Fondateur' || rarity === 'Rare' || category === 'Événement');
     h += '<article class="theme-card-premium collection-card np-theme-vault-card'+(featured?' is-featured':'')+(isLocked?' th-locked':'')+'"'
+      + ' role="button" tabindex="0" aria-pressed="'+isActive+'" aria-label="'+esc(t.name)+' — '+(isActive?'Thème actif':(isLocked?(isAvail?'Débloquer':'Indisponible'):'Équiper'))+'" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();if(!document.querySelector(\'.moverlay.open\'))this.click();}"'
       + ' data-theme-id="'+esc(t.id)+'" data-theme-rarity="'+esc(rarity)+'" data-theme-category="'+esc(category)+'" data-theme-state="'+esc(state)+'"'
-      + ' style="--card-bg:'+esc(bg1)+';--card-a:'+esc(bg2)+';--card-b:'+esc(bg3)+';" onclick="' + onclick + '">';
+      + ' style="--card-bg:'+esc(bg1)+';--card-a:'+esc(bg2)+';--card-b:'+esc(bg3)+';" onclick="if(document.querySelector(\'.moverlay.open\'))return;event.stopPropagation();' + onclick + '">';
     h += '<div class="theme-topline" data-theme-eyebrow="'+esc(rarity)+'"><span class="theme-card-state">'+(isActive?'Équipé':(isLocked?(isAvail?'À débloquer':'Indisponible'):'Possédé'))+'</span></div>';
     h += '<div class="theme-preview-mini '+esc(t.id)+'" data-preview-theme="'+esc(t.id)+'">';
     h += '<div class="theme-preview-head"></div><div class="theme-preview-cards"><span></span><span></span><span></span></div><div class="theme-preview-bar"></div>';
@@ -4336,7 +4349,7 @@ var _lastAppTabKey="np_last_app_tab";
 var _tabMemorySuspended=false;
 
 function _tabDropIdFor(id){
-  if(id==='accueil'||id==='fiche') return 'dd-aventure';
+  if(id==='accueil'||id==='fiche'||id==='archives') return 'dd-aventure';
   if(id==='evenements'||id==='rpg-prototype') return '';
   var staffTabs=["joueurs","combat-mj","apparitions","bestiaire-admin","serments-admin","database"];
   return staffTabs.indexOf(id)>=0 ? "dd-staff" : "dd-joueurs";
@@ -4345,8 +4358,9 @@ function _tabDropIdFor(id){
 function _canUseTabNow(id){
   id=String(id||"").trim();
   if(!id) return false;
-  var baseTabs=["accueil","synopsis","serments","bestiaire","combat","evenements","reglement"];
-  var authTabs=["fiche","profil"];
+  if(id==='archives'&&(!CU||['admin','mj','joueur'].indexOf(roleKey(CU))<0)) return false;
+  var baseTabs=["accueil","synopsis","serments","bestiaire","combat","evenements","reglement","premiers-pas"];
+  var authTabs=["fiche","profil","archives"];
   var staffTabs=["joueurs","combat-mj","apparitions","bestiaire-admin","serments-admin","database"];
   var mjTabs=["joueurs","combat-mj","apparitions"];
   var adminTabs=["serments-admin","database"];
@@ -4544,25 +4558,7 @@ initStorage(); }
   } else if(isPending){
     switchDropTab("accueil",null,"dd-joueurs");
     renderSynopsis("p-synopsis-c");
-    // Message explicite "compte en attente" — pas un échec de connexion
-    setTimeout(function(){
-      // Retirer l'ancien message si présent
-      var old=ge("pending-banner-msg"); if(old) old.remove();
-      var banner=document.createElement("div");
-      banner.id="pending-banner-msg";
-      banner.style.cssText="padding:20px 24px;background:rgba(201,168,76,0.06);border:0.5px solid rgba(201,168,76,0.3);margin:24px 0 0;border-radius:2px;box-shadow:0 4px 20px rgba(0,0,0,.3);";
-      banner.innerHTML=
-        '<div style="font-family:var(--fd);font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:10px;display:flex;align-items:center;gap:8px;">'
-        +'<span style="opacity:.7;">◎</span> En attente de validation'
-        +'</div>'
-        +'<div style="font-size:14px;color:var(--text);line-height:1.7;">'
-        +'Bienvenue, <strong style="color:var(--glacier);">'+esc(CU.pseudo||CU.name)+'</strong>. '
-        +'Un administrateur doit lier ton compte à un personnage avant que tu puisses accéder à ta fiche.'
-        +'</div>'
-        +'<div style="font-size:12px;color:var(--faint);margin-top:8px;font-style:italic;">Rafraîchis la page une fois la liaison effectuée.</div>';
-      var accueilEl=ge("p-accueil-c");
-      if(accueilEl) accueilEl.insertBefore(banner,accueilEl.firstChild);
-    },400);
+    // Le guide de l'accueil décrit l'attente de liaison depuis la session actuelle.
   } else {
     switchDropTab("accueil",null,"dd-joueurs");
   }
@@ -4573,11 +4569,8 @@ initStorage(); }
   renderAllSerments("p-serments-c");
   renderSynopsis("p-synopsis-c");
   setTimeout(function(){ updateNotifBadge(); }, 500);
-  if(!isStaff&&!isPending){
-    switchDropTab("synopsis",null,"dd-joueurs");
-  }
   _tabMemorySuspended=false;
-  if(rememberedTab && !isPending){
+  if(rememberedTab){
     setTimeout(function(){ _restoreRememberedAppTab(rememberedTab); }, 0);
   }
 }
@@ -5426,7 +5419,7 @@ function historyBack(){
   _updateBackBtn();
 }
 
-var TAB_POPUP_IDS=['synopsis','serments','bestiaire','bestiaire-admin','serments-admin','combat','reglement','profil','fiche','joueurs','combat-mj','apparitions','evenements','carte','database'];
+var TAB_POPUP_IDS=['synopsis','serments','bestiaire','bestiaire-admin','serments-admin','combat','reglement','profil','fiche','joueurs','combat-mj','apparitions','evenements','carte','database','premiers-pas','archives'];
 var _popupReturnTab='accueil';
 var _activePopupTab=null;
 function _isTabPopup(id){ return !!id && TAB_POPUP_IDS.indexOf(id)>=0; }
@@ -5522,9 +5515,10 @@ function switchTab(id, btn, _isBack){
     }
   }
   // Tabs joueur (fiche, profil) nécessitent auth
-  if((id==="fiche"||id==="profil")&&!CU){
+  if((id==="fiche"||id==="profil"||id==="archives"||id==="premiers-pas")&&!CU){
     id="accueil"; btn=null;
   }
+  if(id==='archives'&&CU&&['admin','mj','joueur'].indexOf(roleKey(CU))<0){ id='accueil'; btn=null; }
   // ── FIN GUARDS ───────────────────────────────────────────
 
   // Pousser dans l'historique (sauf si c'est un retour arrière)
@@ -5537,8 +5531,12 @@ function switchTab(id, btn, _isBack){
   _updateBackBtn();
 
   // Mettre à jour l'URL pour le bouton retour du navigateur
-  if(history.pushState){
+  if(history.pushState&&!_isBack){
     history.pushState({tab:id}, "", "#"+id);
+  } else if(_isBack&&history.replaceState&&window.location.hash!=="#"+id){
+    // Une fermeture via l'interface doit aussi actualiser l'adresse.
+    // Un vrai popstate possède déjà l'adresse correcte et reste inchangé.
+    history.replaceState({tab:id}, "", "#"+id);
   }
 
   var prevActiveEl=document.querySelector('.tab-content.active');
@@ -5565,6 +5563,8 @@ function switchTab(id, btn, _isBack){
   if(btn) btn.classList.add("active");
   // Re-render au besoin si le contenu est vide
   if(id==="accueil"){ renderAccueil("p-accueil-c"); }
+  if(id==="premiers-pas"&&typeof renderFirstSteps==='function') renderFirstSteps('p-first-steps-c');
+  if(id==="archives"&&typeof renderAdventureArchives==='function') renderAdventureArchives('p-archives-c');
   if(id==="synopsis"){
     var c=ge("p-synopsis-c");
     if(c&&!c.innerHTML.trim()) renderSynopsis("p-synopsis-c");
@@ -5644,7 +5644,9 @@ window.addEventListener("popstate", function(e){
   if(hash){
     // Attendre que l'app soit chargée
     window.addEventListener("load",function(){
-      if(hash&&ge(hash)) switchTab(hash,null,true);
+      // L'auto-connexion restaure l'onglet après validation de la session.
+      // Ne pas écraser son adresse par l'accueil avant sa résolution.
+      if(CU&&hash&&ge(hash)&&_canUseTabNow(hash)) switchTab(hash,null,true);
     });
   }
 })();
@@ -5659,8 +5661,8 @@ function renderFicheState(title,msg){
   if(ge("p-cls")) ge("p-cls").textContent="";
   if(ge("p-wpn")) ge("p-wpn").textContent="";
   if(ge("p-br")) ge("p-br").innerHTML="";
-  ["pv-v","ep-v","em-v","p-niv","xp-v","p-sniv","sxp-v"].forEach(function(id){ if(ge(id)) ge(id).textContent='—'; });
-  ["pv-b","ep-b","em-b","xp-b","sxp-b"].forEach(function(id){ if(ge(id)) ge(id).style.width='0%'; });
+  ["pv-v","ep-v","em-v","p-niv","xp-v"].forEach(function(id){ if(ge(id)) ge(id).textContent='—'; });
+  ["pv-b","ep-b","em-b","xp-b"].forEach(function(id){ if(ge(id)) ge(id).style.width='0%'; });
   ["p-gems","p-equip","p-inv-c","p-hist","p-journal-fiche-content","p-combat-hist-content","p-statuts-content"].forEach(function(id){ if(ge(id)) ge(id).innerHTML=""; });
   if(ge("p-serm-c")) ge("p-serm-c").innerHTML='<div class="card mt16"><div class="card-title">'+esc(title||'Ma fiche')+'</div><p style="color:var(--dim);line-height:1.8;">'+esc(msg||'La fiche est momentanément indisponible.')+'</p></div>';
 }
@@ -5668,9 +5670,8 @@ async function _reloadOwnPlayerIntoCache(activePid){
   if(!_dbToken) return false;
   var sessionGeneration = _dbSessionGeneration;
   try{
-    var resp=await _loadSessionBundle();
+    await _loadSessionBundle();
     _assertDbSessionGeneration(sessionGeneration);
-    if(resp&&resp.data&&Array.isArray(resp.data.players)) _dbCache.players=resp.data.players;
     return !!gpid(activePid);
   }catch(e){
     console.warn('reload player failed',e&&e.message?e.message:e);
@@ -5682,23 +5683,23 @@ async function _reloadOwnPlayerIntoCache(activePid){
 async function _refreshPrivateCaches(){
   var sessionGeneration = _dbSessionGeneration;
   try{
-    var pub = await _loadPublicBundle();
+    await _loadPublicBundle();
     _assertDbSessionGeneration(sessionGeneration);
-    if(pub && pub.data){
-      Object.keys(pub.data).forEach(function(k){ _dbCache[k] = pub.data[k]; });
-    }
   }catch(e){}
   if(sessionGeneration !== _dbSessionGeneration || window.__logoutBusy || !_dbToken) return _dbCache;
   try{
-    var sess = await _loadSessionBundle();
+    await _loadSessionBundle();
     _assertDbSessionGeneration(sessionGeneration);
-    if(sess && sess.data){
-      Object.keys(sess.data).forEach(function(k){ _dbCache[k] = sess.data[k]; });
-    }
   }catch(e){}
   return _dbCache;
 }
 
+function scrollFicheSection(id){
+  var section=ge(id),fiche=ge('fiche');
+  if(!section||!fiche||!fiche.classList.contains('active')||!fiche.contains(section)) return;
+  section.focus({preventScroll:true});
+  section.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+}
 function renderView(){
   try{
     _restorePrivateShell("fiche");
@@ -5720,11 +5721,11 @@ function renderView(){
     if(!ge("p-av")||!ge("p-nom")) return;
     updateHdrProfile();
     var av=ge("p-av");
+    var avContent='<span class="np-sheet-avatar-frame" role="img" aria-label="Portrait de '+escAttr(p.name)+'"><span class="savph" aria-hidden="true">'+esc((p.name||'?')[0])+'</span>'+(p.avatar?'<img src="'+_imageAttr(p.avatar)+'" class="sav" alt="" onerror="this.style.display=\'none\'">':'')+'</span>';
     if(can("manage_stats")){
-      var avContent=p.avatar?'<img src="'+_imageAttr(p.avatar)+'" class="sav" onerror="this.style.display=\'none\'">':'<div class="savph">'+esc(p.name[0])+'</div>';
-      av.innerHTML='<div onclick="openAvatarCropFor(\''+jsesc(p.id)+'\')" title="Recadrer l\'avatar" style="position:relative;cursor:pointer;display:inline-block;" onmouseover="this.querySelector(\'.av-overlay\').style.opacity=1" onmouseout="this.querySelector(\'.av-overlay\').style.opacity=0">'+avContent+'<div class="av-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;font-size:24px;color:#fff;border-radius:inherit;">✎</div></div>';
+      av.innerHTML='<button type="button" class="np-sheet-avatar-edit" onclick="openAvatarCropFor(\''+jsesc(p.id)+'\')" aria-label="Modifier le portrait de '+escAttr(p.name)+'" title="Recadrer l\'avatar">'+avContent+'<span class="av-overlay" aria-hidden="true">✎</span></button>';
     }else{
-      av.innerHTML=p.avatar?'<img src="'+_imageAttr(p.avatar)+'" class="sav" onerror="this.style.display=\'none\'">':'<div class="savph">'+esc(p.name[0])+'</div>';
+      av.innerHTML=avContent;
     }
     var sermBundle=getPlayerSermentBundle(p);
     if(ge("p-nom")) ge("p-nom").textContent=p.name;
@@ -5764,10 +5765,7 @@ function renderView(){
     ge("p-niv").textContent="Niveau "+p.level;
     ge("xp-v").textContent=p.xp+" / "+p.xpMax+" XP";
     ge("xp-b").style.width=pct(p.xp,p.xpMax);
-    ge("p-sniv").textContent="Niveau "+p.sLevel;
-    ge("sxp-v").textContent=p.sXp+" / "+p.sXpMax+" XP";
-    ge("sxp-b").style.width=pct(p.sXp,p.sXpMax);
-    var gems=(p.inventory||[]).filter(function(i){return i.category==="Gemme";});
+    var gems=(p.inventory||[]).filter(function(i){return i.category==="Gemme"&&i.qty>0;});
     var gd=ge("p-gems");
     if(!gems.length){ gd.innerHTML='<span style="color:var(--faint);font-style:italic;font-size:14px;">Aucune gemme.</span>'; }
     else {
@@ -5775,6 +5773,9 @@ function renderView(){
       var ib=gems.filter(function(i){return i.name.indexOf("Incarnate")>-1;}).reduce(function(a,i){return a+i.qty;},0);
       var eb=gems.filter(function(i){return i.name.indexOf("carlate")>-1;}).reduce(function(a,i){return a+i.qty;},0);
       gd.innerHTML=(wb>0?'<span class="tag tgl">☾ Blanche ×'+wb+'</span>':'')+(ib>0?'<span class="tag tpur">✦ Incarnate ×'+ib+'</span>':'')+(eb>0?'<span class="tag tred">✦ Écarlate ×'+eb+'</span>':'');
+      gems.filter(function(i){return !/Blanche|Incarnate|carlate/.test(i.name);}).forEach(function(i){
+        var gem=document.createElement('span');gem.className='tag';gem.textContent=i.name+' ×'+i.qty;gd.appendChild(gem);
+      });
     }
     renderEq(p); renderInv(p); renderSerm(p); renderJournalFiche(p); renderCombatHistFiche(p); renderStatutsFiche(p);
   }catch(err){
@@ -5840,9 +5841,10 @@ function renderCombatHistFiche(p){
   var h='<div style="display:flex;flex-direction:column;gap:8px;">';
   combatEntries.forEach(function(entry){
     // Extraire rounds et stats depuis le texte
-    var roundMatch=entry.text.match(/(\d+) round/);
-    var pvMatch=entry.text.match(/PV : (\d+)\/(\d+)/);
-    var epMatch=entry.text.match(/EP : (\d+)\/(\d+)/);
+    var combatText=String(entry.text||'Combat sans titre');
+    var roundMatch=combatText.match(/(\d+) round/);
+    var pvMatch=combatText.match(/PV : (\d+)\/(\d+)/);
+    var epMatch=combatText.match(/EP : (\d+)\/(\d+)/);
     var rounds=roundMatch?roundMatch[1]:"?";
     var pvCur=pvMatch?parseInt(pvMatch[1]):null;
     var pvMax=pvMatch?parseInt(pvMatch[2]):null;
@@ -5852,7 +5854,7 @@ function renderCombatHistFiche(p){
     var epPct=epMax?Math.round(epCur/epMax*100):0;
     var pvCol=pvPct>60?"var(--green)":pvPct>30?"var(--gold)":"var(--red)";
     // Nom du combat = texte avant " — "
-    var nomCombat=entry.text.split("—")[0].replace("⚔","").trim();
+    var nomCombat=combatText.split("—")[0].replace("⚔","").trim();
     h+='<div style="background:var(--bg3);border:1px solid var(--border);padding:12px 14px;">';
     h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">';
     h+='<div style="font-family:var(--fd);font-size:12px;letter-spacing:1px;color:var(--text);">⚔ '+esc(nomCombat)+'</div>';
@@ -5942,6 +5944,8 @@ function renderInv(p){
   var filterEl=ge("p-hist-filters");
   if(filterEl&&presentTypes.length>1){
     var activeFilter=filterEl.dataset.active||"all";
+    if(presentTypes.indexOf(activeFilter)===-1) activeFilter="all";
+    filterEl.dataset.active=activeFilter;
     filterEl.innerHTML=presentTypes.map(function(t){
       var td=HIST_TYPES[t];
       var isActive=activeFilter===t;
@@ -5963,6 +5967,7 @@ function renderInv(p){
     }).join(""):'<p style="color:var(--faint);font-style:italic;font-size:13px;">Aucune entrée pour ce filtre.</p>';
   } else {
     var hist=allHist.slice(0,40);
+    if(filterEl){filterEl.innerHTML="";filterEl.dataset.active="all";}
     ge("p-hist").innerHTML=hist.length?hist.map(function(h,i){
       var realIdx=p.history.length-1-i;
       return'<div class="hent '+(h.type||"add")+'" style="position:relative;'+(canDelHist?'padding-right:28px;':'')+'">'
@@ -6164,8 +6169,8 @@ function renderAllSerments(tid){
   var html='<div class="serm-shell">';
   html+='<section class="serm-rarity-guide">';
   html+='<div class="serm-rarity-copy">';
-  html+='<span>Progression des Serments</span>';
-  html+='<p>Les Serments du départ sont <strong>Basiques</strong>. Leur première évolution forme les <strong>Aguerris</strong>, actuellement gardés hors vitrine le temps d’être retravaillés. Plus loin, certains chemins deviennent <strong>Émérites</strong>, tandis que les voies <strong>Singulières</strong> peuvent tendre vers le <strong>Transcendé</strong> ou le <strong>Corrompu</strong>.</p>';
+  html+='<span>Rangs et progression des serments</span>';
+  html+='<p>Les capacités se renforcent avec le niveau du personnage et son expérience commune. Les Serments du départ sont <strong>Basiques</strong>. Leur première évolution forme les <strong>Aguerris</strong>, actuellement gardés hors vitrine le temps d’être retravaillés. Plus loin, certains chemins deviennent <strong>Émérites</strong>, tandis que les voies <strong>Singulières</strong> peuvent tendre vers le <strong>Transcendé</strong> ou le <strong>Corrompu</strong>.</p>';
   html+='</div>';
   html+='</section>';
   html+='<div class="serm-toolbar">';
@@ -6552,7 +6557,7 @@ function renderSermCard(nom,s){
       if(pals.length){
         var palierGroups=[],palierMap={};
         pals.forEach(function(pal,pi){
-          var key=String(pal.nom||"")+"|"+String(pal.cout||"");
+          var key=JSON.stringify([String(pal.nom||""),String(pal.cout||""),String(pal.desc||"")]);
           if(!palierMap[key]){
             palierMap[key]={nom:pal.nom||"Palier",cout:pal.cout||"",desc:pal.desc||"",items:[]};
             palierGroups.push(palierMap[key]);
@@ -6565,9 +6570,10 @@ function renderSermCard(nom,s){
         h+='<div class="serm-palier-rail">';
         palierGroups.forEach(function(group,gi){
           var levels=group.items.map(function(it){return it.niv;}).join(" / ");
-          h+='<span class="serm-palier-chip" title="'+escAttr((group.desc||group.nom||"").slice(0,180))+'">';
-          h+='<b>'+esc(getPalierStageLabel(group.items[0]&&group.items[0].niv,gi,palierGroups.length))+' · Niv. '+levels+'</b><em>'+esc(group.nom)+'</em>';
+          h+='<span class="serm-palier-chip">';
+          h+='<b>'+esc(getPalierStageLabel(group.items[0]&&group.items[0].niv,gi,palierGroups.length))+' · Niv. '+esc(levels)+'</b><em>'+esc(group.nom)+'</em>';
           if(group.cout) h+='<small>'+esc(group.cout)+'</small>';
+          if(group.desc) h+='<span class="serm-palier-description">'+esc(group.desc)+'</span>';
           h+='</span>';
         });
         h+='</div>';
@@ -7033,16 +7039,18 @@ function openChangeSerm(pid){
 }
 async function saveChangeSerm(){
   if(!CU||CU.type!=="staff"){ return; }
-  var p=gpid(_changeSermPid); if(!p) return;
+  if(!can("manage_stats")){notif("Admin uniquement.","err");return;}
+  var p=_npClone(gpid(_changeSermPid)); if(!p) return;
   var sel=ge("mcs-sel").value; if(!sel){notif("Choisis un Serment.","err");return;}
   var all=getAllSD(); var s=all[sel]; if(!s){notif("Serment introuvable.","err");return;}
   var old=p.classe;
-  p.classe=sel; p.arme=s.arme; p.branch="Aucune"; p.sLevel=1; p.sXp=0; p.sXpMax=10;
+  p.classe=sel; p.arme=s.arme; p.branch="Aucune";
   p.history=p.history||[];
   p.history.push({ts:Date.now(),type:"serment",text:"Serment : "+old+" -> "+sel,by:"Admin "+CU.name});
+  if(!await saveProgressionPlayer(p)) return false;
   sysLog("serment_change","'"+esc(p.name)+"' : Serment "+old+" → "+sel,CU?CU.name:"Staff");
-  if(!await _confirmDbSave(up(p))) return false; closeModal("m-changeserm");
-  if(CU.pid===_changeSermPid) renderView();
+  closeModal("m-changeserm");
+  if(String(getViewPid())===String(p.id)) renderView();
   renderSPList(); notif(p.name+" : Serment changé en "+sel+".","ok");
 }
 
@@ -7078,7 +7086,7 @@ function renderSerm(p){
     var borderCol=isChosen?"var(--glacier)":"var(--border)";
     var bgCol=isChosen?"rgba(126,184,212,0.04)":"var(--bg4)";
 
-    html+='<div style="border:1px solid '+borderCol+';background:'+bgCol+';padding:16px;position:relative;">';
+    html+='<div class="np-sheet-branch'+(isChosen?' is-chosen':'')+'" style="border:1px solid '+borderCol+';background:'+bgCol+';padding:16px;position:relative;">';
 
     // Badge "Ma branche" + boutons admin
     if(isChosen){
@@ -7088,14 +7096,14 @@ function renderSerm(p){
         adminBtns+='<button class="btn btn-sm" onclick="openChangeSerm(\''+jsesc(p.id)+'\')" style="font-size:10px;padding:2px 10px;border-color:var(--glacier-dim);color:var(--glacier-dim);"><span>⇄ Serment</span></button>';
         adminBtns+='<button class="btn btn-sm" onclick="openChangeBranch(\''+jsesc(p.id)+'\')" style="font-size:10px;padding:2px 10px;border-color:var(--purple);color:var(--purple);"><span>⇄ Branche</span></button>';
       }
-      html+='<div style="position:absolute;top:-1px;right:8px;display:flex;align-items:center;gap:6px;">';
+      html+='<div class="np-sheet-branch-tools">';
       if(adminBtns) html+=adminBtns;
-      html+='<div style="font-family:var(--fd);font-size:8px;letter-spacing:2px;text-transform:uppercase;padding:2px 10px;background:var(--glacier);color:var(--bg);border-bottom-left-radius:2px;border-bottom-right-radius:2px;">Ma branche</div>';
+      html+='<span class="np-sheet-branch-badge">Ma branche</span>';
       html+='</div>';
     }
 
     // En-tête branche
-    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:'+(br.desc?'8px':'12px')+'">';
+    html+='<div class="np-sheet-branch-title" style="display:flex;align-items:center;gap:8px;margin-bottom:'+(br.desc?'8px':'12px')+'">';
     html+='<span style="font-family:var(--fd);font-size:14px;letter-spacing:1px;color:'+(isChosen?'var(--glacier)':'var(--text)')+';">'+esc(br.nom)+'</span>';
     html+='<span style="font-family:var(--fd);font-size:8px;letter-spacing:2px;text-transform:uppercase;padding:2px 8px;border:1px solid '+col+';color:'+col+';">'+esc(br.style)+'</span>';
     html+='</div>';
@@ -7109,12 +7117,12 @@ function renderSerm(p){
     if(pals.length){
       var currentPal=null,nextPal=null;
       pals.forEach(function(pal){
-        if((p.sLevel||0)>=pal.niv) currentPal=pal;
+        if((p.level||0)>=pal.niv) currentPal=pal;
         else if(!nextPal) nextPal=pal;
       });
       html+='<div class="serm-mini-progress">';
       pals.forEach(function(pal){
-        var unlocked=p.sLevel>=pal.niv;
+        var unlocked=p.level>=pal.niv;
         var isCurrent=currentPal&&currentPal.niv===pal.niv&&isChosen;
         html+='<div class="serm-mini-step '+(unlocked?'is-unlocked':'is-locked')+(isCurrent?' is-current':'')+'">';
         html+='<span class="serm-mini-dot"></span>';
@@ -8159,6 +8167,7 @@ function renderAccueil(tid){
   h+='<p class="np-logbook-welcome">'+greet+(displayName?', '+esc(displayName):'')+'. '+(isStaff?'Retrouve les récits et les rendez-vous du serveur.':'Ton personnage, tes rendez-vous, la suite de ton histoire.')+'</p></div>';
   h+='<img class="np-logbook-seal" src="./assets/favicon.svg" alt="" width="100" height="100">';
   h+='</header>';
+  if(typeof renderFirstStepsHome==='function') h+=renderFirstStepsHome();
 
   var stats=isStaff?[
     {val:joueurTotal,lbl:"Personnages",note:"Dans le registre"},
@@ -8203,10 +8212,10 @@ function renderAccueil(tid){
       h+='<li><div><h3>'+esc(arc.name||'Combat sans titre')+'</h3><p>'+esc(fdt(arc.savedAt))+' · Round '+esc(String(arc.round==null?'—':arc.round))+'</p></div><span class="np-combat-result" style="--result-color:'+result.col+'">'+esc(result.txt)+'</span></li>';
     });
     h+='</ul>';
-    if(canLead) h+='<button class="btn np-quiet-button" onclick="switchDropTab(\'combat-mj\',null,\'dd-staff\')"><span>Ouvrir la simulation</span><span aria-hidden="true">↗</span></button>';
   } else {
     h+='<div class="np-calm-empty"><h3>Les récits restent à écrire.</h3><p>Les combats archivés apparaîtront ici, avec leur résultat et leur date.</p></div>';
   }
+  if(roleKey(CU)!=='designer') h+='<button class="btn np-quiet-button" onclick="switchDropTab(\'archives\',null,\'dd-aventure\')"><span>Retrouver mes combats</span><span aria-hidden="true">↗</span></button>';
   h+='</section></div>';
 
   h+='<aside class="np-logbook-aside">';
@@ -8440,9 +8449,9 @@ function renderRegles(tid){
   h+='<h4>II.3.b — Changement de Serment</h4>';
   h+='<ul>';
   h+='<li><strong>Voie IRP — Par l\'aventure :</strong> un changement de Serment peut survenir au cours du RP si le parcours narratif du personnage le justifie organiquement. Ce processus doit être cohérent avec la fiction, construit avec le staff, et validé par lui avant d\'être joué.</li>';
-  h+='<li><strong>Voie HRP — Correction administrative :</strong> possible uniquement si le Serment est encore au niveau 1. Dès le niveau 2, seule la voie narrative reste ouverte.</li>';
+  h+='<li><strong>Voie HRP — Correction administrative :</strong> possible uniquement si le personnage est encore au niveau 1. Dès le niveau 2, seule la voie narrative reste ouverte.</li>';
   h+='</ul>';
-  h+='<div class="hlbox">Niveau 1 sans progression → changement HRP possible sur demande au staff. Niveau 2 et au-delà → changement uniquement par la voie RP, avec validation narrative du staff.</div>';
+  h+='<div class="hlbox">Personnage de niveau 1 → changement HRP possible sur demande au staff. Niveau 2 et au-delà → changement uniquement par la voie RP, avec validation narrative du staff. Un changement de serment conserve le niveau et l’expérience du personnage.</div>';
 
   h+='<h4>II.3.c — Cohérence narrative</h4>';
   h+='<p>Un personnage doit agir en cohérence avec son histoire, ses capacités et son niveau. Les incohérences répétées et délibérées — pour gagner un avantage ou éviter des conséquences — sont traitées comme des infractions au règlement.</p>';
@@ -8453,7 +8462,7 @@ function renderRegles(tid){
   h+='<li>Le Serment reconnaît son porteur — ce lien est narrativement immuable et ne peut être ignoré en RP.</li>';
   h+='<li>Nul ne peut s\'approprier le Serment d\'un autre, même temporairement. L\'arme d\'un Serment qui ne vous appartient pas ne répond pas.</li>';
   h+='<li>À la mort d\'un personnage, son arme de Serment disparaît instantanément et sans trace.</li>';
-  h+='<li>Les capacités se débloquent progressivement à mesure que le Serment évolue. Utiliser une capacité non encore débloquée est considéré comme du cheating.</li>';
+  h+='<li>Les capacités du serment se débloquent selon le niveau du personnage. Une seule expérience fait progresser ses statistiques et ses capacités. Utiliser une capacité non encore débloquée est considéré comme du cheating.</li>';
   h+='</ul>';
 
     // Mécanique II.4-II.8 → Système de jeu
@@ -8530,8 +8539,8 @@ function renderRegles(tid){
     {t:"Élève du Serment",d:"Terme désignant les survivants qui portent un Serment. Ils forment une minorité parmi les rescapés de la projection dimensionnelle. Le Dimenséa a fait d\'eux ce qu\'ils sont."},
     {t:"Serment",d:"Lien sacré entre un porteur et son arme liée. Il ne se choisit pas — il reconnaît son porteur. Il se déploie à travers quatre paliers adaptés à son rang à mesure que le porteur s\'en montre digne."},
     {t:"Arme du Serment",d:"Manifestation physique du lien entre le porteur et son Serment. Elle peut être invoquée ou renvoyée à volonté (1 EM). Elle ne peut pas être maniée par quelqu\'un d\'autre. À la mort du porteur, elle disparaît instantanément."},
-    {t:"Palier",d:"Seuil de progression d\'un Serment. Les serments basiques progressent aux niveaux 2, 5, 7 et 10. Les serments aguerris commencent au niveau 10 et progressent ensuite aux niveaux 13, 16 et 20. Chaque palier débloque ou transforme une capacité."},
-    {t:"Gemme de Sang",d:"Fragment cristallin extrait des créatures vaincues. Il en existe trois grades : Blanche (+5 XP), Incarnate (+20 XP) et Écarlate (+50 XP). Fusionnée à l\'arme du Serment, elle fait progresser son porteur."},
+    {t:"Palier",d:"Seuil de progression d\'un Serment. Les paliers des serments basiques suivent les niveaux du personnage 2, 5, 7 et 10 ; ceux des aguerris suivent les niveaux 10, 13, 16 et 20. Le rang du serment est distinct du niveau du personnage. Chaque palier débloque ou transforme une capacité."},
+    {t:"Gemme de Sang",d:"Fragment cristallin extrait des créatures vaincues. Il en existe trois grades : Blanche (+5 XP), Incarnate (+20 XP) et Écarlate (+50 XP). Consommée lors de la fusion, elle apporte de l’expérience au personnage et contribue à débloquer les capacités de son serment."},
     {t:"PV",d:"Points de Vie. Mesure la résistance vitale d\'un personnage. À 0, le personnage est KO (voire mort selon le contexte). Base Niv. 1 : 30 PV."},
     {t:"EP",d:"Énergie Physique. Carburant de toutes les actions physiques (frappes, esquives, déplacements, etc.). À 0, le personnage s\'effondre et est hors combat. Base Niv. 1 : 50 EP."},
     {t:"EM",d:"Énergie Magique. Carburant des capacités de Serment. À 0, les sorts et capacités échouent mais le personnage ne subit aucun effet physique. Base Niv. 1 : 20 EM."},
@@ -8782,22 +8791,22 @@ function renderCombat(tid){
   h+='<div class="rsec">';
   h+='<h3>XI. Les Serments &amp; Progression</h3>';
   h+='<p>Chaque Serment confère une arme liée, des statistiques de progression uniques et des valeurs de dégâts propres. La formule s\'applique à tous : <strong>Damage de base + Niveau du porteur.</strong></p>';
-  h+='<p>Les capacités se débloquent à des seuils précis — des moments où le lien entre l\'arme et son porteur franchit un nouveau palier :</p>';
-  h+='<table class="rtbl"><thead><tr><th>Palier</th><th>Niveau requis</th><th>Ce qui s\'éveille</th></tr></thead><tbody>';
+  h+='<p>Le personnage possède un seul niveau et une seule barre d’expérience. Le même niveau détermine ses statistiques et les capacités de son serment. Les rangs Basique, Aguerri et suivants décrivent le serment, pas une seconde progression. Les paliers basiques suivent le niveau du personnage :</p>';
+  h+='<table class="rtbl"><thead><tr><th>Palier</th><th>Niveau du personnage</th><th>Ce qui s\'éveille</th></tr></thead><tbody>';
   h+='<tr><td><strong>I — Éveil</strong></td><td>Niveau 2</td><td>OUVERTURE — Première capacité. Le Serment s\'ouvre.</td></tr>';
-  h+='<tr><td><strong>II — Densité</strong></td><td>Niveau 5</td><td>APPROFONDISSEMENT — Deuxième capacité. Le lien se densifie.</td></tr>';
-  h+='<tr><td><strong>III — Maîtrise</strong></td><td>Niveau 7</td><td>MAÎTRISE — Troisième capacité. La maîtrise prend forme.</td></tr>';
-  h+='<tr><td><strong>IV — Plénitude</strong></td><td>Niveau 10</td><td>PLÉNITUDE — Capacité ultime. Le Serment atteint sa plénitude.</td></tr>';
+  h+='<tr><td><strong>II — Densité</strong></td><td>Niveau 5</td><td>APPROFONDISSEMENT — La capacité se renforce. Le lien se densifie.</td></tr>';
+  h+='<tr><td><strong>III — Maîtrise</strong></td><td>Niveau 7</td><td>MAÎTRISE — La capacité se perfectionne. La maîtrise prend forme.</td></tr>';
+  h+='<tr><td><strong>IV — Plénitude</strong></td><td>Niveau 10</td><td>PLÉNITUDE — La capacité atteint son dernier palier basique. Le Serment atteint sa plénitude.</td></tr>';
   h+='</tbody></table>';
 
   h+='<h4>Gemmes de Sang</h4>';
-  h+='<p>Les Gemmes de Sang sont des fragments cristallins imprégnés d\'énergie vitale, extraits des créatures vaincues. Fusionnées à l\'arme du Serment, elles font progresser le porteur vers le prochain palier.</p>';
+  h+='<p>Les Gemmes de Sang sont des fragments cristallins imprégnés d\'énergie vitale, extraits des créatures vaincues. Leur fusion consomme les gemmes de l’inventaire et alimente la même expérience que les récompenses de combat. Cette expérience fait progresser le personnage et débloque les paliers de son serment.</p>';
   h+='<table class="rtbl"><thead><tr><th>Gemme</th><th>XP accordé</th><th>Sources</th></tr></thead><tbody>';
   h+='<tr><td><strong>💎 Gemme Blanche</strong></td><td>+5 XP</td><td>Tout type de mob</td></tr>';
   h+='<tr><td><strong>💎 Gemme Incarnate</strong></td><td>+20 XP</td><td>Mobs moyens ou puissants</td></tr>';
   h+='<tr><td><strong>💎 Gemme Écarlate</strong></td><td>+50 XP</td><td>Mobs puissants / Élites uniquement</td></tr>';
   h+='</tbody></table>';
-  h+='<div class="hlbox">La progression est entièrement gérée par le staff. Les drops de gemmes, les fusions et les mises à jour de fiches sont traités côté staff après chaque événement. En cas de question, ouvre un ticket.</div>';
+  h+='<div class="hlbox">La progression est gérée par le staff. Les récompenses de combat et les fusions de gemmes alimentent une seule barre d’XP. Le prochain niveau demande 30 × le niveau actuel en XP. Les paliers aguerris suivent les niveaux 10, 13, 16 et 20 ; accéder à ce rang reste soumis aux règles d’évolution du serment. En cas de question, ouvre un ticket.</div>';
 
   h+='<h4>Quand un autre prend ton Serment</h4>';
   h+='<p><strong>Nul ne peut s\'approprier le Serment d\'un autre.</strong> Celui qui tente de saisir l\'arme d\'un Serment qui ne lui appartient pas ne rencontre pas de résistance ordinaire. Ce n\'est pas un poids mécanique, ni une barrière visible. C\'est le corps entier qui refuse — une impression de lourdeur sourde qui s\'installe dès le premier contact, et qui empire à chaque seconde. L\'arme ne se soulève pas. Elle ne se manie pas. Elle attend, silencieuse, celui qu\'elle a reconnu.</p>';
@@ -9135,7 +9144,7 @@ function renderSPList(){
         +'<div class="player-card-top">'
           +'<div>'
             +'<div class="pname">'+esc(p.name)+(isCurrent?' <span class="tag tgl player-active-tag">Affiché</span>':'')+'</div>'
-            +'<div class="pcls">'+esc(p.classe)+' — Serment niv. '+p.sLevel+(p.createdAt?' <span class="player-date">· '+new Date(p.createdAt).toLocaleDateString("fr-FR")+'</span>':'')+'</div>'
+            +'<div class="pcls">'+esc(p.classe)+' — Niveau '+p.level+(p.createdAt?' <span class="player-date">· '+new Date(p.createdAt).toLocaleDateString("fr-FR")+'</span>':'')+'</div>'
           +'</div>'
           +'<div class="player-mini-badges"><span class="plvl">Niv. '+p.level+'</span><span class="player-role-badge role-'+esc(roleClass)+'">'+esc(roleLabel)+'</span></div>'
         +'</div>'
@@ -9206,34 +9215,33 @@ function renderProgPanel(pid){
     +'<div class="sp"></div>'
     +'<button class="btn btn-sm" onclick="closeModal(\'m-prog\')"><span>Fermer</span></button>'
     +'</div>'
-    // Stats 6 cases
-    +'<div class="g6" style="margin-bottom:16px;">'
+    // Ressources et progression commune
+    +'<div class="g6" style="margin-bottom:16px;grid-template-columns:repeat(5,minmax(0,1fr));">'
     +'<div class="sst"><div class="sstv">'+p.pvCur+'/'+p.pvMax+'</div><div class="sstl">PV</div></div>'
     +'<div class="sst"><div class="sstv">'+p.epCur+'/'+p.epMax+'</div><div class="sstl">EP</div></div>'
     +'<div class="sst"><div class="sstv">'+p.emCur+'/'+p.emMax+'</div><div class="sstl">EM</div></div>'
-    +'<div class="sst"><div class="sstv">'+p.level+'</div><div class="sstl">Niv. Perso</div></div>'
-    +'<div class="sst" style="border-color:var(--glacier-dim);"><div class="sstv" style="color:var(--glacier-bright);">'+p.sLevel+'</div><div class="sstl">Niv. Serment</div></div>'
-    +'<div class="sst" style="border-color:var(--glacier-dim);"><div class="sstv" style="font-size:12px;color:var(--glacier-bright);">'+p.sXp+'/'+p.sXpMax+'</div><div class="sstl">XP Serment</div></div>'
+    +'<div class="sst"><div class="sstv">'+p.level+'</div><div class="sstl">Niveau</div></div>'
+    +'<div class="sst" style="border-color:var(--glacier-dim);"><div class="sstv" style="font-size:12px;color:var(--glacier-bright);">'+p.xp+'/'+p.xpMax+'</div><div class="sstl">XP</div></div>'
     +'</div>'
     // Prog tabs — conditionnels selon permission
     +'<div class="prog-tabs">'
-    +(can("manage_xp")?'<button class="prog-tab active" onclick="switchProgTab(\'xp\')">XP Personnage</button><button class="prog-tab" onclick="switchProgTab(\'serm\')">XP Serment</button>':'')
-    +(can("adjust_levels")?'<button class="prog-tab'+(can("manage_xp")?'':' active')+'" onclick="switchProgTab(\'adj\')">Ajustement</button>':'')
-    +'<button class="prog-tab'+(can("manage_xp")||can("adjust_levels")?'':' active')+'" onclick="switchProgTab(\'inv2\')">Inventaire</button>'
-    +'<button class="prog-tab" onclick="switchProgTab(\'hist2\')">Historique</button>'
+    +(can("manage_xp")?'<button class="prog-tab active" data-prog-tab="xp" onclick="switchProgTab(\'xp\')">Expérience</button>':'')
+    +(can("adjust_levels")?'<button class="prog-tab'+(can("manage_xp")?'':' active')+'" data-prog-tab="adj" onclick="switchProgTab(\'adj\')">Ajustement</button>':'')
+    +'<button class="prog-tab'+(can("manage_xp")||can("adjust_levels")?'':' active')+'" data-prog-tab="inv2" onclick="switchProgTab(\'inv2\')">Inventaire</button>'
+    +'<button class="prog-tab" data-prog-tab="hist2" onclick="switchProgTab(\'hist2\')">Historique</button>'
     +'</div>'
     // Panel XP
     +'<div id="prog-xp" class="prog-panel active">'
     +'<div class="xp-prev"><div class="xp-prev-lbl">XP actuel</div><div class="xp-prev-val" id="xpp-cur">'+p.xp+' / '+p.xpMax+' XP</div><div class="xp-prev-sub">Niveau '+p.level+'</div></div>'
+    +'<p style="color:var(--dim);line-height:1.6;">Une seule expérience fait progresser les statistiques et les capacités du serment.</p>'
+    +'<div class="flbl mt16">Récompense de combat</div>'
     +'<div class="frow"><label class="flbl">Mob vaincu</label><select id="xpp-mob" onchange="updateXPPreview(\''+jsesc(pid)+'\')">'+mobOpts+'</select></div>'
     +'<div><div class="flbl" style="margin-bottom:6px;">Participation du joueur</div><input type="range" class="part-slider" id="xpp-part" min="0" max="100" value="100" oninput="updateXPPreview(\''+jsesc(pid)+'\')"><div class="part-display" id="xpp-pv">100%</div></div>'
     +'<div class="xp-prev" id="xpp-res" style="border-color:var(--glacier-dim);"><div class="xp-prev-lbl">XP à attribuer</div><div class="xp-prev-val" id="xpp-gain">—</div><div class="xp-prev-sub" id="xpp-after">Sélectionne un mob</div></div>'
     +'<button class="btn btn-full btn-grn mt16" onclick="applyXP(\''+jsesc(pid)+'\')"><span>Attribuer l\'XP</span></button>'
     +'<p class="errmsg" id="xpp-err"></p>'
-    +'</div>'
-    // Panel Serment
-    +'<div id="prog-serm" class="prog-panel">'
-    +'<div class="xp-prev"><div class="xp-prev-lbl">XP Serment actuel</div><div class="xp-prev-val" id="sxpp-cur">'+p.sXp+' / '+p.sXpMax+' XP</div><div class="xp-prev-sub">Niveau Serment '+p.sLevel+'</div></div>'
+    // Gemmes : deuxième source de la même expérience.
+    +'<div class="dv"></div>'
     +'<div class="flbl" style="margin-bottom:10px;">Choisir une gemme</div>'
     +'<div class="gem-choice">'
     +'<div class="gem-btn" id="gbtn-b" onclick="selGem(\'b\')"><div style="font-size:20px;margin-bottom:4px;">○</div><div>Gemme Blanche</div><div style="font-family:var(--fm);font-size:14px;color:var(--dim);margin-top:2px;">+5 XP</div></div>'
@@ -9242,13 +9250,13 @@ function renderProgPanel(pid){
     +'</div>'
     +'<div class="flbl" style="margin-bottom:8px;">Quantité</div>'
     +'<div class="gem-qty-row"><button class="gem-qty-btn" onclick="changeGemQty(-1)">−</button><div class="gem-qty-val" id="gem-qty">1</div><button class="gem-qty-btn" onclick="changeGemQty(1)">+</button></div>'
-    +'<div class="xp-prev" style="border-color:var(--glacier-dim);"><div class="xp-prev-lbl">XP Serment à attribuer</div><div class="xp-prev-val" id="sxpp-gain">—</div><div class="xp-prev-sub" id="sxpp-after">Sélectionne une gemme</div></div>'
-    +'<button class="btn btn-full btn-grn mt16" onclick="applySermXP(\''+jsesc(pid)+'\')"><span>Fusionner les gemmes</span></button>'
-    +'<p class="errmsg" id="sxpp-err"></p>'
+    +'<div class="xp-prev" style="border-color:var(--glacier-dim);"><div class="xp-prev-lbl">XP à attribuer</div><div class="xp-prev-val" id="gxp-gain">—</div><div class="xp-prev-sub" id="gxp-after">Sélectionne une gemme</div></div>'
+    +'<button class="btn btn-full btn-grn mt16" onclick="applyGemXP(\''+jsesc(pid)+'\')"><span>Fusionner les gemmes</span></button>'
+    +'<p class="errmsg" id="gxp-err"></p>'
     +'</div>'
     // Panel Ajustement
     +'<div id="prog-adj" class="prog-panel">'
-    +'<p style="font-size:13px;color:var(--dim);font-style:italic;margin-bottom:16px;">Modification directe. Les level-ups/downs sont recalculés automatiquement.</p>'
+    +'<p style="font-size:13px;color:var(--dim);font-style:italic;margin-bottom:16px;">Le niveau détermine les statistiques et les capacités. Un ajout d’XP peut faire gagner des niveaux.</p>'
     +'<div style="font-family:var(--fd);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text);margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:6px;">Personnage</div>'
     +'<div class="g2" style="margin-bottom:10px;">'
     +'<div><div class="flbl" style="margin-bottom:6px;">Niveau</div><div style="display:flex;gap:6px;align-items:center;"><button class="gem-qty-btn" onclick="adjVal(\''+jsesc(pid)+'\',\'level\',-1)">−</button><div id="adj-lvl" style="font-family:var(--fm);font-size:16px;color:var(--glacier);min-width:32px;text-align:center;">'+p.level+'</div><button class="gem-qty-btn" onclick="adjVal(\''+jsesc(pid)+'\',\'level\',1)">+</button></div></div>'
@@ -9259,17 +9267,6 @@ function renderProgPanel(pid){
     +'<button class="btn btn-sm btn-red" onclick="adjVal(\''+jsesc(pid)+'\',\'xp\',-100)"><span>XP −100</span></button>'
     +'<button class="btn btn-sm btn-grn" onclick="adjVal(\''+jsesc(pid)+'\',\'xp\',50)"><span>XP +50</span></button>'
     +'<button class="btn btn-sm btn-grn" onclick="adjVal(\''+jsesc(pid)+'\',\'xp\',100)"><span>XP +100</span></button>'
-    +'</div>'
-    +'<div style="font-family:var(--fd);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--glacier-bright);margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:6px;">Serment</div>'
-    +'<div class="g2" style="margin-bottom:10px;">'
-    +'<div><div class="flbl" style="margin-bottom:6px;">Niveau Serment</div><div style="display:flex;gap:6px;align-items:center;"><button class="gem-qty-btn" onclick="adjVal(\''+jsesc(pid)+'\',\'sLevel\',-1)">−</button><div id="adj-slvl" style="font-family:var(--fm);font-size:16px;color:var(--glacier-bright);min-width:32px;text-align:center;">'+p.sLevel+'</div><button class="gem-qty-btn" onclick="adjVal(\''+jsesc(pid)+'\',\'sLevel\',1)">+</button></div></div>'
-    +'<div><div class="flbl" style="margin-bottom:6px;">XP Serment</div><div style="display:flex;gap:6px;align-items:center;"><button class="gem-qty-btn" onclick="adjVal(\''+jsesc(pid)+'\',\'sXp\',-5)">−5</button><div id="adj-sxp" style="font-family:var(--fm);font-size:13px;color:var(--glacier-bright);min-width:60px;text-align:center;">'+p.sXp+'/'+p.sXpMax+'</div><button class="gem-qty-btn" onclick="adjVal(\''+jsesc(pid)+'\',\'sXp\',5)">+5</button></div></div>'
-    +'</div>'
-    +'<div class="fx mb16" style="gap:6px;">'
-    +'<button class="btn btn-sm btn-red" onclick="adjVal(\''+jsesc(pid)+'\',\'sXp\',-20)"><span>sXP −20</span></button>'
-    +'<button class="btn btn-sm btn-red" onclick="adjVal(\''+jsesc(pid)+'\',\'sXp\',-50)"><span>sXP −50</span></button>'
-    +'<button class="btn btn-sm btn-grn" onclick="adjVal(\''+jsesc(pid)+'\',\'sXp\',20)"><span>sXP +20</span></button>'
-    +'<button class="btn btn-sm btn-grn" onclick="adjVal(\''+jsesc(pid)+'\',\'sXp\',50)"><span>sXP +50</span></button>'
     +'</div>'
     +'<div id="adj-fb" style="font-family:var(--fm);font-size:12px;min-height:18px;font-style:italic;"></div>'
     +'</div>'
@@ -9285,16 +9282,14 @@ function renderProgPanel(pid){
     +'</div>';
 
   _selGem=null;_gemQty=1;
+  switchProgTab(can("manage_xp")?"xp":can("adjust_levels")?"adj":"inv2");
 }
 
 function switchProgTab(tab){
-  document.querySelectorAll(".prog-tab").forEach(function(t){t.classList.remove("active");});
-  document.querySelectorAll(".prog-panel").forEach(function(p){p.classList.remove("active");});
-  var el=ge("prog-"+tab);if(el)el.classList.add("active");
-  var map={xp:0,serm:1,adj:2,inv2:3,hist2:4};
-  var tabs=document.querySelectorAll(".prog-tab");
-  if(tabs[map[tab]])tabs[map[tab]].classList.add("active");
-  var modal=document.querySelector('#m-prog .modal, #m-view .modal');
+  var root=ge("prog-modal-body");if(!root)return;
+  root.querySelectorAll(".prog-tab").forEach(function(t){t.classList.toggle("active",t.dataset.progTab===tab);});
+  root.querySelectorAll(".prog-panel").forEach(function(p){p.classList.toggle("active",p.id==="prog-"+tab);});
+  var modal=document.querySelector('#m-prog .modal');
   if(modal) modal.scrollTop=0;
 }
 
@@ -9307,31 +9302,46 @@ function getSermPalierDefsFor(classe){
   var s=(getAllSD()[classe]||SD[classe]||null);
   return getSermLevelKey(classe,s)==="seasoned"?SERM_PALIERS_SEASONED:SERM_PALIERS;
 }
-function xpReq(l){return l*30;}
-function sxpReq(l){return l*10;}
+function xpReq(l){return NPProgression.xpRequired(l);}
 
 function doLvlUp(p){
   var gained=[];
   var s=getAllSD()[p.classe];
+  p.history=p.history||[];
   while(p.xp>=p.xpMax){
     p.xp-=p.xpMax;p.level++;p.xpMax=xpReq(p.level);
     if(s){p.pvMax+=s.pvN;p.pvCur=p.pvMax;p.epMax+=s.epN;p.epCur=p.epMax;p.emMax+=s.emN;p.emCur=p.emMax;}
     gained.push(p.level);
-    p.history.push({ts:Date.now(),type:"level",text:"⬆ Niveau "+p.level+" ! PV:"+p.pvMax+" EP:"+p.epMax+" EM:"+p.emMax,by:"Système"});
+    var pal=getSermPalierDefsFor(p.classe).find(function(pl){return pl.niv===p.level;});
+    p.history.push({ts:Date.now(),type:"level",text:"⬆ Niveau "+p.level+" ! PV:"+p.pvMax+" EP:"+p.epMax+" EM:"+p.emMax+(pal?" — "+pal.nom+" débloqué":""),by:"Système"});
   }
   return gained;
 }
 
-function doSLvlUp(p){
-  var gained=[];
-  while(p.sXp>=p.sXpMax){
-    p.sXp-=p.sXpMax;p.sLevel++;p.sXpMax=sxpReq(p.sLevel);
-    var pal=getSermPalierDefsFor(p.classe).find(function(pl){return pl.niv===p.sLevel;});
-    var msg="⬆ Serment Niv. "+p.sLevel+(pal?" — "+pal.nom+" débloqué !":"");
-    gained.push({niv:p.sLevel,palier:pal?pal.nom:null});
-    p.history.push({ts:Date.now(),type:"add",text:msg,by:"Système"});
-  }
-  return gained;
+// Save a detached draft; rejected writes must not grant local XP or consume gems.
+var _progressionSaving=Object.create(null);
+async function saveProgressionPlayer(player){
+  if(_progressionSaving.players){notif("Une sauvegarde de progression est déjà en cours. Réessaie après sa confirmation.","inf");return false;}
+  _progressionSaving.players=true;
+  var before=_dbCache.players;
+  var next=gp().map(function(p){return p.id===player.id?player:p;});
+  var pending;
+  try{
+    var request=sp(next);
+    pending=_dbCache.players;
+    var result=await request;
+    if(!result||result.ok!==true||result.skipped)throw new Error("La base n’a pas confirmé la progression.");
+    return true;
+  }catch(e){
+    if(_dbCache.players===pending)_dbCache.players=before;
+    notif("Progression non enregistrée : "+e.message,"err");
+    return false;
+  }finally{delete _progressionSaving.players;}
+}
+function refreshProgressionPanel(pid){
+  if(_progPid===pid&&ge("prog-modal-body"))renderProgPanel(pid);
+  renderSPList();
+  if(CU&&String(getViewPid())===String(pid))renderView();
 }
 
 function updateXPPreview(pid){
@@ -9352,7 +9362,7 @@ function updateXPPreview(pid){
 
 async function applyXP(pid){
   if(!can("manage_xp")){notif("Permission insuffisante.","err");return;}
-  var p=gpid(pid);if(!p)return;
+  var p=_npClone(gpid(pid));if(!p)return;
   var mobSel=ge("xpp-mob");var partEl=ge("xpp-part");if(!mobSel||!partEl)return;
   if(!mobSel.value){ge("xpp-err").textContent="Sélectionne un mob.";return;}
   var selOpt=mobSel.options[mobSel.selectedIndex];
@@ -9363,82 +9373,83 @@ async function applyXP(pid){
   if(xpGain<=0){ge("xpp-err").textContent="XP = 0. Ajuste la participation.";return;}
   p.xp=(p.xp||0)+xpGain;p.history=p.history||[];
   p.history.push({ts:Date.now(),type:"xp",text:"+"+xpGain+" XP ("+nom+", "+part+"%)",by:"MJ "+CU.name});
-  var gained=doLvlUp(p);if(!await _confirmDbSave(up(p))) return false;
-  var curEl=ge("xpp-cur");if(curEl)curEl.textContent=p.xp+" / "+p.xpMax+" XP";
-  var msg=gained.length?"⬆ NIVEAU "+gained[gained.length-1]+" !":"XP attribué.";
-  var ae=ge("xpp-after");if(ae)ae.textContent=msg;
-  mobSel.value="";partEl.value="100";var pv2=ge("xpp-pv");if(pv2)pv2.textContent="100%";
-  ge("xpp-err").textContent="";
-  renderSPList();if(CU.pid===pid)renderView();
+  var gained=doLvlUp(p);if(!await saveProgressionPlayer(p)) return false;
+  refreshProgressionPanel(pid);
   if(gained.length)notif("⬆ "+esc(p.name)+" — Niveau "+gained[gained.length-1]+" !","ok");
   else notif("+"+xpGain+" XP → "+esc(p.name)+".","ok");
+  return true;
 }
 
 function selGem(type){
   _selGem=type;
   ["b","i","e"].forEach(function(t){var btn=ge("gbtn-"+t);if(btn)btn.className="gem-btn"+(t===type?" sel-"+t:"");});
-  updateSermPreview();
+  updateGemXPPreview();
 }
 
 function changeGemQty(delta){
   _gemQty=Math.max(1,Math.min(99,(_gemQty||1)+delta));
   var el=ge("gem-qty");if(el)el.textContent=_gemQty;
-  updateSermPreview();
+  updateGemXPPreview();
 }
 
-function updateSermPreview(){
-  var pid=_progPid;if(!pid)return;
-  var p=gpid(pid);if(!p)return;
-  var type=_selGem;var qty=_gemQty||1;
-  if(!type){var g=ge("sxpp-gain");var a=ge("sxpp-after");if(g)g.textContent="—";if(a)a.textContent="Sélectionne une gemme";return;}
-  var xpG={b:5,i:20,e:50};var total=xpG[type]*qty;
-  var simXP=p.sXp+total;var simLvl=p.sLevel;var simMax=p.sXpMax;var lups=0;var pals=[];
-  var palierDefs=getSermPalierDefsFor(p.classe);
-  while(simXP>=simMax){simXP-=simMax;simLvl++;simMax=sxpReq(simLvl);lups++;var pal=palierDefs.find(function(pl){return pl.niv===simLvl;});if(pal)pals.push(pal.nom);}
-  var g=ge("sxpp-gain");var a=ge("sxpp-after");
-  if(g)g.textContent="+"+total+" XP Serment"+(lups?" ⬆×"+lups:"");
-  if(a)a.textContent=lups?"Serment Niv. "+p.sLevel+" → "+simLvl+(pals.length?" — "+pals[0]+" débloqué !":""):"XP Serment : "+p.sXp+" → "+(p.sXp+total)+" / "+p.sXpMax;
+function gemXPStock(player,type){
+  var kinds={b:"blanche",i:"incarnate",e:"ecarlate"};
+  return (player.inventory||[]).filter(function(item){
+    var name=String(item.name||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+    return item.category==="Gemme"&&Number(item.qty)>0&&(name==="gemme "+kinds[type]||name===kinds[type]);
+  });
 }
-
-async function applySermXP(pid){
-  if(!CU||!can("manage_xp")){ return; }
-  if(!can("manage_xp")){notif("Permission insuffisante.","err");return;}
-  var p=gpid(pid);if(!p)return;
-  var type=_selGem;var qty=_gemQty||1;
-  if(!type){ge("sxpp-err").textContent="Sélectionne une gemme.";return;}
-  var xpG={b:5,i:20,e:50};var gN={b:"Gemme Blanche",i:"Gemme Incarnate",e:"Gemme Écarlate"};
+function updateGemXPPreview(){
+  var p=gpid(_progPid);if(!p)return;
+  var gain=ge("gxp-gain"),after=ge("gxp-after");
+  var type=_selGem,qty=Math.max(1,Math.min(99,Math.floor(Number(_gemQty)||1)));
+  if(!type){if(gain)gain.textContent="—";if(after)after.textContent="Sélectionne une gemme";return;}
+  var total=({b:5,i:20,e:50})[type]*qty;
+  var stock=gemXPStock(p,type).reduce(function(n,item){return n+Math.max(0,Math.floor(Number(item.qty)||0));},0);
+  var simXP=p.xp+total,simLvl=p.level,simMax=p.xpMax;
+  while(simXP>=simMax){simXP-=simMax;simLvl++;simMax=xpReq(simLvl);}
+  if(gain)gain.textContent="+"+total+" XP";
+  if(after)after.textContent=stock<qty?"Stock insuffisant : "+stock+" gemme(s) disponible(s).":"Après fusion : niveau "+simLvl+" · "+simXP+" / "+simMax+" XP · stock : "+stock;
+}
+async function applyGemXP(pid){
+  if(!CU||!can("manage_xp"))return false;
+  var p=_npClone(gpid(pid));if(!p)return false;
+  var type=_selGem,qty=Math.max(1,Math.min(99,Math.floor(Number(_gemQty)||1)));
+  var xpG={b:5,i:20,e:50},names={b:"Gemme Blanche",i:"Gemme Incarnate",e:"Gemme Écarlate"};
+  if(!xpG[type]){ge("gxp-err").textContent="Sélectionne une gemme.";return false;}
+  var gems=gemXPStock(p,type);
+  var stock=gems.reduce(function(n,item){return n+Math.max(0,Math.floor(Number(item.qty)||0));},0);
+  if(stock<qty){ge("gxp-err").textContent="Pas assez de gemmes en inventaire ("+stock+" disponible(s)).";return false;}
+  var remaining=qty;
+  gems.forEach(function(item){var taken=Math.min(remaining,Math.floor(Number(item.qty)||0));item.qty-=taken;remaining-=taken;});
   var total=xpG[type]*qty;
-  p.sXp=(p.sXp||0)+total;p.history=p.history||[];
-  p.history.push({ts:Date.now(),type:"gemme",text:"+"+total+" XP Serment ("+qty+"× "+gN[type]+")",by:"MJ "+CU.name});
-  var gained=doSLvlUp(p);if(!await _confirmDbSave(up(p))) return false;
-  var curEl=ge("sxpp-cur");if(curEl)curEl.textContent=p.sXp+" / "+p.sXpMax+" XP";
-  var msg=gained.length?"⬆ Serment Niv. "+gained[gained.length-1].niv+(gained[gained.length-1].palier?" — "+gained[gained.length-1].palier:""):"XP Serment attribué.";
-  var ae=ge("sxpp-after");if(ae)ae.textContent=msg;
-  _selGem=null;_gemQty=1;
-  var qEl=ge("gem-qty");if(qEl)qEl.textContent="1";
-  ["b","i","e"].forEach(function(t){var btn=ge("gbtn-"+t);if(btn)btn.className="gem-btn";});
-  ge("sxpp-err").textContent="";
-  renderSPList();if(CU.pid===pid)renderView();
-  if(gained.length)notif("⬆ Serment "+esc(p.name)+" — Niv. "+gained[gained.length-1].niv,"ok");
-  else notif("+"+total+" XP Serment → "+esc(p.name)+".","ok");
+  p.xp=(p.xp||0)+total;p.history=p.history||[];
+  p.history.push({ts:Date.now(),type:"gemme",text:"+"+total+" XP (fusion de "+qty+"× "+names[type]+")",by:"MJ "+CU.name});
+  var gained=doLvlUp(p);
+  if(!await saveProgressionPlayer(p))return false;
+  refreshProgressionPanel(pid);
+  notif("+"+total+" XP → "+esc(p.name)+(gained.length?" — Niveau "+p.level:""),"ok");
+  return true;
 }
 
 async function adjVal(pid,field,delta){
   if(!can("adjust_levels")){notif("Réservé à l'Admin.","err");return;}
-  var p=gpid(pid);if(!p)return;
-  var oldVal=p[field]||0;var newVal=Math.max(0,oldVal+delta);p[field]=newVal;
-  if(field==="level"){p.level=Math.max(1,newVal);p.xpMax=xpReq(p.level);var s=getAllSD()[p.classe];if(s){p.pvMax=30+(p.level-1)*s.pvN;p.pvCur=Math.min(p.pvCur,p.pvMax);p.epMax=50+(p.level-1)*s.epN;p.epCur=Math.min(p.epCur,p.epMax);p.emMax=20+(p.level-1)*s.emN;p.emCur=Math.min(p.emCur,p.emMax);}}
-  if(field==="sLevel"){p.sLevel=Math.max(1,newVal);p.sXpMax=sxpReq(p.sLevel);}
-  p.history=p.history||[];var lbls={level:"Niv. perso",xp:"XP perso",sLevel:"Niv. Serment",sXp:"XP Serment"};
+  if(field!=="level"&&field!=="xp")return false;
+  var p=_npClone(gpid(pid));if(!p)return;
+  var oldVal=p[field]||0;var oldFraction=p.xp/Math.max(1,p.xpMax);var newVal=Math.max(0,oldVal+delta);p[field]=newVal;
+  if(field==="level"){p.level=Math.max(1,newVal);p.xpMax=xpReq(p.level);p.xp=Math.min(p.xpMax-1,Math.ceil(oldFraction*p.xpMax));var s=getAllSD()[p.classe];if(s){p.pvMax=30+(p.level-1)*s.pvN;p.pvCur=Math.min(p.pvCur,p.pvMax);p.epMax=50+(p.level-1)*s.epN;p.epCur=Math.min(p.epCur,p.epMax);p.emMax=20+(p.level-1)*s.emN;p.emCur=Math.min(p.emCur,p.emMax);}}
+  if(field==="xp")doLvlUp(p);
+  p.history=p.history||[];var lbls={level:"Niveau",xp:"XP"};
   p.history.push({ts:Date.now(),type:(delta<0?"remove":"add"),text:"Ajust. "+lbls[field]+" : "+oldVal+" → "+p[field],by:"MJ "+CU.name});
+  if(!await saveProgressionPlayer(p)) return false;
   sysLog("adj_"+field,"["+esc(p.name)+"] "+lbls[field]+" : "+oldVal+" → "+p[field]+" (Δ"+(delta>0?"+":"")+delta+")",CU.name);
-  if(!await _confirmDbSave(up(p))) return false;
-  var lvlEl=ge("adj-lvl");if(lvlEl)lvlEl.textContent=p.level;
-  var xpEl=ge("adj-xp");if(xpEl)xpEl.textContent=p.xp+"/"+p.xpMax;
-  var slvlEl=ge("adj-slvl");if(slvlEl)slvlEl.textContent=p.sLevel;
-  var sxpEl=ge("adj-sxp");if(sxpEl)sxpEl.textContent=p.sXp+"/"+p.sXpMax;
-  var fb=ge("adj-fb");if(fb){fb.textContent=lbls[field]+" : "+oldVal+" → "+p[field];fb.style.color=delta>=0?"var(--green)":"var(--red)";clearTimeout(window._aft);window._aft=setTimeout(function(){if(fb)fb.textContent="";},2500);}
-  renderSPList();if(CU.pid===pid)renderView();
+  refreshProgressionPanel(pid);
+  if(_progPid===pid){
+    switchProgTab("adj");
+    var fb=ge("adj-fb");
+    if(fb){fb.textContent=lbls[field]+" : "+oldVal+" → "+p[field];fb.style.color=delta>=0?"var(--green)":"var(--red)";}
+  }
+  return true;
 }
 
 // ==========================================
@@ -9459,7 +9470,7 @@ async function addPlayer(){
   var n=ge("np-n").value.trim();var c=ge("np-c").value;var av=ge("np-av").value.trim();
   if(!n||!c){ge("np-err").textContent="Nom et Serment obligatoires.";return;}
   var s=getAllSD()[c]||SD[c];
-  var p={id:"p"+Date.now(),name:n,classe:c,level:1,xp:0,xpMax:30,pvCur:30,pvMax:30,epCur:50,epMax:50,emCur:20,emMax:20,avatar:av||"",arme:s?s.arme:"",sLevel:1,sXp:0,sXpMax:10,branch:"Aucune",equipment:{helmet:null,chest:null,legs:null},inventory:[],history:[]};
+  var p={id:"p"+Date.now(),name:n,classe:c,level:1,xp:0,xpMax:30,pvCur:30,pvMax:30,epCur:50,epMax:50,emCur:20,emMax:20,avatar:av||"",arme:s?s.arme:"",progressionVersion:1,branch:"Aucune",equipment:{helmet:null,chest:null,legs:null},inventory:[],history:[]};
   var prev=gp().slice();
   var next=prev.concat([p]);
   try{
@@ -9546,7 +9557,6 @@ function oES(pid){
   ge("es-epm").value=p.epMax;ge("es-epm").readOnly=true;ge("es-epm").style.opacity=".6";ge("es-epm").title="Calculé automatiquement selon le niveau";
   ge("es-emm").value=p.emMax;ge("es-emm").readOnly=true;ge("es-emm").style.opacity=".6";ge("es-emm").title="Calculé automatiquement selon le niveau";
   ge("es-niv").value=p.level;ge("es-xp").value=p.xp;
-  ge("es-sniv").value=p.sLevel;ge("es-sxp").value=p.sXp;
   var eq=p.equipment||{helmet:null,chest:null,legs:null};
   ge("es-hel").value=eq.helmet||"";ge("es-che").value=eq.chest||"";ge("es-leg").value=eq.legs||"";
   var sd=SD[p.classe];var opts=ge("es-bropts");
@@ -9559,8 +9569,8 @@ function oES(pid){
 function selBr(btn){document.querySelectorAll(".bropt").forEach(function(b){b.classList.remove("sel");});btn.classList.add("sel");}
 async function saveStats(){
   if(!can("manage_stats")){notif("Réservé à l'Admin.","err");return;}
-  var p=gpid(ePid);if(!p)return;
-  var newLevel=parseInt(ge("es-niv").value)||1;
+  var p=_npClone(gpid(ePid));if(!p)return;
+  var newLevel=Math.max(1,parseInt(ge("es-niv").value)||1);
   var s=getAllSD()[p.classe]||SD[p.classe];
 
   // Recalculer pvMax/epMax/emMax selon le nouveau niveau
@@ -9579,14 +9589,15 @@ async function saveStats(){
   p.epCur=Math.min(parseInt(ge("es-epc").value)||0, p.epMax);
   p.emCur=Math.min(parseInt(ge("es-emc").value)||0, p.emMax);
 
-  p.level=newLevel;p.xp=parseInt(ge("es-xp").value)||0;p.xpMax=xpReq(p.level);
-  p.sLevel=parseInt(ge("es-sniv").value)||1;p.sXp=parseInt(ge("es-sxp").value)||0;p.sXpMax=sxpReq(p.sLevel);
+  p.level=newLevel;p.xp=Math.max(0,parseInt(ge("es-xp").value)||0);p.xpMax=xpReq(p.level);
+  doLvlUp(p);
   var sb2=document.querySelector(".bropt.sel");p.branch=sb2?sb2.getAttribute("data-val"):(p.branch||"Aucune");
   p.equipment={helmet:ge("es-hel").value.trim()||null,chest:ge("es-che").value.trim()||null,legs:ge("es-leg").value.trim()||null};
   p.history=p.history||[];p.history.push({ts:Date.now(),type:"stat",text:"Stats mises à jour — Niveau "+p.level+" (PV:"+p.pvMax+" EP:"+p.epMax+" EM:"+p.emMax+")",by:CU.name});
+  if(!await saveProgressionPlayer(p)) return false;
   sysLog("stats_modif","Stats de '"+esc(p.name)+"' modifiées — Niv."+p.level+" PV:"+p.pvCur+"/"+p.pvMax+" EP:"+p.epCur+"/"+p.epMax+" EM:"+p.emCur+"/"+p.emMax,CU.name);
-  if(!await _confirmDbSave(up(p))) return false;closeModal("m-edits");
-  if(CU.pid===ePid||_viewPid===ePid)renderView();
+  closeModal("m-edits");
+  if(String(getViewPid())===String(p.id))renderView();
   renderSPList();notif("Stats de "+esc(p.name)+" sauvegardées.","ok");
 }
 
@@ -10869,7 +10880,7 @@ function importDB(input){
     try{ data=JSON.parse(e.target.result); }
     catch(err){ notif('Erreur de lecture JSON.', 'err'); return; }
     if(!data || !data.version){ notif('Fichier invalide.', 'err'); return; }
-    var entries=[['players',data.players],['beasts',data.beasts],['serments_custom',data.serments_custom]].filter(function(entry){ return entry[1] !== undefined; });
+    var entries=[['serments_custom',data.serments_custom],['beasts',data.beasts],['players',data.players]].filter(function(entry){ return entry[1] !== undefined; });
     if(entries.some(function(entry){ return entry[0] === 'serments_custom' ? (!entry[1] || typeof entry[1] !== 'object' || Array.isArray(entry[1])) : !Array.isArray(entry[1]); })){
       notif('Format des collections invalide. Aucune donnée importée.', 'err'); return;
     }
@@ -10888,9 +10899,7 @@ function importDB(input){
   reader.readAsText(file); input.value='';
 }
 document.addEventListener("keydown",function(e){
-  // Ignorer si focus dans un input/textarea
-  var tag=(document.activeElement||{}).tagName||"";
-  var inInput=tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT";
+  if(e.defaultPrevented) return;
 
   // Échap — ferme la modale ouverte
   if(e.key==="Escape"){
@@ -10899,8 +10908,14 @@ document.addEventListener("keydown",function(e){
     return;
   }
 
-  // Raccourcis simulateur — ignorés si focus dans un champ
-  if(!inInput&&_cs&&_cs.active){
+  // Simulation shortcuts belong to its visible page, never to another view,
+  // an open dialog, or a control that handles its own keyboard interaction.
+  var app=ge('s-app'),combat=ge('combat-mj');
+  var target=e.target&&e.target.closest?e.target:document.activeElement;
+  var interactive=target&&(target.isContentEditable||target.closest('button,a,input,select,textarea,summary,[role="button"],[contenteditable]:not([contenteditable="false"])'));
+  if(!can('manage_players')||!app||!app.classList.contains('active')||!combat||!combat.classList.contains('active')||document.querySelector('.moverlay.open, #cmdk.open')||interactive) return;
+
+  if(_cs&&_cs.active){
     // Espace — tour suivant
     if(e.key===" "||e.key==="Space"){
       e.preventDefault();
@@ -11148,16 +11163,21 @@ function combatArchiveGetRecord(owner, id){
 }
 async function combatArchiveFetchRecord(owner, id, fallback){
   var generation=_dbSessionGeneration;
+  function readFailure(response){
+    var error=new Error('Impossible de charger cette archive. Réessaie dans un instant.');
+    error.code=response&&response.code;
+    return error;
+  }
   owner = combatArchiveOwnerKey(owner); id = String(id||'');
   if(!owner || !id) return null;
   if(_dbToken && !_dbOffline){
     var recResp = await _dbCall({action:'get', key:combatArchiveRecordKey(owner, id)}, {silent:true});
     _assertDbSessionGeneration(generation);
-    if(!recResp || recResp.ok === false || recResp.status >= 400) throw _dbWriteFailure(combatArchiveRecordKey(owner,id), recResp);
+    if(!recResp || recResp.ok === false || recResp.status >= 400) throw readFailure(recResp);
     if(recResp.value && !Array.isArray(recResp.value)) return combatArchiveCacheRecord(owner, recResp.value);
     var legacyResp = await _dbCall({action:'get', key:combatArchiveStoreKey(owner)}, {silent:true});
     _assertDbSessionGeneration(generation);
-    if(!legacyResp || legacyResp.ok === false || legacyResp.status >= 400) throw _dbWriteFailure(combatArchiveStoreKey(owner), legacyResp);
+    if(!legacyResp || legacyResp.ok === false || legacyResp.status >= 400) throw readFailure(legacyResp);
     var hit = (Array.isArray(legacyResp.value) ? legacyResp.value : []).find(function(a){ return String(a&&a.id||'')===id; });
     if(hit && !combatArchiveIsStub(hit)) return combatArchiveCacheRecord(owner, hit);
   }
@@ -11329,11 +11349,9 @@ function _startCombatMJPoll(){
     var tab=ge("combat-mj");
     if(!tab||!tab.classList.contains("active")){ clearInterval(_csPollId);_csPollId=null;return; }
     if(_cs.active) return;
+    var previousPlayers=JSON.stringify(_dbCache.players),previousBeasts=JSON.stringify(_dbCache.beasts);
     Promise.all([_loadSessionBundle(),_dbCall({action:"get",key:"beasts"})]).then(function(r){
-      var changed=false;
-      var nextPlayers=(r[0]&&r[0].data&&Array.isArray(r[0].data.players))?r[0].data.players:null;
-      if(nextPlayers&&JSON.stringify(nextPlayers)!==JSON.stringify(_dbCache.players)){_dbCache.players=nextPlayers;changed=true;}
-      if(r[1]&&r[1].value&&JSON.stringify(r[1].value)!==JSON.stringify(_dbCache.beasts)){_dbCache.beasts=r[1].value;changed=true;}
+      var changed=previousPlayers!==JSON.stringify(_dbCache.players)||previousBeasts!==JSON.stringify(_dbCache.beasts);
       if(changed) rCombat("p-combat-mj-c");
     }).catch(function(){});
   },30000);
@@ -11431,7 +11449,7 @@ function cGetFighterSerment(fi){
   if(!f||!p) return null;
   var bundle=getPlayerSermentBundle(p);
   if(!bundle||!bundle.def||!bundle.branch) return null;
-  var rawPaliers=(bundle.branch.paliers||[]).filter(function(pl){ return (pl.niv||0)<=((p.sLevel||1)); }).sort(function(a,b){ return (a.niv||0)-(b.niv||0); });
+  var rawPaliers=(bundle.branch.paliers||[]).filter(function(pl){ return (pl.niv||0)<=((p.level||1)); }).sort(function(a,b){ return (a.niv||0)-(b.niv||0); });
   var latestByName=Object.create(null), order=[];
   rawPaliers.forEach(function(pl){
     var key=String(pl&&pl.nom||'Capacité').trim().toLowerCase() || ('palier-'+(pl&&pl.niv||0));
@@ -11440,7 +11458,7 @@ function cGetFighterSerment(fi){
   });
   var unlocked=order.map(function(key){ return latestByName[key]; }).sort(function(a,b){ return (a.niv||0)-(b.niv||0); });
   var pal=unlocked.length?unlocked[unlocked.length-1]:null;
-  return { fighter:f, player:p, bundle:bundle, branch:bundle.branch, palier:pal, paliers:unlocked, level:p.level||f.level||1, sLevel:p.sLevel||1 };
+  return { fighter:f, player:p, bundle:bundle, branch:bundle.branch, palier:pal, paliers:unlocked, level:p.level||f.level||1 };
 }
 function cNums(desc){
   return String(desc||'').match(/-?\d+/g)||[];
@@ -15012,123 +15030,182 @@ function getEvents(){
     });
   });
 }
-function saveEvents(arr){ return sv("events",arr); }
+function _canManageEvents(){
+  return !!CU && ['admin','mj','designer'].indexOf(roleKey(CU))>=0;
+}
+function _canNotifyEventPlayers(){
+  return !!CU && ['admin','mj'].indexOf(roleKey(CU))>=0;
+}
+var _EVENT_STAFF_ACTION=null;
+var _EVENT_EDITOR=null;
+function _eventStaffBusy(){
+  return !!(_EVENT_STAFF_ACTION && _EVENT_STAFF_ACTION.generation===_dbSessionGeneration);
+}
+function _eventStaffButtonAttrs(){
+  return ' data-event-staff-action'+(_eventStaffBusy()?' disabled aria-busy="true"':'');
+}
+async function saveEvents(arr){
+  var generation=_dbSessionGeneration;
+  var response=await _enqueueDbWrite('events',arr);
+  _assertDbSessionGeneration(generation);
+  _dbCache.events=_cloneForDb(response.value);
+  return response;
+}
+async function _runEventStaffAction(work){
+  if(!_canManageEvents()) { notif('La gestion des événements est réservée au staff.','err'); return false; }
+  if(_eventStaffBusy()) return false;
+  var action={generation:_dbSessionGeneration};
+  _EVENT_STAFF_ACTION=action;
+  var controls=Array.prototype.slice.call(document.querySelectorAll('[data-event-staff-action], #m-event input, #m-event textarea, #m-event select'));
+  var disabled=controls.map(function(control){return control.disabled;});
+  controls.forEach(function(control){control.disabled=true; control.setAttribute('aria-busy','true');});
+  try{
+    return await work(action.generation);
+  }catch(error){
+    if(action.generation===_dbSessionGeneration && !window.__logoutBusy && error.code!=='SESSION_CHANGED'){
+      notif('Événement non enregistré : '+error.message,'err');
+    }
+    return false;
+  }finally{
+    if(_EVENT_STAFF_ACTION===action) _EVENT_STAFF_ACTION=null;
+    if(action.generation===_dbSessionGeneration && !window.__logoutBusy){
+      controls.forEach(function(control,index){control.disabled=disabled[index]; control.removeAttribute('aria-busy');});
+      // A confirmed action may have rebuilt the cards while the lock was held.
+      document.querySelectorAll('[data-event-staff-action]').forEach(function(control){control.disabled=false; control.removeAttribute('aria-busy');});
+    }
+  }
+}
 
 function renderEvents(tid){
   var el=ge(tid); if(!el) return;
-  var canEdit=CU&&(isAdminRole(CU)||roleKey(CU)==="designer");
-  var isStaff=CU&&CU.role&&CU.role!=="joueur";
+  var canEdit=_canManageEvents();
+  var isStaff=canEdit;
   var events=getEvents().sort(function(a,b){ return (a.date||0)-(b.date||0); });
-  // Les joueurs ne voient pas les événements masqués
   if(!canEdit) events=events.filter(function(e){ return !e.hidden; });
   var now=Date.now();
   var upcoming=events.filter(function(e){ return !e.date||e.date>=now; });
   var past=events.filter(function(e){ return e.date&&e.date<now; });
 
-  var h='<div style="max-width:860px;">';
-  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">';
-  h+='<div class="card-title">Événements</div>';
-  if(isStaff) h+='<button class="btn btn-sm btn-grn" onclick="openEventModal()"><span>+ Nouvel événement</span></button>';
+  var h='<div class="np-events">';
+  h+='<header class="np-events-intro">';
+  h+='<div class="np-events-intro-copy"><span class="np-events-eyebrow">Nuages Polaires · Le calendrier</span>';
+  h+='<h1>Les rendez-vous<br><em>du monde.</em></h1>';
+  h+='<p>Une expédition, une rencontre, une histoire à écrire ensemble. Retrouve ici les événements de Nuages Polaires.</p>';
+  if(isStaff) h+='<button'+_eventStaffButtonAttrs()+' class="btn btn-sm btn-grn np-agenda-primary" onclick="openEventModal()"><span>+ Nouvel événement</span></button>';
   h+='</div>';
+  h+='<div class="np-events-index" aria-label="Résumé du calendrier"><span class="np-events-index-mark" aria-hidden="true">✧</span>';
+  h+='<div><strong>'+upcoming.length+'</strong><span>À venir</span></div><div><strong>'+past.length+'</strong><span>Passés</span></div>';
+  h+='<p>'+(isStaff?'Les événements masqués restent visibles au staff.':'Choisis un rendez-vous et rejoins l’aventure.')+'</p></div>';
+  h+='</header>';
 
+  h+='<section class="np-events-section" aria-label="Événements à venir">';
+  h+='<div class="np-events-section-heading"><div><span class="np-events-eyebrow">Le prochain chapitre</span><h2>À venir <span>'+upcoming.length+'</span></h2></div><p>Les dates suivent l’heure de ton appareil.</p></div>';
   if(upcoming.length){
-    h+='<div style="font-family:var(--fd);font-size:9px;letter-spacing:3px;color:var(--glacier);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid rgba(126,184,212,.2);">À VENIR</div>';
-    h+='<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:28px;">';
+    h+='<div class="np-events-list">';
     upcoming.forEach(function(ev){ h+=renderEventCard(ev,canEdit,isStaff,false); });
     h+='</div>';
   } else {
-    h+='<div class="card" style="margin-bottom:28px;text-align:center;padding:32px;">';
-    h+='<div style="font-size:28px;margin-bottom:10px;">☁️</div>';
-    h+='<div style="color:var(--faint);font-style:italic;font-size:13px;">Aucun événement à venir pour le moment.</div>';
-    if(isStaff) h+='<button class="btn btn-sm btn-grn" onclick="openEventModal()" style="margin-top:14px;"><span>Créer le premier événement</span></button>';
-    h+='</div>';
+    h+='<div class="np-events-empty"><span class="np-events-empty-mark" aria-hidden="true">✧</span><div><h3>Un horizon encore ouvert.</h3><p>Aucun événement à venir pour le moment. Les prochains rendez-vous apparaîtront ici.</p>';
+    if(isStaff) h+='<button'+_eventStaffButtonAttrs()+' class="btn btn-sm btn-grn np-agenda-primary" onclick="openEventModal()"><span>Créer le premier événement</span></button>';
+    h+='</div></div>';
   }
-
+  h+='</section>';
   if(past.length){
-    h+='<div style="font-family:var(--fd);font-size:9px;letter-spacing:3px;color:var(--faint);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);">PASSÉS</div>';
-    h+='<div style="display:flex;flex-direction:column;gap:8px;opacity:.65;">';
+    h+='<section class="np-events-section np-events-past" aria-label="Événements passés"><div class="np-events-section-heading"><div><span class="np-events-eyebrow">Les traces du voyage</span><h2>Passés <span>'+past.length+'</span></h2></div><p>'+(past.length>8?'Les 8 derniers rendez-vous.':'Les rendez-vous précédents.')+'</p></div>';
+    h+='<div class="np-events-list">';
     past.slice().reverse().slice(0,8).forEach(function(ev){ h+=renderEventCard(ev,canEdit,isStaff,true); });
-    h+='</div>';
+    h+='</div></section>';
   }
-
   h+='</div>';
   el.innerHTML=h;
 }
 
 function renderEventCard(ev,canEdit,isStaff,isPast){
-  var type=EV_TYPES[ev.type]||EV_TYPES.autre;
+  var typeKey=Object.prototype.hasOwnProperty.call(EV_TYPES,ev.type)?ev.type:'autre';
+  var type=EV_TYPES[typeKey];
   var date=ev.date?new Date(ev.date):null;
-  var dateStr=date?date.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"})+" à "+date.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}):"Date inconnue";
-  var inscrits=ev.inscrits||[];
-  var max=ev.max||0;
+  if(date&&!Number.isFinite(date.getTime())) date=null;
+  var dateStr=date?date.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+' à '+date.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'Date à confirmer';
+  var inscrits=Array.isArray(ev.inscrits)?ev.inscrits:[];
+  var max=Number.isSafeInteger(Number(ev.max))&&Number(ev.max)>0?Number(ev.max):0;
   var isFull=max>0&&inscrits.length>=max;
   var linkedPlayer=CU&&CU.pid?gpid(CU.pid):null;
-  var myName=linkedPlayer?linkedPlayer.name:"";
+  var myName=linkedPlayer?linkedPlayer.name:'';
   var isInscrit=myName&&inscrits.indexOf(myName)>-1;
   var isHidden=!!ev.hidden;
   var participationBusy=_ownPlayerActionBusy('event:'+ev.id);
   var participationAttrs=' data-own-player-action="'+escAttr('event:'+ev.id)+'"'+(participationBusy?' disabled aria-busy="true"':'');
+  var state=isHidden?'hidden':isPast?'past':!date?'undated':isInscrit?'joined':isFull?'full':'open';
+  var stateLabel={hidden:'Masqué · staff',past:'Passé',undated:'Date à confirmer',joined:'Vous participez',full:'Complet',open:'Inscriptions ouvertes'}[state];
 
-  var cardStyle="background:var(--bg2);border:1px solid var(--border);border-left:3px solid "+type.col+";padding:16px 18px;"+(isHidden&&canEdit?"opacity:.65;":"");
-  var h='<div style="'+cardStyle+'">';
-
-  // Badge masqué
-  if(isHidden&&canEdit){
-    h+='<div style="display:inline-flex;align-items:center;gap:5px;font-family:var(--fd);font-size:7px;letter-spacing:2px;padding:2px 8px;background:rgba(201,160,76,.12);border:1px solid rgba(201,160,76,.35);color:var(--gold);margin-bottom:8px;">👁 MASQUÉ</div>';
+  var h='<article class="np-agenda-card np-agenda-type-'+typeKey+(isPast?' np-agenda-past':'')+(isHidden?' np-agenda-hidden':'')+'">';
+  h+='<div class="np-agenda-date" role="group" aria-label="'+escAttr(dateStr)+'">';
+  if(date){
+    h+='<span class="np-agenda-weekday" aria-hidden="true">'+date.toLocaleDateString('fr-FR',{weekday:'short'})+'</span>';
+    h+='<strong aria-hidden="true">'+date.getDate()+'</strong><span class="np-agenda-month" aria-hidden="true">'+date.toLocaleDateString('fr-FR',{month:'short'})+' '+date.getFullYear()+'</span>';
+    h+='<time datetime="'+date.toISOString()+'">'+date.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'</time>';
+  } else {
+    h+='<span class="np-agenda-weekday">À définir</span><strong aria-hidden="true">—</strong><span class="np-agenda-month">Prochainement</span>';
   }
-
-  h+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">';
-  h+='<div style="flex:1;min-width:0;">';
-  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">';
-  h+='<span style="font-family:var(--fd);font-size:7px;letter-spacing:2px;padding:2px 7px;background:'+type.col+'22;border:1px solid '+type.col+'55;color:'+type.col+';">'+type.icon+' '+type.label.toUpperCase()+'</span>';
   h+='</div>';
-  h+='<div style="font-family:var(--fd);font-size:15px;letter-spacing:1px;color:var(--text);margin-bottom:6px;">'+escHtml(ev.nom||"Sans titre")+'</div>';
-  h+='<div style="font-size:12px;color:var(--glacier);margin-bottom:8px;">📅 '+dateStr+'</div>';
-  if(ev.desc) h+='<div style="font-size:13px;color:var(--dim);line-height:1.6;margin-bottom:10px;">'+escHtml(ev.desc).replace(/\n/g,"<br>")+'</div>';
-  h+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
-  h+='<span style="font-family:var(--fd);font-size:9px;letter-spacing:2px;color:var(--faint);">PARTICIPANTS</span>';
-  h+='<span style="font-family:var(--fm);font-size:11px;color:'+(isFull?"var(--red)":"var(--text)")+';">'+inscrits.length+(max>0?" / "+max:"")+'</span>';
+  h+='<div class="np-agenda-content"><div class="np-agenda-meta"><span class="np-agenda-type"><span aria-hidden="true">'+type.icon+'</span> '+type.label+'</span><span class="np-agenda-state np-agenda-state-'+state+'">'+stateLabel+'</span></div>';
+  h+='<h3>'+escHtml(ev.nom||'Sans titre')+'</h3>';
+  if(ev.desc) h+='<p class="np-agenda-description">'+escHtml(ev.desc).replace(/\n/g,'<br>')+'</p>';
+  h+='<div class="np-agenda-attendance"><div class="np-agenda-attendance-heading"><span>Le groupe</span><strong>'+inscrits.length+(max?' / '+max:'')+' <span>'+((max||inscrits.length)>1?'participants':'participant')+'</span></strong></div>';
+  if(max){
+    h+='<div class="np-agenda-capacity" aria-hidden="true"><span style="width:'+Math.min(100,Math.round(inscrits.length/max*100))+'%"></span></div>';
+    if(!isPast) h+='<p class="np-agenda-places">'+(isFull?'Toutes les places sont prises.':(max-inscrits.length)+' '+(max-inscrits.length>1?'places disponibles.':'place disponible.'))+'</p>';
+  } else h+='<p class="np-agenda-places">Sans limite de places.</p>';
   if(inscrits.length){
-    inscrits.forEach(function(n){
-      h+='<span style="font-size:10px;padding:1px 7px;background:rgba(126,184,212,.1);border:1px solid rgba(126,184,212,.25);color:var(--glacier);">'+escHtml(n)+'</span>';
-    });
-  }
-  h+='</div>';
-  h+='</div>';
-
-  // Actions
-  h+='<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0;">';
+    h+='<ul class="np-agenda-participants" aria-label="Personnages inscrits">';
+    inscrits.forEach(function(n){h+='<li'+(myName&&n===myName?' class="np-agenda-participant-own"':'')+'>'+escHtml(n)+(myName&&n===myName?' <span>· vous</span>':'')+'</li>';});
+    h+='</ul>';
+  } else h+='<p class="np-agenda-no-participants">Aucun participant pour le moment.</p>';
+  h+='</div></div>';
+  h+='<div class="np-agenda-actions">';
   if(!isPast&&!isStaff&&!isHidden){
     if(!linkedPlayer){
-      h+='<span style="font-size:11px;color:var(--faint);max-width:190px;">Un personnage doit être lié à ton compte pour participer.</span>';
-    } else if(!date || !Number.isFinite(date.getTime()) || date.getTime()<Date.now()){
-      h+='<span style="font-size:11px;color:var(--faint);">Inscriptions fermées — date à confirmer.</span>';
+      h+='<p class="np-agenda-action-note">Un personnage doit être lié à ton compte pour participer.</p>';
+    } else if(!date||date.getTime()<Date.now()){
+      h+='<p class="np-agenda-action-note">Inscriptions fermées — date à confirmer.</p>';
     } else if(isInscrit){
-      h+='<button'+participationAttrs+' onclick="eventDesinscrit(\''+jsesc(ev.id)+'\')" class="btn btn-sm" style="border-color:var(--red);color:var(--red);font-size:9px;"><span>Se désinscrire</span></button>';
+      h+='<span class="np-agenda-action-label">Ta place est réservée</span><button'+participationAttrs+' onclick="eventDesinscrit(\''+jsesc(ev.id)+'\')" class="btn btn-sm np-agenda-secondary"><span>Se désinscrire</span></button>';
     } else if(!isFull){
-      h+='<button'+participationAttrs+' onclick="eventInscrit(\''+jsesc(ev.id)+'\')" class="btn btn-sm btn-grn" style="font-size:9px;"><span>✓ Participer</span></button>';
-    } else {
-      h+='<span style="font-family:var(--fd);font-size:8px;letter-spacing:1px;color:var(--red);">COMPLET</span>';
-    }
+      h+='<span class="np-agenda-action-label">Rejoins le groupe</span><button'+participationAttrs+' onclick="eventInscrit(\''+jsesc(ev.id)+'\')" class="btn btn-sm btn-grn np-agenda-primary"><span>✓ Participer</span></button>';
+    } else h+='<p class="np-agenda-action-note">Ce rendez-vous est complet.</p>';
   }
   if(canEdit){
-    // Toggle publié/masqué
-    h+='<button onclick="toggleEventHidden(\''+jsesc(ev.id)+'\')" class="btn btn-sm" style="font-size:9px;'+(isHidden?'border-color:var(--gold);color:var(--gold);':'border-color:var(--glacier-dim);color:var(--glacier-dim);')+'"><span>'+(isHidden?'👁 Publier':'🔒 Masquer')+'</span></button>';
-    h+='<button onclick="openEventModal(\''+jsesc(ev.id)+'\')" class="btn btn-sm" style="font-size:9px;"><span>✎ Modifier</span></button>';
-    h+='<button onclick="deleteEvent(\''+jsesc(ev.id)+'\')" class="btn btn-sm" style="font-size:9px;border-color:rgba(201,74,74,.4);color:var(--red);"><span>Supprimer</span></button>';
-  }
-  h+='</div>';
-  h+='</div></div>';
+    h+='<span class="np-agenda-action-label">Gestion du rendez-vous</span>';
+    h+='<button'+_eventStaffButtonAttrs()+' onclick="toggleEventHidden(\''+jsesc(ev.id)+'\')" class="btn btn-sm np-agenda-secondary"><span>'+(isHidden?'👁 Publier':'🔒 Masquer')+'</span></button>';
+    h+='<button'+_eventStaffButtonAttrs()+' onclick="openEventModal(\''+jsesc(ev.id)+'\')" class="btn btn-sm np-agenda-secondary"><span>✎ Modifier</span></button>';
+    h+='<button'+_eventStaffButtonAttrs()+' onclick="deleteEvent(\''+jsesc(ev.id)+'\')" class="btn btn-sm np-agenda-delete"><span>Supprimer</span></button>';
+  } else if(isPast) h+='<span class="np-agenda-action-label">Rendez-vous passé</span>';
+  h+='</div></article>';
   return h;
 }
 
 function openEventModal(id){
+  if(!_canManageEvents()) { notif('La gestion des événements est réservée au staff.','err'); return false; }
+  if(_eventStaffBusy()) return false;
   var ev=id?getEvents().find(function(e){return e.id===id;}):null;
+  if(id&&!ev){ notif('Événement introuvable. Recharge la page.','err'); return false; }
+  _EVENT_EDITOR={generation:_dbSessionGeneration,id:ev?ev.id:null};
+  // A previous session may have left this shared modal disabled while awaiting its response.
+  document.querySelectorAll('#m-event input, #m-event textarea, #m-event select, #m-event [data-event-staff-action]').forEach(function(control){
+    control.disabled=false; control.removeAttribute('aria-busy');
+  });
   ge("m-event-title").textContent=ev?"Modifier l'événement":"Nouvel événement";
-  ge("ev-id").value=ev?ev.id:"";
+  ge("ev-id").value=ev?ev.id:("ev"+Date.now()+Math.random().toString(36).slice(2,8));
   ge("ev-nom").value=ev?ev.nom:"";
   ge("ev-type").value=ev?ev.type:"combat";
-  ge("ev-desc").value=ev?ev.desc:"";
+  ge("ev-desc").value=ev?ev.desc||'':"";
+  ge("ev-max").value=ev&&Number.isSafeInteger(Number(ev.max))&&Number(ev.max)>0?Number(ev.max):0;
+  var canNotify=_canNotifyEventPlayers();
+  ge("ev-notify").checked=!ev&&canNotify;
+  ge("ev-notify-row").style.display=!ev&&canNotify?'flex':'none';
+  ge("ev-notify-help").textContent=canNotify
+    ? (ev?'Modifier ou publier cet événement ne renvoie pas de notification.':'La notification est enregistrée après la création de l’événement.')
+    : 'L’événement publié apparaît dans l’agenda des joueurs. Les notifications sont gérées par les MJ et administrateurs.';
   var pubEl=ge("ev-published");
   var pubLbl=ge("ev-published-lbl");
   var isPublished=ev?!ev.hidden:true;
@@ -15142,67 +15219,111 @@ function openEventModal(id){
     ge("ev-date").value="";
   }
   openModal("m-event");
-  setTimeout(function(){ ge("ev-nom").focus(); },100);
+  var editor=_EVENT_EDITOR;
+  setTimeout(function(){ if(_EVENT_EDITOR===editor&&editor.generation===_dbSessionGeneration) ge("ev-nom").focus(); },100);
+  return true;
 }
 
 async function saveEvent(){
+  if(!_canManageEvents()||_eventStaffBusy()) return false;
+  if(!_EVENT_EDITOR||_EVENT_EDITOR.generation!==_dbSessionGeneration) return false;
   var nom=ge("ev-nom").value.trim();
-  if(!nom){ notif("Donne un titre à l'événement.","err"); return; }
+  if(!nom){ notif("Donne un titre à l'événement.","err"); return false; }
   var dateVal=ge("ev-date").value;
   var date=dateVal?new Date(dateVal).getTime():null;
+  if(dateVal&&!Number.isFinite(date)){ notif('Choisis une date valide.','err'); return false; }
+  var max=Number(ge("ev-max").value);
+  if(!Number.isSafeInteger(max)||max<0){ notif('Le nombre de places doit être un entier positif, ou 0 pour aucune limite.','err'); return false; }
   var arr=getEvents();
-  var id=ge("ev-id").value||("ev"+Date.now());
+  var id=ge("ev-id").value;
   var existing=arr.findIndex(function(e){return e.id===id;});
+  if(_EVENT_EDITOR.id&&existing<0){ notif('Cet événement n’existe plus. Recharge la page.','err'); return false; }
+  var previous=existing>=0?arr[existing]:{};
+  if(max>0&&max<(previous.inscrits||[]).length){ notif('La capacité ne peut pas être inférieure au nombre de participants déjà inscrits.','err'); return false; }
   var pubEl=ge("ev-published");
   var isHidden=pubEl?!pubEl.checked:false;
-  var ev={
+  var actor=CU.name||CU.pseudo||"Staff";
+  var ev=Object.assign({},previous,{
     id:id,
     nom:nom,
     type:ge("ev-type").value,
     desc:ge("ev-desc").value.trim(),
     date:date,
+    max:max,
     hidden:isHidden,
-    inscrits:existing>=0?(arr[existing].inscrits||[]):[],
-    createdBy:CU?CU.name:"Staff",
+    inscrits:previous.inscrits||[],
+    createdBy:previous.createdBy||actor,
     updatedAt:Date.now()
-  };
+  });
   var isNew=existing<0;
+  var shouldNotify=isNew&&!isHidden&&_canNotifyEventPlayers()&&ge("ev-notify").checked;
   if(existing>=0) arr[existing]=ev; else arr.push(ev);
-  if(!await _confirmDbSave(saveEvents(arr))) return false;
-  sysLog(isNew?"event_cree":"event_modif","Événement '"+nom+"'"+(date?" le "+new Date(date).toLocaleDateString("fr-FR"):""),CU?CU.name:"Staff");
-  // Notifier tous les joueurs si nouvel événement publié
-  if(isNew&&!isHidden){
-    var players=gp();
-    var dateLabel=date?" — "+new Date(date).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})+" à "+new Date(date).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}):"";
-    players.forEach(function(p){
-      p.history=p.history||[];
-      p.history.push({ts:Date.now(),type:"event",text:"📅 Nouvel événement : "+nom+dateLabel,by:CU?CU.name:"Staff"});
-    });
-    if(!await _confirmDbSave(sp(players))) return false;
-    sysLog("event_notif","Notification envoyée à "+players.length+" joueur(s) pour '"+nom+"'",CU?CU.name:"Staff");
-  }
-  closeModal("m-event");
-  notif((isNew?"Événement créé":"Événement modifié")+" — "+nom+(isNew&&!isHidden?" · Joueurs notifiés ✓":""),"ok");
-  renderEvents("p-events-c");
+  return _runEventStaffAction(async function(generation){
+    await saveEvents(arr);
+    _assertDbSessionGeneration(generation);
+    _EVENT_EDITOR.id=id;
+    sysLog(isNew?"event_cree":"event_modif","Événement '"+nom+"'"+(date?" le "+new Date(date).toLocaleDateString("fr-FR"):""),actor);
+    var notificationError=null;
+    if(shouldNotify){
+      var players=_cloneForDb(gp());
+      var dateLabel=date?" — "+new Date(date).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})+" à "+new Date(date).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}):"";
+      players.forEach(function(p){
+        p.history=Array.isArray(p.history)?p.history:[];
+        p.history.push({ts:Date.now(),type:"event",text:escHtml("📅 Nouvel événement : "+nom+dateLabel),by:escHtml(actor)});
+      });
+      try{
+        var result=await _enqueueDbWrite('players',players);
+        _assertDbSessionGeneration(generation);
+        _dbCache.players=_cloneForDb(result.value);
+        sysLog("event_notif","Notification envoyée à "+players.length+" joueur(s) pour '"+nom+"'",actor);
+      }catch(error){
+        _assertDbSessionGeneration(generation);
+        notificationError=error;
+      }
+    }
+    _assertDbSessionGeneration(generation);
+    closeModal("m-event");
+    renderEvents("p-events-c");
+    if(notificationError){
+      notif('Événement enregistré — '+nom+'. Les notifications n’ont pas été confirmées. Recharge la page pour vérifier avant toute nouvelle tentative.','err');
+    }else{
+      notif((isNew?"Événement créé":"Événement modifié")+" — "+nom+(shouldNotify?" · Joueurs notifiés ✓":""),"ok");
+    }
+    return true;
+  });
 }
 
 async function toggleEventHidden(id){
-  var arr=getEvents();
-  var ev=arr.find(function(e){return e.id===id;}); if(!ev) return;
-  ev.hidden=!ev.hidden;
-  if(!await _confirmDbSave(saveEvents(arr))) return false;
-  sysLog("event_visibilite","Événement '"+ev.nom+"' "+(ev.hidden?"masqué":"publié"),CU?CU.name:"Staff");
-  notif(ev.hidden?"Événement masqué aux joueurs.":"Événement publié.","ok");
-  renderEvents("p-events-c");
+  return _runEventStaffAction(async function(generation){
+    var arr=getEvents();
+    var ev=arr.find(function(e){return e.id===id;});
+    if(!ev) throw new Error('Événement introuvable. Recharge la page.');
+    ev.hidden=!ev.hidden;
+    var actor=CU.name||CU.pseudo||"Staff";
+    await saveEvents(arr);
+    _assertDbSessionGeneration(generation);
+    sysLog("event_visibilite","Événement '"+ev.nom+"' "+(ev.hidden?"masqué":"publié"),actor);
+    notif(ev.hidden?"Événement masqué aux joueurs.":"Événement publié.","ok");
+    renderEvents("p-events-c");
+    return true;
+  });
 }
 
 async function deleteEvent(id){
-  if(!confirm("Supprimer cet événement ?")) return;
-  var ev=getEvents().find(function(e){return e.id===id;});
-  sysLog("event_supprime","Événement '"+(ev?ev.nom:id)+"' supprimé",CU?CU.name:"Staff");
-  if(!await _confirmDbSave(saveEvents(getEvents().filter(function(e){return e.id!==id;})))) return false;
-  notif("Événement supprimé.","inf");
-  renderEvents("p-events-c");
+  if(!_canManageEvents()||_eventStaffBusy()) return false;
+  if(!confirm("Supprimer cet événement ?")) return false;
+  return _runEventStaffAction(async function(generation){
+    var arr=getEvents();
+    var ev=arr.find(function(e){return e.id===id;});
+    if(!ev) throw new Error('Événement introuvable. Recharge la page.');
+    var actor=CU.name||CU.pseudo||"Staff";
+    await saveEvents(arr.filter(function(e){return e.id!==id;}));
+    _assertDbSessionGeneration(generation);
+    sysLog("event_supprime","Événement '"+ev.nom+"' supprimé",actor);
+    notif("Événement supprimé.","inf");
+    renderEvents("p-events-c");
+    return true;
+  });
 }
 
 async function _setOwnEventParticipation(id,participating){
@@ -15840,38 +15961,51 @@ function _editsBackdropWarning(){
 }
 
 
-function exportFichePDF(){
-  if(!CU||!CU.pid){ notif("Aucun personnage lié.","err"); return; }
-  var p=gpid(CU.pid); if(!p){ notif("Personnage introuvable.","err"); return; }
+async function exportFichePDF(){
+  if(!CU||!CU.pid){ notif("Aucun personnage lié.","err"); return false; }
+  var pid=String(CU.pid);
+  if(!gpid(CU.pid)){ notif("Personnage introuvable.","err"); return false; }
+  var generation=_dbSessionGeneration;
+  if(window.__npFichePdfExporting&&window.__npFichePdfExporting.generation===generation) return false;
+  var operation={generation:generation,pid:pid};
+  window.__npFichePdfExporting=operation;
   notif("Génération du PDF…","inf");
-
-  function build(){
-    try{ _buildPDF(p); }
-    catch(e){
-      console.error("exportFichePDF failed", e);
-      notif("Impossible de générer le PDF.","err");
+  try{
+    if(!(window.jspdf&&window.jspdf.jsPDF)){
+      if(!window.__npJsPdfLoading){
+        var loading=new Promise(function(resolve,reject){
+          var script=document.createElement("script");
+          script.src="./assets/vendor/jspdf/jspdf.umd.min.js";
+          script.async=true;
+          script.onload=function(){
+            if(window.jspdf&&window.jspdf.jsPDF) resolve();
+            else { script.remove(); reject(new Error("jspdf_missing")); }
+          };
+          script.onerror=function(){ script.remove(); reject(new Error("jspdf_load_failed")); };
+          document.head.appendChild(script);
+        });
+        window.__npJsPdfLoading=loading;
+        loading.catch(function(){
+          if(window.__npJsPdfLoading===loading) window.__npJsPdfLoading=null;
+        });
+      }
+      await window.__npJsPdfLoading;
     }
+    // Loading is asynchronous; never export the former character into a new session.
+    if(generation!==_dbSessionGeneration||!CU||String(CU.pid)!==pid||window.__logoutBusy) return false;
+    var player=gpid(CU.pid);
+    if(!player){ notif("Personnage introuvable.","err"); return false; }
+    _buildPDF(player);
+    return true;
+  }catch(error){
+    if(generation===_dbSessionGeneration&&!window.__logoutBusy){
+      console.error("exportFichePDF failed",error);
+      notif(String(error&&error.message||error).indexOf("jspdf_")===0?"Impossible de charger le module PDF. Réessaie.":"Impossible de générer le PDF.","err");
+    }
+    return false;
+  }finally{
+    if(window.__npFichePdfExporting===operation) window.__npFichePdfExporting=null;
   }
-  if(window.jspdf&&window.jspdf.jsPDF){ build(); return; }
-  if(window.__npJsPdfLoading){
-    window.__npJsPdfLoading.then(build).catch(function(){ notif("Impossible de charger jsPDF.","err"); });
-    return;
-  }
-  window.__npJsPdfLoading = new Promise(function(resolve, reject){
-    var s=document.createElement("script");
-    s.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-    s.async=true;
-    s.onload=function(){
-      if(window.jspdf&&window.jspdf.jsPDF) resolve();
-      else reject(new Error("jspdf_missing"));
-    };
-    s.onerror=function(){ reject(new Error("jspdf_load_failed")); };
-    document.head.appendChild(s);
-  });
-  window.__npJsPdfLoading.then(build).catch(function(err){
-    console.error("jsPDF load failed", err);
-    notif("Impossible de charger jsPDF.","err");
-  });
 }
 
 function _buildPDF(p){
@@ -15913,7 +16047,7 @@ function _buildPDF(p){
   doc.setFontSize(9);
   doc.setTextColor(sermentColor);
   doc.setFont("helvetica","normal");
-  doc.text((p.classe||"").toUpperCase()+"  ·  NIV. "+(p.level||1)+"  ·  SERMENT NIV. "+(p.sLevel||1),14,32);
+  doc.text((p.classe||"").toUpperCase()+"  ·  NIV. "+(p.level||1),14,32);
 
   // === STATS PRINCIPALES (PV / EP / EM) ===
   var statsY=46;
@@ -15960,7 +16094,7 @@ function _buildPDF(p){
   var branchY=sepY+8;
   var sermBundle=getPlayerSermentBundle(p);
   var br=sermBundle.branch||{};
-  var palier=br.paliers?br.paliers.filter(function(pl){return pl.niv<=(p.sLevel||1);}).pop():null;
+  var palier=br.paliers?br.paliers.filter(function(pl){return pl.niv<=(p.level||1);}).pop():null;
 
   doc.setFillColor(17,17,32);
   doc.rect(14,branchY,W-28,24,"F");
@@ -15987,40 +16121,24 @@ function _buildPDF(p){
   doc.setFontSize(7);
   doc.setTextColor(GOLD);
   doc.setFont("helvetica","normal");
-  doc.text("PALIER "+_palierNum(p.sLevel||1,p.classe),W-30,branchY+10,{align:"right"});
+  doc.text("PALIER "+_palierNum(p.level||1,p.classe),W-30,branchY+10,{align:"right"});
   doc.setFontSize(9);
   doc.setTextColor(GOLD);
-  doc.text(_palierLabel(p.sLevel||1,p.classe),W-18,branchY+18,{align:"right"});
+  doc.text(_palierLabel(p.level||1,p.classe),W-18,branchY+18,{align:"right"});
 
-  // === XP SERMENT ===
-  var xpY=branchY+30;
+  // === EXPÉRIENCE COMMUNE ===
+  var xpY=branchY+30, xpBarW=W-28;
   doc.setFontSize(8);
   doc.setTextColor(DIM);
-  doc.text("XP Serment",14,xpY);
+  doc.text("Expérience",14,xpY);
   doc.setTextColor(WHITE);
-  doc.text((p.sXp||0)+" / "+(p.sXpMax||100)+" XP",W-14,xpY,{align:"right"});
-  var xpBarY=xpY+3, xpBarW=W-28;
+  doc.text((p.xp||0)+" / "+(p.xpMax||xpReq(p.level))+" XP",W-14,xpY,{align:"right"});
   doc.setFillColor(30,30,48);
-  doc.rect(14,xpBarY,xpBarW,2,"F");
-  var xpPct=p.sXpMax>0?Math.min(1,(p.sXp||0)/p.sXpMax):0;
-  doc.setFillColor(GOLD);
-  doc.rect(14,xpBarY,xpBarW*xpPct,2,"F");
-
-  // === XP PERSO ===
-  var xp2Y=xpY+10;
-  doc.setFontSize(8);
-  doc.setTextColor(DIM);
-  doc.text("XP Personnage",14,xp2Y);
-  doc.setTextColor(WHITE);
-  doc.text((p.xp||0)+" / "+(p.xpMax||100)+" XP  ·  Niveau "+(p.level||1),W-14,xp2Y,{align:"right"});
-  doc.setFillColor(30,30,48);
-  doc.rect(14,xp2Y+3,xpBarW,2,"F");
-  var xp2Pct=p.xpMax>0?Math.min(1,(p.xp||0)/p.xpMax):0;
+  doc.rect(14,xpY+3,xpBarW,2,"F");
+  var xpPct=p.xpMax>0?Math.min(1,(p.xp||0)/p.xpMax):0;
   doc.setFillColor(sermentColor);
-  doc.rect(14,xp2Y+3,xpBarW*xp2Pct,2,"F");
-
-  // === SÉPARATEUR ===
-  var sep2Y=xp2Y+10;
+  doc.rect(14,xpY+3,xpBarW*xpPct,2,"F");
+  var sep2Y=xpY+10;
   doc.setDrawColor(FAINT);
   doc.setLineWidth(0.2);
   doc.line(14,sep2Y,W-14,sep2Y);
@@ -16035,7 +16153,7 @@ function _buildPDF(p){
   doc.setLineWidth(0.3);
   doc.line(14,invY+2,50,invY+2);
 
-  var inv=(p.inventory||[]);
+  var inv=(p.inventory||[]).filter(function(i){return Number(i.qty)>0;});
   if(!inv.length){
     doc.setFontSize(8);
     doc.setTextColor(FAINT);
@@ -16061,7 +16179,7 @@ function _buildPDF(p){
   }
 
   // === GEMMES ===
-  var gems=(p.inventory||[]).filter(function(i){return i.category==="Gemme";});
+  var gems=(p.inventory||[]).filter(function(i){return i.category==="Gemme"&&Number(i.qty)>0;});
   if(gems.length){
     var gemY=invY+10;
     doc.setFontSize(8);
@@ -16070,9 +16188,9 @@ function _buildPDF(p){
     doc.text("GEMMES DE SANG",14,gemY);
     doc.setDrawColor(GLACIER);
     doc.line(14,gemY+2,66,gemY+2);
-    var wb=gems.filter(function(i){return i.name.indexOf("Blanche")>-1;}).reduce(function(a,i){return a+(i.qty||1);},0);
-    var ib=gems.filter(function(i){return i.name.indexOf("Incarnate")>-1;}).reduce(function(a,i){return a+(i.qty||1);},0);
-    var eb=gems.filter(function(i){return i.name.indexOf("carlate")>-1;}).reduce(function(a,i){return a+(i.qty||1);},0);
+    var wb=gems.filter(function(i){return i.name.indexOf("Blanche")>-1;}).reduce(function(a,i){return a+Math.max(0,Number(i.qty)||0);},0);
+    var ib=gems.filter(function(i){return i.name.indexOf("Incarnate")>-1;}).reduce(function(a,i){return a+Math.max(0,Number(i.qty)||0);},0);
+    var eb=gems.filter(function(i){return i.name.indexOf("carlate")>-1;}).reduce(function(a,i){return a+Math.max(0,Number(i.qty)||0);},0);
     doc.setFontSize(9);
     doc.setFont("helvetica","normal");
     var gx=14, gy=gemY+9;
@@ -16162,20 +16280,20 @@ function _sermColor(classe){
   return cols[classe]||"#7eb8d4";
 }
 
-function _palierNum(sLevel,classe){
+function _palierNum(level,classe){
   var defs=getSermPalierDefsFor(classe||"");
   var idx=-1;
-  defs.forEach(function(pal,i){ if(sLevel>=pal.niv) idx=i; });
+  defs.forEach(function(pal,i){ if(level>=pal.niv) idx=i; });
   if(idx>=3) return "IV";
   if(idx===2) return "III";
   if(idx===1) return "II";
   return "I";
 }
 
-function _palierLabel(sLevel,classe){
+function _palierLabel(level,classe){
   var defs=getSermPalierDefsFor(classe||"");
   var idx=-1;
-  defs.forEach(function(pal,i){ if(sLevel>=pal.niv) idx=i; });
+  defs.forEach(function(pal,i){ if(level>=pal.niv) idx=i; });
   if(idx>=3) return "Plénitude";
   if(idx===2) return "Maîtrise";
   if(idx===1) return "Densité";
@@ -16465,9 +16583,12 @@ function getCommandItems(){
     push("home-public","Accueil public","Retour à la landing page",function(){ showScreen("s-home"); try{ initHomePage(); }catch(e){}; },"H");
     push("login-public","Espace joueur","Ouvrir la connexion",function(){ showScreen("s-login"); },"L");
     push("register-public","Rejoindre l’aventure","Parcourir l’entrée HRP",function(){ showScreen("s-hrp"); },"R");
+    push("premiers-pas-public","Premiers pas","Comprendre comment rejoindre NP",function(){ openFirstSteps(); },"");
     return items;
   }
   push("accueil","Accueil","Tableau d’ensemble du compagnon",function(){ switchTab("accueil",null); },"A");
+  push("premiers-pas","Premiers pas","Guide et prochaine étape",function(){ openFirstSteps(); },"");
+  if(roleKey(CU)!=='designer') push("archives","Archives de combat","Retrouver les récits et comptes rendus",function(){ switchTab("archives",null); },"");
   push("synopsis","Synopsis","Univers et contexte",function(){ switchTab("synopsis",null); },"S");
   push("serments","Serments","Explorer les serments",function(){ switchTab("serments",null); },"S");
   push("bestiaire","Bestiaire","Voir les créatures",function(){ switchTab("bestiaire",null); },"B");

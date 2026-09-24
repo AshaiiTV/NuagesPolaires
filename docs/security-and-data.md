@@ -1,6 +1,6 @@
-# Sécurité et données — v296
+# Sécurité et données — v296 et préparation locale v297
 
-Les corrections conservent la table `np_store` et les formats JSON existants. Elles changent le contrat de l'API et doivent donc être livrées avec le front correspondant. Aucun script de migration ni aucune écriture dans la base réelle n’a été exécuté pendant leur préparation. La vérification d’infrastructure et la sauvegarde utilisent des transactions explicitement en lecture seule.
+Les corrections conservent la table `np_store` et ses collections JSON. La fusion locale de l'XP fait évoluer les champs de progression des personnages selon le contrat de [fusion-xp.md](fusion-xp.md). Les changements de contrat de l'API doivent être livrés avec le front correspondant. Aucun script de migration ni aucune écriture dans la base réelle n’a été exécuté pendant leur préparation. La vérification d’infrastructure et la sauvegarde utilisent des transactions explicitement en lecture seule.
 
 ## Sessions et récupération
 
@@ -59,6 +59,8 @@ Les réponses réseau et transitions de connexion sont liées à la session qui 
 ## Combat, progression et prototype RPG
 
 La fin de combat exclut les invocations de la synchronisation des fiches de leurs propriétaires. Elle garde l’instantané et la révision des personnages avant l’attente d’archivage, puis refuse une écriture si la fiche, sa révision, sa file de sauvegarde ou la session ont changé. Archive et fiches restent deux opérations distinctes : un échec partiel est annoncé. Les gains des niveaux utilisent les définitions de serments effectivement en vigueur, y compris les serments personnalisés.
+
+La progression du compagnon utilise uniquement `level`, `xp` et `xpMax`, avec `progressionVersion: 1`. Les anciennes fiches sont converties sans addition des deux progressions : le niveau le plus avancé est retenu, puis la meilleure fraction d'XP à niveau égal. Les capacités du serment, les statistiques et les récompenses de combat ou de gemmes utilisent cette progression commune. La conversion est idempotente ; son application répétée et la réimportation d'une fiche déjà convertie n'ajoutent aucun gain. Les sauvegardes existantes et les anciens libellés d'historique restent des traces de leur époque. Les détails et limites figurent dans [fusion-xp.md](fusion-xp.md).
 
 Le prototype RPG de la v295 reste disponible. Les nouvelles sauvegardes authentifiées restent en mémoire et sur le serveur, avec une version propre à chaque personnage : une modification d’un autre compte ne doit pas être effacée. Les anciennes copies locales du prototype sont conservées sans réimport automatique, car leur propriétaire n’était pas identifié. Les règles et récompenses de ce prototype restent calculées dans le client et ne constituent pas encore une économie multijoueur vérifiée au serveur.
 

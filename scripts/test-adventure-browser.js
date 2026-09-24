@@ -1,0 +1,60 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const {chromium}=require('playwright');
+const {createLocalApp}=require('./helpers/local-app');
+
+(async()=>{
+  const app=await createLocalApp();let browser,release;
+  try{
+    const players=(await app.read('players')).value;
+    players.find(p=>p.id==='p_alice').history=[{type:'combat',ts:Date.now(),text:'⚔ Récit de la fiche — 2 rounds · PV : 12/30',by:'Maitre'},{type:'combat',ts:1,text:null}];
+    await app.seed('players',players);
+    const arcs=Array.from({length:51},(_,i)=>({id:'arc-'+i,name:'Expédition '+String(i).padStart(2,'0'),savedAt:Date.now()-1000-i,round:2,fighters:[{type:'player',pid:'p_alice',name:'Alice',pvCur:12,pvMax:30}],log:[{text:'Une trace <b>polaire</b>.'},{text:'<img src=x onerror="window.archiveXss=1">Fin du combat.'}]}));
+    await app.seed('combat_arc_idx_Alice',arcs.map(({log,...arc})=>({...arc,_stub:true})));
+    for(const arc of arcs) await app.seed('combat_arc_rec_Alice__'+arc.id,arc);
+    await app.seed('combat_arc_Bob',[{id:'bob-only',name:'SECRET BOB',savedAt:Date.now(),fighters:[],log:[]}]);
+    browser=await chromium.launch({headless:true});const context=await browser.newContext({viewport:{width:1440,height:1000}});const page=await context.newPage();page.setDefaultTimeout(15000);
+    const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.route('https://**/*',r=>r.abort());
+    await context.addCookies([{name:'np_session',value:(await app.cookie('alice')).slice('np_session='.length),url:app.origin,httpOnly:true}]);
+    async function ready(){await page.waitForFunction(()=>window.CU&&CU.pseudo==='Alice');await page.waitForFunction(()=>!document.getElementById('login-transition-overlay').classList.contains('active')&&getComputedStyle(document.getElementById('lto-flash')).opacity==='0');}
+    await page.goto(app.origin,{waitUntil:'networkidle'});await ready();
+    await page.locator('#dd-aventure-btn').click();await page.locator('#dd-aventure-menu').getByRole('button',{name:'Archives de combat'}).click();
+    await page.locator('#p-archives-c h1').waitFor();
+    await page.locator('#archives > .tab-popup-close').click();assert.equal(new URL(page.url()).hash,'#accueil');
+    await page.evaluate(()=>switchTab('archives',null));
+    await page.evaluate(()=>openFirstSteps());const historyLength=await page.evaluate(()=>history.length);
+    await page.goBack();await page.locator('#archives.active').waitFor();assert.equal(await page.evaluate(()=>history.length),historyLength);
+    assert.equal(await page.locator('.np-archive-item').count(),20);assert.equal(await page.locator('.np-archive-count').textContent(),'53 récits');
+    assert.ok(!(await page.locator('#p-archives-c').innerText()).includes('SECRET BOB'));
+    await page.getByRole('button',{name:'Suivant',exact:true}).click();await page.getByRole('button',{name:'Suivant',exact:true}).click();
+    assert.equal(await page.locator('.np-archive-item').count(),13);
+    await page.getByRole('searchbox',{name:'Rechercher un récit'}).fill('Expédition 50');
+    assert.equal(await page.locator('.np-archive-item').count(),1);await page.locator('.np-archive-item').click();
+    await page.locator('.np-archive-detail h2').filter({hasText:'Expédition 50'}).waitFor();
+    assert.ok((await page.locator('.np-archive-log').innerText()).includes('Une trace polaire.'));
+    assert.equal(await page.evaluate(()=>window.archiveXss),undefined);
+    const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Exporter ce récit'}).click();const download=await downloadPromise;const exported=fs.readFileSync(await download.path(),'utf8');assert.ok(exported.includes('Expédition 50'));assert.ok(!exported.includes('<img'));
+    await page.setViewportSize({width:390,height:844});await page.waitForTimeout(450);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);
+    fs.mkdirSync('test-results/adventure',{recursive:true});await page.screenshot({path:'test-results/adventure/archives-mobile.png',fullPage:true});
+    await page.setViewportSize({width:1440,height:1000});await page.waitForTimeout(450);await page.screenshot({path:'test-results/adventure/archives-desktop.png',fullPage:true});
+    await page.reload({waitUntil:'networkidle'});await ready();await page.locator('#p-archives-c h1').waitFor();assert.equal(await page.locator('.np-archive-count').textContent(),'53 récits');
+    await page.getByRole('searchbox',{name:'Rechercher un récit'}).fill('Expédition 00');
+    let fail=true;await page.route('**/.netlify/functions/db',async route=>{const body=route.request().postDataJSON();if(body.action==='get'&&body.key==='combat_arc_rec_Alice__arc-0'&&fail){fail=false;await route.fulfill({status:503,contentType:'application/json',body:'{"ok":false,"error":"test failure"}'});}else await route.continue();});
+    await page.locator('.np-archive-item').click();await page.locator('#p-archives-c').getByRole('button',{name:'Réessayer',exact:true}).click();await page.locator('.np-archive-detail h2').filter({hasText:'Expédition 00'}).waitFor();
+    await page.unroute('**/.netlify/functions/db');
+    await page.evaluate(()=>{switchTab('fiche',null);});await page.locator('#p-combat-hist-content').waitFor();assert.ok((await page.locator('#p-combat-hist-content').innerText()).includes('Combat sans titre'));
+    await page.evaluate(()=>switchTab('archives',null));await page.getByRole('searchbox',{name:'Rechercher un récit'}).fill('Expédition 01');
+    let enteredResolve;const entered=new Promise(r=>enteredResolve=r);const gate=new Promise(r=>release=r);
+    await page.route('**/.netlify/functions/db',async route=>{const body=route.request().postDataJSON();if(body.action==='get'&&body.key==='combat_arc_rec_Alice__arc-1'){enteredResolve();await gate;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({value:arcs[1],version:'late'})});}else await route.continue();});
+    await page.locator('.np-archive-item').click();await entered;
+    await page.evaluate(()=>logout());await page.waitForFunction(()=>!window.CU);release();await page.waitForTimeout(250);
+    assert.equal(await page.locator('#p-archives-c').count(),0);
+    assert.equal(await page.evaluate(()=>JSON.stringify(window._dbCache||{}).includes('Expédition 01')),false);
+    await page.unroute('**/.netlify/functions/db');
+    assert.equal(app.requests.filter(r=>r.name==='db'&&['set','patch_own_player','delete'].includes(r.action)).length,0,'Reading archives must not write gameplay data');
+    assert.deepEqual(errors,[]);assert.deepEqual(app.errors,[]);
+    console.log('Archives: 53 récits, pagination/recherche, chargement après reload, export sûr, erreur/réessai, mobile, données héritées et réponse après déconnexion OK.');
+  }finally{if(release)release();if(browser)await browser.close();await app.close();}
+})().catch(error=>{console.error(error.stack||error);process.exitCode=1;});

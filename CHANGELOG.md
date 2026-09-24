@@ -1,5 +1,17 @@
 # Changelog
 
+## v297 — Parcours du compagnon et progression commune
+
+- Guide Premiers pas, archives de combat accessibles depuis Mon aventure et événements staff fiabilisés.
+- Refonte Mystique polaire des références, de la fiche, de l'agenda et du compte ; navigation clavier et mobile améliorée.
+- Export PDF autonome avec jsPDF local.
+- Un niveau et une barre d'XP pour le personnage et les capacités de son serment, dans la fiche, les outils staff, le combat et l'export PDF.
+- Récompenses de combat et Gemmes de Sang alimentant la même XP ; rang et branche du serment conservés comme choix distincts.
+- Fusion des gemmes liée au stock de l'inventaire, avec refus d'un stock insuffisant et sauvegarde commune du retrait et du gain d'XP.
+- Reprise des personnages existants par leur progression la plus avancée, avec transposition de la fraction d'XP vers le seuil commun `niveau × 30`, sans addition des anciens compteurs.
+- Conversion versionnée des données héritées et des imports ; changement de serment sans remise à zéro de la progression.
+- Règlement, système de jeu et documentation harmonisés. Le prototype RPG garde sa progression indépendante.
+
 ## v296 — Reprise sur la version publiée
 
 - Intégration de toutes les évolutions v290–v295 du prototype RPG depuis `origin/main`.

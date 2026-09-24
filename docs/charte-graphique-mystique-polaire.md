@@ -41,6 +41,9 @@ Les panneaux sont mats, les angles discrets et les séparateurs fins. Éviter le
 - **Connexion et règlement** : champs lisibles, boutons identifiables, surfaces cohérentes avec la marque.
 - **Tableau de bord** : entrée éditoriale, statistiques adaptées au rôle, prochain événement, derniers combats, personnage et accès au monde.
 - **Compagnon** : menus, fiches, formulaires, listes et outils reprennent les mêmes règles de composition, avec les couleurs du thème choisi.
+- **Fiche personnage** : portrait et identité, puis quatre chapitres numérotés — ressources, équipement, journal, serment. Une navigation directe déplace aussi le focus clavier. Une seule barre d'XP accompagne le niveau du personnage ; ce niveau détermine aussi les paliers de sa branche. Les couleurs des jauges conservent leur sens ; les branches et leurs commandes restent lisibles sur téléphone. Le rang du serment (Basique, Aguerri, etc.) reste un libellé distinct du niveau.
+- **Agenda** : dates en blocs de calendrier, événements à venir et passés, disponibilité et participation explicites. Les inscriptions et les outils staff gardent leurs permissions.
+- **Compte et collection** : identité distincte du personnage, export, accès et session regroupés ; suppression à part. Les thèmes se présentent dans une galerie adaptable, avec états possédé, actif et verrouillé, et sélection au clavier.
 
 Les valeurs affichées proviennent du projet : aucun faux nombre de joueurs en ligne, aucune activité ou récompense inventée. Les captures locales utilisent exclusivement les données de démonstration du serveur de test.
 
@@ -48,7 +51,13 @@ Les valeurs affichées proviennent du projet : aucun faux nombre de joueurs en l
 
 - `assets/css/polar-identity.css` : polices, accueil public et formulaires de connexion.
 - `assets/css/polar-connected.css` : navigation, carnet connecté, fiches et composants.
+- `assets/css/polar-reference.css` : Serments, Bestiaire et Système de jeu, avec descriptions de paliers consultables au clavier et sur mobile.
+- `assets/css/first-steps.css` et `assets/css/adventure-archives.css` : guide de démarrage et lecture des récits de combat.
+- `assets/css/polar-sheet.css` : dossier du personnage, chapitres, équipement, récits, progression commune et paliers du serment.
+- `assets/css/polar-events.css` : agenda, cartes calendrier, participants et commandes d'événement.
+- `assets/css/polar-account.css` : compte, formulaires personnels et galerie de thèmes.
 - `assets/js/theme-max.js` : nouvelle palette du thème de base dans sa configuration d'origine.
+- `assets/vendor/jspdf/` : distribution jsPDF locale, licence et provenance, chargée seulement pour exporter une fiche PDF.
 - `assets/images/nuages-polaires-horizon.jpg` : illustration finale optimisée pour le site.
 - Le chargement de l'ancienne couche `home-readability-polish.js` a été remplacé par la nouvelle feuille d'identité. Les correctifs fonctionnels du lot précédent sont conservés.
 
@@ -56,7 +65,9 @@ Les règles prévoient le clavier, un focus visible, les écrans étroits et la 
 
 ## Validation locale
 
-Les 110 tests automatisés passent, ainsi que les trois suites Chromium du projet (compagnon, RPG et actions joueur). Les contrôles graphiques couvrent l'accueil, l'univers, le règlement, la connexion, le tableau de bord, les fiches et les événements ; les thèmes sombre, clair et violet ont été examinés. Les parcours bureau et mobile conservent leurs actions et ne présentent pas de débordement horizontal aux largeurs vérifiées. Aucun déploiement n'a été effectué.
+La première refonte (v296) a été publiée le 23 septembre après 110 tests automatisés et trois suites Chromium. Les contrôles graphiques couvraient l'accueil, l'univers, le règlement, la connexion, le tableau de bord, les fiches et les événements, en sombre, clair et violet. Les nouveaux écrans de la v297 étendent cette direction ; ils restent locaux jusqu'au prochain déploiement.
+
+La suite du 24 septembre valide la fiche à 1440, 768 et 390 px, ainsi que le compte, la collection et l'agenda à 1440 et 390 px, dans les trois palettes. Les cas longs, les états vides et les actions joueur/staff sont contrôlés avec une base de démonstration isolée. Les six suites Chromium et les 133 tests automatisés passent, dont un scénario clavier dédié aux thèmes, au recadrage et aux raccourcis de combat.
 
 ## Illustration et prompts
 

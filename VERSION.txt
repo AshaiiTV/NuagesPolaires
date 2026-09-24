@@ -1,4 +1,16 @@
-Nuages Polaires v296 — Reprise du projet après audit
+Nuages Polaires v297 — Parcours et refonte du compagnon
+- Progression commune personnage/serment : une barre d'XP, combats et gemmes réunis, reprise de la progression la plus avancée
+- Guide Premiers pas public et connecté, état de liaison explicite
+- Archives de combat accessibles depuis Mon aventure, recherche et pagination
+- Événements staff : capacité, droits cohérents et sauvegardes confirmées
+- Pages Serments, Bestiaire et Système de jeu harmonisées
+- Navigation restaurée après rechargement et retour navigateur corrigé
+- Fiche personnage en quatre chapitres, navigation clavier et serment adapté au mobile
+- Agenda, compte et collection alignés sur la charte Mystique polaire
+- États vides de gemmes, filtres d'historique et portrait de secours fiabilisés
+- Export PDF autonome avec jsPDF local et navigation clavier des thèmes / avatar corrigée
+
+Socle v296 conservé :
 - Évolutions v290–v295 et prototype RPG conservés
 - Sessions révocables, récupération limitée, permissions serveur
 - Écritures concurrentes protégées, archives et profils fiabilisés

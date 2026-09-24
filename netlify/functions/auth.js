@@ -1,4 +1,5 @@
 const { neon } = require("@neondatabase/serverless");
+const progression = require("../../assets/js/progression");
 const crypto = require("crypto");
 const { createRecordStore, mutateJsonStore } = require("./_shared/auth-store");
 
@@ -535,7 +536,10 @@ async function buildSessionBundle(account) {
     return rows.length ? rows[0].value : fallback;
   };
   const accounts = await loadAccounts(versions);
-  const players = await loadPlayers(versions);
+  const storedPlayers = await loadPlayers(versions);
+  const serments = await readStore("serments_custom", {});
+  // Keep the raw store version; migration is persisted by the next authorized save.
+  const players = storedPlayers.map(player => progression.normalizePlayer(player, progression.effectiveDefinition(player.classe, serments)));
   const themeVisibility = await readVersioned("theme_visibility", {});
   const spawnLabStaff = ["admin", "mj", "designer"].includes(role) ? await readVersioned("spawn_lab_staff", {}) : null;
   const beasts = ["admin", "mj", "designer"].includes(role) ? await readVersioned("beasts", []) : undefined;
