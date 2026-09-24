@@ -1,4 +1,4 @@
-Nuages Polaires v298 — Personnalisation unifiée (locale)
+Nuages Polaires v298 — Personnalisation unifiée — publiée le 24 septembre 2026
 - Neuf palettes existantes partagées entre collection, moteur graphique et serveur
 - Aperçu réversible et confirmation du thème équipé
 - Droits et distributions contrôlés atomiquement côté serveur

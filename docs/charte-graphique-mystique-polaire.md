@@ -68,7 +68,7 @@ Les règles prévoient le clavier, un focus visible, les écrans étroits et la 
 
 ## Validation locale
 
-La première refonte (v296) a été publiée le 23 septembre après 110 tests automatisés et trois suites Chromium. Les contrôles graphiques couvraient l'accueil, l'univers, le règlement, la connexion, le tableau de bord, les fiches et les événements, en sombre, clair et violet. La v297 étend cette direction aux références, à la fiche, à l’agenda et au compte ; elle a été publiée le 24 septembre. La v298 locale unifie les palettes existantes et leurs surfaces à partir du catalogue partagé.
+La première refonte (v296) a été publiée le 23 septembre après 110 tests automatisés et trois suites Chromium. Les contrôles graphiques couvraient l'accueil, l'univers, le règlement, la connexion, le tableau de bord, les fiches et les événements, en sombre, clair et violet. La v297 étend cette direction aux références, à la fiche, à l’agenda et au compte ; elle a été publiée le 24 septembre. La v298, publiée le 24 septembre, unifie les palettes existantes et leurs surfaces à partir du catalogue partagé.
 
 La suite du 24 septembre valide la fiche à 1440, 768 et 390 px, ainsi que le compte, la collection et l'agenda à 1440 et 390 px, dans les trois palettes. Les cas longs, les états vides et les actions joueur/staff sont contrôlés avec une base de démonstration isolée. Les six suites Chromium et les 133 tests automatisés passent, dont un scénario clavier dédié aux thèmes, au recadrage et aux raccourcis de combat.
 

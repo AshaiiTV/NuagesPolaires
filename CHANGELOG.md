@@ -1,6 +1,6 @@
 # Changelog
 
-## v298 — Personnalisation unifiée (locale)
+## v298 — Personnalisation unifiée (publiée le 24 septembre 2026)
 
 - Catalogue partagé par le client et le serveur : neuf thèmes existants, alias historiques et palettes personnalisées validées.
 - Application immédiate des couleurs, surfaces et contrastes cohérents sur les écrans du compagnon.

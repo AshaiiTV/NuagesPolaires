@@ -40,9 +40,9 @@ Le compagnon possède désormais un niveau et une barre d'XP communs. Les gains 
 
 La reprise retient le plus avancé des deux anciens niveaux, puis la meilleure fraction d'XP si les niveaux sont égaux. Elle ne cumule pas les anciennes XP. Le contrat de conversion et les exemples figurent dans [fusion-xp.md](fusion-xp.md). Le prototype RPG garde ses propres récompenses et sa progression. Cette conversion est incluse dans la v297 publiée ; aucun script de migration de masse n’a été exécuté. Les chiffres de validation du lot précédent ci-dessus décrivent la recette initiale de ce lot.
 
-### Troisième lot — v298 locale
+### Troisième lot — v298 publiée
 
-La personnalisation utilise un catalogue partagé, un moteur de palette synchrone et des surfaces cohérentes. La collection distingue l’aperçu du thème confirmé. Un thème non possédé est présenté dans un échantillon isolé ; un thème utilisable peut être essayé puis appliqué ou annulé. Le serveur vérifie les droits et les éventuels blocages au moment de la sauvegarde. Voir [personnalisation-themes.md](personnalisation-themes.md). Ce lot reste local, sans push ni nouveau déploiement.
+La personnalisation utilise un catalogue partagé, un moteur de palette synchrone et des surfaces cohérentes. La collection distingue l’aperçu du thème confirmé. Un thème non possédé est présenté dans un échantillon isolé ; un thème utilisable peut être essayé puis appliqué ou annulé. Le serveur vérifie les droits et les éventuels blocages au moment de la sauvegarde. Voir [personnalisation-themes.md](personnalisation-themes.md). Ce lot a été publié le 24 septembre 2026 depuis le commit `f87f82e`, après sauvegarde vérifiée, 212 tests et neuf suites navigateur réussis. Voir la [fiche de publication](release-v298-2026-09-24.md).
 
 ## 1. Ce qu'est NP aujourd'hui
 

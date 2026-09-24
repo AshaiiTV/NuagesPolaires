@@ -1,4 +1,4 @@
-# Personnalisation des thèmes — v298 locale
+# Personnalisation des thèmes — v298 publiée
 
 Le catalogue `assets/js/theme-catalog.js` définit les neuf thèmes existants : Nuages Polaires, Brume Claire, Galactique, Sylvan, Aquaris, Pâques, Halloween, Noël et Lune de Sang. Il expose le même schéma côté navigateur et côté serveur, normalise les alias historiques et dérive une palette sûre pour les thèmes personnalisés hérités. Les métadonnées de distribution configurées en base sont conservées.
 
@@ -24,7 +24,7 @@ Le fonctionnement visuel et les règles pour ajouter un composant sont détaill�
 
 `theme-max.js` applique synchroniquement les tokens du catalogue. Les surfaces du compagnon utilisent des couleurs sémantiques pour conserver la lecture des actions, statuts et ressources. Les miniatures montrent leur propre palette, indépendamment de celle actuellement essayée.
 
-Cette version est préparée et vérifiée sur des comptes fictifs dans une base PostgreSQL locale éphémère. La production reste sur la v297 jusqu’à une nouvelle demande de déploiement. Aucune migration ni attribution de thèmes en production n’est nécessaire à cette préparation.
+Cette version a été vérifiée sur des comptes fictifs dans une base PostgreSQL locale éphémère, puis publiée le 24 septembre 2026. La livraison n’a exécuté aucune migration ni attribution de thèmes en production. Le déploiement, la sauvegarde et les contrôles sont consignés dans la [fiche de publication](release-v298-2026-09-24.md).
 
 ## Recette du 24 septembre 2026
 
