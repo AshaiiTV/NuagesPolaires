@@ -30,6 +30,7 @@ function fixture() {
   let version = 'version-0', revision = 0;
   const context = {
     console: { warn() {} },
+    _themePreferenceRevision: 0, _themeSelection: null,
     _dbSessionGeneration: 1, _dbCache: { players: clone(saved) }, _dbVersions: { players: version },
     _dbToken: true, _dbOffline: false, _DB_WRITE_QUEUE: Object.create(null), _LOCAL_ONLY_KEYS: [],
     _npClone: clone, _cloneForDb: clone, _normalizeDbValueForKey: (_key, value) => clone(value),

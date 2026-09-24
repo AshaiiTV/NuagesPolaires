@@ -20,7 +20,7 @@ Les inscriptions héritées reposent encore sur le nom du personnage ; les homon
 
 Validation locale de ce lot : 110 tests automatisés réussis, syntaxe de 46 fichiers vérifiée et construction statique réussie. Les trois suites Chromium couvrent notamment les sauvegardes après rechargement, les conflits, les archives, le RPG, les actions joueur et le changement de compte pendant une requête. Elles utilisent les fonctions serveur du projet avec une base SQL locale ; ces résultats ne constituent pas une validation du site publié.
 
-### Deuxième lot — v297 locale
+### Deuxième lot — v297 publiée
 
 - **Premiers pas** : guide accessible depuis l'accueil public et les menus du compagnon. Il distingue invité, attente de liaison, personnage lié, fiche indisponible et staff. Il explique le rôle de l'administrateur, les usages du journal et le statut du RPG.
 - **Archives de combat** : rubrique Mon aventure dédiée à la lecture, avec recherche, types de récits, pagination et export texte. Elle réutilise les archives déjà accessibles au compte et les comptes rendus de sa fiche ; elle ne partage pas de nouvelles archives et ne modifie pas une simulation.
@@ -30,15 +30,19 @@ Validation locale de ce lot : 110 tests automatisés réussis, syntaxe de 46 fic
 - **Refonte connectée, suite du 24 septembre** : fiche en quatre chapitres avec navigation clavier, agenda de rendez-vous, compte et collection de thèmes. Les gemmes épuisées affichent un état vide réel, les filtres d'historique se réinitialisent quand ils ne s'appliquent plus et le portrait conserve une initiale si l'image échoue.
 - **Accessibilité et export** : sélection des thèmes au clavier, focus conservé dans le recadrage d'avatar, raccourcis de combat limités à la simulation visible. Export PDF chargé depuis le site avec jsPDF local, avec réessai possible et annulation lors d'un changement de session.
 
-Cette v297 est préparée localement, sans nouveau push ni déploiement. La production reste sur la v296.
+La v297, fusion de l’XP comprise, a été publiée le 24 septembre 2026 au commit `8025859`. Sauvegarde de 84 entrées vérifiée, 178 tests automatisés et sept suites Chromium réussis avant publication. Les assets, API et pages publiques ont été contrôlés en production.
 
 Validation : **133 tests automatisés**, syntaxe de **53 fichiers** et build réussis. Les six scripts Chromium passent (compagnon, RPG, actions joueur, événements staff, archives, clavier du compte). La recette graphique couvre le guide, 27 vues de références et 15 vues de fiche, à 1440/768/390 px en sombre/clair/violet, ainsi que l'agenda et le compte sur ordinateur/mobile. Les tests d'archives vérifient notamment 53 récits, export sans HTML actif, erreur/réessai, rechargement, fermeture/retour navigateur et réponse tardive après déconnexion. L'export PDF a été téléchargé et relu, avec le réseau externe bloqué, puis contrôlé après erreur, double clic et déconnexion pendant le chargement. Données fictives uniquement.
 
-### Fusion de l'XP — préparation locale du 24 septembre
+### Fusion de l'XP — publiée le 24 septembre
 
 Le compagnon possède désormais un niveau et une barre d'XP communs. Les gains de statistiques, dégâts et paliers de branche suivent le niveau du personnage ; les récompenses de combat et les Gemmes de Sang augmentent ce même compteur. Le rang du serment et le choix de branche restent distincts. Un changement de serment conserve le niveau et l'XP.
 
-La reprise retient le plus avancé des deux anciens niveaux, puis la meilleure fraction d'XP si les niveaux sont égaux. Elle ne cumule pas les anciennes XP. Le contrat de conversion et les exemples figurent dans [fusion-xp.md](fusion-xp.md). Le prototype RPG garde ses propres récompenses et sa progression. Ce suivi décrit une modification locale, sans publication ni migration de la base de production ; les chiffres de validation du lot précédent ci-dessus concernent ce lot uniquement.
+La reprise retient le plus avancé des deux anciens niveaux, puis la meilleure fraction d'XP si les niveaux sont égaux. Elle ne cumule pas les anciennes XP. Le contrat de conversion et les exemples figurent dans [fusion-xp.md](fusion-xp.md). Le prototype RPG garde ses propres récompenses et sa progression. Cette conversion est incluse dans la v297 publiée ; aucun script de migration de masse n’a été exécuté. Les chiffres de validation du lot précédent ci-dessus décrivent la recette initiale de ce lot.
+
+### Troisième lot — v298 locale
+
+La personnalisation utilise un catalogue partagé, un moteur de palette synchrone et des surfaces cohérentes. La collection distingue l’aperçu du thème confirmé. Un thème non possédé est présenté dans un échantillon isolé ; un thème utilisable peut être essayé puis appliqué ou annulé. Le serveur vérifie les droits et les éventuels blocages au moment de la sauvegarde. Voir [personnalisation-themes.md](personnalisation-themes.md). Ce lot reste local, sans push ni nouveau déploiement.
 
 ## 1. Ce qu'est NP aujourd'hui
 

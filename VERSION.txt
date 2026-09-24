@@ -1,4 +1,10 @@
-Nuages Polaires v297 — Parcours et refonte du compagnon
+Nuages Polaires v298 — Personnalisation unifiée (locale)
+- Neuf palettes existantes partagées entre collection, moteur graphique et serveur
+- Aperçu réversible et confirmation du thème équipé
+- Droits et distributions contrôlés atomiquement côté serveur
+- Préférence du compte, erreurs et changements de session respectés
+
+Socle v297 publié le 24 septembre 2026 :
 - Progression commune personnage/serment : une barre d'XP, combats et gemmes réunis, reprise de la progression la plus avancée
 - Guide Premiers pas public et connecté, état de liaison explicite
 - Archives de combat accessibles depuis Mon aventure, recherche et pagination

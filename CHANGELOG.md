@@ -1,5 +1,14 @@
 # Changelog
 
+## v298 — Personnalisation unifiée (locale)
+
+- Catalogue partagé par le client et le serveur : neuf thèmes existants, alias historiques et palettes personnalisées validées.
+- Application immédiate des couleurs, surfaces et contrastes cohérents sur les écrans du compagnon.
+- Collection avec aperçu réversible, découverte isolée des thèmes non possédés, confirmation explicite et retour au thème enregistré en cas d’erreur.
+- Préférence du compte prioritaire sur celle de l’appareil, sans écriture pendant un aperçu ni à la simple ouverture.
+- Sélection contrôlée côté serveur : possession, blocage, accès Early Clouds et fenêtre de distribution ; droits réévalués lors des écritures concurrentes.
+- Réponses de sélection sans renouvellement du cookie : une réponse tardive ne remplace pas la session d’un autre compte.
+
 ## v297 — Parcours du compagnon et progression commune
 
 - Guide Premiers pas, archives de combat accessibles depuis Mon aventure et événements staff fiabilisés.

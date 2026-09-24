@@ -21,7 +21,7 @@ Un monde silencieux et immense, une lumière étrange, des histoires encore poss
 | Laiton pâle | `#C6B38B` | Serments, numérotation, détails rares |
 | Sauge claire | `#C6D8C4` | Action principale de l'accueil |
 
-L'accueil public conserve cette palette de marque. Les thèmes personnels du compagnon gardent leurs couleurs, avec une structure et une typographie communes. Les couleurs de danger, de réussite, de statut et de serment conservent leur sens.
+L'accueil visiteur conserve cette palette de marque. Lorsqu'un joueur connecté visite l'accueil ou les pages publiques, l'interface suit sa palette personnelle ; les illustrations et l'identité du logo restent conservées. Les thèmes personnels gardent leurs couleurs, avec une structure et une typographie communes. Les couleurs de danger, de réussite, de statut et de ressource conservent leur sens ; l'identité des serments reste distincte des accents décoratifs.
 
 ## Typographie
 
@@ -43,7 +43,7 @@ Les panneaux sont mats, les angles discrets et les séparateurs fins. Éviter le
 - **Compagnon** : menus, fiches, formulaires, listes et outils reprennent les mêmes règles de composition, avec les couleurs du thème choisi.
 - **Fiche personnage** : portrait et identité, puis quatre chapitres numérotés — ressources, équipement, journal, serment. Une navigation directe déplace aussi le focus clavier. Une seule barre d'XP accompagne le niveau du personnage ; ce niveau détermine aussi les paliers de sa branche. Les couleurs des jauges conservent leur sens ; les branches et leurs commandes restent lisibles sur téléphone. Le rang du serment (Basique, Aguerri, etc.) reste un libellé distinct du niveau.
 - **Agenda** : dates en blocs de calendrier, événements à venir et passés, disponibilité et participation explicites. Les inscriptions et les outils staff gardent leurs permissions.
-- **Compte et collection** : identité distincte du personnage, export, accès et session regroupés ; suppression à part. Les thèmes se présentent dans une galerie adaptable, avec états possédé, actif et verrouillé, et sélection au clavier.
+- **Compte et collection** : identité distincte du personnage, export, accès et session regroupés ; suppression à part. Les thèmes se présentent dans une galerie adaptable, avec états possédé, actif, verrouillé et bloqué, et sélection au clavier. L'aperçu est réversible et ne change pas les possessions. Un thème devient actif après confirmation du serveur ; un échec conserve le dernier choix confirmé.
 
 Les valeurs affichées proviennent du projet : aucun faux nombre de joueurs en ligne, aucune activité ou récompense inventée. Les captures locales utilisent exclusivement les données de démonstration du serveur de test.
 
@@ -56,7 +56,10 @@ Les valeurs affichées proviennent du projet : aucun faux nombre de joueurs en l
 - `assets/css/polar-sheet.css` : dossier du personnage, chapitres, équipement, récits, progression commune et paliers du serment.
 - `assets/css/polar-events.css` : agenda, cartes calendrier, participants et commandes d'événement.
 - `assets/css/polar-account.css` : compte, formulaires personnels et galerie de thèmes.
-- `assets/js/theme-max.js` : nouvelle palette du thème de base dans sa configuration d'origine.
+- `assets/js/theme-catalog.js` : catalogue partagé et versionné, palettes complètes, aliases historiques et calcul des contrastes. Ajouter un thème ne demande plus de recopier sa palette dans plusieurs modules.
+- `assets/js/theme-max.js` : application synchrone des palettes, adaptateurs des anciennes variables et décors des thèmes.
+- `assets/css/theme-surfaces.css` : couleurs communes aux composants, portails, formulaires et pages publiques visitées en session. Cette couche remplace progressivement les anciennes surcharges ; les règles de compatibilité sont conservées tant que leurs familles n'ont pas été validées.
+- `docs/theme-system.md` : contrat de personnalisation et règles pour les nouveaux composants.
 - `assets/vendor/jspdf/` : distribution jsPDF locale, licence et provenance, chargée seulement pour exporter une fiche PDF.
 - `assets/images/nuages-polaires-horizon.jpg` : illustration finale optimisée pour le site.
 - Le chargement de l'ancienne couche `home-readability-polish.js` a été remplacé par la nouvelle feuille d'identité. Les correctifs fonctionnels du lot précédent sont conservés.
@@ -65,7 +68,7 @@ Les règles prévoient le clavier, un focus visible, les écrans étroits et la 
 
 ## Validation locale
 
-La première refonte (v296) a été publiée le 23 septembre après 110 tests automatisés et trois suites Chromium. Les contrôles graphiques couvraient l'accueil, l'univers, le règlement, la connexion, le tableau de bord, les fiches et les événements, en sombre, clair et violet. Les nouveaux écrans de la v297 étendent cette direction ; ils restent locaux jusqu'au prochain déploiement.
+La première refonte (v296) a été publiée le 23 septembre après 110 tests automatisés et trois suites Chromium. Les contrôles graphiques couvraient l'accueil, l'univers, le règlement, la connexion, le tableau de bord, les fiches et les événements, en sombre, clair et violet. La v297 étend cette direction aux références, à la fiche, à l’agenda et au compte ; elle a été publiée le 24 septembre. La v298 locale unifie les palettes existantes et leurs surfaces à partir du catalogue partagé.
 
 La suite du 24 septembre valide la fiche à 1440, 768 et 390 px, ainsi que le compte, la collection et l'agenda à 1440 et 390 px, dans les trois palettes. Les cas longs, les états vides et les actions joueur/staff sont contrôlés avec une base de démonstration isolée. Les six suites Chromium et les 133 tests automatisés passent, dont un scénario clavier dédié aux thèmes, au recadrage et aux raccourcis de combat.
 

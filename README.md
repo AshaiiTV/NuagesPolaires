@@ -1,6 +1,6 @@
 # Nuages Polaires
 
-Compagnon de jeu et portail staff Nuages Polaires. Version **v297** : guide de démarrage, archives accessibles, événements staff fiabilisés et refonte Mystique polaire étendue aux références, à la fiche personnage, à l'agenda et au compte.
+Compagnon de jeu et portail staff Nuages Polaires. Version **v298 locale** : personnalisation unifiée, aperçu réversible des thèmes et sauvegarde confirmée avec contrôle des droits côté serveur. La production reste sur la v297 publiée le 24 septembre 2026.
 
 Le compagnon utilise un niveau et une barre d'XP communs aux statistiques et aux capacités du serment. La reprise des anciennes fiches conserve la progression la plus avancée. Règles et migration : [docs/fusion-xp.md](docs/fusion-xp.md).
 

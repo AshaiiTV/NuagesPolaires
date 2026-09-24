@@ -1,25 +1,17 @@
-/* Nuages Polaires — Theme Regression Tests v268
+/* Nuages Polaires — Theme Regression Tests v298
    Admin-only tests for the theme engine.
    Integrated into Staff > Tableau de bord.
 */
 (function(){
   'use strict';
 
-  var VERSION = 'v268';
+  var VERSION = 'v298';
   var STYLE_ID = 'np-theme-regression-style-v268';
   var RESULT_ID = 'np-theme-regression-results';
-  var THEMES = [
-    {id:'dark', label:'Base'},
-    {id:'light', label:'Clair'},
-    {id:'violet', label:'Galactique'},
-    {id:'green', label:'Sylvan'},
-    {id:'easter', label:'Pâques'},
-    {id:'halloween', label:'Halloween'},
-    {id:'noel', label:'Noël'},
-    {id:'aquaris', label:'Aquaris'},
-    {id:'bloodmoon', label:'BloodMoon'}
-  ];
-  var THEME_CLASSES = ['light','theme-violet','theme-red','theme-green','theme-easter','theme-halloween','theme-noel','theme-aquaris','theme-bloodmoon'];
+  function testThemes(){
+    var entries = typeof window.getAllThemes === 'function' ? window.getAllThemes() : [];
+    return window.NPThemeCatalog ? window.NPThemeCatalog.list(entries) : [];
+  }
   var LAST_REPORT = null;
   var BUTTON_INJECTED = false;
 
@@ -233,28 +225,23 @@
     return (hi + 0.05) / (lo + 0.05);
   }
 
-  function classForTheme(id){
-    if(id === 'light') return 'light';
-    if(id === 'dark') return '';
-    return 'theme-' + id;
-  }
-
   function setTemporaryTheme(id){
-    var body = document.body;
-    var snapshot = {
-      className: body.className,
-      style: body.getAttribute('style') || '',
-      active: body.getAttribute('data-theme-active') || ''
-    };
-    THEME_CLASSES.forEach(function(cls){ body.classList.remove(cls); });
-    var cls = classForTheme(id);
-    if(cls) body.classList.add(cls);
-    try{ if(typeof window.themeMaxRefresh === 'function') window.themeMaxRefresh(); }catch(e){}
+    if(!window.NPThemeEngine) throw new Error('Moteur de thèmes absent.');
+    var originalId = document.body.getAttribute('data-theme-active') || 'dark';
+    var attributes = ['class','style','data-theme-active','data-theme-tone','data-theme-engine','data-np-authenticated'];
+    var snapshots = [document.documentElement, document.body].map(function(element){
+      return {element:element, values:attributes.map(function(name){ return element.getAttribute(name); })};
+    });
+    if(!window.NPThemeEngine.apply(id)) throw new Error('Thème inconnu : ' + id);
     return function restore(){
-      body.className = snapshot.className;
-      if(snapshot.style) body.setAttribute('style', snapshot.style); else body.removeAttribute('style');
-      if(snapshot.active) body.setAttribute('data-theme-active', snapshot.active);
-      try{ if(typeof window.themeMaxRefresh === 'function') window.themeMaxRefresh(); }catch(e){}
+      window.NPThemeEngine.apply(originalId);
+      snapshots.forEach(function(snapshot){
+        attributes.forEach(function(name,index){
+          var value = snapshot.values[index];
+          if(value === null) snapshot.element.removeAttribute(name);
+          else snapshot.element.setAttribute(name,value);
+        });
+      });
     };
   }
 
@@ -322,23 +309,23 @@
       var ratio = contrast(accent, primaryText);
       if(ratio == null){
         checks.push({name:'contraste bouton', status:'warn', detail:'Contraste non calculable automatiquement.', extra:{accent:accent,primaryText:primaryText}});
-      }else if(ratio >= 3){
+      }else if(ratio >= 4.5){
         checks.push({name:'contraste bouton', status:'ok', detail:'Contraste estimé OK : ' + ratio.toFixed(2)});
       }else{
-        checks.push({name:'contraste bouton', status:'warn', detail:'Contraste estimé faible : ' + ratio.toFixed(2), extra:{accent:accent,primaryText:primaryText}});
+        checks.push({name:'contraste bouton', status:'bad', detail:'Contraste sous 4,5:1 : ' + ratio.toFixed(2), extra:{accent:accent,primaryText:primaryText}});
       }
 
       var sandbox = document.createElement('div');
       sandbox.style.cssText = 'position:absolute;left:-99999px;top:-99999px;pointer-events:none;';
-      sandbox.innerHTML = '<button class="btn primary" data-primary="true">Test primaire</button><div class="card theme-card-premium"><div class="title">Carte test</div><div class="tagline">Lecture de base</div></div><span class="np-legacy-blue-probe" style="color:rgba(126,184,212,0.7);border:1px solid rgba(126,184,212,0.25);background:rgba(126,184,212,0.05);">Probe bleu legacy</span>';
+      sandbox.innerHTML = '<button class="btn primary" data-primary="true">Test primaire</button><div class="card"><div class="title">Carte test</div><div class="tagline">Lecture de base</div></div><span class="np-dynamic-theme-probe" style="color:var(--text);border:1px solid var(--border2);background:var(--bg2);">Composant dynamique</span><span class="np-theme-reference"></span>';
       document.body.appendChild(sandbox);
       var btn = sandbox.querySelector('button');
       var card = sandbox.querySelector('.card');
-      var probe = sandbox.querySelector('.np-legacy-blue-probe');
+      var probe = sandbox.querySelector('.np-dynamic-theme-probe');
       var btnStyle = getComputedStyle(btn);
       var cardStyle = getComputedStyle(card);
       var probeStyle = getComputedStyle(probe);
-      if(btnStyle.color && btnStyle.backgroundImage || btnStyle.backgroundColor){
+      if(btnStyle.color && (btnStyle.backgroundImage || btnStyle.backgroundColor)){
         checks.push({name:'bouton primaire DOM', status:'ok', detail:'Bouton primaire stylé.'});
       }else{
         checks.push({name:'bouton primaire DOM', status:'warn', detail:'Style bouton primaire difficile à confirmer.'});
@@ -348,16 +335,20 @@
       }else{
         checks.push({name:'carte DOM', status:'warn', detail:'Style carte difficile à confirmer.'});
       }
-      var legacyBlueStillVisible = id !== 'dark' && probeStyle.color.replace(/\s+/g,'') === 'rgba(126,184,212,0.7)';
-      if(!legacyBlueStillVisible){
-        checks.push({name:'bleu legacy', status:'ok', detail:'Les anciens styles bleus inline sont recolorés.'});
+      var reference = sandbox.querySelector('.np-theme-reference');
+      reference.style.color = getCssVar('--text');
+      reference.style.backgroundColor = getCssVar('--bg2');
+      var referenceStyle = getComputedStyle(reference);
+      if(probeStyle.color === referenceStyle.color && probeStyle.backgroundColor === referenceStyle.backgroundColor){
+        checks.push({name:'composant dynamique', status:'ok', detail:'Un composant ajouté après le changement hérite immédiatement de la palette.'});
       }else{
-        checks.push({name:'bleu legacy', status:'bad', detail:'Un style bleu de base reste visible.', extra:{color:probeStyle.color,borderColor:probeStyle.borderColor,backgroundColor:probeStyle.backgroundColor}});
+        checks.push({name:'composant dynamique', status:'bad', detail:'Un composant ajouté après le changement ne suit pas la palette.', extra:{color:probeStyle.color,backgroundColor:probeStyle.backgroundColor}});
       }
       sandbox.remove();
     }catch(e){
       checks.push({name:'runtime', status:'bad', detail:'Erreur runtime : ' + String(e && e.message || e), extra:{stack:e && e.stack}});
     }finally{
+      if(typeof sandbox !== 'undefined' && sandbox) sandbox.remove();
       if(restore) restore();
     }
 
@@ -430,7 +421,9 @@
     };
 
     return Promise.resolve().then(function(){
-      report.results = THEMES.map(testTheme);
+      var themes = testThemes();
+      if(!themes.length) throw new Error('Catalogue des thèmes absent.');
+      report.results = themes.map(testTheme);
       report.durationMs = Date.now() - start;
       LAST_REPORT = report;
       renderReport(report);
@@ -510,7 +503,7 @@
       run:runThemeRegression,
       copy:copyThemeRegressionReport,
       last:function(){ return LAST_REPORT; },
-      themes:THEMES.slice()
+      themes:testThemes()
     };
   }
 

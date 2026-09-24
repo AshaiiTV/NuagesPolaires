@@ -30,6 +30,7 @@ function fixture() {
   const fields = new Map();
   const context = {
     console: { warn() {} },
+    _themePreferenceRevision: 0, _themeSelection: null,
     _dbSessionGeneration: 0, _dbCache: Object.create(null), _dbVersions: Object.create(null),
     _dbToken: true, _dbOffline: false, _DB_WRITE_QUEUE: Object.create(null), _authEntryPending: false, CU: null,
     _npClone: clone, _normalizeDbValueForKey: (_key, value) => clone(value),

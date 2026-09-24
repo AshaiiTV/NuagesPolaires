@@ -488,40 +488,11 @@ var SD={
 // ==========================================
 // DATA — THÈMES
 // ==========================================
-var THEMES_BASE = [
-  { id:"dark",        name:"Nuages Polaires", cls:"",              preview:["#0d0e18","#7eb8d4","#c9a84c"], desc:"Le thème original.", event:false },
-  { id:"light",       name:"Brume Claire",    cls:"light",         preview:["#f4f5fa","#3a8fba","#9a7020"], desc:"Mode clair.",        event:false },
-  { id:"violet",      name:"Galactique",      cls:"theme-violet",  preview:["#03020b","#9b7cff","#73d8ff"], desc:"Constellations, nébuleuses et verre cosmique.", event:false },
-  { id:"green",       name:"Sylvan",          cls:"theme-green",   preview:["#031108","#51c56d","#d8c16a"], desc:"Jungle dense, canopée humide, lianes vivantes et lumière de sous-bois.", event:false },
-  { id:"aquaris",     name:"Aquaris",         cls:"theme-aquaris", preview:["#020c13","#57dfff","#88ffe7"], desc:"Un royaume englouti s’abat sur l’interface : bulles, lueurs océaniques, verre abyssal et profondeur aquatique partout.", event:false },
-];
-
-// Thèmes événement — chargés depuis la DB (clé "event_themes")
-// Format: { id, name, cls, preview:[bg,accent,gold], desc, availableUntil (timestamp), createdAt }
-
-// v42 clean bootstrap helpers
-function normalizeThemeId(themeId){
-  var id = String(themeId || '').trim().toLowerCase();
-  if(!id || id === 'theme-default') return 'dark';
-  if(id.indexOf('theme-') === 0) id = id.replace(/^theme-/, '');
-  if(id === 'default') return 'dark';
-  if(id === 'red' || id === 'ecarlate' || id === 'écarlate') return 'dark';
-  if(id === 'aquarius') return 'aquaris';
-  return id;
-}
-var THEME_CANON_META = {
-  dark:{rarity:"Base",category:"Base",event:false},
-  light:{rarity:"Base",category:"Base",event:false},
-  violet:{rarity:"Rare",category:"Rares",event:false},
-  green:{rarity:"Rare",category:"Rares",event:false},
-  aquaris:{rarity:"Rare",category:"Rares",event:false},
-  easter:{rarity:"Saisonnier",category:"Événement",event:true},
-  halloween:{rarity:"Saisonnier",category:"Événement",event:true},
-  noel:{rarity:"Saisonnier",category:"Événement",event:true},
-  bloodmoon:{rarity:"Fondateur",category:"Fondateur",event:false}
-};
+// Visual definitions and aliases are shared with the server in theme-catalog.js.
+function normalizeThemeId(themeId){ return NPThemeCatalog.normalizeId(themeId); }
 function getThemeCanonMeta(themeId){
-  return THEME_CANON_META[normalizeThemeId(themeId)] || null;
+  var id = normalizeThemeId(themeId);
+  return NPThemeCatalog.builtinIds.includes(id) ? NPThemeCatalog.get(id) : null;
 }
 function _dbSessionChangedError(){
   var error = new Error('La session a changé pendant le chargement.');
@@ -569,21 +540,40 @@ function _protectPlayerReadResponse(response){
   if(response.versions)delete response.versions.players;
   return response;
 }
+function _themeReadSnapshot(){
+  return {revision:_themePreferenceRevision, pending:!!(_themeSelection && _themeSelection.pending)};
+}
+function _protectThemeReadResponse(response){
+  var snapshot = response && response.__npThemeRead;
+  if(!snapshot) return response;
+  var current = _themeReadSnapshot();
+  if(snapshot.revision === current.revision && !snapshot.pending && !current.pending) return response;
+  // Do not replace a confirmed preference with a read that overlaps its save.
+  if(snapshot.direct){ delete response.value; delete response.version; response.skipped = true; }
+  if(response.data) delete response.data.accounts;
+  if(response.versions) delete response.versions.accounts;
+  return response;
+}
 async function _authCall(payload, opts){
   var sessionGeneration = _dbSessionGeneration;
   var playerRead=payload.action==='session_bundle'?_playerReadSnapshot():null;
+  var themeRead=payload.action==='session_bundle'?_themeReadSnapshot():null;
   var response = await _jsonPost('/.netlify/functions/auth', payload, opts);
   _assertDbSessionGeneration(sessionGeneration, payload && payload.action === 'logout');
   if(playerRead){Object.defineProperty(response,'__npPlayerRead',{value:playerRead});_protectPlayerReadResponse(response);}
+  if(themeRead){Object.defineProperty(response,'__npThemeRead',{value:themeRead});_protectThemeReadResponse(response);}
   return response;
 }
 async function _dbCall(payload, opts){
   var sessionGeneration = _dbSessionGeneration;
   var playerRead=payload.action==='get_all'||(payload.action==='get'&&payload.key==='players')?_playerReadSnapshot():null;
   if(playerRead)playerRead.direct=payload.action==='get';
+  var themeRead=payload.action==='get_all'||(payload.action==='get'&&payload.key==='accounts')?_themeReadSnapshot():null;
+  if(themeRead)themeRead.direct=payload.action==='get';
   var resp = await _jsonPost('/.netlify/functions/db', payload, opts);
   _assertDbSessionGeneration(sessionGeneration);
   if(playerRead){Object.defineProperty(resp,'__npPlayerRead',{value:playerRead});_protectPlayerReadResponse(resp);}
+  if(themeRead){Object.defineProperty(resp,'__npThemeRead',{value:themeRead});_protectThemeReadResponse(resp);}
   if(resp && resp.ok !== false && resp.status < 400){
     if(payload.action === 'get' && Object.prototype.hasOwnProperty.call(resp, 'version')){
       var readVersion={};readVersion[payload.key]=resp.version;_rememberDbVersions(readVersion);
@@ -862,6 +852,7 @@ function _hydrateBundleData(bundle, sessionGeneration){
   try{
     if(!bundle) return bundle;
     _protectPlayerReadResponse(bundle);
+    _protectThemeReadResponse(bundle);
     if(bundle.versions) _rememberDbVersions(bundle.versions);
     var data = bundle.data || bundle;
     if(!data || typeof data !== 'object') return bundle;
@@ -932,12 +923,6 @@ const BUILTIN_THEME_IDS = ['dark','light','violet','green'].map(normalizeThemeId
 const ALWAYS_GRANTED_THEME_IDS = ['dark','light'].map(normalizeThemeId);
 function isBaseTheme(themeId){ return BUILTIN_THEME_IDS.includes(normalizeThemeId(themeId)); }
 function isAlwaysGrantedTheme(themeId){ return ALWAYS_GRANTED_THEME_IDS.includes(normalizeThemeId(themeId)); }
-var THEMES_EVENT_BUILTIN = [
-  { id:"easter",     name:"Printemps Éveillé", cls:"theme-easter",    preview:["#160f1f","#ffb9df","#fff19a"], desc:"Explosion de Pâques pastel : œufs peints, printemps sucré et éclats festifs partout.", event:true, availableUntil:1777593600000 },
-  { id:"halloween",  name:"Nuit des Âmes",     cls:"theme-halloween", preview:["#0a0806","#e07820","#c040e0"], desc:"Thème Halloween.", event:true, availableUntil:1793577600000 },
-  { id:"noel",       name:"Veillée Hivernale", cls:"theme-noel",      preview:["#090f0a","#70c060","#f0d060"], desc:"Thème Noël.",     event:true, availableUntil:1799193600000 },
-  { id:"bloodmoon",  name:"Lune de Sang",      cls:"theme-bloodmoon", preview:["#040205","#ff5a73","#f4c670"], desc:"Un ciel noir, une lune rouge souveraine et une lumière d'or funèbre. Un thème fondateur, noble et menaçant.", event:true, availableUntil:0 },
-];
 function _cloneThemeEntry(entry){
   try{ return JSON.parse(JSON.stringify(entry)); }catch(e){ return entry; }
 }
@@ -967,23 +952,7 @@ function _getDbThemeEntries(){
   return [];
 }
 function getAllThemes(){
-  var merged = [];
-  var byId = Object.create(null);
-  THEMES_BASE.concat(THEMES_EVENT_BUILTIN).forEach(function(t){
-    var entry = _normalizeThemeEntryRecord(t, t && t.id);
-    if(!entry) return;
-    byId[entry.id] = entry;
-    merged.push(entry);
-  });
-  _getDbThemeEntries().forEach(function(t){
-    if(!t || !t.id) return;
-    if(byId[t.id]) Object.assign(byId[t.id], t);
-    else {
-      byId[t.id] = t;
-      merged.push(t);
-    }
-  });
-  return merged;
+  return NPThemeCatalog.list(sto("event_themes") || []);
 }
 function getThemeVisibilityMap(){
   var raw = sto("theme_visibility");
@@ -993,9 +962,6 @@ function getThemeVisibilityMap(){
     map[normalizeThemeId(key)] = !!src[key];
   });
   ALWAYS_GRANTED_THEME_IDS.forEach(function(id){ map[id] = true; });
-  BUILTIN_THEME_IDS.forEach(function(id){
-    if(!Object.prototype.hasOwnProperty.call(map, id) && !isAlwaysGrantedTheme(id)) map[id] = true;
-  });
   return map;
 }
 function getThemeVisibilityState(themeId){
@@ -1019,19 +985,12 @@ function isThemeVisibleForPlayer(themeId){
 }
 function isThemeOwnedByCurrentViewer(themeId){
   var id = normalizeThemeId(themeId);
-  if(!id) return false;
-  if(typeof isAdminLike === "function" && isAdminLike(CU)) return true;
-  if(isAlwaysGrantedTheme(id)) return true;
-  try{ if(typeof hasUnlocked === 'function' && hasUnlocked(id)) return true; }catch(e){}
-  try{
-    var account = (typeof getCurrentAccount === 'function') ? getCurrentAccount() : null;
-    if(account && Array.isArray(account.unlockedThemes) && account.unlockedThemes.map(normalizeThemeId).includes(id)) return true;
-    var player = (CU && CU.pid && typeof gpid === 'function') ? gpid(CU.pid) : null;
-    if(player && Array.isArray(player.unlockedThemes) && player.unlockedThemes.map(normalizeThemeId).includes(id)) return true;
-    if(normalizeThemeId(account && account.selectedTheme) === id) return true;
-    if(normalizeThemeId(player && player.selectedTheme) === id) return true;
-  }catch(e){}
-  return false;
+  if(!getThemeById(id)) return false;
+  if(isAdminLike(CU) || isAlwaysGrantedTheme(id)) return true;
+  var account = getCurrentAccount(), player = getThemeActorPlayer();
+  return [account, player].some(function(owner){
+    return owner && Array.isArray(owner.unlockedThemes) && owner.unlockedThemes.map(normalizeThemeId).includes(id);
+  });
 }
 function isEventThemeTemporarilyLocked(themeId){
   var id = normalizeThemeId(themeId);
@@ -1073,11 +1032,17 @@ function getAvailableEventThemes(){
 // Compte courant : thèmes débloqués
 function getAutoGrantedThemeIds(){
   if(!CU) return [];
-  var role = String(CU.role||"joueur").toLowerCase();
-  if(role !== "joueur") return [];
-  return getAllThemes()
-    .filter(function(t){ return !!(t && !isBaseTheme(t.id) && t.autoGrantAll && !isEventThemeTemporarilyLocked(t.id)); })
-    .map(function(t){ return t.id; });
+  var boundary = function(value){
+    return value === undefined ? 0
+      : (typeof value === 'number' || (typeof value === 'string' && value.trim() !== '')) ? Number(value) : NaN;
+  };
+  var now = Date.now();
+  return getAllThemes().filter(function(t){
+    var from = boundary(t.availableFrom), until = boundary(t.availableUntil);
+    return !isAlwaysGrantedTheme(t.id) && t.autoGrantAll === true && !t.acquisitionInvalid
+      && Number.isFinite(from) && from >= 0 && Number.isFinite(until) && until >= 0
+      && (!from || from <= now) && (!until || until > now);
+  }).map(function(t){ return t.id; });
 }
 function roleKey(user){
   return String((user&&user.role)||"joueur").toLowerCase();
@@ -1095,7 +1060,7 @@ function isAdminLike(user){
 }
 
 function getUnlockedThemes(){
-  if(CU && String(CU.role||"").toLowerCase()==="admin"){
+  if(isAdminLike(CU)){
     return getAllThemes().map(function(t){ return normalizeThemeId(t.id); });
   }
   if(!CU) return ALWAYS_GRANTED_THEME_IDS.slice();
@@ -1123,21 +1088,14 @@ function isThemeBlockedForPlayer(p, themeId){
 }
 
 function canUseTheme(player, themeId){
-  const id = normalizeThemeId(themeId);
-  if(!id) return false;
-  if(typeof isAdminLike === "function" && isAdminLike(CU)) return true;
-  if(isAlwaysGrantedTheme(id)) return true;
-  if(isThemeBlockedForPlayer(player, id)) return false;
-  const account = getCurrentAccount();
+  var id = normalizeThemeId(themeId);
+  if(!getThemeById(id)) return false;
+  if(isAdminLike(CU) || isAlwaysGrantedTheme(id)) return true;
+  if(!CU || isThemeBlockedForPlayer(player, id)) return false;
+  var account = getCurrentAccount();
   if(account && Array.isArray(account.blockedThemes) && account.blockedThemes.map(normalizeThemeId).includes(id)) return false;
-  if(isEventThemeTemporarilyLocked(id)) return false;
   if(isEarlyCloudsOnlyTheme(id) && !isEarlyCloudsPlayer(player)) return false;
-  const playerUnlocked = (player && Array.isArray(player.unlockedThemes)) ? player.unlockedThemes.map(normalizeThemeId) : [];
-  const accountUnlocked = (account && Array.isArray(account.unlockedThemes)) ? account.unlockedThemes.map(normalizeThemeId) : [];
-  const autoThemes = Array.isArray(window.AUTO_GRANTED_THEMES) ? window.AUTO_GRANTED_THEMES.map(normalizeThemeId) : [];
-  const owned = playerUnlocked.includes(id) || accountUnlocked.includes(id) || autoThemes.includes(id);
-  if(!isThemeVisibleForPlayer(id) && !owned) return false;
-  return owned;
+  return isThemeOwnedByCurrentViewer(id) || getAutoGrantedThemeIds().includes(id);
 }
 
 // Bootstrap — charge tout d'un coup au démarrage
@@ -1639,52 +1597,108 @@ function getThemeActorPlayer(){
   }catch(e){ return null; }
 }
 function getPreferredThemeForCurrentUser(){
-  try{
+  // A signed-in account is authoritative, including its explicit dark default.
+  if(CU){
     var account = getCurrentAccount();
-    var accountTheme = normalizeThemeId(account && account.selectedTheme ? account.selectedTheme : '');
-    var saved = normalizeThemeId(localStorage.getItem('np_theme') || '');
-    var hasSaved = !!saved;
-    var accountIsDefault = !accountTheme || accountTheme === 'dark';
-    var candidate = (hasSaved && accountIsDefault) ? saved : (accountTheme || saved || 'dark');
-    if(candidate !== 'dark' && candidate !== 'light'){
-      var actor = getThemeActorPlayer();
-      if(!canUseTheme(actor, candidate)) candidate = saved || accountTheme || 'dark';
-    }
-    if(candidate !== 'dark' && candidate !== 'light'){
-      var actor2 = getThemeActorPlayer();
-      if(!canUseTheme(actor2, candidate)) candidate = 'dark';
-    }
-    return candidate || 'dark';
-  }catch(e){ return normalizeThemeId(localStorage.getItem('np_theme') || 'dark') || 'dark'; }
+    var id = normalizeThemeId(account && account.selectedTheme || CU.selectedTheme || 'dark');
+    return canUseTheme(getThemeActorPlayer(), id) ? id : 'dark';
+  }
+  try{ return localStorage.getItem('np_theme') === 'light' ? 'light' : 'dark'; }
+  catch(e){ return 'dark'; }
 }
+function getConfirmedThemeForCurrentUser(){ return getPreferredThemeForCurrentUser(); }
 
-function persistSelectedTheme(themeId){
-  var id = normalizeThemeId(themeId || 'dark') || 'dark';
-  try{ localStorage.setItem('np_theme', id); }catch(e){}
-  try{
-    var account = getCurrentAccount();
-    if(account) account.selectedTheme = id;
-    if(CU) CU.selectedTheme = id;
-    var actor = getThemeActorPlayer();
-    if(actor) actor.selectedTheme = id;
-  }catch(e){}
-  if(typeof _authCall !== 'function' || !CU) return Promise.resolve({ ok:true, localOnly:true, themeId:id });
-  return _authCall({ action:'self_set_theme', themeId:id }).then(function(r){
-    if(r && r.ok){
-      try{
-        var account = getCurrentAccount();
-        if(account) account.selectedTheme = id;
-        if(CU) CU.selectedTheme = id;
-        var actor = getThemeActorPlayer();
-        if(actor) actor.selectedTheme = id;
-      }catch(e){}
-      return r;
+var _themeSelection = null;
+var _themePreferenceRevision = 0;
+function _themeSelectionState(){
+  var account = getCurrentAccount();
+  var key = _dbSessionGeneration + ':' + (CU && (CU.accountId || (account && account.id) || CU.pseudo || CU.name) || 'guest');
+  if(!_themeSelection || _themeSelection.key !== key){
+    _themeSelection = {key:key, previewId:null, pending:null, error:''};
+  }
+  return _themeSelection;
+}
+function _themeSelectionIsCurrent(state){
+  return !window.__logoutBusy && _themeSelectionState() === state;
+}
+async function persistSelectedTheme(themeId){
+  var id = normalizeThemeId(themeId), state = _themeSelectionState();
+  if(!CU) return {ok:false, error:'Connecte-toi pour enregistrer un thème.'};
+  var response = await _authCall({action:'self_set_theme', themeId:id});
+  if(!_themeSelectionIsCurrent(state)) return {ok:false, stale:true};
+  if(!response || !response.ok) return response || {ok:false, error:'Sauvegarde du thème impossible.'};
+  var confirmed = normalizeThemeId(response.selectedTheme);
+  if(confirmed !== id) return {ok:false, error:'La confirmation du thème est invalide. Réessaie.'};
+  var account = getCurrentAccount();
+  if(account){
+    account.selectedTheme = confirmed;
+    if(Array.isArray(response.unlockedThemes)) account.unlockedThemes = response.unlockedThemes.slice();
+  }
+  CU.selectedTheme = confirmed;
+  _themePreferenceRevision++;
+  try{ localStorage.setItem('np_theme', confirmed); }catch(e){}
+  return response;
+}
+function previewTheme(themeId){
+  var state = _themeSelectionState();
+  if(!CU || window.__logoutBusy || state.pending || document.querySelector('.moverlay.open')) return false;
+  var id = normalizeThemeId(themeId);
+  if(!getThemeById(id)) return false;
+  state.previewId = id;
+  state.error = '';
+  applyTheme(canUseTheme(getThemeActorPlayer(), id) ? id : getConfirmedThemeForCurrentUser(), false);
+  renderThemePreview();
+  var heading = ge('np-theme-preview-title');
+  if(heading){ heading.focus({preventScroll:true}); heading.scrollIntoView({block:'nearest', behavior:'smooth'}); }
+  return true;
+}
+function cancelThemePreview(quiet){
+  var state = _themeSelectionState(), previous = state.previewId;
+  if(!previous && !state.error && !state.pending) return true;
+  // Navigation may discard the preview while the explicit save completes.
+  if(state.pending && !quiet) return false;
+  state.previewId = null;
+  state.error = '';
+  applyTheme(getConfirmedThemeForCurrentUser(), false);
+  renderThemePreview();
+  if(!quiet && previous){
+    var card = Array.from(document.querySelectorAll('[data-theme-preview]')).find(function(el){ return el.dataset.themePreview === previous; });
+    if(card) card.focus({preventScroll:true});
+  }
+  return true;
+}
+function confirmThemePreview(){
+  var state = _themeSelectionState();
+  if(state.pending) return state.pending;
+  var id = state.previewId;
+  if(!CU || !id || document.querySelector('.moverlay.open') || !canUseTheme(getThemeActorPlayer(), id)) return Promise.resolve({ok:false});
+  state.error = '';
+  // Defer the request until the busy state is installed to reject reentrant clicks.
+  state.pending = Promise.resolve().then(function(){ return persistSelectedTheme(id); }).then(function(response){
+    if(!_themeSelectionIsCurrent(state)) return {ok:false, stale:true};
+    if(!response || !response.ok){
+      state.error = response && response.error || 'Le thème n’a pas été enregistré. Réessaie.';
+      return response || {ok:false};
     }
-    throw new Error((r && r.error) || 'Sauvegarde du thème impossible');
-  }).catch(function(err){
-    console.warn('persistSelectedTheme failed', err && err.message ? err.message : err);
-    return { ok:false, error: err && err.message ? err.message : String(err||'Erreur') };
+    state.previewId = null;
+    notif('Thème « ' + getThemeById(id).name + ' » enregistré.', 'ok');
+    return response;
+  }).catch(function(error){
+    if(!_themeSelectionIsCurrent(state)) return {ok:false, stale:true};
+    state.error = 'Le thème n’a pas été enregistré. Vérifie ta connexion puis réessaie.';
+    return {ok:false, error:state.error};
+  }).finally(function(){
+    if(!_themeSelectionIsCurrent(state)) return;
+    state.pending = null;
+    applyTheme(getConfirmedThemeForCurrentUser(), false);
+    renderThemePreview();
+    renderThemeGrid('theme-grid-container');
+    if(state.error) notif(state.error, 'err');
+    var target = state.error ? ge('np-theme-preview-title') : Array.from(document.querySelectorAll('[data-theme-preview]')).find(function(el){ return el.dataset.themePreview === id; });
+    if(target && target.getClientRects().length) target.focus({preventScroll:true});
   });
+  renderThemePreview();
+  return state.pending;
 }
 
 function getViewPid(){
@@ -1950,6 +1964,7 @@ function _focusOnScreen(target, behavior){
 }
 
 function showScreen(id){
+  if(id !== 's-app' && _themeSelection && _themeSelection.previewId) cancelThemePreview(true);
   // Guard structurel : s-app inaccessible sans session valide
   if(id==="s-app" && !CU){ id="s-home"; }
   // Vider les contenus privés si pas d'auth. Le shell complet sera restauré après connexion.
@@ -2535,15 +2550,25 @@ function _cropPlaceholderCanvas(canvas,label){
   if(!canvas) return;
   var ctx=canvas.getContext("2d");
   var w=canvas.width||320,h=canvas.height||320;
+  var palette = getComputedStyle(canvas);
+  var background = palette.getPropertyValue('--tm-bg4').trim() || '#213b3e';
+  var foreground = palette.getPropertyValue('--tm-text-muted').trim() || '#bdcdc8';
+  if(NPThemeCatalog.contrast(foreground, background) < 4.5) foreground = NPThemeCatalog.foreground(background);
   ctx.clearRect(0,0,w,h);
-  ctx.fillStyle="rgba(255,255,255,0.03)";
+  ctx.fillStyle=background;
   ctx.fillRect(0,0,w,h);
-  ctx.strokeStyle="rgba(126,184,212,0.18)";
+  ctx.strokeStyle=palette.getPropertyValue('--tm-border-strong').trim() || '#648f83';
   ctx.strokeRect(0.5,0.5,w-1,h-1);
-  ctx.fillStyle="rgba(255,255,255,0.35)";
+  ctx.fillStyle=foreground;
   ctx.font="12px sans-serif";
   ctx.textAlign="center";
   ctx.fillText(label||"Aucune image",w/2,h/2);
+}
+function npRefreshThemeCanvas(){
+  var modal = ge('m-avatar-crop');
+  if(_cropImg || !modal || !modal.classList.contains('open')) return;
+  _cropPlaceholderCanvas(ge('crop-canvas'), 'Dépose une image');
+  _cropPlaceholderCanvas(ge('crop-preview-canvas'), 'Aucune image');
 }
 function _cropRenderPreview(){
   var preview=ge("crop-preview-canvas");
@@ -3007,6 +3032,7 @@ async function cropApply(){
 
 var _settingsTab="compte";
 function switchSettingsTab(tab){
+  if(tab !== 'collection') cancelThemePreview(true);
   _settingsTab=(tab==="collection"?"collection":"compte");
   _rememberAppSubState();
   renderProfil();
@@ -3019,6 +3045,7 @@ function switchSettingsTab(tab){
 function openSettings(tab){
   if(!CU){ showScreen("s-login"); return; }
   _restorePrivateShell("profil");
+  if(tab && tab !== 'collection') cancelThemePreview(true);
   if(tab) _settingsTab=(tab==="collection"?"collection":"compte");
   switchTab("profil", null);
   _rememberAppSubState();
@@ -3160,7 +3187,7 @@ function renderProfil(){
     }
     h+='</section>';
   }else{
-    h+='<section class="np-account-collection" aria-labelledby="np-account-collection-title"><div class="np-account-collection-heading"><div><p class="np-account-eyebrow">Ta galerie</p><h2 id="np-account-collection-title">Choisis ton atmosphère.</h2></div><p>Équipe un thème possédé ou retrouve les thèmes à débloquer. Le thème actif est indiqué dans la collection.</p></div><div id="appearance-section"></div></section>';
+    h+='<section class="np-account-collection" aria-labelledby="np-account-collection-title"><div class="np-account-collection-heading"><div><p class="np-account-eyebrow">Ta galerie</p><h2 id="np-account-collection-title">Choisis ton atmosphère.</h2></div><p>Essaie une palette, puis applique-la pour retrouver cette ambiance à ta prochaine connexion.</p></div><div id="appearance-section"></div></section>';
   }
   h+='</div>';
   el.innerHTML=h;
@@ -3727,33 +3754,32 @@ function setAdaptiveThemeTokens(){
 }
 
 function applyTheme(themeId, save){
-  var normalized = String(themeId||"dark").trim();
-  if(normalized === 'theme-default') normalized = 'dark';
-  if(normalized.indexOf("theme-")===0) normalized = normalized.replace(/^theme-/, "");
-  var _themePlayer = getThemeActorPlayer();
-  if(normalized !== "dark" && !canUseTheme(_themePlayer, normalized)){ notif("Ce thème n'est pas disponible.", "err"); return; }
-  var t = getThemeById(normalized);
-  if(!t && normalized !== "dark") return;
-  // Retirer toutes les classes de thème
-  _THEME_CLASSES.forEach(function(cls){ document.body.classList.remove(cls); });
-  document.body.classList.remove("light");
-  // Appliquer la nouvelle classe
-  if(t && t.cls) document.body.classList.add(t.cls);
-  else if(normalized === "light") document.body.classList.add("light");
-  _currentTheme = normalized;
+  var normalized = normalizeThemeId(themeId);
   if(save !== false){
-    try{ localStorage.setItem("np_theme", normalized); }catch(e){}
-    try{ persistSelectedTheme(normalized); }catch(e){}
+    var state = _themeSelectionState();
+    if(state.pending) return state.pending;
+    if(!CU || !canUseTheme(getThemeActorPlayer(), normalized)) return Promise.resolve({ok:false});
+    state.previewId = normalized;
+    return confirmThemePreview();
   }
-  // Mettre à jour le toggle dark/light dans le profil si présent
-  var lbl = ge("tog-theme-lbl");
-  var chk = ge("tog-theme");
-  if(lbl) lbl.textContent = themeId === "light" ? "Mode Clair" : "Mode Sombre";
-  if(chk) chk.checked = (themeId === "light");
+  if(!canUseTheme(getThemeActorPlayer(), normalized)) normalized = 'dark';
+  var t = getThemeById(normalized);
+  if(!t) return false;
+  var engineApplied = window.NPThemeEngine && NPThemeEngine.apply(normalized, sto('event_themes') || []);
+  if(!engineApplied){
+    _THEME_CLASSES.forEach(function(cls){ document.body.classList.remove(cls); });
+    document.body.classList.remove('light');
+    if(t.cls) document.body.classList.add(t.cls);
+  }
+  _currentTheme = normalized;
+  var lbl = ge('tog-theme-lbl'), chk = ge('tog-theme');
+  if(lbl) lbl.textContent = normalized === 'light' ? 'Mode Clair' : 'Mode Sombre';
+  if(chk) chk.checked = normalized === 'light';
   updateHeaderLogoTheme();
   updateLaunchTheme();
-  setAdaptiveThemeTokens();
+  if(!engineApplied) setAdaptiveThemeTokens();
   _easterEggsDestroy();
+  return true;
 }
 
 /* ====== EASTER EGG PARTICLE SYSTEM ====== */
@@ -3833,17 +3859,7 @@ function _easterEggsDestroy(){
 /* ====== FIN EASTER EGG PARTICLE SYSTEM ====== */
 
 function loadSavedTheme(){
-  try{
-    var saved = localStorage.getItem("np_theme") || "dark";
-    if(saved.indexOf("theme-")===0) saved = saved.replace(/^theme-/, "");
-    // Si thème événement, vérifier qu'on a le droit (après auth seulement)
-    var _themePlayer = getThemeActorPlayer();
-    if(saved !== "dark" && saved !== "light" && !canUseTheme(_themePlayer, saved)) saved = "dark";
-    applyTheme(saved, false);
-    updateHeaderLogoTheme();
-    updateLaunchTheme();
-    setAdaptiveThemeTokens();
-  }catch(e){}
+  applyTheme(getPreferredThemeForCurrentUser(), false);
 }
 
 function unlockTheme(themeId){
@@ -3863,111 +3879,54 @@ function unlockTheme(themeId){
 
 
 
-function renderThemeGrid(containerId){
-  var el = ge(containerId); if(!el) return;
-  var all = getVisibleThemesForCurrentViewer();
-  var now = Date.now();
-  var cur = _currentTheme;
-
-  function themeRarity(t){
-    var canon = getThemeCanonMeta(t && t.id);
-    if(canon) return canon.rarity;
-    if(t.event) return "Saisonnier";
-    return "Classique";
-  }
-
-  function themeCategory(t){
-    var canon = getThemeCanonMeta(t && t.id);
-    if(canon) return canon.category;
-    if(t.event) return "Événement";
-    return "Classique";
-  }
-
-  function swatch(c){
-    return '<span class="theme-swatch" style="background:'+esc(c)+';"></span>';
-  }
-
-  var h = '<div class="theme-collection-grid">';
-
-  all.forEach(function(t){
-    var isActive = cur === t.id;
-    var isEvent  = !!t.event;
-    var isLocked = !hasUnlocked(t.id);
-    var isAvail  = isEvent && (t.availableUntil === 0 || t.availableUntil > now);
-
-    var bg1 = t.preview[0] || "#0d0e18";
-    var bg2 = t.preview[1] || "#7eb8d4";
-    var bg3 = t.preview[2] || "#c9a84c";
-    var rarity = themeRarity(t);
-    var category = themeCategory(t);
-    var state = isActive ? "selected" : (isLocked ? (isAvail ? "available" : "locked") : "owned");
-
-    var onclick;
-    if(isLocked && isEvent && isAvail){
-      onclick = "unlockTheme('" + t.id + "')";
-    } else if(isLocked){
-      onclick = "notif('Ce thème n\\'est pas dans ta collection.','err')";
-    } else {
-      onclick = "applyTheme('" + t.id + "');renderAppearanceSection();";
-    }
-
-    var featured = (rarity === 'Fondateur' || rarity === 'Rare' || category === 'Événement');
-    h += '<article class="theme-card-premium collection-card np-theme-vault-card'+(featured?' is-featured':'')+(isLocked?' th-locked':'')+'"'
-      + ' role="button" tabindex="0" aria-pressed="'+isActive+'" aria-label="'+esc(t.name)+' — '+(isActive?'Thème actif':(isLocked?(isAvail?'Débloquer':'Indisponible'):'Équiper'))+'" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();if(!document.querySelector(\'.moverlay.open\'))this.click();}"'
-      + ' data-theme-id="'+esc(t.id)+'" data-theme-rarity="'+esc(rarity)+'" data-theme-category="'+esc(category)+'" data-theme-state="'+esc(state)+'"'
-      + ' style="--card-bg:'+esc(bg1)+';--card-a:'+esc(bg2)+';--card-b:'+esc(bg3)+';" onclick="if(document.querySelector(\'.moverlay.open\'))return;event.stopPropagation();' + onclick + '">';
-    h += '<div class="theme-topline" data-theme-eyebrow="'+esc(rarity)+'"><span class="theme-card-state">'+(isActive?'Équipé':(isLocked?(isAvail?'À débloquer':'Indisponible'):'Possédé'))+'</span></div>';
-    h += '<div class="theme-preview-mini '+esc(t.id)+'" data-preview-theme="'+esc(t.id)+'">';
-    h += '<div class="theme-preview-head"></div><div class="theme-preview-cards"><span></span><span></span><span></span></div><div class="theme-preview-bar"></div>';
-    h += '</div>';
-    h += '<div class="theme-card-body">';
-    h += '<div class="theme-title">' + esc(t.name) + '</div>';
-    if(t.desc) h += '<div class="tagline">' + esc(t.desc) + '</div>';
-    h += '</div>';
-    h += '<div class="theme-meta-row">';
-    h += '<span class="theme-palette">'+swatch(bg1)+swatch(bg2)+swatch(bg3)+'</span>';
-    h += '</div>';
-    h += '<div class="theme-card-action">'+(isActive?'Thème actif':(isLocked && isAvail?'Débloquer':(isLocked?'Non disponible':'Équiper')))+'</div>';
-    h += '</article>';
+function renderThemePreview(){
+  var host = ge('np-theme-preview-host');
+  if(!host) return;
+  var state = _themeSelectionState(), theme = state.previewId && getThemeById(state.previewId);
+  document.querySelectorAll('[data-theme-preview]').forEach(function(card){
+    card.setAttribute('data-theme-preview-active', String(!!theme && card.dataset.themePreview === theme.id));
   });
-
-  h += '</div>';
-  el.innerHTML = h;
+  if(!theme){ host.innerHTML = ''; return; }
+  var usable = canUseTheme(getThemeActorPlayer(), theme.id);
+  var v = theme.vars;
+  var sample = usable ? '' : '<div class="np-theme-isolated-sample" style="--sample-bg:'+escAttr(v.bg)+';--sample-surface:'+escAttr(v.bg2)+';--sample-text:'+escAttr(v.text)+';--sample-accent:'+escAttr(v.accent)+';">'
+    + '<span>Extrait de la palette</span><strong>'+esc(theme.name)+'</strong><p>Une autre lumière sur ton aventure.</p><div><i></i><i></i><i></i></div></div>';
+  var message = state.error || (state.pending ? 'Enregistrement en cours…' : usable ? 'Aperçu temporaire. Applique ce thème pour conserver ton choix.' : 'Ce thème ne peut pas être équipé avec tes droits actuels. Tu peux découvrir sa palette ici.');
+  host.innerHTML = '<section id="np-theme-preview-bar" class="np-theme-preview" aria-busy="'+!!state.pending+'" aria-labelledby="np-theme-preview-title">'
+    + '<div class="np-theme-preview-copy"><span class="np-account-eyebrow">'+(usable ? 'À l’essai' : 'À découvrir')+'</span>'
+    + '<h3 id="np-theme-preview-title" tabindex="-1">'+esc(theme.name)+'</h3>'
+    + '<p '+(state.error ? 'role="alert"' : 'role="status"')+'>'+esc(message)+'</p></div>'+sample
+    + '<div class="np-theme-preview-actions"><button type="button" id="np-theme-preview-apply" class="btn np-account-primary" onclick="confirmThemePreview()" '+(!usable || state.pending ? 'disabled' : '')+'>'+(state.pending ? 'Enregistrement…' : 'Appliquer')+'</button>'
+    + '<button type="button" id="np-theme-preview-cancel" class="btn np-account-secondary" onclick="cancelThemePreview()" '+(state.pending ? 'disabled' : '')+'>Annuler</button></div></section>';
 }
 
+function renderThemeGrid(containerId){
+  var el = ge(containerId); if(!el) return;
+  var confirmed = getConfirmedThemeForCurrentUser(), actor = getThemeActorPlayer();
+  el.innerHTML = '<div class="theme-collection-grid">'+getVisibleThemesForCurrentViewer().map(function(t){
+    var active = confirmed === t.id, usable = canUseTheme(actor, t.id), owned = isThemeOwnedByCurrentViewer(t.id);
+    var state = active ? 'selected' : !usable ? (owned ? 'blocked' : 'locked') : owned ? 'owned' : 'available';
+    var label = active ? 'Équipé' : usable ? (owned ? 'Possédé' : 'Disponible') : owned ? 'Bloqué' : 'Non possédé';
+    var rarity = t.rarity || 'Classique', category = t.category || 'Classique', v = t.vars;
+    var sampleStyle = '--preview-bg:'+v.bg+';--preview-bg2:'+v.bg2+';--preview-a:'+v.accent+';--preview-b:'+v.accentBright+';--preview-c:'+v.text+';';
+    var action = "if(document.querySelector('.moverlay.open'))return;event.stopPropagation();previewTheme('"+jsesc(t.id)+"')";
+    return '<article class="theme-card-premium collection-card np-theme-vault-card'+(!usable ? ' th-locked' : '')+'" role="button" tabindex="0" aria-pressed="'+active+'" aria-label="'+escAttr(t.name+' — '+label+' — Prévisualiser')+'"'
+      + ' data-theme-preview-active="'+(_themeSelectionState().previewId === t.id)+'" data-theme-preview="'+escAttr(t.id)+'" data-theme-id="'+escAttr(t.id)+'" data-theme-rarity="'+escAttr(rarity)+'" data-theme-category="'+escAttr(category)+'" data-theme-state="'+state+'"'
+      + ` onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();if(!document.querySelector('.moverlay.open'))this.click();}"`
+      + ' onclick="'+action+'" style="--card-bg:'+escAttr(v.bg)+';--card-a:'+escAttr(v.accent)+';--card-b:'+escAttr(v.accentBright)+';">'
+      + '<div class="theme-topline" data-theme-eyebrow="'+escAttr(rarity)+'"><span class="theme-card-state">'+label+'</span></div>'
+      + '<div class="theme-preview-mini" data-preview-theme="'+escAttr(t.id)+'" style="'+escAttr(sampleStyle)+'"><div class="theme-preview-head"></div><div class="theme-preview-cards"><span></span><span></span><span></span></div><div class="theme-preview-bar"></div></div>'
+      + '<div class="theme-card-body"><div class="theme-title">'+esc(t.name)+'</div><div class="tagline">'+esc(t.desc || '')+'</div></div>'
+      + '<div class="theme-meta-row"><span class="theme-palette" aria-hidden="true">'+t.preview.slice(0,3).map(function(c){return '<span class="theme-swatch" style="background:'+escAttr(c)+'"></span>';}).join('')+'</span></div>'
+      + '<div class="theme-card-action">Prévisualiser <span aria-hidden="true">↗</span></div></article>';
+  }).join('')+'</div>';
+}
 
 function renderAppearanceSection(){
-  var el = ge("appearance-section"); if(!el) return;
-  // Le titre / descriptif sont déjà rendus dans l'écrou : ici on évite le doublon.
-  el.innerHTML = "<style id='np-collection-width-polish'>"
-    +".profile-collection-shell{width:min(100%,1440px);}"
-    +".profile-collection-shell>.card{padding:16px !important;}"
-    +".profile-collection-shell .theme-collection-grid{grid-template-columns:repeat(auto-fill,minmax(250px,1fr)) !important;gap:14px !important;align-items:stretch !important;grid-auto-rows:380px !important;grid-auto-flow:row !important;}"
-    +"body[data-theme-engine] .profile-collection-shell .np-theme-vault-card,body[data-theme-engine] .profile-collection-shell .np-theme-vault-card.is-featured,.profile-collection-shell .np-theme-vault-card,.profile-collection-shell .np-theme-vault-card.is-featured{grid-column:span 1 !important;grid-row:span 1 !important;align-self:stretch !important;box-sizing:border-box !important;min-height:380px !important;height:380px !important;max-height:380px !important;border-radius:12px !important;padding:15px !important;gap:10px !important;overflow:hidden !important;transform:none !important;}"
-    +".profile-collection-shell .np-theme-vault-card{display:grid !important;grid-template-rows:26px 120px 88px 24px 50px !important;justify-content:stretch !important;align-content:stretch !important;}"
-    +".profile-collection-shell .np-theme-vault-card + .np-theme-vault-card{margin-top:0 !important;}"
-    +".profile-collection-shell .np-theme-vault-card::after{display:none !important;content:none !important;}"
-    +".profile-collection-shell .theme-topline{height:26px !important;min-height:26px !important;max-height:26px !important;flex-shrink:0;}"
-    +".profile-collection-shell .theme-preview-mini,.profile-collection-shell .np-theme-vault-card.is-featured .theme-preview-mini{width:100% !important;height:120px !important;min-height:120px !important;max-height:120px !important;margin:0 !important;border-radius:10px !important;padding:10px !important;flex:0 0 120px !important;align-self:stretch !important;box-sizing:border-box !important;display:flex !important;flex-direction:column !important;justify-content:space-between !important;transform:none !important;}"
-    +".profile-collection-shell .np-theme-vault-card[data-theme-id]{height:380px !important;min-height:380px !important;max-height:380px !important;align-self:stretch !important;transform:none !important;}"
-    +".profile-collection-shell .np-theme-vault-card[data-theme-id] .theme-preview-mini{width:100% !important;max-width:100% !important;align-self:stretch !important;margin-left:0 !important;margin-right:0 !important;transform:none !important;}"
-    +".profile-collection-shell .theme-preview-mini,.profile-collection-shell .theme-preview-mini *{box-sizing:border-box !important;}"
-    +".profile-collection-shell .theme-preview-head,.profile-collection-shell .theme-preview-bar{width:100% !important;max-width:100% !important;}"
-    +".profile-collection-shell .theme-preview-cards{margin:0 !important;gap:6px !important;flex:0 0 auto !important;}"
-    +".profile-collection-shell .theme-preview-cards span{height:28px !important;border-radius:8px !important;}"
-    +".profile-collection-shell .theme-preview-head{height:12px !important;}"
-    +".profile-collection-shell .theme-preview-bar{height:7px !important;}"
-    +".profile-collection-shell .theme-card-body{height:88px !important;min-height:88px !important;max-height:88px !important;overflow:hidden;}"
-    +".profile-collection-shell .theme-title{font-size:13px !important;line-height:1.2 !important;letter-spacing:1.6px !important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}"
-    +".profile-collection-shell .tagline{font-size:11px !important;line-height:1.35 !important;min-height:0 !important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}"
-    +".profile-collection-shell .theme-meta-row{margin-top:0 !important;gap:6px !important;height:24px !important;min-height:24px !important;max-height:24px !important;align-items:center;}"
-    +".profile-collection-shell .theme-meta-pill{min-height:21px !important;padding:0 8px !important;font-size:9px !important;letter-spacing:.06em;}"
-    +".profile-collection-shell .theme-palette{gap:3px !important;margin-left:auto;}"
-    +".profile-collection-shell .theme-swatch{width:13px !important;height:13px !important;}"
-    +".profile-collection-shell .theme-card-action{width:100% !important;height:50px !important;min-height:50px !important;max-height:50px !important;margin-top:0 !important;padding:0 12px !important;border-radius:10px !important;font-size:9px !important;letter-spacing:1.6px !important;line-height:1 !important;flex-shrink:0;align-self:end !important;display:flex !important;align-items:center !important;justify-content:center !important;text-align:center !important;box-sizing:border-box !important;overflow:visible !important;}"
-    +"@media(max-width:760px){.profile-collection-shell{width:100%;}.profile-collection-shell .theme-collection-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr)) !important;grid-auto-rows:340px !important;}.profile-collection-shell .np-theme-vault-card,.profile-collection-shell .np-theme-vault-card.is-featured{height:340px !important;min-height:340px !important;max-height:340px !important;padding:12px !important;grid-template-rows:24px 104px 72px 22px 46px !important;}.profile-collection-shell .theme-preview-mini,.profile-collection-shell .np-theme-vault-card.is-featured .theme-preview-mini{height:104px !important;min-height:104px !important;max-height:104px !important;flex-basis:104px !important;}.profile-collection-shell .theme-card-body{height:72px !important;min-height:72px !important;max-height:72px !important;}.profile-collection-shell .theme-card-action{height:46px !important;min-height:46px !important;max-height:46px !important;}}"
-    +"</style><div id='theme-grid-container'></div>";
-  renderThemeGrid("theme-grid-container");
+  var el = ge('appearance-section'); if(!el) return;
+  el.innerHTML = '<div id="np-theme-preview-host"></div><div id="theme-grid-container"></div>';
+  renderThemeGrid('theme-grid-container');
+  renderThemePreview();
 }
 
 // ── Admin : gestion thèmes événement ──────────────────
@@ -4059,7 +4018,7 @@ function renderAdminThemes(targetId){
 async function upsertEventTheme(themeId, patch){
   var id = normalizeThemeId(themeId);
   if(!id) return null;
-  var themes = sto("event_themes") || [];
+  var themes = _getDbThemeEntries();
   var idx = Array.isArray(themes) ? themes.findIndex(function(t){ return normalizeThemeId(t && t.id) === id; }) : -1;
   var base = idx >= 0 ? _normalizeThemeEntryRecord(themes[idx], id) : (getThemeById(id) || { id: id, event:true, preview:["#0d0e18","#7eb8d4","#c9a84c"] });
   var next = Object.assign({}, base, patch||{});
@@ -4427,21 +4386,9 @@ function _restoreRememberedAppTab(saved){
 }
 
 function launchApp(){
-  // Revalider le thème — priorité au thème du compte si défini et possédé
-  (function(){
-    try{
-      var saved = getPreferredThemeForCurrentUser();
-      if(saved.indexOf("theme-")===0) saved=saved.replace(/^theme-/,"");
-      var baseThemes=["dark","light","violet","green"];
-      if(baseThemes.indexOf(saved)<0){
-        if(!isThemeVisibleForPlayer(saved) || !hasUnlocked(saved)){ applyTheme("dark",true); }
-        else { _currentTheme=saved; applyTheme(saved,false); }
-      } else {
-        _currentTheme=saved;
-        applyTheme(saved,false);
-      }
-    }catch(e){}
-  })();
+  document.body.setAttribute('data-np-authenticated', 'true');
+  _themeSelection = null;
+  applyTheme(getPreferredThemeForCurrentUser(), false);
   updateLaunchTheme();
   // Retirer le loader immédiatement
   _removeLoader();
@@ -5248,6 +5195,10 @@ async function logout(){
   if(window.__logoutBusy) return;
   window.__logoutBusy = true;
   _dbSessionGeneration++;
+  _themeSelection = null;
+  document.body.removeAttribute('data-np-authenticated');
+  applyTheme('dark', false);
+  document.body.removeAttribute('data-np-authenticated');
   if(typeof window.npResetRpgSession === 'function') window.npResetRpgSession();
   _dbSetToken(null);
   if(window._offlineRetryInterval){ clearInterval(window._offlineRetryInterval); window._offlineRetryInterval=null; }
@@ -5520,6 +5471,7 @@ function switchTab(id, btn, _isBack){
   }
   if(id==='archives'&&CU&&['admin','mj','joueur'].indexOf(roleKey(CU))<0){ id='accueil'; btn=null; }
   // ── FIN GUARDS ───────────────────────────────────────────
+  if(id !== 'profil' && _themeSelection && _themeSelection.previewId) cancelThemePreview(true);
 
   // Pousser dans l'historique (sauf si c'est un retour arrière)
   if(!_isBack && _navCurrent && _navCurrent !== id){
@@ -16313,9 +16265,6 @@ var APP_BUILD="np_v18";
     if(prev!==APP_BUILD){
       localStorage.setItem("np_app_build", APP_BUILD);
       ["np_runtime_guard","np_cmdk_recent"].forEach(function(k){ try{ localStorage.removeItem(k); }catch(e){} });
-      var t=localStorage.getItem("np_theme");
-      var themeMap={violet:"theme-violet",green:"theme-green",easter:"theme-easter",halloween:"theme-halloween",noel:"theme-noel",bloodmoon:"theme-bloodmoon",aquaris:"theme-aquaris"};
-      if(themeMap[t]) localStorage.setItem("np_theme", themeMap[t]);
     }
   }catch(e){}
 })();

@@ -49,6 +49,7 @@ test('SQL compare-and-swap rejects a stale replacement without overwriting',asyn
  denied(await app.call('db',{action:'set',key:'events',value:[]},admin));
 });
 test('Concurrent account updates retain both users changes',async()=>{
+ const owned=structuredClone(app.accounts);owned.find(a=>a.id==='alice').unlockedThemes=['violet'];owned.find(a=>a.id==='bob').unlockedThemes=['green'];await app.seed('accounts',owned);
  const alice=await session('alice'),bob=await session('bob');const r=await Promise.all([app.call('auth',{action:'self_set_theme',themeId:'violet'},alice),app.call('auth',{action:'self_set_theme',themeId:'green'},bob)]);assert.deepEqual(r.map(x=>x.status),[200,200]);const a=(await app.read('accounts')).value;assert.equal(a.find(x=>x.id==='alice').selectedTheme,'violet');assert.equal(a.find(x=>x.id==='bob').selectedTheme,'green');
 });
 test('Own profile patch changes only own journal and avatar and requires current revision',async()=>{
