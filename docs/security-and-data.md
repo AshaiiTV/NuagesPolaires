@@ -1,6 +1,6 @@
-# Sécurité et données — v296 et préparation locale v297
+# Sécurité et données — v298 publiée
 
-Les corrections conservent la table `np_store` et ses collections JSON. La fusion locale de l'XP fait évoluer les champs de progression des personnages selon le contrat de [fusion-xp.md](fusion-xp.md). Les changements de contrat de l'API doivent être livrés avec le front correspondant. Aucun script de migration ni aucune écriture dans la base réelle n’a été exécuté pendant leur préparation. La vérification d’infrastructure et la sauvegarde utilisent des transactions explicitement en lecture seule.
+Les corrections conservent la table `np_store` et ses collections JSON. La fusion de l'XP fait évoluer les champs de progression des personnages selon le contrat de [fusion-xp.md](fusion-xp.md). Les changements de contrat de l'API doivent être livrés avec le front correspondant. Aucun script de migration ni aucune écriture dans la base réelle n’a été exécuté pendant leur préparation. La vérification d’infrastructure et la sauvegarde utilisent des transactions explicitement en lecture seule.
 
 ## Sessions et récupération
 
@@ -39,6 +39,12 @@ Les lectures DB et les bundles renvoient une version opaque par clé. `set`, `de
 Les comptes gardent leur format tableau, mais le serveur fusionne uniquement les champs modifiés à partir d'un instantané d'origine, puis utilise une comparaison atomique. Les changements concurrents compatibles sont conservés ; les changements incompatibles et les droits modifiés entraînent un conflit. La suppression personnelle du compte et de son personnage est effectuée dans une seule opération SQL contrôlée.
 
 Le client ne relance pas automatiquement une écriture devenue obsolète. Une erreur laisse le travail non confirmé en mémoire ; il faut en conserver une copie avant de recharger. Une page hors ligne n'annonce pas une sauvegarde serveur réussie.
+
+## Personnalisation (v298)
+
+`self_set_theme` résout les identifiants via le catalogue commun, vérifie la possession du compte et de son personnage, les blocages et les distributions actives. Le thème sélectionné n’est jamais une preuve de possession. Les thèmes possédés restent utilisables après masquage ou fin de saison ; les conditions Early Clouds et les blocages restent applicables. Les rôles staff conservent leur accès aux thèmes connus.
+
+La confirmation compare atomiquement les versions des comptes, personnages et définitions de thèmes. Les droits sont relus si une version change. Une révocation ou un blocage concurrent réévalue également le thème sélectionné. Les réponses de sélection n’émettent aucun cookie, pour ne pas remplacer une session établie pendant l’attente. Le client ne modifie sa préférence qu’après un succès confirmé pour la même session.
 
 ## Archives et imports
 

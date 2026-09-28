@@ -1,0 +1,433 @@
+/* Nuages Polaires — progressive theme surfaces.
+ * Load after the legacy/polar sheets. Only color/paint and focus are owned here;
+ * typography, geometry, imagery, pack decorations and gameplay meaning stay in
+ * their existing modules. !important is a temporary bridge over legacy rules.
+ * The authenticated marker must be cleared immediately at logout.
+ */
+
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] {
+  color: var(--tm-text);
+  accent-color: var(--tm-primary-bg);
+}
+
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] ::selection {
+  color: var(--tm-selection-text);
+  background: var(--tm-selection-bg);
+}
+
+/* Explicit opt-ins for new components; no style-string matching or DOM sweep. */
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] [data-np-surface="page"] {
+  color: var(--tm-text);
+  background: var(--tm-bg);
+  border-color: var(--tm-border);
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] [data-np-surface="panel"] {
+  color: var(--tm-text);
+  background: var(--tm-card-bg);
+  border-color: var(--tm-border);
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] [data-np-surface="raised"] {
+  color: var(--tm-text);
+  background: var(--tm-card-bg-strong);
+  border-color: var(--tm-border-strong);
+}
+
+/* Existing companion shells. Keep pack backgrounds/decorations on body. */
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#s-first-steps,#s-hrp) {
+  color: var(--tm-text);
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app .app-header {
+  background: var(--tm-bg) !important;
+  border-color: var(--tm-border-strong) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #mobile-drawer > div:first-child {
+  background: var(--tm-bg2) !important;
+  color: var(--tm-text) !important;
+  border-color: var(--tm-border-strong) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app #app-root :is(.card,.summary-card,.staff-panel,.prog-panel,.rsec,.bcrd,.jcard,.ecard,.s-card,.journal-card) {
+  background: var(--tm-bg2) !important;
+  border-color: var(--tm-border) !important;
+  color: var(--tm-text) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app :is(.panel,.db-card,.settings-pane,.archive-card,.history-card,.sim-panel,.sim-fighter-card,.sim-history,.sim-log,.sim-notes,.spw-pack,.spw-history-item,.spw-mob) {
+  background: var(--tm-card-bg) !important;
+  border-color: var(--tm-border) !important;
+  color: var(--tm-text) !important;
+}
+
+/* Body-level portals and future inserted dialogs inherit these immediately. */
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(.modal,.branch-modal-shell,.cmdk,.account-dd,.branch-dd,.nav-dropdown-menu,.nav-group-menu,#mobile-drawer,#notif-panel) {
+  background: var(--tm-bg2) !important;
+  color: var(--tm-text) !important;
+  border-color: var(--tm-border-strong) !important;
+  box-shadow: var(--tm-shadow-soft) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app :is(.nav-dropdown-menu,.nav-group-menu,#mobile-drawer,#notif-panel),
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#nav-dropdown-root,#mobile-drawer-root,#staff-modal-root) :is(.nav-dropdown-menu,.nav-group-menu,.modal,.branch-modal-shell) {
+  background: var(--tm-bg2) !important;
+  color: var(--tm-text) !important;
+  border-color: var(--tm-border-strong) !important;
+  box-shadow: var(--tm-shadow-soft) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(.moverlay,.tab-popup-backdrop,.cmdk-backdrop,#mobile-drawer-overlay) {
+  background: var(--tm-overlay) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app .tab-content.tab-popup-active {
+  background: var(--tm-bg) !important;
+  border-color: var(--tm-border-strong) !important;
+  color: var(--tm-text) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] .modal::before {
+  background: linear-gradient(90deg,transparent,var(--tm-border-strong),transparent) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] .modal .factions {
+  background: var(--tm-bg2) !important;
+  border-color: var(--tm-border) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #m-avatar-crop :is(.crop-side-card,.crop-recents-empty) {
+  background: var(--tm-bg3) !important;
+  color: var(--tm-text-soft) !important;
+  border-color: var(--tm-border-strong) !important;
+  box-shadow: none !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #m-avatar-crop :is(#crop-zone,.crop-final-wrap,.crop-recent-btn) {
+  background: var(--tm-bg4) !important;
+  border-color: var(--tm-border-strong) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #m-avatar-crop :is(.crop-side-label,.crop-zoom-val) {
+  color: var(--tm-link) !important;
+}
+
+/* Navigation colors stay neutral; selection has an explicit theme accent. */
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#nav-dropdown-root,#mobile-drawer-root) :is(.nav-item,.nav-dropdown-item,.drawer-item) {
+  color: var(--tm-text) !important;
+  background: transparent !important;
+  border-color: var(--tm-border) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#nav-dropdown-root,#mobile-drawer-root) :is(.nav-item,.nav-dropdown-item,.drawer-item):is(:hover,.active) {
+  color: var(--tm-link) !important;
+  background: var(--tm-bg3) !important;
+  border-color: var(--tm-focus) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#nav-dropdown-root,#mobile-drawer-root) :is(.nav-section-label,.nav-section-header,.nav-group-label) {
+  color: var(--tm-text-muted) !important;
+  border-color: var(--tm-border) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(.nav-divider,.nav-item-sep,.nav-group-sep) {
+  background: var(--tm-border) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#nav-pending-badge,#dd-joueurs-pending-badge,#notif-count) {
+  background: var(--status-danger) !important;
+  color: var(--status-danger-on) !important;
+}
+
+/* Small accent labels need the readable token, not the decorative swatch. */
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app :is(.np-eyebrow,.np-steps-eyebrow,.np-events-eyebrow,.np-event-date,.np-title-stop,.iiqty),
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app .np-logbook-stats dd,
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app .np-events-intro h1 em,
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app #fiche #p-cls,
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app #fiche .np-sheet-branch-title > span:nth-child(2),
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #mobile-drawer > div:first-child > div,
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app #profil :is(.np-account-eyebrow,.np-account-text-action),
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-first-steps .np-steps-eyebrow {
+  color: var(--tm-link) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app #serments :is(.serm-level-pill,.serm-cat,.serm-badge-new,.serm-palier-chip b,.serm-icon),
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app #fiche #p-serm-c .serm-level-pill {
+  color: var(--tm-link) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app :is(.esll,.iset) {
+  color: var(--tm-text-muted) !important;
+}
+
+/* Controls use the same colors inside the app, a public page or a portal.
+ * Exclusions retain the primary/semantic variants defined below. */
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#s-hrp,#s-first-steps,#staff-modal-root,.moverlay,.cmdk,#np-theme-preview-bar) :is(.btn,.btn-out,.mini-btn,.tab-btn,.settings-tab,.bfilt,.mclose,.tab-popup-close):not(.btn-red,.btn-grn,.btn-gold,.btn-primary,.primary,.np-account-primary,.np-agenda-primary,.is-primary) {
+  color: var(--tm-text) !important;
+  background: var(--tm-control-bg) !important;
+  border-color: var(--tm-border-strong) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#s-hrp,#s-first-steps,#staff-modal-root,.moverlay,.cmdk,#np-theme-preview-bar) :is(.btn,.btn-out,.mini-btn,.tab-btn,.settings-tab,.bfilt,.mclose,.tab-popup-close):not(.btn-red,.btn-grn,.btn-gold,.btn-primary,.primary,.np-account-primary,.np-agenda-primary,.is-primary):is(:hover,.active):not(:disabled,[aria-disabled="true"]) {
+  color: var(--tm-text) !important;
+  background: var(--tm-control-bg-hover) !important;
+  border-color: var(--tm-focus) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#s-hrp,#s-first-steps,#staff-modal-root,.moverlay,.cmdk) .btn:not(.btn-red,.btn-grn,.btn-gold)::before {
+  background: var(--theme-tint) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#s-hrp,#s-first-steps,#staff-modal-root,.moverlay,.cmdk,#np-theme-preview-bar) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),select,textarea,.inp,.search-input,.sim-search-input) {
+  background: var(--tm-input-bg) !important;
+  color: var(--tm-text) !important;
+  border-color: var(--tm-border-strong) !important;
+  caret-color: var(--tm-text);
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#s-hrp,#s-first-steps,#staff-modal-root,.moverlay,.cmdk) :is(input,textarea)::placeholder {
+  color: var(--tm-text-muted) !important;
+  opacity: 1;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(select option,select optgroup) {
+  background: var(--tm-bg2);
+  color: var(--tm-text);
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#s-hrp,#s-first-steps,#staff-modal-root,.moverlay,.cmdk) :is(input,select,textarea):focus {
+  border-color: var(--tm-focus) !important;
+  outline-color: var(--tm-focus) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(button,a,input,textarea,select,summary,[tabindex]):focus-visible {
+  outline: 2px solid var(--tm-focus) !important;
+  outline-offset: 4px !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#staff-modal-root,.moverlay) :is(.flbl,.field label,.modal-title,.mtit,.cmdk-title) {
+  color: var(--tm-text) !important;
+}
+
+/* Tables: paint the cells, including rows inserted after a theme switch. */
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#staff-modal-root,.moverlay,#s-hrp) :is(.rtbl,.btbl) {
+  background: var(--tm-bg2) !important;
+  color: var(--tm-text) !important;
+  border-color: var(--tm-border) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#staff-modal-root,.moverlay,#s-hrp) :is(.rtbl,.btbl) th {
+  background: var(--tm-bg3) !important;
+  color: var(--tm-text) !important;
+  border-color: var(--tm-border) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#staff-modal-root,.moverlay,#s-hrp) :is(.rtbl,.btbl) td {
+  color: var(--tm-text-soft) !important;
+  border-color: var(--tm-border) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#staff-modal-root,.moverlay,#s-hrp) :is(.rtbl,.btbl) tr:nth-child(even) td {
+  background: var(--theme-final-table-even) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#staff-modal-root,.moverlay,#s-hrp) :is(.rtbl,.btbl) tr:hover td {
+  background: var(--theme-final-table-hover) !important;
+}
+
+/* Collection frames follow the active theme. Their preview palettes are local
+ * to each pack and MUST NOT be overwritten by the selected theme. */
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app #profil .np-theme-vault-card[data-theme-id] {
+  background: var(--tm-bg2) !important;
+  color: var(--tm-text) !important;
+  border-color: var(--tm-border-strong) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app #profil .np-theme-vault-card[data-theme-state="selected"],
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app #profil .np-theme-vault-card[data-theme-preview-active="true"] {
+  border-color: var(--tm-focus) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app #profil :is(.theme-title,.theme-card-action,.theme-card-state) {
+  color: var(--tm-text) !important;
+  border-color: var(--tm-border-strong) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app #profil :is(.tagline,.theme-footer-meta) {
+  color: var(--tm-text-muted) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app #profil [data-theme-state="selected"] :is(.theme-card-action,.theme-card-state) {
+  color: var(--tm-link) !important;
+  border-color: var(--tm-focus) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app #profil :is([data-theme-state="locked"],[data-theme-state="blocked"]) .theme-card-action {
+  color: var(--tm-text-muted) !important;
+  border-color: var(--tm-border) !important;
+}
+
+/* Preview status is part of the connected app, with distinct pending state.
+ * Layout is owned by the appearance workflow, not this color layer. */
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #np-theme-preview-bar {
+  background: var(--tm-bg2) !important;
+  color: var(--tm-text) !important;
+  border-color: var(--tm-focus) !important;
+  box-shadow: var(--tm-shadow-soft) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #np-theme-preview-bar[aria-busy="true"] {
+  border-color: var(--status-info-border) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #np-theme-preview-cancel {
+  background: var(--tm-control-bg) !important;
+  color: var(--tm-text) !important;
+  border-color: var(--tm-border-strong) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #np-theme-preview-apply,
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#s-hrp,#s-first-steps,#staff-modal-root,.moverlay,.cmdk) :is(.btn-primary,.btn.primary,.np-agenda-primary,.np-steps-button.is-primary),
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app #profil .np-account-view .np-account-primary {
+  background: var(--tm-primary-bg) !important;
+  color: var(--tm-primary-text) !important;
+  border-color: var(--tm-primary-bg) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #np-theme-preview-apply:disabled {
+  background: var(--tm-bg3) !important;
+  color: var(--tm-text-muted) !important;
+  border-color: var(--tm-border) !important;
+}
+
+/* Semantic meaning is independent of a pack's accent. Resource colors are
+ * explicit; oath identity, images and theme previews retain their own palette. */
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] .bpv { --np-resource-color: var(--status-danger); }
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] .bep { --np-resource-color: var(--status-warning); }
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] .bem { --np-resource-color: var(--status-info); }
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] .bxp { --np-resource-color: var(--status-success); }
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app :is(.bpv,.bep,.bem,.bxp) {
+  background: var(--np-resource-color) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-app :is(.bpv,.bep,.bem,.bxp)::after {
+  background: var(--np-resource-color) !important;
+  box-shadow: none !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(.notif,.np-api-toast,[data-np-surface="notice"]) {
+  background: var(--tm-bg2) !important;
+  color: var(--tm-text) !important;
+  border-color: var(--tm-border-strong) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#staff-modal-root,.moverlay) :is(.btn-red,.errmsg,.error-text),
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] .notif.err,
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#app-root,#staff-modal-root,.moverlay) :is(.chip.danger,.chip.bad,[data-np-status="danger"]) {
+  color: var(--status-danger) !important;
+  border-color: var(--status-danger-border) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#staff-modal-root,.moverlay) .btn-grn,
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] .notif.ok,
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#app-root,#staff-modal-root,.moverlay) :is(.chip.ok,[data-np-status="success"]) {
+  color: var(--status-success) !important;
+  border-color: var(--status-success-border) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#staff-modal-root,.moverlay) .btn-gold,
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] .notif.warn,
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#app-root,#staff-modal-root,.moverlay) :is(.chip.warn,[data-np-status="warning"]) {
+  color: var(--status-warning) !important;
+  border-color: var(--status-warning-border) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] .notif.inf,
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#app-root,#staff-modal-root,.moverlay) :is(.chip.info,[data-np-status="info"]) {
+  color: var(--status-info) !important;
+  border-color: var(--status-info-border) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#staff-modal-root,.moverlay) .btn-red,
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#app-root,#staff-modal-root,.moverlay) :is(.chip.danger,.chip.bad,[data-np-status="danger"]) {
+  background: var(--status-danger-bg) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#staff-modal-root,.moverlay) .btn-grn,
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#app-root,#staff-modal-root,.moverlay) :is(.chip.ok,[data-np-status="success"]) {
+  background: var(--status-success-bg) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#s-app,#staff-modal-root,.moverlay) .btn-gold,
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#app-root,#staff-modal-root,.moverlay) :is(.chip.warn,[data-np-status="warning"]) {
+  background: var(--status-warning-bg) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] :is(#app-root,#staff-modal-root,.moverlay) :is(.chip.info,[data-np-status="info"]) {
+  background: var(--status-info-bg) !important;
+}
+
+/* Connected visits to public screens inherit the account palette. Visitors
+ * still use polar-identity.css unchanged. Photographic assets are untouched. */
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home {
+  --tm-text: inherit;
+  --tm-text-muted: inherit;
+  --tm-accent: inherit;
+  --text: var(--tm-text);
+  --dim: var(--tm-text-soft);
+  --faint: var(--tm-text-muted);
+  background: var(--tm-bg) !important;
+  color: var(--tm-text) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home :is(.np-masthead,.np-community,.np-oath,.np-invitation,.np-oath-orbit),
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home .np-oath-visual::before {
+  border-color: var(--tm-border) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home :is(.np-wordmark,.np-hero-tagline,.np-hero-caption,.np-community-title>span:last-child,.np-metric>span:first-child,.np-story-text strong,.np-colophon>span) {
+  color: var(--tm-text) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home #np-home-title,
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home .np-section h2 {
+  color: var(--tm-text) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home :is(.np-wordmark-note,.np-eyebrow,.np-hero-description,.np-platform-note,.np-hero-coordinate,.np-metric>span:last-child,.np-section-label,.np-story-marginal,.np-story-text p,.np-oath-visual>span,.np-oath-copy>p,.np-invitation p,.np-colophon small) {
+  color: var(--tm-text-soft) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home :is(#np-home-title em,.np-section h2 em,.np-hero-caption em,.np-section-label>span,.np-story-text .np-story-end,.np-oath-copy blockquote) {
+  color: var(--tm-link) !important;
+  border-color: var(--tm-border-strong) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home :is(.np-public-nav,.np-colophon) button,
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home :is(.np-text-link,.np-action-quiet,.np-public-nav .np-nav-login) {
+  color: var(--tm-text) !important;
+  border-color: var(--tm-border-strong) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home :is(.np-action-quiet,.np-public-nav .np-nav-login) {
+  background: var(--tm-bg2) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home :is(.np-action-quiet,.np-public-nav .np-nav-login):hover {
+  background: var(--tm-bg3) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home :is(.np-public-nav,.np-colophon) button:hover,
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home .np-text-link:hover {
+  color: var(--tm-link) !important;
+  border-color: var(--tm-focus) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home :is(.np-action-primary,.np-skip) {
+  background: var(--tm-primary-bg) !important;
+  color: var(--tm-primary-text) !important;
+  border-color: var(--tm-primary-bg) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home .np-action-primary:hover {
+  background: var(--tm-primary-bg) !important;
+  border-color: var(--tm-focus) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home :is(.np-signal,.np-caption-rule),
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home .np-oath-orbit::before {
+  background: var(--tm-accent) !important;
+  box-shadow: none;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home .np-hero-coordinate i {
+  background: var(--tm-border-strong) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home :is(.np-oath-visual,.np-invitation) {
+  background: radial-gradient(ellipse,var(--theme-tint),transparent 70%) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home .np-hero-shade {
+  background: linear-gradient(90deg,var(--tm-bg),color-mix(in srgb,var(--tm-bg) 90%,transparent) 45%,color-mix(in srgb,var(--tm-bg) 50%,transparent)),linear-gradient(0deg,var(--tm-bg),transparent 35%) !important;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home .np-hero-caption {
+  text-shadow: none;
+}
+
+@media print {
+  /* Browser printing uses a separate readable palette. jsPDF is a separate
+   * renderer and must keep its own export palette; see docs/theme-system.md. */
+  html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] {
+    --tm-bg: #fff !important;
+    --tm-bg2: #fff !important;
+    --tm-bg3: #f2f2f2 !important;
+    --tm-bg4: #e6e6e6 !important;
+    --tm-text: #111 !important;
+    --tm-text-soft: #222 !important;
+    --tm-text-muted: #444 !important;
+    --tm-link: #111 !important;
+    --tm-accent: #333 !important;
+    --tm-border: #999 !important;
+    --tm-border-strong: #666 !important;
+    --tm-card-bg: #fff !important;
+    --tm-card-bg-strong: #fff !important;
+    --tm-input-bg: #fff !important;
+    --tm-control-bg: #fff !important;
+    --tm-control-bg-hover: #f2f2f2 !important;
+    --tm-primary-bg: #222 !important;
+    --tm-primary-text: #fff !important;
+    --tm-shadow: none !important;
+    --tm-shadow-soft: none !important;
+    --bg: var(--tm-bg) !important;
+    --bg2: var(--tm-bg2) !important;
+    --bg3: var(--tm-bg3) !important;
+    --bg4: var(--tm-bg4) !important;
+    --text: var(--tm-text) !important;
+    --dim: var(--tm-text-soft) !important;
+    --faint: var(--tm-text-muted) !important;
+    --glacier: var(--tm-link) !important;
+    --border: var(--tm-border) !important;
+    --border2: var(--tm-border-strong) !important;
+    --status-danger: #8c2020 !important;
+    --status-success: #155c36 !important;
+    --status-warning: #694800 !important;
+    --status-info: #1b476c !important;
+    background: var(--tm-bg) !important;
+  }
+}

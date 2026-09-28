@@ -488,40 +488,11 @@ var SD={
 // ==========================================
 // DATA — THÈMES
 // ==========================================
-var THEMES_BASE = [
-  { id:"dark",        name:"Nuages Polaires", cls:"",              preview:["#0d0e18","#7eb8d4","#c9a84c"], desc:"Le thème original.", event:false },
-  { id:"light",       name:"Brume Claire",    cls:"light",         preview:["#f4f5fa","#3a8fba","#9a7020"], desc:"Mode clair.",        event:false },
-  { id:"violet",      name:"Galactique",      cls:"theme-violet",  preview:["#03020b","#9b7cff","#73d8ff"], desc:"Constellations, nébuleuses et verre cosmique.", event:false },
-  { id:"green",       name:"Sylvan",          cls:"theme-green",   preview:["#031108","#51c56d","#d8c16a"], desc:"Jungle dense, canopée humide, lianes vivantes et lumière de sous-bois.", event:false },
-  { id:"aquaris",     name:"Aquaris",         cls:"theme-aquaris", preview:["#020c13","#57dfff","#88ffe7"], desc:"Un royaume englouti s’abat sur l’interface : bulles, lueurs océaniques, verre abyssal et profondeur aquatique partout.", event:false },
-];
-
-// Thèmes événement — chargés depuis la DB (clé "event_themes")
-// Format: { id, name, cls, preview:[bg,accent,gold], desc, availableUntil (timestamp), createdAt }
-
-// v42 clean bootstrap helpers
-function normalizeThemeId(themeId){
-  var id = String(themeId || '').trim().toLowerCase();
-  if(!id || id === 'theme-default') return 'dark';
-  if(id.indexOf('theme-') === 0) id = id.replace(/^theme-/, '');
-  if(id === 'default') return 'dark';
-  if(id === 'red' || id === 'ecarlate' || id === 'écarlate') return 'dark';
-  if(id === 'aquarius') return 'aquaris';
-  return id;
-}
-var THEME_CANON_META = {
-  dark:{rarity:"Base",category:"Base",event:false},
-  light:{rarity:"Base",category:"Base",event:false},
-  violet:{rarity:"Rare",category:"Rares",event:false},
-  green:{rarity:"Rare",category:"Rares",event:false},
-  aquaris:{rarity:"Rare",category:"Rares",event:false},
-  easter:{rarity:"Saisonnier",category:"Événement",event:true},
-  halloween:{rarity:"Saisonnier",category:"Événement",event:true},
-  noel:{rarity:"Saisonnier",category:"Événement",event:true},
-  bloodmoon:{rarity:"Fondateur",category:"Fondateur",event:false}
-};
+// Visual definitions and aliases are shared with the server in theme-catalog.js.
+function normalizeThemeId(themeId){ return NPThemeCatalog.normalizeId(themeId); }
 function getThemeCanonMeta(themeId){
-  return THEME_CANON_META[normalizeThemeId(themeId)] || null;
+  var id = normalizeThemeId(themeId);
+  return NPThemeCatalog.builtinIds.includes(id) ? NPThemeCatalog.get(id) : null;
 }
 function _dbSessionChangedError(){
   var error = new Error('La session a changé pendant le chargement.');
@@ -569,21 +540,40 @@ function _protectPlayerReadResponse(response){
   if(response.versions)delete response.versions.players;
   return response;
 }
+function _themeReadSnapshot(){
+  return {revision:_themePreferenceRevision, pending:!!(_themeSelection && _themeSelection.pending)};
+}
+function _protectThemeReadResponse(response){
+  var snapshot = response && response.__npThemeRead;
+  if(!snapshot) return response;
+  var current = _themeReadSnapshot();
+  if(snapshot.revision === current.revision && !snapshot.pending && !current.pending) return response;
+  // Do not replace a confirmed preference with a read that overlaps its save.
+  if(snapshot.direct){ delete response.value; delete response.version; response.skipped = true; }
+  if(response.data) delete response.data.accounts;
+  if(response.versions) delete response.versions.accounts;
+  return response;
+}
 async function _authCall(payload, opts){
   var sessionGeneration = _dbSessionGeneration;
   var playerRead=payload.action==='session_bundle'?_playerReadSnapshot():null;
+  var themeRead=payload.action==='session_bundle'?_themeReadSnapshot():null;
   var response = await _jsonPost('/.netlify/functions/auth', payload, opts);
   _assertDbSessionGeneration(sessionGeneration, payload && payload.action === 'logout');
   if(playerRead){Object.defineProperty(response,'__npPlayerRead',{value:playerRead});_protectPlayerReadResponse(response);}
+  if(themeRead){Object.defineProperty(response,'__npThemeRead',{value:themeRead});_protectThemeReadResponse(response);}
   return response;
 }
 async function _dbCall(payload, opts){
   var sessionGeneration = _dbSessionGeneration;
   var playerRead=payload.action==='get_all'||(payload.action==='get'&&payload.key==='players')?_playerReadSnapshot():null;
   if(playerRead)playerRead.direct=payload.action==='get';
+  var themeRead=payload.action==='get_all'||(payload.action==='get'&&payload.key==='accounts')?_themeReadSnapshot():null;
+  if(themeRead)themeRead.direct=payload.action==='get';
   var resp = await _jsonPost('/.netlify/functions/db', payload, opts);
   _assertDbSessionGeneration(sessionGeneration);
   if(playerRead){Object.defineProperty(resp,'__npPlayerRead',{value:playerRead});_protectPlayerReadResponse(resp);}
+  if(themeRead){Object.defineProperty(resp,'__npThemeRead',{value:themeRead});_protectThemeReadResponse(resp);}
   if(resp && resp.ok !== false && resp.status < 400){
     if(payload.action === 'get' && Object.prototype.hasOwnProperty.call(resp, 'version')){
       var readVersion={};readVersion[payload.key]=resp.version;_rememberDbVersions(readVersion);
@@ -862,6 +852,7 @@ function _hydrateBundleData(bundle, sessionGeneration){
   try{
     if(!bundle) return bundle;
     _protectPlayerReadResponse(bundle);
+    _protectThemeReadResponse(bundle);
     if(bundle.versions) _rememberDbVersions(bundle.versions);
     var data = bundle.data || bundle;
     if(!data || typeof data !== 'object') return bundle;
@@ -932,12 +923,6 @@ const BUILTIN_THEME_IDS = ['dark','light','violet','green'].map(normalizeThemeId
 const ALWAYS_GRANTED_THEME_IDS = ['dark','light'].map(normalizeThemeId);
 function isBaseTheme(themeId){ return BUILTIN_THEME_IDS.includes(normalizeThemeId(themeId)); }
 function isAlwaysGrantedTheme(themeId){ return ALWAYS_GRANTED_THEME_IDS.includes(normalizeThemeId(themeId)); }
-var THEMES_EVENT_BUILTIN = [
-  { id:"easter",     name:"Printemps Éveillé", cls:"theme-easter",    preview:["#160f1f","#ffb9df","#fff19a"], desc:"Explosion de Pâques pastel : œufs peints, printemps sucré et éclats festifs partout.", event:true, availableUntil:1777593600000 },
-  { id:"halloween",  name:"Nuit des Âmes",     cls:"theme-halloween", preview:["#0a0806","#e07820","#c040e0"], desc:"Thème Halloween.", event:true, availableUntil:1793577600000 },
-  { id:"noel",       name:"Veillée Hivernale", cls:"theme-noel",      preview:["#090f0a","#70c060","#f0d060"], desc:"Thème Noël.",     event:true, availableUntil:1799193600000 },
-  { id:"bloodmoon",  name:"Lune de Sang",      cls:"theme-bloodmoon", preview:["#040205","#ff5a73","#f4c670"], desc:"Un ciel noir, une lune rouge souveraine et une lumière d'or funèbre. Un thème fondateur, noble et menaçant.", event:true, availableUntil:0 },
-];
 function _cloneThemeEntry(entry){
   try{ return JSON.parse(JSON.stringify(entry)); }catch(e){ return entry; }
 }
@@ -967,23 +952,7 @@ function _getDbThemeEntries(){
   return [];
 }
 function getAllThemes(){
-  var merged = [];
-  var byId = Object.create(null);
-  THEMES_BASE.concat(THEMES_EVENT_BUILTIN).forEach(function(t){
-    var entry = _normalizeThemeEntryRecord(t, t && t.id);
-    if(!entry) return;
-    byId[entry.id] = entry;
-    merged.push(entry);
-  });
-  _getDbThemeEntries().forEach(function(t){
-    if(!t || !t.id) return;
-    if(byId[t.id]) Object.assign(byId[t.id], t);
-    else {
-      byId[t.id] = t;
-      merged.push(t);
-    }
-  });
-  return merged;
+  return NPThemeCatalog.list(sto("event_themes") || []);
 }
 function getThemeVisibilityMap(){
   var raw = sto("theme_visibility");
@@ -993,9 +962,6 @@ function getThemeVisibilityMap(){
     map[normalizeThemeId(key)] = !!src[key];
   });
   ALWAYS_GRANTED_THEME_IDS.forEach(function(id){ map[id] = true; });
-  BUILTIN_THEME_IDS.forEach(function(id){
-    if(!Object.prototype.hasOwnProperty.call(map, id) && !isAlwaysGrantedTheme(id)) map[id] = true;
-  });
   return map;
 }
 function getThemeVisibilityState(themeId){
@@ -1019,19 +985,12 @@ function isThemeVisibleForPlayer(themeId){
 }
 function isThemeOwnedByCurrentViewer(themeId){
   var id = normalizeThemeId(themeId);
-  if(!id) return false;
-  if(typeof isAdminLike === "function" && isAdminLike(CU)) return true;
-  if(isAlwaysGrantedTheme(id)) return true;
-  try{ if(typeof hasUnlocked === 'function' && hasUnlocked(id)) return true; }catch(e){}
-  try{
-    var account = (typeof getCurrentAccount === 'function') ? getCurrentAccount() : null;
-    if(account && Array.isArray(account.unlockedThemes) && account.unlockedThemes.map(normalizeThemeId).includes(id)) return true;
-    var player = (CU && CU.pid && typeof gpid === 'function') ? gpid(CU.pid) : null;
-    if(player && Array.isArray(player.unlockedThemes) && player.unlockedThemes.map(normalizeThemeId).includes(id)) return true;
-    if(normalizeThemeId(account && account.selectedTheme) === id) return true;
-    if(normalizeThemeId(player && player.selectedTheme) === id) return true;
-  }catch(e){}
-  return false;
+  if(!getThemeById(id)) return false;
+  if(isAdminLike(CU) || isAlwaysGrantedTheme(id)) return true;
+  var account = getCurrentAccount(), player = getThemeActorPlayer();
+  return [account, player].some(function(owner){
+    return owner && Array.isArray(owner.unlockedThemes) && owner.unlockedThemes.map(normalizeThemeId).includes(id);
+  });
 }
 function isEventThemeTemporarilyLocked(themeId){
   var id = normalizeThemeId(themeId);
@@ -1073,11 +1032,17 @@ function getAvailableEventThemes(){
 // Compte courant : thèmes débloqués
 function getAutoGrantedThemeIds(){
   if(!CU) return [];
-  var role = String(CU.role||"joueur").toLowerCase();
-  if(role !== "joueur") return [];
-  return getAllThemes()
-    .filter(function(t){ return !!(t && !isBaseTheme(t.id) && t.autoGrantAll && !isEventThemeTemporarilyLocked(t.id)); })
-    .map(function(t){ return t.id; });
+  var boundary = function(value){
+    return value === undefined ? 0
+      : (typeof value === 'number' || (typeof value === 'string' && value.trim() !== '')) ? Number(value) : NaN;
+  };
+  var now = Date.now();
+  return getAllThemes().filter(function(t){
+    var from = boundary(t.availableFrom), until = boundary(t.availableUntil);
+    return !isAlwaysGrantedTheme(t.id) && t.autoGrantAll === true && !t.acquisitionInvalid
+      && Number.isFinite(from) && from >= 0 && Number.isFinite(until) && until >= 0
+      && (!from || from <= now) && (!until || until > now);
+  }).map(function(t){ return t.id; });
 }
 function roleKey(user){
   return String((user&&user.role)||"joueur").toLowerCase();
@@ -1095,7 +1060,7 @@ function isAdminLike(user){
 }
 
 function getUnlockedThemes(){
-  if(CU && String(CU.role||"").toLowerCase()==="admin"){
+  if(isAdminLike(CU)){
     return getAllThemes().map(function(t){ return normalizeThemeId(t.id); });
   }
   if(!CU) return ALWAYS_GRANTED_THEME_IDS.slice();
@@ -1123,21 +1088,14 @@ function isThemeBlockedForPlayer(p, themeId){
 }
 
 function canUseTheme(player, themeId){
-  const id = normalizeThemeId(themeId);
-  if(!id) return false;
-  if(typeof isAdminLike === "function" && isAdminLike(CU)) return true;
-  if(isAlwaysGrantedTheme(id)) return true;
-  if(isThemeBlockedForPlayer(player, id)) return false;
-  const account = getCurrentAccount();
+  var id = normalizeThemeId(themeId);
+  if(!getThemeById(id)) return false;
+  if(isAdminLike(CU) || isAlwaysGrantedTheme(id)) return true;
+  if(!CU || isThemeBlockedForPlayer(player, id)) return false;
+  var account = getCurrentAccount();
   if(account && Array.isArray(account.blockedThemes) && account.blockedThemes.map(normalizeThemeId).includes(id)) return false;
-  if(isEventThemeTemporarilyLocked(id)) return false;
   if(isEarlyCloudsOnlyTheme(id) && !isEarlyCloudsPlayer(player)) return false;
-  const playerUnlocked = (player && Array.isArray(player.unlockedThemes)) ? player.unlockedThemes.map(normalizeThemeId) : [];
-  const accountUnlocked = (account && Array.isArray(account.unlockedThemes)) ? account.unlockedThemes.map(normalizeThemeId) : [];
-  const autoThemes = Array.isArray(window.AUTO_GRANTED_THEMES) ? window.AUTO_GRANTED_THEMES.map(normalizeThemeId) : [];
-  const owned = playerUnlocked.includes(id) || accountUnlocked.includes(id) || autoThemes.includes(id);
-  if(!isThemeVisibleForPlayer(id) && !owned) return false;
-  return owned;
+  return isThemeOwnedByCurrentViewer(id) || getAutoGrantedThemeIds().includes(id);
 }
 
 // Bootstrap — charge tout d'un coup au démarrage
@@ -1615,11 +1573,31 @@ function getBeastCatalogEntry(idOrBeast){
 }
 // Serments custom (stock_s, fusionn_s avec SD au runtime)
 function gsd(){return sto("serments_custom")||{};}
-function ssd(s){return sv("serments_custom",s);}
+function compactSermentsCustom(s){
+  var result={};
+  Object.keys(s||{}).forEach(function(name){
+    var definition=s[name];
+    if(!definition||!definition.extension){result[name]=definition;return;}
+    var copy=Object.assign({},definition);
+    // Keep one copy of the rules per branch in the editable store.
+    delete copy.entry; delete copy.combatRules;
+    var original=window.NPSermentsExpansion&&window.NPSermentsExpansion.definitions[name];
+    copy.branches=(copy.branches||[]).map(function(branch,index){
+      var next=Object.assign({},branch), base=original&&original.branches[index];
+      if(next.combatRules&&base&&next.desc===base.desc) delete next.desc;
+      return next;
+    });
+    result[name]=copy;
+  });
+  return result;
+}
+function ssd(s){return sv("serments_custom",compactSermentsCustom(s));}
 // Retourne SD fusionn_ avec les serments custom
 function getAllSD(){
   var all={};
   Object.keys(SD).forEach(function(k){all[k]=SD[k];});
+  var extension=window.NPSermentsExpansion&&window.NPSermentsExpansion.definitions;
+  Object.keys(extension||{}).forEach(function(k){if(!all[k]) all[k]=extension[k];});
   var custom=gsd();
   Object.keys(custom).forEach(function(k){all[k]=custom[k];});
   return all;
@@ -1639,52 +1617,108 @@ function getThemeActorPlayer(){
   }catch(e){ return null; }
 }
 function getPreferredThemeForCurrentUser(){
-  try{
+  // A signed-in account is authoritative, including its explicit dark default.
+  if(CU){
     var account = getCurrentAccount();
-    var accountTheme = normalizeThemeId(account && account.selectedTheme ? account.selectedTheme : '');
-    var saved = normalizeThemeId(localStorage.getItem('np_theme') || '');
-    var hasSaved = !!saved;
-    var accountIsDefault = !accountTheme || accountTheme === 'dark';
-    var candidate = (hasSaved && accountIsDefault) ? saved : (accountTheme || saved || 'dark');
-    if(candidate !== 'dark' && candidate !== 'light'){
-      var actor = getThemeActorPlayer();
-      if(!canUseTheme(actor, candidate)) candidate = saved || accountTheme || 'dark';
-    }
-    if(candidate !== 'dark' && candidate !== 'light'){
-      var actor2 = getThemeActorPlayer();
-      if(!canUseTheme(actor2, candidate)) candidate = 'dark';
-    }
-    return candidate || 'dark';
-  }catch(e){ return normalizeThemeId(localStorage.getItem('np_theme') || 'dark') || 'dark'; }
+    var id = normalizeThemeId(account && account.selectedTheme || CU.selectedTheme || 'dark');
+    return canUseTheme(getThemeActorPlayer(), id) ? id : 'dark';
+  }
+  try{ return localStorage.getItem('np_theme') === 'light' ? 'light' : 'dark'; }
+  catch(e){ return 'dark'; }
 }
+function getConfirmedThemeForCurrentUser(){ return getPreferredThemeForCurrentUser(); }
 
-function persistSelectedTheme(themeId){
-  var id = normalizeThemeId(themeId || 'dark') || 'dark';
-  try{ localStorage.setItem('np_theme', id); }catch(e){}
-  try{
-    var account = getCurrentAccount();
-    if(account) account.selectedTheme = id;
-    if(CU) CU.selectedTheme = id;
-    var actor = getThemeActorPlayer();
-    if(actor) actor.selectedTheme = id;
-  }catch(e){}
-  if(typeof _authCall !== 'function' || !CU) return Promise.resolve({ ok:true, localOnly:true, themeId:id });
-  return _authCall({ action:'self_set_theme', themeId:id }).then(function(r){
-    if(r && r.ok){
-      try{
-        var account = getCurrentAccount();
-        if(account) account.selectedTheme = id;
-        if(CU) CU.selectedTheme = id;
-        var actor = getThemeActorPlayer();
-        if(actor) actor.selectedTheme = id;
-      }catch(e){}
-      return r;
+var _themeSelection = null;
+var _themePreferenceRevision = 0;
+function _themeSelectionState(){
+  var account = getCurrentAccount();
+  var key = _dbSessionGeneration + ':' + (CU && (CU.accountId || (account && account.id) || CU.pseudo || CU.name) || 'guest');
+  if(!_themeSelection || _themeSelection.key !== key){
+    _themeSelection = {key:key, previewId:null, pending:null, error:''};
+  }
+  return _themeSelection;
+}
+function _themeSelectionIsCurrent(state){
+  return !window.__logoutBusy && _themeSelectionState() === state;
+}
+async function persistSelectedTheme(themeId){
+  var id = normalizeThemeId(themeId), state = _themeSelectionState();
+  if(!CU) return {ok:false, error:'Connecte-toi pour enregistrer un thème.'};
+  var response = await _authCall({action:'self_set_theme', themeId:id});
+  if(!_themeSelectionIsCurrent(state)) return {ok:false, stale:true};
+  if(!response || !response.ok) return response || {ok:false, error:'Sauvegarde du thème impossible.'};
+  var confirmed = normalizeThemeId(response.selectedTheme);
+  if(confirmed !== id) return {ok:false, error:'La confirmation du thème est invalide. Réessaie.'};
+  var account = getCurrentAccount();
+  if(account){
+    account.selectedTheme = confirmed;
+    if(Array.isArray(response.unlockedThemes)) account.unlockedThemes = response.unlockedThemes.slice();
+  }
+  CU.selectedTheme = confirmed;
+  _themePreferenceRevision++;
+  try{ localStorage.setItem('np_theme', confirmed); }catch(e){}
+  return response;
+}
+function previewTheme(themeId){
+  var state = _themeSelectionState();
+  if(!CU || window.__logoutBusy || state.pending || document.querySelector('.moverlay.open')) return false;
+  var id = normalizeThemeId(themeId);
+  if(!getThemeById(id)) return false;
+  state.previewId = id;
+  state.error = '';
+  applyTheme(canUseTheme(getThemeActorPlayer(), id) ? id : getConfirmedThemeForCurrentUser(), false);
+  renderThemePreview();
+  var heading = ge('np-theme-preview-title');
+  if(heading){ heading.focus({preventScroll:true}); heading.scrollIntoView({block:'nearest', behavior:'smooth'}); }
+  return true;
+}
+function cancelThemePreview(quiet){
+  var state = _themeSelectionState(), previous = state.previewId;
+  if(!previous && !state.error && !state.pending) return true;
+  // Navigation may discard the preview while the explicit save completes.
+  if(state.pending && !quiet) return false;
+  state.previewId = null;
+  state.error = '';
+  applyTheme(getConfirmedThemeForCurrentUser(), false);
+  renderThemePreview();
+  if(!quiet && previous){
+    var card = Array.from(document.querySelectorAll('[data-theme-preview]')).find(function(el){ return el.dataset.themePreview === previous; });
+    if(card) card.focus({preventScroll:true});
+  }
+  return true;
+}
+function confirmThemePreview(){
+  var state = _themeSelectionState();
+  if(state.pending) return state.pending;
+  var id = state.previewId;
+  if(!CU || !id || document.querySelector('.moverlay.open') || !canUseTheme(getThemeActorPlayer(), id)) return Promise.resolve({ok:false});
+  state.error = '';
+  // Defer the request until the busy state is installed to reject reentrant clicks.
+  state.pending = Promise.resolve().then(function(){ return persistSelectedTheme(id); }).then(function(response){
+    if(!_themeSelectionIsCurrent(state)) return {ok:false, stale:true};
+    if(!response || !response.ok){
+      state.error = response && response.error || 'Le thème n’a pas été enregistré. Réessaie.';
+      return response || {ok:false};
     }
-    throw new Error((r && r.error) || 'Sauvegarde du thème impossible');
-  }).catch(function(err){
-    console.warn('persistSelectedTheme failed', err && err.message ? err.message : err);
-    return { ok:false, error: err && err.message ? err.message : String(err||'Erreur') };
+    state.previewId = null;
+    notif('Thème « ' + getThemeById(id).name + ' » enregistré.', 'ok');
+    return response;
+  }).catch(function(error){
+    if(!_themeSelectionIsCurrent(state)) return {ok:false, stale:true};
+    state.error = 'Le thème n’a pas été enregistré. Vérifie ta connexion puis réessaie.';
+    return {ok:false, error:state.error};
+  }).finally(function(){
+    if(!_themeSelectionIsCurrent(state)) return;
+    state.pending = null;
+    applyTheme(getConfirmedThemeForCurrentUser(), false);
+    renderThemePreview();
+    renderThemeGrid('theme-grid-container');
+    if(state.error) notif(state.error, 'err');
+    var target = state.error ? ge('np-theme-preview-title') : Array.from(document.querySelectorAll('[data-theme-preview]')).find(function(el){ return el.dataset.themePreview === id; });
+    if(target && target.getClientRects().length) target.focus({preventScroll:true});
   });
+  renderThemePreview();
+  return state.pending;
 }
 
 function getViewPid(){
@@ -1950,6 +1984,7 @@ function _focusOnScreen(target, behavior){
 }
 
 function showScreen(id){
+  if(id !== 's-app' && _themeSelection && _themeSelection.previewId) cancelThemePreview(true);
   // Guard structurel : s-app inaccessible sans session valide
   if(id==="s-app" && !CU){ id="s-home"; }
   // Vider les contenus privés si pas d'auth. Le shell complet sera restauré après connexion.
@@ -2024,7 +2059,8 @@ function updateHomeCounters(){
     joueurs=publicStats.linkedPlayers;
   }
 
-  var serments=Object.keys(getAllSD()||{}).length;
+  var publicSerments=getAllSD()||{};
+  var serments=Object.keys(publicSerments).filter(function(name){return isSermVisibleInLibrary(name,publicSerments[name]);}).length;
 
   var creatures="—";
   if(publicStats && typeof publicStats.creatureKills !== "undefined") {
@@ -2535,15 +2571,25 @@ function _cropPlaceholderCanvas(canvas,label){
   if(!canvas) return;
   var ctx=canvas.getContext("2d");
   var w=canvas.width||320,h=canvas.height||320;
+  var palette = getComputedStyle(canvas);
+  var background = palette.getPropertyValue('--tm-bg4').trim() || '#213b3e';
+  var foreground = palette.getPropertyValue('--tm-text-muted').trim() || '#bdcdc8';
+  if(NPThemeCatalog.contrast(foreground, background) < 4.5) foreground = NPThemeCatalog.foreground(background);
   ctx.clearRect(0,0,w,h);
-  ctx.fillStyle="rgba(255,255,255,0.03)";
+  ctx.fillStyle=background;
   ctx.fillRect(0,0,w,h);
-  ctx.strokeStyle="rgba(126,184,212,0.18)";
+  ctx.strokeStyle=palette.getPropertyValue('--tm-border-strong').trim() || '#648f83';
   ctx.strokeRect(0.5,0.5,w-1,h-1);
-  ctx.fillStyle="rgba(255,255,255,0.35)";
+  ctx.fillStyle=foreground;
   ctx.font="12px sans-serif";
   ctx.textAlign="center";
   ctx.fillText(label||"Aucune image",w/2,h/2);
+}
+function npRefreshThemeCanvas(){
+  var modal = ge('m-avatar-crop');
+  if(_cropImg || !modal || !modal.classList.contains('open')) return;
+  _cropPlaceholderCanvas(ge('crop-canvas'), 'Dépose une image');
+  _cropPlaceholderCanvas(ge('crop-preview-canvas'), 'Aucune image');
 }
 function _cropRenderPreview(){
   var preview=ge("crop-preview-canvas");
@@ -3007,6 +3053,7 @@ async function cropApply(){
 
 var _settingsTab="compte";
 function switchSettingsTab(tab){
+  if(tab !== 'collection') cancelThemePreview(true);
   _settingsTab=(tab==="collection"?"collection":"compte");
   _rememberAppSubState();
   renderProfil();
@@ -3019,6 +3066,7 @@ function switchSettingsTab(tab){
 function openSettings(tab){
   if(!CU){ showScreen("s-login"); return; }
   _restorePrivateShell("profil");
+  if(tab && tab !== 'collection') cancelThemePreview(true);
   if(tab) _settingsTab=(tab==="collection"?"collection":"compte");
   switchTab("profil", null);
   _rememberAppSubState();
@@ -3160,7 +3208,7 @@ function renderProfil(){
     }
     h+='</section>';
   }else{
-    h+='<section class="np-account-collection" aria-labelledby="np-account-collection-title"><div class="np-account-collection-heading"><div><p class="np-account-eyebrow">Ta galerie</p><h2 id="np-account-collection-title">Choisis ton atmosphère.</h2></div><p>Équipe un thème possédé ou retrouve les thèmes à débloquer. Le thème actif est indiqué dans la collection.</p></div><div id="appearance-section"></div></section>';
+    h+='<section class="np-account-collection" aria-labelledby="np-account-collection-title"><div class="np-account-collection-heading"><div><p class="np-account-eyebrow">Ta galerie</p><h2 id="np-account-collection-title">Choisis ton atmosphère.</h2></div><p>Essaie une palette, puis applique-la pour retrouver cette ambiance à ta prochaine connexion.</p></div><div id="appearance-section"></div></section>';
   }
   h+='</div>';
   el.innerHTML=h;
@@ -3727,33 +3775,32 @@ function setAdaptiveThemeTokens(){
 }
 
 function applyTheme(themeId, save){
-  var normalized = String(themeId||"dark").trim();
-  if(normalized === 'theme-default') normalized = 'dark';
-  if(normalized.indexOf("theme-")===0) normalized = normalized.replace(/^theme-/, "");
-  var _themePlayer = getThemeActorPlayer();
-  if(normalized !== "dark" && !canUseTheme(_themePlayer, normalized)){ notif("Ce thème n'est pas disponible.", "err"); return; }
-  var t = getThemeById(normalized);
-  if(!t && normalized !== "dark") return;
-  // Retirer toutes les classes de thème
-  _THEME_CLASSES.forEach(function(cls){ document.body.classList.remove(cls); });
-  document.body.classList.remove("light");
-  // Appliquer la nouvelle classe
-  if(t && t.cls) document.body.classList.add(t.cls);
-  else if(normalized === "light") document.body.classList.add("light");
-  _currentTheme = normalized;
+  var normalized = normalizeThemeId(themeId);
   if(save !== false){
-    try{ localStorage.setItem("np_theme", normalized); }catch(e){}
-    try{ persistSelectedTheme(normalized); }catch(e){}
+    var state = _themeSelectionState();
+    if(state.pending) return state.pending;
+    if(!CU || !canUseTheme(getThemeActorPlayer(), normalized)) return Promise.resolve({ok:false});
+    state.previewId = normalized;
+    return confirmThemePreview();
   }
-  // Mettre à jour le toggle dark/light dans le profil si présent
-  var lbl = ge("tog-theme-lbl");
-  var chk = ge("tog-theme");
-  if(lbl) lbl.textContent = themeId === "light" ? "Mode Clair" : "Mode Sombre";
-  if(chk) chk.checked = (themeId === "light");
+  if(!canUseTheme(getThemeActorPlayer(), normalized)) normalized = 'dark';
+  var t = getThemeById(normalized);
+  if(!t) return false;
+  var engineApplied = window.NPThemeEngine && NPThemeEngine.apply(normalized, sto('event_themes') || []);
+  if(!engineApplied){
+    _THEME_CLASSES.forEach(function(cls){ document.body.classList.remove(cls); });
+    document.body.classList.remove('light');
+    if(t.cls) document.body.classList.add(t.cls);
+  }
+  _currentTheme = normalized;
+  var lbl = ge('tog-theme-lbl'), chk = ge('tog-theme');
+  if(lbl) lbl.textContent = normalized === 'light' ? 'Mode Clair' : 'Mode Sombre';
+  if(chk) chk.checked = normalized === 'light';
   updateHeaderLogoTheme();
   updateLaunchTheme();
-  setAdaptiveThemeTokens();
+  if(!engineApplied) setAdaptiveThemeTokens();
   _easterEggsDestroy();
+  return true;
 }
 
 /* ====== EASTER EGG PARTICLE SYSTEM ====== */
@@ -3833,17 +3880,7 @@ function _easterEggsDestroy(){
 /* ====== FIN EASTER EGG PARTICLE SYSTEM ====== */
 
 function loadSavedTheme(){
-  try{
-    var saved = localStorage.getItem("np_theme") || "dark";
-    if(saved.indexOf("theme-")===0) saved = saved.replace(/^theme-/, "");
-    // Si thème événement, vérifier qu'on a le droit (après auth seulement)
-    var _themePlayer = getThemeActorPlayer();
-    if(saved !== "dark" && saved !== "light" && !canUseTheme(_themePlayer, saved)) saved = "dark";
-    applyTheme(saved, false);
-    updateHeaderLogoTheme();
-    updateLaunchTheme();
-    setAdaptiveThemeTokens();
-  }catch(e){}
+  applyTheme(getPreferredThemeForCurrentUser(), false);
 }
 
 function unlockTheme(themeId){
@@ -3863,111 +3900,54 @@ function unlockTheme(themeId){
 
 
 
-function renderThemeGrid(containerId){
-  var el = ge(containerId); if(!el) return;
-  var all = getVisibleThemesForCurrentViewer();
-  var now = Date.now();
-  var cur = _currentTheme;
-
-  function themeRarity(t){
-    var canon = getThemeCanonMeta(t && t.id);
-    if(canon) return canon.rarity;
-    if(t.event) return "Saisonnier";
-    return "Classique";
-  }
-
-  function themeCategory(t){
-    var canon = getThemeCanonMeta(t && t.id);
-    if(canon) return canon.category;
-    if(t.event) return "Événement";
-    return "Classique";
-  }
-
-  function swatch(c){
-    return '<span class="theme-swatch" style="background:'+esc(c)+';"></span>';
-  }
-
-  var h = '<div class="theme-collection-grid">';
-
-  all.forEach(function(t){
-    var isActive = cur === t.id;
-    var isEvent  = !!t.event;
-    var isLocked = !hasUnlocked(t.id);
-    var isAvail  = isEvent && (t.availableUntil === 0 || t.availableUntil > now);
-
-    var bg1 = t.preview[0] || "#0d0e18";
-    var bg2 = t.preview[1] || "#7eb8d4";
-    var bg3 = t.preview[2] || "#c9a84c";
-    var rarity = themeRarity(t);
-    var category = themeCategory(t);
-    var state = isActive ? "selected" : (isLocked ? (isAvail ? "available" : "locked") : "owned");
-
-    var onclick;
-    if(isLocked && isEvent && isAvail){
-      onclick = "unlockTheme('" + t.id + "')";
-    } else if(isLocked){
-      onclick = "notif('Ce thème n\\'est pas dans ta collection.','err')";
-    } else {
-      onclick = "applyTheme('" + t.id + "');renderAppearanceSection();";
-    }
-
-    var featured = (rarity === 'Fondateur' || rarity === 'Rare' || category === 'Événement');
-    h += '<article class="theme-card-premium collection-card np-theme-vault-card'+(featured?' is-featured':'')+(isLocked?' th-locked':'')+'"'
-      + ' role="button" tabindex="0" aria-pressed="'+isActive+'" aria-label="'+esc(t.name)+' — '+(isActive?'Thème actif':(isLocked?(isAvail?'Débloquer':'Indisponible'):'Équiper'))+'" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();event.stopPropagation();if(!document.querySelector(\'.moverlay.open\'))this.click();}"'
-      + ' data-theme-id="'+esc(t.id)+'" data-theme-rarity="'+esc(rarity)+'" data-theme-category="'+esc(category)+'" data-theme-state="'+esc(state)+'"'
-      + ' style="--card-bg:'+esc(bg1)+';--card-a:'+esc(bg2)+';--card-b:'+esc(bg3)+';" onclick="if(document.querySelector(\'.moverlay.open\'))return;event.stopPropagation();' + onclick + '">';
-    h += '<div class="theme-topline" data-theme-eyebrow="'+esc(rarity)+'"><span class="theme-card-state">'+(isActive?'Équipé':(isLocked?(isAvail?'À débloquer':'Indisponible'):'Possédé'))+'</span></div>';
-    h += '<div class="theme-preview-mini '+esc(t.id)+'" data-preview-theme="'+esc(t.id)+'">';
-    h += '<div class="theme-preview-head"></div><div class="theme-preview-cards"><span></span><span></span><span></span></div><div class="theme-preview-bar"></div>';
-    h += '</div>';
-    h += '<div class="theme-card-body">';
-    h += '<div class="theme-title">' + esc(t.name) + '</div>';
-    if(t.desc) h += '<div class="tagline">' + esc(t.desc) + '</div>';
-    h += '</div>';
-    h += '<div class="theme-meta-row">';
-    h += '<span class="theme-palette">'+swatch(bg1)+swatch(bg2)+swatch(bg3)+'</span>';
-    h += '</div>';
-    h += '<div class="theme-card-action">'+(isActive?'Thème actif':(isLocked && isAvail?'Débloquer':(isLocked?'Non disponible':'Équiper')))+'</div>';
-    h += '</article>';
+function renderThemePreview(){
+  var host = ge('np-theme-preview-host');
+  if(!host) return;
+  var state = _themeSelectionState(), theme = state.previewId && getThemeById(state.previewId);
+  document.querySelectorAll('[data-theme-preview]').forEach(function(card){
+    card.setAttribute('data-theme-preview-active', String(!!theme && card.dataset.themePreview === theme.id));
   });
-
-  h += '</div>';
-  el.innerHTML = h;
+  if(!theme){ host.innerHTML = ''; return; }
+  var usable = canUseTheme(getThemeActorPlayer(), theme.id);
+  var v = theme.vars;
+  var sample = usable ? '' : '<div class="np-theme-isolated-sample" style="--sample-bg:'+escAttr(v.bg)+';--sample-surface:'+escAttr(v.bg2)+';--sample-text:'+escAttr(v.text)+';--sample-accent:'+escAttr(v.accent)+';">'
+    + '<span>Extrait de la palette</span><strong>'+esc(theme.name)+'</strong><p>Une autre lumière sur ton aventure.</p><div><i></i><i></i><i></i></div></div>';
+  var message = state.error || (state.pending ? 'Enregistrement en cours…' : usable ? 'Aperçu temporaire. Applique ce thème pour conserver ton choix.' : 'Ce thème ne peut pas être équipé avec tes droits actuels. Tu peux découvrir sa palette ici.');
+  host.innerHTML = '<section id="np-theme-preview-bar" class="np-theme-preview" aria-busy="'+!!state.pending+'" aria-labelledby="np-theme-preview-title">'
+    + '<div class="np-theme-preview-copy"><span class="np-account-eyebrow">'+(usable ? 'À l’essai' : 'À découvrir')+'</span>'
+    + '<h3 id="np-theme-preview-title" tabindex="-1">'+esc(theme.name)+'</h3>'
+    + '<p '+(state.error ? 'role="alert"' : 'role="status"')+'>'+esc(message)+'</p></div>'+sample
+    + '<div class="np-theme-preview-actions"><button type="button" id="np-theme-preview-apply" class="btn np-account-primary" onclick="confirmThemePreview()" '+(!usable || state.pending ? 'disabled' : '')+'>'+(state.pending ? 'Enregistrement…' : 'Appliquer')+'</button>'
+    + '<button type="button" id="np-theme-preview-cancel" class="btn np-account-secondary" onclick="cancelThemePreview()" '+(state.pending ? 'disabled' : '')+'>Annuler</button></div></section>';
 }
 
+function renderThemeGrid(containerId){
+  var el = ge(containerId); if(!el) return;
+  var confirmed = getConfirmedThemeForCurrentUser(), actor = getThemeActorPlayer();
+  el.innerHTML = '<div class="theme-collection-grid">'+getVisibleThemesForCurrentViewer().map(function(t){
+    var active = confirmed === t.id, usable = canUseTheme(actor, t.id), owned = isThemeOwnedByCurrentViewer(t.id);
+    var state = active ? 'selected' : !usable ? (owned ? 'blocked' : 'locked') : owned ? 'owned' : 'available';
+    var label = active ? 'Équipé' : usable ? (owned ? 'Possédé' : 'Disponible') : owned ? 'Bloqué' : 'Non possédé';
+    var rarity = t.rarity || 'Classique', category = t.category || 'Classique', v = t.vars;
+    var sampleStyle = '--preview-bg:'+v.bg+';--preview-bg2:'+v.bg2+';--preview-a:'+v.accent+';--preview-b:'+v.accentBright+';--preview-c:'+v.text+';';
+    var action = "if(document.querySelector('.moverlay.open'))return;event.stopPropagation();previewTheme('"+jsesc(t.id)+"')";
+    return '<article class="theme-card-premium collection-card np-theme-vault-card'+(!usable ? ' th-locked' : '')+'" role="button" tabindex="0" aria-pressed="'+active+'" aria-label="'+escAttr(t.name+' — '+label+' — Prévisualiser')+'"'
+      + ' data-theme-preview-active="'+(_themeSelectionState().previewId === t.id)+'" data-theme-preview="'+escAttr(t.id)+'" data-theme-id="'+escAttr(t.id)+'" data-theme-rarity="'+escAttr(rarity)+'" data-theme-category="'+escAttr(category)+'" data-theme-state="'+state+'"'
+      + ` onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();if(!document.querySelector('.moverlay.open'))this.click();}"`
+      + ' onclick="'+action+'" style="--card-bg:'+escAttr(v.bg)+';--card-a:'+escAttr(v.accent)+';--card-b:'+escAttr(v.accentBright)+';">'
+      + '<div class="theme-topline" data-theme-eyebrow="'+escAttr(rarity)+'"><span class="theme-card-state">'+label+'</span></div>'
+      + '<div class="theme-preview-mini" data-preview-theme="'+escAttr(t.id)+'" style="'+escAttr(sampleStyle)+'"><div class="theme-preview-head"></div><div class="theme-preview-cards"><span></span><span></span><span></span></div><div class="theme-preview-bar"></div></div>'
+      + '<div class="theme-card-body"><div class="theme-title">'+esc(t.name)+'</div><div class="tagline">'+esc(t.desc || '')+'</div></div>'
+      + '<div class="theme-meta-row"><span class="theme-palette" aria-hidden="true">'+t.preview.slice(0,3).map(function(c){return '<span class="theme-swatch" style="background:'+escAttr(c)+'"></span>';}).join('')+'</span></div>'
+      + '<div class="theme-card-action">Prévisualiser <span aria-hidden="true">↗</span></div></article>';
+  }).join('')+'</div>';
+}
 
 function renderAppearanceSection(){
-  var el = ge("appearance-section"); if(!el) return;
-  // Le titre / descriptif sont déjà rendus dans l'écrou : ici on évite le doublon.
-  el.innerHTML = "<style id='np-collection-width-polish'>"
-    +".profile-collection-shell{width:min(100%,1440px);}"
-    +".profile-collection-shell>.card{padding:16px !important;}"
-    +".profile-collection-shell .theme-collection-grid{grid-template-columns:repeat(auto-fill,minmax(250px,1fr)) !important;gap:14px !important;align-items:stretch !important;grid-auto-rows:380px !important;grid-auto-flow:row !important;}"
-    +"body[data-theme-engine] .profile-collection-shell .np-theme-vault-card,body[data-theme-engine] .profile-collection-shell .np-theme-vault-card.is-featured,.profile-collection-shell .np-theme-vault-card,.profile-collection-shell .np-theme-vault-card.is-featured{grid-column:span 1 !important;grid-row:span 1 !important;align-self:stretch !important;box-sizing:border-box !important;min-height:380px !important;height:380px !important;max-height:380px !important;border-radius:12px !important;padding:15px !important;gap:10px !important;overflow:hidden !important;transform:none !important;}"
-    +".profile-collection-shell .np-theme-vault-card{display:grid !important;grid-template-rows:26px 120px 88px 24px 50px !important;justify-content:stretch !important;align-content:stretch !important;}"
-    +".profile-collection-shell .np-theme-vault-card + .np-theme-vault-card{margin-top:0 !important;}"
-    +".profile-collection-shell .np-theme-vault-card::after{display:none !important;content:none !important;}"
-    +".profile-collection-shell .theme-topline{height:26px !important;min-height:26px !important;max-height:26px !important;flex-shrink:0;}"
-    +".profile-collection-shell .theme-preview-mini,.profile-collection-shell .np-theme-vault-card.is-featured .theme-preview-mini{width:100% !important;height:120px !important;min-height:120px !important;max-height:120px !important;margin:0 !important;border-radius:10px !important;padding:10px !important;flex:0 0 120px !important;align-self:stretch !important;box-sizing:border-box !important;display:flex !important;flex-direction:column !important;justify-content:space-between !important;transform:none !important;}"
-    +".profile-collection-shell .np-theme-vault-card[data-theme-id]{height:380px !important;min-height:380px !important;max-height:380px !important;align-self:stretch !important;transform:none !important;}"
-    +".profile-collection-shell .np-theme-vault-card[data-theme-id] .theme-preview-mini{width:100% !important;max-width:100% !important;align-self:stretch !important;margin-left:0 !important;margin-right:0 !important;transform:none !important;}"
-    +".profile-collection-shell .theme-preview-mini,.profile-collection-shell .theme-preview-mini *{box-sizing:border-box !important;}"
-    +".profile-collection-shell .theme-preview-head,.profile-collection-shell .theme-preview-bar{width:100% !important;max-width:100% !important;}"
-    +".profile-collection-shell .theme-preview-cards{margin:0 !important;gap:6px !important;flex:0 0 auto !important;}"
-    +".profile-collection-shell .theme-preview-cards span{height:28px !important;border-radius:8px !important;}"
-    +".profile-collection-shell .theme-preview-head{height:12px !important;}"
-    +".profile-collection-shell .theme-preview-bar{height:7px !important;}"
-    +".profile-collection-shell .theme-card-body{height:88px !important;min-height:88px !important;max-height:88px !important;overflow:hidden;}"
-    +".profile-collection-shell .theme-title{font-size:13px !important;line-height:1.2 !important;letter-spacing:1.6px !important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}"
-    +".profile-collection-shell .tagline{font-size:11px !important;line-height:1.35 !important;min-height:0 !important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}"
-    +".profile-collection-shell .theme-meta-row{margin-top:0 !important;gap:6px !important;height:24px !important;min-height:24px !important;max-height:24px !important;align-items:center;}"
-    +".profile-collection-shell .theme-meta-pill{min-height:21px !important;padding:0 8px !important;font-size:9px !important;letter-spacing:.06em;}"
-    +".profile-collection-shell .theme-palette{gap:3px !important;margin-left:auto;}"
-    +".profile-collection-shell .theme-swatch{width:13px !important;height:13px !important;}"
-    +".profile-collection-shell .theme-card-action{width:100% !important;height:50px !important;min-height:50px !important;max-height:50px !important;margin-top:0 !important;padding:0 12px !important;border-radius:10px !important;font-size:9px !important;letter-spacing:1.6px !important;line-height:1 !important;flex-shrink:0;align-self:end !important;display:flex !important;align-items:center !important;justify-content:center !important;text-align:center !important;box-sizing:border-box !important;overflow:visible !important;}"
-    +"@media(max-width:760px){.profile-collection-shell{width:100%;}.profile-collection-shell .theme-collection-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr)) !important;grid-auto-rows:340px !important;}.profile-collection-shell .np-theme-vault-card,.profile-collection-shell .np-theme-vault-card.is-featured{height:340px !important;min-height:340px !important;max-height:340px !important;padding:12px !important;grid-template-rows:24px 104px 72px 22px 46px !important;}.profile-collection-shell .theme-preview-mini,.profile-collection-shell .np-theme-vault-card.is-featured .theme-preview-mini{height:104px !important;min-height:104px !important;max-height:104px !important;flex-basis:104px !important;}.profile-collection-shell .theme-card-body{height:72px !important;min-height:72px !important;max-height:72px !important;}.profile-collection-shell .theme-card-action{height:46px !important;min-height:46px !important;max-height:46px !important;}}"
-    +"</style><div id='theme-grid-container'></div>";
-  renderThemeGrid("theme-grid-container");
+  var el = ge('appearance-section'); if(!el) return;
+  el.innerHTML = '<div id="np-theme-preview-host"></div><div id="theme-grid-container"></div>';
+  renderThemeGrid('theme-grid-container');
+  renderThemePreview();
 }
 
 // ── Admin : gestion thèmes événement ──────────────────
@@ -4059,7 +4039,7 @@ function renderAdminThemes(targetId){
 async function upsertEventTheme(themeId, patch){
   var id = normalizeThemeId(themeId);
   if(!id) return null;
-  var themes = sto("event_themes") || [];
+  var themes = _getDbThemeEntries();
   var idx = Array.isArray(themes) ? themes.findIndex(function(t){ return normalizeThemeId(t && t.id) === id; }) : -1;
   var base = idx >= 0 ? _normalizeThemeEntryRecord(themes[idx], id) : (getThemeById(id) || { id: id, event:true, preview:["#0d0e18","#7eb8d4","#c9a84c"] });
   var next = Object.assign({}, base, patch||{});
@@ -4427,21 +4407,9 @@ function _restoreRememberedAppTab(saved){
 }
 
 function launchApp(){
-  // Revalider le thème — priorité au thème du compte si défini et possédé
-  (function(){
-    try{
-      var saved = getPreferredThemeForCurrentUser();
-      if(saved.indexOf("theme-")===0) saved=saved.replace(/^theme-/,"");
-      var baseThemes=["dark","light","violet","green"];
-      if(baseThemes.indexOf(saved)<0){
-        if(!isThemeVisibleForPlayer(saved) || !hasUnlocked(saved)){ applyTheme("dark",true); }
-        else { _currentTheme=saved; applyTheme(saved,false); }
-      } else {
-        _currentTheme=saved;
-        applyTheme(saved,false);
-      }
-    }catch(e){}
-  })();
+  document.body.setAttribute('data-np-authenticated', 'true');
+  _themeSelection = null;
+  applyTheme(getPreferredThemeForCurrentUser(), false);
   updateLaunchTheme();
   // Retirer le loader immédiatement
   _removeLoader();
@@ -5248,6 +5216,10 @@ async function logout(){
   if(window.__logoutBusy) return;
   window.__logoutBusy = true;
   _dbSessionGeneration++;
+  _themeSelection = null;
+  document.body.removeAttribute('data-np-authenticated');
+  applyTheme('dark', false);
+  document.body.removeAttribute('data-np-authenticated');
   if(typeof window.npResetRpgSession === 'function') window.npResetRpgSession();
   _dbSetToken(null);
   if(window._offlineRetryInterval){ clearInterval(window._offlineRetryInterval); window._offlineRetryInterval=null; }
@@ -5520,6 +5492,7 @@ function switchTab(id, btn, _isBack){
   }
   if(id==='archives'&&CU&&['admin','mj','joueur'].indexOf(roleKey(CU))<0){ id='accueil'; btn=null; }
   // ── FIN GUARDS ───────────────────────────────────────────
+  if(id !== 'profil' && _themeSelection && _themeSelection.previewId) cancelThemePreview(true);
 
   // Pousser dans l'historique (sauf si c'est un retour arrière)
   if(!_isBack && _navCurrent && _navCurrent !== id){
@@ -6147,8 +6120,23 @@ function getSermCatLabel(cat){
   return ({melee:"Mêlée",distance:"Distance",magie:"Magie",soutien:"Soutien"}[cat]||cat||"Mêlée");
 }
 function isSermVisibleInLibrary(nom,s){
+  var retired=window.NPSermentsExpansion&&window.NPSermentsExpansion.retiredNames;
+  if(retired&&retired.indexOf(nom)!==-1) return false;
   if(s&&s.hidden) return false;
   return true;
+}
+function isStarterSerment(nom,s){
+  return !!s && isSermVisibleInLibrary(nom,s) && !getSermEvolutionFrom(nom,s) && (!s.extension || getSermLevelKey(nom,s)==='basic');
+}
+function getSermEmblem(nom,size){
+  if(typeof npSermentEmblem==='function') return npSermentEmblem(nom,size||32);
+  return esc((getAllSD()[nom]||{}).icon||WEAPON_ICONS[nom]||'✦');
+}
+function renderSermentRules(br){
+  var rules=br&&br.combatRules;
+  if(!rules) return '';
+  var fields=[['Moment et étapes',rules.timing],['Portée',rules.range],['Cibles',rules.targets],['Durée',rules.duration],['Fonctionnement',rules.cycle],['Réponses possibles',rules.defense],['Limites',rules.limits],['Exemple',rules.scenario]];
+  return '<details class="np-serment-rules"><summary>Règles de la capacité</summary><dl>'+fields.filter(function(row){return row[1];}).map(function(row){return '<dt>'+esc(row[0])+'</dt><dd>'+esc(row[1])+'</dd>';}).join('')+'</dl></details>';
 }
 function getSermLorePreview(text){
   var clean=String(text||"").replace(/\s+/g," ").trim();
@@ -6169,8 +6157,11 @@ function renderAllSerments(tid){
   var html='<div class="serm-shell">';
   html+='<section class="serm-rarity-guide">';
   html+='<div class="serm-rarity-copy">';
-  html+='<span>Rangs et progression des serments</span>';
-  html+='<p>Les capacités se renforcent avec le niveau du personnage et son expérience commune. Les Serments du départ sont <strong>Basiques</strong>. Leur première évolution forme les <strong>Aguerris</strong>, actuellement gardés hors vitrine le temps d’être retravaillés. Plus loin, certains chemins deviennent <strong>Émérites</strong>, tandis que les voies <strong>Singulières</strong> peuvent tendre vers le <strong>Transcendé</strong> ou le <strong>Corrompu</strong>.</p>';
+  html+='<small class="serm-eyebrow">L’armurerie des serments</small><span>Une arme, deux voies.</span>';
+  html+='<p>Choisis une arme familière et la manière dont tu veux la manier. Chaque serment propose <strong>deux branches exclusives</strong>. Au niveau 10, une évolution peut transformer cette pratique en un pouvoir singulier, après attribution par le staff.</p>';
+  var visibleNames=Object.keys(all).filter(function(n){return isSermVisibleInLibrary(n,all[n]);});
+  var starterCount=visibleNames.filter(function(n){return isStarterSerment(n,all[n]);}).length;
+  html+='<div class="serm-catalogue-counts"><span><b>'+starterCount+'</b> serments de départ</span><span><b>'+(visibleNames.length-starterCount)+'</b> évolutions</span><span>Deux voies par arme</span></div>';
   html+='</div>';
   html+='</section>';
   html+='<div class="serm-toolbar">';
@@ -6182,19 +6173,22 @@ function renderAllSerments(tid){
   html+='</div></div>';
   html+='<div class="serm-filter-block"><span>Rang</span><div class="serm-filter" id="serm-level-filter">';
   html+='<button class="btn btn-sm active" onclick="filterSermentLevel(null,this)"><span>Toutes</span></button>';
-  ["basic","emeritus","singular","transcended","corrupted"].forEach(function(level){
+  ["basic","seasoned","emeritus","singular","transcended","corrupted"].filter(function(level){return visibleNames.some(function(n){return getSermLevelKey(n,all[n])===level;});}).forEach(function(level){
     html+='<button class="btn btn-sm" onclick="filterSermentLevel(this.dataset.level,this)" data-level="'+level+'"><span>'+esc(SERM_LEVELS[level])+'</span></button>';
   });
   html+='</div></div>';
   html+='</div>';
+  html+='<div class="np-serment-search"><label for="serment-search">Rechercher un serment</label><input id="serment-search" type="search" placeholder="Nom, arme, branche ou lignée…" value="'+escAttr(_sermSearch||'')+'" oninput="_sermSearch=this.value;applySermentFilters()"><span id="serment-result-count" role="status"></span></div>';
   html+='<div id="serments-grid" class="serm-grid">';
-  Object.keys(all).forEach(function(nom){
+  visibleNames.sort(function(a,b){return Number(!!getSermEvolutionFrom(a,all[a]))-Number(!!getSermEvolutionFrom(b,all[b]))||a.localeCompare(b,'fr');}).forEach(function(nom){
     if(!isSermVisibleInLibrary(nom,all[nom])) return;
     html+=renderSermCard(nom,all[nom]);
   });
   html+='</div>';
+  html+='<p id="serment-no-results" class="serm-no-results" hidden>Aucun serment ne correspond à cette recherche. Essaie un nom d’arme ou une autre lignée.</p>';
   html+='</div>';
   el.innerHTML=html;
+  applySermentFilters();
 }
 
 function _refreshSermentViews(){
@@ -6317,7 +6311,7 @@ function renderSermentsAdminPage(tid){
   familyNames.forEach(function(rootName){
     var s=all[rootName]||{};
     var icon=(s&&s.icon)||WEAPON_ICONS[rootName]||"✦";
-    html+='<button class="serm-admin-family-btn '+(filters.family===rootName?'active':'')+'" data-family-filter="'+escAttr(rootName)+'" onclick="setSermentsAdminFilter(\'family\',decodeURIComponent(\''+encodeURIComponent(rootName)+'\'))"><i>'+esc(icon)+'</i><span>'+esc(rootName)+'</span><em>'+((familyCounts[rootName]||0))+'</em></button>';
+    html+='<button class="serm-admin-family-btn '+(filters.family===rootName?'active':'')+'" data-family-filter="'+escAttr(rootName)+'" onclick="setSermentsAdminFilter(\'family\',decodeURIComponent(\''+encodeURIComponent(rootName)+'\'))"><i>'+getSermEmblem(rootName,24)+'</i><span>'+esc(rootName)+'</span><em>'+((familyCounts[rootName]||0))+'</em></button>';
   });
   html+='</div>';
   html+='</section>';
@@ -6367,7 +6361,7 @@ function renderSermentsAdminPage(tid){
     var palierCount=branches.reduce(function(sum,br){ return sum+((br&&br.paliers)||[]).length; },0);
     html+='<details class="serm-admin-row" data-level="'+escAttr(levelKey)+'" data-cat="'+escAttr(catKey)+'" data-visibility="'+escAttr(visKey)+'" data-family="'+escAttr(familyRoot)+'" data-search="'+escAttr(searchText)+'">';
     html+='<summary>';
-    html+='<span class="serm-admin-glyph">'+esc(icon)+'</span>';
+    html+='<span class="serm-admin-glyph">'+getSermEmblem(nom,36)+'</span>';
     html+='<span class="serm-admin-row-main"><strong>'+esc(nom)+'</strong><em>'+esc(s.arme||"Arme non définie")+'</em>'+renderSermLineage(nom,s,true)+'</span>';
     html+='<span class="serm-admin-row-meta"><b class="rank '+escAttr(getSermLevelClass(nom,s))+'">'+esc(level)+'</b>'+(getSermEvolutionFrom(nom,s)?'<b class="evolution">Évolution</b>':'')+'<b>'+esc(cat)+'</b><b>'+branches.length+' branche'+(branches.length>1?'s':'')+'</b><b>'+palierCount+' palier'+(palierCount>1?'s':'')+'</b>'+(s.hidden?'<b class="muted">Masqué</b>':'')+'</span>';
     html+='</summary>';
@@ -6377,7 +6371,7 @@ function renderSermentsAdminPage(tid){
     html+='<button class="btn btn-sm btn-gold" onclick="openEditSerm(\''+jsesc(enc)+'\')"><span>Modifier serment</span></button>';
     html+='<button class="btn btn-sm btn-grn" onclick="openAddBranch(\''+jsesc(enc)+'\')"><span>+ Branche</span></button>';
     html+='<button class="btn btn-sm '+(s.hidden?'btn-grn':'btn-red')+'" onclick="toggleSermVisibility(\''+jsesc(enc)+'\')"><span>'+(s.hidden?'Rendre visible':'Masquer')+'</span></button>';
-    if(!SD[nom]) html+='<button class="btn btn-sm btn-red" onclick="delSerm(\''+jsesc(enc)+'\')"><span>Supprimer</span></button>';
+    if(!SD[nom]&&!s.extension) html+='<button class="btn btn-sm btn-red" onclick="delSerm(\''+jsesc(enc)+'\')"><span>Supprimer</span></button>';
     html+='</div>';
     if(branches.length){
       html+='<div class="serm-admin-branches">';
@@ -6518,20 +6512,28 @@ async function toggleSermVisibility(nomEnc){
 }
 
 function renderSermCard(nom,s){
-  var icon=WEAPON_ICONS[nom]||"✦";
+  var icon=getSermEmblem(nom,320);
   var cat=SERM_CATS[nom]||s.cat||"melee";
   var sermLevelKey=getSermLevelKey(nom,s);
   var sermLevel=getSermLevelLabel(nom,s);
-  var isCustom=!SD[nom];
+  var isCustom=!SD[nom]&&!s.extension;
   var branches=getBranches(nom,s);
-  var h='<article class="scrd serm-card-premium" data-cat="'+cat+'" data-level="'+sermLevelKey+'">';
+  var search=[nom,s.arme,s.evolvesFrom,s.playstyle,s.tagline,branches.map(function(br){return br.nom;}).join(' ')].join(' ');
+  var h='<article class="scrd serm-card-premium serm-forged" data-serment="'+escAttr(nom)+'" data-search="'+escAttr(search)+'" data-cat="'+escAttr(cat)+'" data-level="'+escAttr(sermLevelKey)+'">';
+  h+='<div class="serm-art">'+icon+'<span class="serm-art-rank">'+esc(getSermEvolutionFrom(nom,s)?'Évolution · Niv. 10':'Serment de départ')+'</span></div><div class="serm-card-body">';
   if(isCustom) h+='<div class="serm-badge-new">Nouveau</div>';
-  h+='<div class="serm-head" style="padding-right:44px">';
-  h+='<div class="serm-icon">'+icon+'</div>';
-  h+='<div class="serm-head-copy"><div class="snm">'+esc(nom)+'</div><div class="swp">'+esc(s.arme)+'</div>'+renderSermLineage(nom,s,false)+'<div class="serm-level-pill '+escAttr(getSermLevelClass(nom,s))+'">'+esc(sermLevel)+'</div></div>';
+  h+='<div class="serm-head">';
+  h+='<div class="serm-head-copy"><span class="serm-card-category">'+esc(getSermCatLabel(cat))+'</span><h3 class="snm">'+esc(nom)+'</h3><div class="swp">'+esc(s.arme)+'</div>'+renderSermLineage(nom,s,false)+'</div>';
   h+='</div>';
-  h+='<div class="serm-cat" style="right:14px;">'+esc(getSermCatLabel(cat))+'</div>';
+  if(s.tagline||s.pitch||s.fantasy) h+='<p class="serm-pitch">'+esc(s.tagline||s.pitch||s.fantasy)+'</p>';
   h+='<p class="serm-lore">'+esc(getSermLorePreview(s.lore))+'</p>';
+  if(s.decision||s.counterplay){
+    h+='<details class="serm-playbook"><summary>La manière de combattre</summary>';
+    if(s.playstyle) h+='<p>'+esc(s.playstyle)+'</p>';
+    if(s.decision) h+='<p><b>Ton choix</b>'+esc(s.decision)+'</p>';
+    if(s.counterplay) h+='<p><b>La réponse adverse</b>'+esc(s.counterplay)+'</p>';
+    h+='</details>';
+  }
   h+='<div class="serm-stats">';
   h+='<div class="sst"><div class="sstv">'+s.pvN+'</div><div class="sstl">PV/niv</div></div>';
   h+='<div class="sst"><div class="sstv">'+s.epN+'</div><div class="sstl">EP/niv</div></div>';
@@ -6552,7 +6554,8 @@ function renderSermCard(nom,s){
       // Description physique de la capacité (staff/lore visuel)
       if(br.descPhys) h+='<p class="serm-branch-phys">'+esc(br.descPhys)+'</p>';
       // Description narrative joueur
-      if(br.desc) h+='<p class="serm-branch-desc" style="border-left-color:'+col+';">'+esc(br.desc)+'</p>';
+      if(br.desc&&(!br.combatRules||s.reforged)) h+='<p class="serm-branch-desc" style="border-left-color:'+col+';">'+esc(br.desc)+'</p>';
+      h+=renderSermentRules(br);
       // Paliers : information secondaire, regroupée et repliable.
       if(pals.length){
         var palierGroups=[],palierMap={};
@@ -6585,11 +6588,21 @@ function renderSermCard(nom,s){
   } else {
     h+='<p style="color:var(--faint);font-style:italic;font-size:13px;">Aucune branche définie.</p>';
   }
-  h+='</article>';
+  var all=getAllSD(),children=Object.keys(all).filter(function(n){return isSermVisibleInLibrary(n,all[n])&&getSermEvolutionFrom(n,all[n])===nom;});
+  if(children.length) h+='<div class="serm-descendants"><span>À partir du niveau 10</span>'+children.map(function(name){return '<button type="button" onclick="focusSerment(\''+escAttr(jsesc(name))+'\')">'+esc(name)+' <span aria-hidden="true">↗</span></button>';}).join('')+'</div>';
+  h+='</div></article>';
   return h;
 }
 
-var _sermFilter=null,_sermLevelFilter=null;
+function focusSerment(name){
+  _sermFilter=null;_sermLevelFilter=null;_sermSearch=name;
+  var search=ge('serment-search');if(search) search.value=name;
+  applySermentFilters();
+  var card=Array.from(document.querySelectorAll('#serments-grid .scrd')).find(function(item){return item.dataset.serment===name;});
+  if(card){card.setAttribute('tabindex','-1');card.focus({preventScroll:true});card.scrollIntoView({behavior:'smooth',block:'start'});}
+}
+
+var _sermFilter=null,_sermLevelFilter=null,_sermSearch='';
 function filterSerments(cat,btn){
   // Normaliser — undefined (pas de data-c) ou chaîne vide = "Tous"
   if(!cat||cat==="undefined") cat=null;
@@ -6606,12 +6619,21 @@ function filterSermentLevel(level,btn){
   applySermentFilters();
 }
 function applySermentFilters(){
+  var count=0,total=0;
+  document.querySelectorAll('#serm-filter button').forEach(function(btn){btn.classList.toggle('active',(btn.dataset.c||null)===_sermFilter);});
+  document.querySelectorAll('#serm-level-filter button').forEach(function(btn){btn.classList.toggle('active',(btn.dataset.level||null)===_sermLevelFilter);});
+  function normal(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
+  var query=normal(_sermSearch).trim();
   document.querySelectorAll("#serments-grid .scrd").forEach(function(card){
+    total++;
     var cardCat=card.getAttribute("data-cat")||"";
     var cardLevel=card.getAttribute("data-level")||"";
-    var show=(!_sermFilter||cardCat===_sermFilter)&&(!_sermLevelFilter||cardLevel===_sermLevelFilter);
+    var show=(!_sermFilter||cardCat===_sermFilter)&&(!_sermLevelFilter||cardLevel===_sermLevelFilter)&&(!query||normal(card.getAttribute('data-search')).indexOf(query)>=0);
+    if(show) count++;
     card.style.display=show?"block":"none";
   });
+  var countEl=ge('serment-result-count'); if(countEl) countEl.textContent=count+' / '+total+' serments';
+  var empty=ge('serment-no-results');if(empty) empty.hidden=count>0;
 }
 
 function getBranches(nom,s){
@@ -6638,6 +6660,7 @@ function branchMatchesLabel(branch,label){
   if(!raw||!bnom) return false;
   if(raw===bnom) return true;
   var nr=normalizeBranchLabel(raw);
+  if((branch.legacyNames||[]).some(function(name){return normalizeBranchLabel(name)===nr;})) return true;
   var nb=normalizeBranchLabel(bnom);
   return !!(nr&&nb&&(nr===nb||nr.indexOf(nb)>-1||nb.indexOf(nr)>-1));
 }
@@ -6708,7 +6731,7 @@ function openEditSerm(nomEnc){
   var rawCat=s.cat||SERM_CATS[nom]||"melee";
   var catSlug=rawCat.replace(/mêlée/g,"melee").replace(/melee/g,"melee");
   ge("mserm-cat").value=catSlug;
-  ge("mserm-icon").value=WEAPON_ICONS[nom]||"✦";
+  ge("mserm-icon").value=s.icon||WEAPON_ICONS[nom]||"✦";
   ge("mserm-level").value=getSermLevelKey(nom,s);
   ge("mserm-hidden").checked=!!s.hidden;
   openModal("m-serm");
@@ -6718,7 +6741,7 @@ async function saveSerm(){
   var nom=_editSermNom||ge("mserm-nom").value.trim();
   if(!nom){notif("Nom obligatoire.","err");return;}
   var custom=gsd();
-  var existing=custom[nom]||{};
+  var existing=custom[nom]||getAllSD()[nom]||{};
   // Conserver les branches existantes (custom ou SD de base)
   var existingBranches=existing.branches||getBranches(nom,getAllSD()[nom]||{})||[];
   var newPvN=parseInt(ge("mserm-pvN").value)||3;
@@ -6726,7 +6749,7 @@ async function saveSerm(){
   var newEmN=parseInt(ge("mserm-emN").value)||2;
   var newDmg=parseInt(ge("mserm-dmg").value)||8;
   var icon=ge("mserm-icon").value.trim()||"✦";
-  custom[nom]={
+  custom[nom]=Object.assign({},existing,{
     arme:ge("mserm-arme").value.trim(),
     lore:ge("mserm-lore").value.trim(),
     pvN:newPvN, epN:newEpN, emN:newEmN, dmg:newDmg,
@@ -6735,7 +6758,7 @@ async function saveSerm(){
     hidden:!!(ge("mserm-hidden")&&ge("mserm-hidden").checked),
     icon:icon,
     branches:existingBranches
-  };
+  });
   WEAPON_ICONS[nom]=icon; SERM_CATS[nom]=custom[nom].cat;
   if(!await _confirmDbSave(ssd(custom))) return false;
   // Propagation dynamique — recalculer les stats de tous les joueurs avec ce Serment
@@ -6805,7 +6828,7 @@ async function saveBranch(){
   var custom=gsd(); var all=getAllSD(); var s=all[_branchSermNom];
   var branches=getBranches(_branchSermNom,s).map(function(b){return Object.assign({},b,{paliers:(b.paliers||[]).slice()});});
   var oldBranch=(_branchIdx>=0&&branches[_branchIdx])?Object.assign({},branches[_branchIdx]):null;
-  var br={nom:nom2,style:style,desc:ge("mbr-desc").value.trim(),paliers:(_branchIdx>=0&&branches[_branchIdx]?branches[_branchIdx].paliers:[])};
+  var br=Object.assign({},oldBranch||{},{nom:nom2,style:style,desc:ge("mbr-desc").value.trim(),paliers:(_branchIdx>=0&&branches[_branchIdx]?branches[_branchIdx].paliers:[])});
   if(_branchIdx>=0) branches[_branchIdx]=br; else branches.push(br);
   if(!custom[_branchSermNom]) custom[_branchSermNom]=Object.assign({},s,{branches:branches});
   else custom[_branchSermNom].branches=branches;
@@ -6911,7 +6934,7 @@ async function savePalier(){
   var br=branches[_palierBrIdx]; if(!br){notif("Branche introuvable.","err");return;}
   if(_palierIdx>=0){
     // Edition d'un palier existant
-    br.paliers[_palierIdx]={niv:niv,nom:nom2,cout:cout,desc:desc};
+    br.paliers[_palierIdx]=Object.assign({},br.paliers[_palierIdx],{niv:niv,nom:nom2,cout:cout,desc:desc});
   } else {
     // Nouveau palier
     br.paliers.push({niv:niv,nom:nom2,cout:cout,desc:desc});
@@ -6967,7 +6990,7 @@ function openChangeBranch(pid){
     opts.innerHTML='<p style="color:var(--faint);font-style:italic;font-size:13px;">Ce Serment n\'a pas de branches.</p>';
     openModal("m-changebranch"); return;
   }
-  var branches=bundle.branches.map(function(br){ return {nom:br.nom,style:br.style,flavor:br.flavor||br.desc||""}; });
+  var branches=bundle.branches.map(function(br){ return {nom:br.nom,style:br.style,flavor:br.flavor||br.desc||"",legacyNames:br.legacyNames||[]}; });
   var STYLE_COLS={Brutalité:"var(--red)",Fluidité:"var(--glacier)",AOE:"var(--gold)",Précision:"var(--glacier-bright)",Mêlée:"var(--red)",Distance:"var(--gold)",Épuisement:"var(--purple)",Contrôle:"var(--glacier)","AOE Indéfendable":"var(--red)","Précision Défendable":"var(--glacier)","Équilibre offensif":"var(--gold)","Équilibre d'accumulation":"var(--glacier)",Tank:"var(--green)",Soin:"var(--green)",Offensif:"var(--gold)",Aggro:"var(--red)"};
   var STYLE_GLYPHS={Brutalité:"✦",Fluidité:"❄",AOE:"✺",Précision:"✧",Mêlée:"⚔",Distance:"➶",Épuisement:"☾",Contrôle:"◈","AOE Indéfendable":"✹","Précision Défendable":"✧","Équilibre offensif":"☼","Équilibre d'accumulation":"◌",Tank:"⛨",Soin:"✚",Offensif:"✦",Aggro:"☍"};
   opts.className="branch-choice-list";
@@ -6991,7 +7014,7 @@ function openChangeBranch(pid){
         +'<span class="branch-choice-state">'+state+'</span>'
       +'</div>'
       +'<div class="branch-choice-main">'
-        +'<div class="branch-choice-glyph">'+glyph+'</div>'
+        +'<div class="branch-choice-glyph">'+(br?getSermEmblem(p.classe,44):'Ø')+'</div>'
         +'<div class="branch-choice-body">'
           +'<div class="branch-choice-head">'
             +'<span class="branch-choice-title">'+shortNom+'</span>'
@@ -7033,7 +7056,8 @@ function openChangeSerm(pid){
   var all=getAllSD();
   Object.keys(all).forEach(function(k){
     if(k!==p.classe&&!isSermVisibleInLibrary(k,all[k])) return;
-    sel.innerHTML+='<option value="'+k+'"'+(p.classe===k?' selected':'')+'>'+k+'</option>';
+    var locked=all[k].extension && (p.level||1)<(all[k].minLevel||1);
+    sel.innerHTML+='<option value="'+escAttr(k)+'"'+(p.classe===k?' selected':'')+(locked?' disabled':'')+'>'+esc(k)+(all[k].evolvesFrom?' — '+esc(all[k].evolvesFrom):'')+(locked?' · Niveau '+all[k].minLevel:'')+'</option>';
   });
   openModal("m-changeserm");
 }
@@ -7043,7 +7067,14 @@ async function saveChangeSerm(){
   var p=_npClone(gpid(_changeSermPid)); if(!p) return;
   var sel=ge("mcs-sel").value; if(!sel){notif("Choisis un Serment.","err");return;}
   var all=getAllSD(); var s=all[sel]; if(!s){notif("Serment introuvable.","err");return;}
+  if(sel!==p.classe&&!isSermVisibleInLibrary(sel,s)){notif('Cette ancienne voie n’est plus proposée à l’attribution.','err');return;}
+  if(s.extension && (p.level||1)<(s.minLevel||1)){notif('Cette évolution nécessite le niveau '+s.minLevel+'.','err');return;}
+  if(s.extension && s.evolvesFrom && p.classe!==s.evolvesFrom && p.classe!==sel){notif('Attribue d’abord le serment parent : '+s.evolvesFrom+'.','err');return;}
   var old=p.classe;
+  if(p.branch&&p.branch!=='Aucune'){
+    p.sermentBranches=p.sermentBranches&&typeof p.sermentBranches==='object'?p.sermentBranches:{};
+    p.sermentBranches[old]=p.branch;
+  }
   p.classe=sel; p.arme=s.arme; p.branch="Aucune";
   p.history=p.history||[];
   p.history.push({ts:Date.now(),type:"serment",text:"Serment : "+old+" -> "+sel,by:"Admin "+CU.name});
@@ -7067,11 +7098,13 @@ function renderSerm(p){
   if(!branches.length){if(s.bA)branches.push(s.bA);if(s.bB)branches.push(s.bB);}
 
   var html='<div class="scrd">';
+  if(s.retired) html+='<p class="np-retired-note">Ce serment appartient aux anciennes voies. Ton personnage et ses capacités restent disponibles ; il n’est plus proposé aux nouveaux personnages.</p>';
   // En-tête
-  html+='<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">';
-  html+='<div style="font-size:28px;width:48px;height:48px;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+(bundle.icon||WEAPON_ICONS[p.classe]||"✦")+'</div>';
+  html+='<div class="np-personal-armory">';
+  html+='<div class="np-personal-armory-art">'+getSermEmblem(p.classe,180)+'</div>';
   html+='<div><div class="snm">'+esc(p.classe)+'</div><div class="swp">'+esc(bundle.weapon||s.arme||p.arme||"")+'</div>'+renderSermLineage(p.classe,s,false)+'<div class="serm-level-pill '+escAttr(getSermLevelClass(p.classe,s))+'">'+esc(bundle.sermLevel||getSermLevelLabel(p.classe,s))+'</div></div>';
   html+='</div>';
+  if(s.tagline) html+='<p class="serm-pitch">'+esc(s.tagline)+'</p>';
   // Stats
   html+='<div class="sstats"><div class="sst"><div class="sstv">'+s.pvN+'</div><div class="sstl">PV/niv</div></div><div class="sst"><div class="sstv">'+s.epN+'</div><div class="sstl">EP/niv</div></div><div class="sst"><div class="sstv">'+s.emN+'</div><div class="sstl">EM/niv</div></div><div class="sst"><div class="sstv">'+s.dmg+'</div><div class="sstl">Dmg frappe</div></div></div>';
   // Lore
@@ -7112,6 +7145,7 @@ function renderSerm(p){
     if(br.flavor) html+='<p style="font-size:13px;color:var(--dim);font-style:italic;margin-bottom:12px;line-height:1.6;border-left:2px solid '+col+';padding-left:10px;opacity:.85;">'+esc(br.flavor)+'</p>';
     else if(br.desc) html+='<p style="font-size:13px;color:var(--dim);font-style:italic;margin-bottom:12px;line-height:1.6;border-left:2px solid '+col+';padding-left:10px;opacity:.8;">'+esc(br.desc)+'</p>';
 
+    html+=renderSermentRules(br);
     // Paliers : progression lisible + focus sur l'actuel/prochain
     var pals=br.paliers||[];
     if(pals.length){
@@ -8640,6 +8674,10 @@ function renderCombat(tid){
   h+='<p>Le combat sur Nuages Polaires n\'est pas un jeu de hasard. Chaque action déclarée réussit toujours — ce qui compte, c\'est le choix stratégique, la narration et la cohérence avec son Serment.</p>';
   h+='<p>Frapper, esquiver, parer, tirer, se déplacer : tout ce qu\'un personnage décide de faire, il le fait. Le système existe pour donner du poids à ces décisions, pas pour les annuler.</p>';
   h+='<div class="hlbox"><strong>Règle fondamentale :</strong> Toute action déclarée est une réussite. Il n\'y a pas d\'échec sur une frappe, une esquive, une parade ou un déplacement. Ce qui varie, c\'est uniquement l\'impact de l\'action choisie.</div>';
+  h+='<h3>Les nouveaux Serments et leurs évolutions</h3>';
+  h+='<p>20 nouveaux Serments de base rejoignent les choix de départ. Leurs branches se développent aux niveaux 2, 5, 7 et 10. Les 50 évolutions sont des Serments aguerris : elles demandent leur Serment parent et le niveau 10, puis progressent aux niveaux 10, 13, 16 et 20. Le staff attribue l\'évolution depuis la fiche du personnage. Une seule branche peut être choisie.</p>';
+  h+='<div class="hlbox"><strong>Préparer puis agir :</strong> une préparation, une visée ou une observation n\'inflige aucun dégât par elle-même. Chaque manipulation, tir et réaction conserve le coût indiqué sur sa fiche et consomme les actions du même budget. Un rappel coûte 1 action et 1 EM : il ramène l\'arme et annule son installation, sans recharger ses munitions ni recréer de matière.</div>';
+  h+='<p>Dans le simulateur, les fiches de capacité précisent les coûts, la portée, la durée et les limites. Les positions exactes, obstacles, trajectoires et propriétés des objets sont arbitrés par le MJ à partir de la scène.</p>';
   h+='</div>';
 
   // ── II. STATISTIQUES ──
@@ -9144,7 +9182,7 @@ function renderSPList(){
         +'<div class="player-card-top">'
           +'<div>'
             +'<div class="pname">'+esc(p.name)+(isCurrent?' <span class="tag tgl player-active-tag">Affiché</span>':'')+'</div>'
-            +'<div class="pcls">'+esc(p.classe)+' — Niveau '+p.level+(p.createdAt?' <span class="player-date">· '+new Date(p.createdAt).toLocaleDateString("fr-FR")+'</span>':'')+'</div>'
+            +'<div class="pcls">'+getSermEmblem(p.classe,22)+' '+esc(p.classe)+' — Niveau '+p.level+(p.createdAt?' <span class="player-date">· '+new Date(p.createdAt).toLocaleDateString("fr-FR")+'</span>':'')+'</div>'
           +'</div>'
           +'<div class="player-mini-badges"><span class="plvl">Niv. '+p.level+'</span><span class="player-role-badge role-'+esc(roleClass)+'">'+esc(roleLabel)+'</span></div>'
         +'</div>'
@@ -9211,7 +9249,7 @@ function renderProgPanel(pid){
     // En-t_te
     '<div class="fx mb16">'
     +'<div style="font-family:var(--fd);font-size:14px;letter-spacing:2px;">'+esc(p.name)+'</div>'
-    +'<span class="tag tgl">'+esc(p.classe)+'</span>'+(function(){ var _sb=getPlayerSermentBundle(p); return _sb.branch?'<span class="tag tgold">'+esc(_sb.branch.nom)+'</span>':(p.branch&&p.branch!=="Aucune"?'<span class="tag tgold">'+esc(p.branch)+'</span>':''); })()
+    +'<span class="tag tgl">'+getSermEmblem(p.classe,22)+' '+esc(p.classe)+'</span>'+(function(){ var _sb=getPlayerSermentBundle(p); return _sb.branch?'<span class="tag tgold">'+esc(_sb.branch.nom)+'</span>':(p.branch&&p.branch!=="Aucune"?'<span class="tag tgold">'+esc(p.branch)+'</span>':''); })()
     +'<div class="sp"></div>'
     +'<button class="btn btn-sm" onclick="closeModal(\'m-prog\')"><span>Fermer</span></button>'
     +'</div>'
@@ -9460,8 +9498,8 @@ function popSSelects(){
   nc.innerHTML='<option value="">— Choisir —</option>';
   var all=getAllSD();
   Object.keys(all).forEach(function(k){
-    if(!isSermVisibleInLibrary(k,all[k])) return;
-    nc.innerHTML+='<option value="'+k+'">'+k+'</option>';
+    if(!isStarterSerment(k,all[k])) return;
+    nc.innerHTML+='<option value="'+escAttr(k)+'">'+esc(k)+'</option>';
   });
 }
 
@@ -9470,6 +9508,7 @@ async function addPlayer(){
   var n=ge("np-n").value.trim();var c=ge("np-c").value;var av=ge("np-av").value.trim();
   if(!n||!c){ge("np-err").textContent="Nom et Serment obligatoires.";return;}
   var s=getAllSD()[c]||SD[c];
+  if(!isStarterSerment(c,s)){ge("np-err").textContent="Choisis un serment de départ ; les évolutions s’attribuent ensuite.";return;}
   var p={id:"p"+Date.now(),name:n,classe:c,level:1,xp:0,xpMax:30,pvCur:30,pvMax:30,epCur:50,epMax:50,emCur:20,emMax:20,avatar:av||"",arme:s?s.arme:"",progressionVersion:1,branch:"Aucune",equipment:{helmet:null,chest:null,legs:null},inventory:[],history:[]};
   var prev=gp().slice();
   var next=prev.concat([p]);
@@ -9559,10 +9598,11 @@ function oES(pid){
   ge("es-niv").value=p.level;ge("es-xp").value=p.xp;
   var eq=p.equipment||{helmet:null,chest:null,legs:null};
   ge("es-hel").value=eq.helmet||"";ge("es-che").value=eq.chest||"";ge("es-leg").value=eq.legs||"";
-  var sd=SD[p.classe];var opts=ge("es-bropts");
-  if(sd&&sd.bA&&sd.bB){
-    var ch=[{v:"Aucune",l:"Aucune"},{v:sd.bA.nom,l:"A — "+sd.bA.style},{v:sd.bB.nom,l:"B — "+sd.bB.style}];
-    opts.innerHTML=ch.map(function(o){return'<button type="button" class="bropt'+(p.branch===o.v?" sel":"")+'" data-val="'+o.v+'" onclick="selBr(this)">'+o.l+'</button>';}).join("");
+  var sd=getAllSD()[p.classe];var opts=ge("es-bropts");
+  var definedBranches=sd?getBranches(p.classe,sd):[];
+  if(definedBranches.length){
+    var ch=[{v:"Aucune",l:"Aucune"}].concat(definedBranches.map(function(br){return {v:br.nom,l:br.nom};}));
+    opts.innerHTML=ch.map(function(o){return'<button type="button" class="bropt'+(p.branch===o.v?" sel":"")+'" data-val="'+escAttr(o.v)+'" onclick="selBr(this)">'+esc(o.l)+'</button>';}).join("");
   } else {opts.innerHTML='<span style="color:var(--dim);font-size:13px;font-style:italic;">Sans branches.</span>';}
   openModal("m-edits");
 }
@@ -10981,6 +11021,19 @@ var _combatAutosaveTimer = null;
 function combatBlankState(){
   return {active:false,round:1,initiative:0,fighters:[],log:[],id:null,name:"",order:[],turn:0,phase:"idle",_new:true,notes:"",_iv:{},decl:{},pendingDrops:[]};
 }
+function cHydrateCombatState(state){
+  var defaults=combatBlankState();
+  Object.keys(defaults).forEach(function(key){if(state[key]===undefined||state[key]===null) state[key]=defaults[key];});
+  ['fighters','log','order','pendingDrops'].forEach(function(key){if(!Array.isArray(state[key])) state[key]=[];});
+  ['decl','_iv','_usedDefs'].forEach(function(key){if(!state[key]||typeof state[key]!=='object'||Array.isArray(state[key])) state[key]={};});
+  state.round=Math.max(1,Math.floor(Number(state.round)||1));
+  state.order=state.order.filter(function(fi,index,order){return Number.isInteger(fi)&&!!state.fighters[fi]&&order.indexOf(fi)===index;});
+  if(state.active&&!state.order.length) state.order=state.fighters.map(function(_,index){return index;});
+  state.turn=Math.max(0,Math.min(state.order.length,Math.floor(Number(state.turn)||0)));
+  if(['idle','declaration','resolution'].indexOf(state.phase)<0) state.phase=state.active?'declaration':'idle';
+  state.fighters.forEach(function(f){if(!f) return; if(!Array.isArray(f.statuts)) f.statuts=[]; cEnsureFighterCid(f);});
+  return state;
+}
 function combatHasMeaningfulState(state){
   state=state||_cs||{};
   if(state.active) return true;
@@ -11310,9 +11363,11 @@ function _primeAllCombatArchivesForAdmin(force){
   if(!owners.length) return Promise.resolve(false);
   if(_combatArchiveAdminPrimePromise && !force) return _combatArchiveAdminPrimePromise;
   var task=Promise.all(owners.map(function(owner){
+    var previousIndex=JSON.stringify(_dbCache[combatArchiveIndexKey(owner)]||[]);
+    var previousLegacy=JSON.stringify(_dbCache[combatArchiveStoreKey(owner)]||[]);
     return _dbCall({action:"get", key:combatArchiveIndexKey(owner)}, {silent:true}).then(function(resp){
       _assertDbSessionGeneration(generation);
-      if(resp && Array.isArray(resp.value) && resp.value.length){ _dbCache[combatArchiveIndexKey(owner)] = _normalizeDbValueForKey(combatArchiveIndexKey(owner), resp.value || []); return true; }
+      if(resp && Array.isArray(resp.value) && resp.value.length){ _dbCache[combatArchiveIndexKey(owner)] = _normalizeDbValueForKey(combatArchiveIndexKey(owner), resp.value || []); return previousIndex!==JSON.stringify(_dbCache[combatArchiveIndexKey(owner)]); }
       return _dbCall({action:"get", key:combatArchiveStoreKey(owner)}, {silent:true}).then(function(legacyResp){
         _assertDbSessionGeneration(generation);
         var normalizedLegacy = _normalizeDbValueForKey(combatArchiveStoreKey(owner), legacyResp.value || []);
@@ -11320,9 +11375,9 @@ function _primeAllCombatArchivesForAdmin(force){
         if(Array.isArray(normalizedLegacy) && normalizedLegacy.length){
           _dbCache[combatArchiveIndexKey(owner)] = normalizedLegacy.map(function(arc){ return combatArchiveMetaFromRecord(arc, owner); });
           _combatArchivePromoteLegacyOwner(owner).catch(function(){});
-          return true;
+          return previousIndex!==JSON.stringify(_dbCache[combatArchiveIndexKey(owner)])||previousLegacy!==JSON.stringify(normalizedLegacy);
         }
-        return false;
+        return previousIndex!==JSON.stringify(_dbCache[combatArchiveIndexKey(owner)]||[])||previousLegacy!==JSON.stringify(normalizedLegacy);
       }).catch(function(){ return false; });
     }).catch(function(){ return false; });
   })).then(function(results){
@@ -11910,11 +11965,11 @@ function combatStart(){
 }
 
 function _nextDeclarant(){
-  // Avancer au prochain combattant vivant
+  // Les idoles restent ciblables mais ne possèdent aucun tour de déclaration.
   while(_cs.turn<_cs.order.length){
     var fi=_cs.order[_cs.turn];
     var f=_cs.fighters[fi];
-    if(f&&f.pvCur>0) break;
+    if(f&&f.pvCur>0&&!f._rfDevice) break;
     _cs.turn++;
   }
   if(_cs.turn>=_cs.order.length){
@@ -12292,12 +12347,14 @@ function combatResolve(){
 
   order.forEach(function(fi){
     var attacker=_cs.fighters[fi]; if(!attacker||attacker.pvCur<=0) return;
+    if(window.NPSermentsCombat) window.NPSermentsCombat.beginTurn(fi);
     (decl[fi]||[]).forEach(function(atk){
       if(atk.action==="annule") return;
       if(!(atk.kind==="attack" || atk.action==="frappe" || atk.action==="pugilat" || atk.action==="frappe_dechainees" || (atk.action==="capacite" && ((atk.value||0)>0 || atk.hits || atk.aoe)))) return;
       var hits=Math.max(1, atk.hits||1);
       for(var h=0; h<hits; h++) cResolveAttackInstance(attacker, fi, atk);
     });
+    if(window.NPSermentsCombat) window.NPSermentsCombat.endTurn(fi);
   });
 
   order.forEach(function(fi){
@@ -12443,8 +12500,9 @@ function combatRemoveFighter(fi){
   _cs.fighters.splice(fi,1);
   _cs._iv={}; _cs.decl={};
   if(_cs.active){
-    _cs.order=_cs.fighters.map(function(_,i){return i;});
-    if(_cs.turn>=_cs.fighters.length) _cs.turn=0;
+    _cs.order=_cs.fighters.map(function(_,i){return i;}).filter(function(i){return !_cs.fighters[i]._rfDevice;});
+    if(_cs.turn>=_cs.order.length) _cs.turn=0;
+    if(_cs.phase==="declaration") _nextDeclarant();
   }
   rCombat("p-combat-mj-c");
 }
@@ -13360,7 +13418,7 @@ body .nav-group-menu .nav-section-header{
       else h+='<div style="width:30px;height:30px;flex-shrink:0;border:1px solid '+(inC?"var(--glacier-dim)":"rgba(255,255,255,0.08)")+';display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:11px;color:'+(inC?"var(--glacier)":"var(--faint)")+';">'+esc(p.name[0])+'</div>';
       h+='<div style="flex:1;min-width:0;">';
       h+='<div style="font-family:var(--fd);font-size:11px;letter-spacing:1px;color:'+(inC?"var(--text)":"var(--faint)")+';">'+esc(p.name)+'</div>';
-      h+='<div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:1px;">'+esc(p.classe)+' · Niv. '+p.level+'</div>';
+      h+='<div class="combat-oath-label">'+getSermEmblem(p.classe,22)+' '+esc(p.classe)+' · Niv. '+p.level+'</div>';
       h+='</div>';
       h+='<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">';
       h+='<div style="width:44px;height:3px;background:rgba(255,255,255,0.05);"><div style="height:100%;width:'+pvPct+'%;background:'+pvC+';transition:width .3s;"></div></div>';
@@ -13426,7 +13484,7 @@ body .nav-group-menu .nav-section-header{
       var pvC=pvPct>60?"var(--green)":pvPct>30?"var(--gold)":"var(--red)";
       var decls=((_cs.decl||{})[fi]||[]).filter(function(d){return d.action!=="passer";});
       var maxActs=cActionsMax(fi);
-      var declared=(_cs.decl||{})[fi]?(_cs.decl[fi]||[]).length:0;
+      var declared=cDeclCount(fi);
       var done=declared>=maxActs;
 
       h+='<div onclick="'+(isCurDecl||done?"":"cEditDecl("+fi+")")+'" title="'+esc(f.name)+'" style="flex-shrink:0;width:84px;cursor:'+(isCurDecl?"default":"pointer")+';transition:transform .15s;opacity:'+(ko?".35":"1")+';transform:'+(isCurDecl?"scale(1.05)":"scale(1)")+'" onmouseover="if(!'+isCurDecl+'&&!'+ko+') this.style.transform=\'scale(1.02)\'" onmouseout="this.style.transform=\''+(isCurDecl?"scale(1.05)":"scale(1)")+'\'">';
@@ -13435,8 +13493,8 @@ body .nav-group-menu .nav-section-header{
       if(done&&!ko) h+='<div style="position:absolute;top:0;left:0;right:0;height:2px;background:rgba(90,170,122,0.6);"></div>';
       h+='<div style="font-family:var(--fm);font-size:9px;font-weight:700;color:'+(isCurDecl?accent:done?"rgba(90,170,122,0.5)":"rgba(255,255,255,0.2)")+';">'+(pos+1)+'</div>';
       if(f.img) h+='<div style="width:44px;height:44px;margin:5px auto 4px;overflow:hidden;border-radius:50%;border:2px solid '+(isCurDecl?accent:(done?"rgba(90,170,122,0.4)":"rgba(255,255,255,0.1)"))+';"><img src="'+_imageAttr(f.img)+'" style="width:100%;height:100%;object-fit:cover;"></div>';
-      else h+='<div style="width:44px;height:44px;margin:5px auto 4px;border-radius:50%;border:2px solid '+(isCurDecl?accent:(done?"rgba(90,170,122,0.4)":"rgba(255,255,255,0.1)"))+';display:flex;align-items:center;justify-content:center;font-size:'+(isJ?15:20)+'px;background:rgba(255,255,255,0.02);">'+(isJ?'<span style="font-family:var(--fd);font-size:12px;color:'+accent+';">'+f.name[0]+'</span>':'👾')+'</div>';
-      h+='<div style="font-family:var(--fd);font-size:7px;letter-spacing:1px;color:'+(isCurDecl?accent:"var(--dim)")+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;">'+f.name.split(" ")[0]+'</div>';
+      else h+='<div style="width:44px;height:44px;margin:5px auto 4px;border-radius:50%;border:2px solid '+(isCurDecl?accent:(done?"rgba(90,170,122,0.4)":"rgba(255,255,255,0.1)"))+';display:flex;align-items:center;justify-content:center;font-size:'+(isJ?15:20)+'px;background:rgba(255,255,255,0.02);">'+(isJ?getSermEmblem(f.classe,40):esc(String(f.name||'C').slice(0,1)))+'</div>';
+      h+='<div style="font-family:var(--fd);font-size:7px;letter-spacing:1px;color:'+(isCurDecl?accent:"var(--dim)")+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;">'+esc(f.name.split(" ")[0])+'</div>';
       // Barre PV
       h+='<div style="height:3px;background:rgba(255,255,255,0.05);margin:0 3px;"><div style="height:100%;width:'+pvPct+'%;background:'+pvC+';transition:width .4s;"></div></div>';
       // Déclarations faites (petits points)
@@ -13479,7 +13537,7 @@ body .nav-group-menu .nav-section-header{
       var shieldFillPct=Math.round(shieldCur/totalMax*100);
       var decls=(_cs.decl||{})[fi]||[];
       var maxActs=active?cActionsMax(fi):3;
-      var actLeft=Math.max(0,maxActs-decls.length);
+      var actLeft=cActionsLeft(fi);
       var borderStyle=isCurDecl?accent:(isDone&&active?"rgba(90,170,122,0.4)":(isDead?"rgba(201,74,74,0.3)":"rgba(255,255,255,0.07)"));
       var leftBorder=isCurDecl?accent:(isJ?"rgba(126,184,212,0.2)":"rgba(201,74,74,0.2)");
       var incomingTaunt=cGetForcedTargetInfo(fi);
@@ -13500,10 +13558,10 @@ body .nav-group-menu .nav-section-header{
       // Avatar + Nom
       h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-right:80px;">';
       if(f.img) h+='<div style="width:42px;height:42px;flex-shrink:0;overflow:hidden;border:1px solid '+(isCurDecl?accent:accentBorder)+';"><img src="'+_imageAttr(f.img)+'" style="width:100%;height:100%;object-fit:cover;"></div>';
-      else h+='<div style="width:42px;height:42px;flex-shrink:0;border:1px solid '+(isCurDecl?accent:accentBorder)+';display:flex;align-items:center;justify-content:center;font-size:'+(isJ?15:20)+'px;">'+(isJ?'<span style="font-family:var(--fd);color:'+accent+';font-size:13px;">'+f.name[0]+'</span>':'👾')+'</div>';
+      else h+='<div style="width:42px;height:42px;flex-shrink:0;border:1px solid '+(isCurDecl?accent:accentBorder)+';display:flex;align-items:center;justify-content:center;font-size:'+(isJ?15:20)+'px;">'+(isJ?getSermEmblem(f.classe,36):'👾')+'</div>';
       h+='<div>';
       h+='<div style="font-family:var(--fd);font-size:12px;letter-spacing:1.5px;color:'+(isCurDecl?accent:"var(--text)")+';">'+esc(f.name)+'</div>';
-      h+='<div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:1px;">'+(isJ?f.classe+" · Niv. "+f.level:"Créature · Niv. "+f.level)+(canM&&active&&!isCurDecl&&!isDone?'<span onclick="cEditDecl('+fi+')" style="cursor:pointer;color:rgba(126,184,212,0.4);margin-left:6px;">✏ Modifier</span>':'')+'</div>';
+      h+='<div class="combat-oath-label">'+(isJ?getSermEmblem(f.classe,18)+' '+esc(f.classe)+" · Niv. "+f.level:"Créature · Niv. "+f.level)+(canM&&active&&!isCurDecl&&!isDone?'<span onclick="cEditDecl('+fi+')" style="cursor:pointer;color:rgba(126,184,212,0.4);margin-left:6px;">✏ Modifier</span>':'')+'</div>';
       if(!isJ&&f.beh) h+='<div style="margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'+bTag(f.beh,'full')+'</div>';
       if(incomingTaunt){
         h+='<div style="margin-top:5px;display:inline-flex;align-items:center;gap:5px;padding:3px 6px;background:rgba(201,74,74,0.08);border:1px solid rgba(201,74,74,0.18);font-family:var(--fd);font-size:7px;letter-spacing:1px;color:rgba(201,74,74,0.85);">🎯 '+esc(incomingTaunt.source.name)+' · '+(incomingTaunt.permanent?'verrou permanent':'bloqué 1 tour')+'</div>';
@@ -13563,6 +13621,9 @@ body .nav-group-menu .nav-section-header{
         h+='<div style="height:5px;background:rgba(255,255,255,0.04);overflow:hidden;"><div style="height:100%;width:'+emPct+'%;background:var(--purple);opacity:.65;transition:width .4s;"></div></div>';
         h+='</div>';
       }
+
+      var reforgedEffects=window.NPSermentsReforgedCombat&&window.NPSermentsReforgedCombat.effectSummary(fi);
+      if(reforgedEffects) h+='<p class="rf-effect-summary">'+esc(reforgedEffects)+'</p>';
 
       // Statuts — badges lisibles avec fond coloré
       if((f.statuts||[]).length){
@@ -13625,22 +13686,23 @@ body .nav-group-menu .nav-section-header{
 
         // Grille actions
         h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">';
-        var declBtns=[
-          {a:"frappe",   l:claymoreHeavy?"🗡 Frappe Haute":"⚔ Frappe",    sub:claymoreHeavy?(dmg+" dmg · "+(claymoreHeavy.epCost||10)+" EP"):(dmg+" dmg"),   col:"rgba(201,74,74"},
+        var crossbow=sd&&sd.extension&&['Arbalétrier','Guetteur','Pavoisier'].indexOf(f.classe)>=0;
+        var declBtns=crossbow?[]:[
+          {a:"frappe",   l:claymoreHeavy?"Frappe Haute":(sd&&sd.extension&&sd.cat==='distance'?"Tir matériel":"Frappe"),    sub:claymoreHeavy?(dmg+" dmg · "+(claymoreHeavy.epCost||10)+" EP"):(dmg+" dmg"),   col:"rgba(201,74,74"},
         ];
         if(isJ){
-          declBtns.push({a:"pugilat",  l:"👊 Pugilat",   sub:pugDmg+" dmg",col:"rgba(201,74,74"});
+          declBtns.push({a:"pugilat",  l:"Pugilat",   sub:pugDmg+" dmg",col:"rgba(201,74,74"});
         }
         declBtns.push(
-          {a:"esquive",  l:"🛡 Esquive",   sub:"annule",      col:"rgba(126,184,212"},
-          {a:"subit",    l:"🩸 Subit",     sub:"0%",          col:"rgba(255,255,255"},
-          {a:"bloquer",  l:"🛡 Bloquer",   sub:(f.type==="beast"?"corps −25%":"−50%"), col:"rgba(126,184,212"},
+          {a:"esquive",  l:"Esquive",   sub:"annule",      col:"rgba(126,184,212"},
+          {a:"subit",    l:"Subir",     sub:"0%",          col:"rgba(255,255,255"},
+          {a:"bloquer",  l:"Bloquer",   sub:(f.type==="beast"?"corps −25%":"−50%"), col:"rgba(126,184,212"},
         );
         if(f.type!=="beast"){
-          declBtns.push({a:"parer",    l:"🤜 Parer",     sub:"−25%",        col:"rgba(126,184,212"});
+          declBtns.push({a:"parer",    l:"Parer",     sub:"−25%",        col:"rgba(126,184,212"});
         }
         declBtns.push(
-          {a:"deplacer", l:"🏃 Déplacement",sub:(f.noFreeRepositionRound===_cs.round?"bloqué":""), col:"rgba(255,255,255", disabled:f.noFreeRepositionRound===_cs.round, disabledReason:"Déplacement bloqué par Posture Haute"},
+          {a:"deplacer", l:"Déplacement",sub:(f.noFreeRepositionRound===_cs.round?"bloqué":""), col:"rgba(255,255,255", disabled:f.noFreeRepositionRound===_cs.round, disabledReason:"Déplacement bloqué par Posture Haute"},
         );
         declBtns.forEach(function(btn){
           var needsTgt=btn.a==="frappe"||btn.a==="pugilat";
@@ -13712,8 +13774,8 @@ body .nav-group-menu .nav-section-header{
           var tgtName=d.target!==undefined&&d.target!==null&&!isNaN(parseInt(d.target))?(_cs.fighters[parseInt(d.target)]?(" → "+_cs.fighters[parseInt(d.target)].name):""):"";
           h+='<div style="display:flex;align-items:center;gap:6px;padding:3px 6px;background:rgba(255,255,255,0.02);border-left:2px solid '+dc+';">';
           h+='<span style="font-family:var(--fm);font-size:8px;color:rgba(255,255,255,0.2);min-width:12px;">'+(di+1)+'</span>';
-          h+='<span style="font-size:11px;color:'+dc+';">'+d.label+'</span>';
-          if(tgtName) h+='<span style="font-size:10px;color:rgba(255,255,255,0.2);">'+tgtName+'</span>';
+          h+='<span style="font-size:11px;color:'+dc+';">'+esc(d.label)+'</span>';
+          if(tgtName) h+='<span style="font-size:10px;color:rgba(255,255,255,0.2);">'+esc(tgtName)+'</span>';
           h+='</div>';
         });
         h+='</div>';
@@ -13753,7 +13815,7 @@ body .nav-group-menu .nav-section-header{
       var cfg={damage:{c:"rgba(201,74,74,0.85)",bg:"rgba(201,74,74,0.04)",bd:"rgba(201,74,74,0.2)"},heal:{c:"rgba(90,170,122,0.85)",bg:"rgba(90,170,122,0.04)",bd:"rgba(90,170,122,0.2)"},round:{c:"rgba(126,184,212,0.65)",bg:"rgba(126,184,212,0.05)",bd:"rgba(126,184,212,0.2)"},turn:{c:"rgba(201,168,76,0.7)",bg:"rgba(201,168,76,0.03)",bd:"rgba(201,168,76,0.15)"},spell:{c:"rgba(154,116,196,0.8)",bg:"rgba(154,116,196,0.04)",bd:"rgba(154,116,196,0.2)"},info:{c:"rgba(255,255,255,0.3)",bg:"transparent",bd:"transparent"}}[l.type]||{c:"rgba(255,255,255,0.25)",bg:"transparent",bd:"transparent"};
       h+='<div style="display:flex;gap:8px;align-items:baseline;padding:3px 6px;background:'+cfg.bg+';'+(cfg.bd!=="transparent"?"border-left:2px solid "+cfg.bd+";":"")+'">';
       h+='<span style="font-family:var(--fm);font-size:7px;color:rgba(255,255,255,0.15);flex-shrink:0;min-width:14px;">'+l.round+'</span>';
-      h+='<span style="font-size:'+(l.type==="round"?10:11)+'px;color:'+cfg.c+';'+(l.type==="round"?"font-family:var(--fd);letter-spacing:2px;":"")+'">'+l.text+'</span>';
+      h+='<span style="font-size:'+(l.type==="round"?10:11)+'px;color:'+cfg.c+';'+(l.type==="round"?"font-family:var(--fd);letter-spacing:2px;":"")+'">'+esc(l.text)+'</span>';
       h+='</div>';
     });
     h+='</div></div>';
@@ -14776,7 +14838,7 @@ function _arcRenderPlayerChips(options){
   options.forEach(function(p){
     var active=_arcFilterPlayers.indexOf(p.pid)>=0;
     var style='padding:6px 10px;border-radius:999px;border:1px solid '+(active?'rgba(126,184,212,0.38)':'rgba(255,255,255,0.07)')+';background:'+(active?'rgba(126,184,212,0.12)':'rgba(255,255,255,0.02)')+';color:'+(active?'var(--glacier-dim)':'rgba(255,255,255,0.72)')+';font-size:10px;cursor:pointer;transition:all .15s;';
-    h+='<button type="button" onclick="_arcTogglePlayerFilter('+JSON.stringify(p.pid)+')" style="'+style+'">'+esc(p.name)+'</button>';
+    h+='<button type="button" onclick="'+escAttr('_arcTogglePlayerFilter('+JSON.stringify(p.pid)+')')+'" style="'+style+'">'+esc(p.name)+'</button>';
   });
   if(_arcFilterPlayers.length) h+='<button type="button" onclick="_arcClearPlayerFilters()" style="padding:6px 10px;border-radius:999px;border:1px solid rgba(201,74,74,0.18);background:rgba(201,74,74,0.06);color:rgba(201,74,74,0.82);font-size:10px;cursor:pointer;">Vider joueurs</button>';
   h+='</div>';
@@ -14880,7 +14942,7 @@ function renderArcFiltered(){
     var beastPreview=beastNames.slice(0,3);
     var isCur=_cs && _cs.id===arc.id;
     var isSelected=String(_arcSelectedId||'')===String(arc.id||'');
-    h+='<div class="arc-card'+(isSelected?' is-selected':'')+(isCur?' is-current':'')+'" onclick="_arcSetSelected('+JSON.stringify(String(arc.id||''))+')">';
+    h+='<div class="arc-card'+(isSelected?' is-selected':'')+(isCur?' is-current':'')+'" onclick="'+escAttr('_arcSetSelected('+JSON.stringify(String(arc.id||''))+')')+'">';
     h+='<div class="arc-card-top">';
     h+='<div class="arc-card-main">';
     h+='<div class="arc-card-title-row">';
@@ -16313,9 +16375,6 @@ var APP_BUILD="np_v18";
     if(prev!==APP_BUILD){
       localStorage.setItem("np_app_build", APP_BUILD);
       ["np_runtime_guard","np_cmdk_recent"].forEach(function(k){ try{ localStorage.removeItem(k); }catch(e){} });
-      var t=localStorage.getItem("np_theme");
-      var themeMap={violet:"theme-violet",green:"theme-green",easter:"theme-easter",halloween:"theme-halloween",noel:"theme-noel",bloodmoon:"theme-bloodmoon",aquaris:"theme-aquaris"};
-      if(themeMap[t]) localStorage.setItem("np_theme", themeMap[t]);
     }
   }catch(e){}
 })();

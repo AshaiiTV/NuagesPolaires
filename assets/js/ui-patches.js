@@ -33,30 +33,32 @@
 
 /* v42 restored tail code */
 function _visibleThemeIdsForPlayer(player){
-  const visible = (typeof getAllThemes === 'function' ? getAllThemes() : [])
-    .filter(function(t){ return !!(t && isThemeVisibleForPlayer(t.id)); })
+  const visible = (typeof getVisibleThemesForCurrentViewer === 'function' ? getVisibleThemesForCurrentViewer() : [])
     .map(function(t){ return normalizeThemeId(t.id); })
     .filter(Boolean);
-  const baseSet = THEME_BASE_VISIBLE.map(normalizeThemeId).filter(Boolean);
-  return Array.from(new Set([...baseSet, ...visible])).filter(Boolean);
+  return Array.from(new Set(visible));
 }
 function buildThemeCollectionModel(player){
-  const equipped = normalizeThemeId((player && player.theme) || 'theme-default');
+  const equipped = normalizeThemeId(typeof getConfirmedThemeForCurrentUser === 'function' ? getConfirmedThemeForCurrentUser() : 'dark');
   const visible = _visibleThemeIdsForPlayer(player);
   const items = visible.map(id => {
     const meta = themeMeta(id);
-    const owned = canUseTheme(player, id);
+    const usable = canUseTheme(player, id);
+    const owned = typeof isThemeOwnedByCurrentViewer === 'function' && isThemeOwnedByCurrentViewer(id);
+    const selected = equipped === id && usable;
     return {
       id,
       label: prettyThemeName(id),
       rarity: meta.rarity,
-      category: equipped===id ? 'Équipé' : meta.category,
+      category: selected ? 'Équipé' : meta.category,
       tagline: meta.tagline,
       preview: meta.preview,
       owned,
-      locked: !owned,
+      usable,
+      blocked: owned && !usable,
+      locked: !usable,
       secret: false,
-      equipped: equipped===id
+      equipped: selected
     };
   });
   const secrets = THEME_SECRET_SLOTS.map(s => ({
@@ -73,7 +75,7 @@ function renderCollectionSummary(player){
   const all = buildThemeCollectionModel(player).filter(x=>!x.secret);
   const owned = all.filter(x=>x.owned).length;
   const total = all.length || 1;
-  const seasonal = all.filter(x=>x.category==='Saisonnier');
+  const seasonal = all.filter(x=>x.rarity==='Saisonnier');
   const founders = all.filter(x=>String(x.rarity).toLowerCase().includes('fondateur'));
   return `<div class="collection-summary-grid">
     <div class="summary-card"><div class="summary-kicker">Collection</div><div class="summary-value">${owned}/${all.length}</div><div class="summary-sub">thèmes visibles obtenus</div></div>
@@ -84,12 +86,15 @@ function renderCollectionSummary(player){
 }
 function renderThemePreviewMini(themeId){
   const meta = themeMeta(themeId);
-  return `<div class="theme-preview-mini ${normalizeThemeId(themeId)}">
+  return `<div class="theme-preview-mini ${_themeCollectionEsc(normalizeThemeId(themeId))}" data-preview-theme="${_themeCollectionEsc(normalizeThemeId(themeId))}">
     <div class="theme-preview-bar"></div>
     <div class="theme-preview-head"></div>
     <div class="theme-preview-cards"><span></span><span></span><span></span></div>
-    <div class="theme-preview-foot">${meta.preview || ''}</div>
+    <div class="theme-preview-foot">${_themeCollectionEsc(meta.preview || '')}</div>
   </div>`;
+}
+function _themeCollectionEsc(value){
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function(char){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char];});
 }
 function renderThemeCollectionPremium(player){
   const items = buildThemeCollectionModel(player);
@@ -98,21 +103,23 @@ function renderThemeCollectionPremium(player){
   const categories = Object.keys(groups).sort((a,b)=>categoryOrder(a)-categoryOrder(b));
   return renderCollectionSummary(player) + categories.map(cat => `
     <div class="collection-section">
-      <div class="collection-section-title">${cat}</div>
+      <div class="collection-section-title">${_themeCollectionEsc(cat)}</div>
       <div class="theme-collection-grid">
         ${groups[cat].map(it => {
           const badges = [
             it.equipped ? `<span class="chip ok">Équipé</span>` : '',
-            it.secret ? `<span class="chip">Secret</span>` : (it.owned ? `<span class="chip ok">Obtenu</span>` : `<span class="chip">Non obtenu</span>`)
+            it.secret ? `<span class="chip">Secret</span>` : (it.blocked ? `<span class="chip danger">Bloqué</span>` : (it.owned ? `<span class="chip ok">Obtenu</span>` : `<span class="chip">Non obtenu</span>`))
           ].join('');
           const button = it.secret
             ? `<button class="btn ghost" disabled>Inconnu</button>`
-            : `<button class="btn ${it.equipped ? 'ghost' : 'primary'}" ${(!it.owned || it.equipped) ? 'disabled' : ''} onclick="applyTheme('${it.id}')">${it.equipped ? 'Équipé' : (it.owned ? 'Appliquer' : 'Indisponible')}</button>`;
-          return `<article class="theme-card-premium ${it.secret ? 'secret' : ''} ${it.locked ? 'locked' : ''}">
+            : `<button class="btn ghost" data-theme-preview-id="${_themeCollectionEsc(it.id)}" onclick="previewTheme(this.dataset.themePreviewId)">Prévisualiser</button>`;
+          const state = it.equipped ? 'selected' : it.blocked ? 'blocked' : it.owned ? 'owned' : 'locked';
+          const themeAttributes = it.secret ? '' : `data-theme-id="${_themeCollectionEsc(it.id)}" data-theme-preview="${_themeCollectionEsc(it.id)}" data-theme-state="${state}"`;
+          return `<article class="theme-card-premium ${it.secret ? 'secret' : ''} ${it.locked ? 'locked' : ''}" ${themeAttributes}>
             <div class="row-top">
               <div class="title-wrap">
-                <div class="title">${it.label}</div>
-                <div class="tagline">${it.tagline || ''}</div>
+                <div class="title">${_themeCollectionEsc(it.label)}</div>
+                <div class="tagline">${_themeCollectionEsc(it.tagline || '')}</div>
               </div>
             </div>
             ${renderThemePreviewMini(it.secret ? 'theme-default' : it.id)}
@@ -133,7 +140,7 @@ function renderAdminThemeControls(acc){
   return '<div class="db-theme-admin-list">'+ pool.map(t=>{
     const label = (typeof prettyThemeName==="function") ? prettyThemeName(t) : t;
     const isBlocked = blocked.includes(t);
-    return `<div class="db-theme-admin-item">
+    return `<div class="db-theme-admin-item" data-theme-id="${_themeCollectionEsc(t)}">
       <span class="chip ${isBlocked?'danger':''}">${label}${isBlocked?' · Bloqué':''}</span>
       <div class="row gap8">
         ${owned.includes(t)?`<button class="btn sm ghost" onclick="adminRevokeThemeFromDb('${acc.id}','${t}')">Retirer</button>`:''}

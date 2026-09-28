@@ -1,6 +1,8 @@
 {
-  "version": "v297",
+  "version": "v298",
   "runtime_scripts": [
+    "./assets/js/progression.js",
+    "./assets/js/theme-catalog.js",
     "./assets/js/main.js",
     "./assets/js/first-steps.js",
     "./assets/js/adventure-archives.js",
@@ -34,7 +36,8 @@
     "added database admin polish layer",
     "fixed api-hardening wrapper argument forwarding and pre-login passive auth check",
     "added first-steps and read-only adventure archives modules with polar reference styles",
-    "extended polar design to character chapters, event agenda and account collection"
+    "extended polar design to character chapters, event agenda and account collection",
+    "shared theme catalogue, synchronous palette application and reversible confirmed selection"
   ],
   "next_refactor_targets": [
     "ui-patches.js",
@@ -48,6 +51,8 @@
     "./assets/css/adventure-archives.css",
     "./assets/css/polar-sheet.css",
     "./assets/css/polar-events.css",
-    "./assets/css/polar-account.css"
+    "./assets/css/polar-account.css",
+    "./assets/css/theme-selection.css",
+    "./assets/css/theme-surfaces.css"
   ]
 }

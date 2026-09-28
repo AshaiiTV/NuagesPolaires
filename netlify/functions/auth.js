@@ -1,7 +1,9 @@
 const { neon } = require("@neondatabase/serverless");
 const progression = require("../../assets/js/progression");
+const themeCatalog = require("../../assets/js/theme-catalog");
 const crypto = require("crypto");
 const { createRecordStore, mutateJsonStore } = require("./_shared/auth-store");
+const { themeAccess } = require("./_shared/theme-access");
 
 let _npSqlClient = null;
 function _getDatabaseUrl() {
@@ -196,30 +198,8 @@ function isValidGenericId(v) { return /^[A-Za-z0-9_:\-]{1,128}$/.test(String(v |
 function isValidThemeId(v) {
   return typeof v === 'string' && sanitizeStr(v, 128).length > 0;
 }
-const THEME_ID_ALIASES = {
-  dark:'dark', default:'dark', themedefault:'dark', nuagespolaires:'dark', original:'dark', base:'dark',
-  light:'light', brumeclaire:'light', modeclair:'light', clair:'light',
-  violet:'violet', abyssal:'violet', themeviolet:'violet',
-  red:'red', ecarlate:'red', scarlet:'red', themered:'red',
-  green:'green', sylvan:'green', themegreen:'green',
-  easter:'easter', themeeaster:'easter', printempseveille:'easter', paques:'easter', paque:'easter', springawakened:'easter',
-  halloween:'halloween', themehalloween:'halloween',
-  noel:'noel', themenoel:'noel', christmas:'noel',
-  bloodmoon:'bloodmoon', themebloodmoon:'bloodmoon', lunedesang:'bloodmoon', bloodmoonlegacy:'bloodmoon', lunebloodmoon:'bloodmoon',
-  aquaris:'aquaris', themeaquaris:'aquaris'
-};
-function themeLooseKey(v) {
-  let id = sanitizeStr(v, 128).toLowerCase();
-  try { id = id.normalize('NFD').replace(/[̀-ͯ]/g, ''); } catch (_) {}
-  return id.replace(/[^a-z0-9]+/g, '');
-}
 function normalizeThemeId(v) {
-  let id = sanitizeStr(v, 128).toLowerCase();
-  if (!id) return 'dark';
-  if (id.startsWith('theme-')) id = id.slice(6);
-  if (id === 'theme-default' || id === 'default') return 'dark';
-  const loose = themeLooseKey(id);
-  return THEME_ID_ALIASES[loose] || loose || 'dark';
+  return themeCatalog.normalizeId(sanitizeStr(v, 128));
 }
 function updateEventTheme(current, themeId, patch) {
   if (Array.isArray(current)) {
@@ -384,6 +364,70 @@ async function ensureBootstrapAdmin(accounts) {
   return accounts;
 }
 async function loadPlayers(versions) { return playerStore.load(versions); }
+function themeAccessError(statusCode, message, code) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  if (code) error.code = code;
+  return error;
+}
+function assertThemeActorCurrent(initial, current) {
+  const fields = ["pass", "role", "pid", "sessionVersion", "forcePasswordReset", "resetExpiresAt"];
+  if (!current || fields.some(field => JSON.stringify(initial[field]) !== JSON.stringify(current[field]))) {
+    throw themeAccessError(409, "Les accès ont changé. Reconnecte-toi puis réessaie.");
+  }
+}
+async function selectAuthorizedTheme(caller, themeId) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const rows = await sql`SELECT key, value FROM np_store WHERE key IN ('accounts', 'players', 'event_themes')`;
+    const snapshots = new Map(rows.map(row => [row.key, row.value]));
+    const accountsRaw = snapshots.get("accounts");
+    const accounts = normalizeAccounts(accountsRaw);
+    const target = accounts.find(account => account.id === caller.account.id);
+    assertThemeActorCurrent(caller.account, target);
+    const playersRaw = snapshots.has("players") ? snapshots.get("players") : null;
+    const themesRaw = snapshots.has("event_themes") ? snapshots.get("event_themes") : null;
+    const player = normalizePlayers(playersRaw).find(record => record.id === target.pid) || null;
+    const theme = themeCatalog.get(themeId, themesRaw || []);
+    const access = themeAccess({ account: target, player, theme, normalizeId: normalizeThemeId });
+    if (access.unknown) throw themeAccessError(400, "Thème inconnu.", "UNKNOWN_THEME");
+    if (!access.allowed) throw themeAccessError(403, "Ce thème n’est pas disponible pour ton compte.", "THEME_UNAVAILABLE");
+    target.selectedTheme = themeId;
+    if (access.grant && !target.unlockedThemes.includes(themeId)) target.unlockedThemes.push(themeId);
+    // Only this account is changed. Permissions come from all three snapshots;
+    // a concurrent block, legacy-player edit or distribution closure retries the
+    // complete authorization instead of merging an obsolete selectedTheme.
+    const nextAccounts = accountsRaw.map((record, index) => normalizeAccountRecord(record, index).id === target.id ? target : record);
+    const written = await sql`
+      WITH locked AS MATERIALIZED (
+        SELECT key, value FROM np_store WHERE key IN ('accounts', 'players', 'event_themes') ORDER BY key FOR UPDATE
+      ), eligible AS (
+        SELECT 1 WHERE EXISTS (SELECT 1 FROM locked WHERE key = 'accounts' AND value = ${JSON.stringify(accountsRaw)}::jsonb)
+        AND ((${playersRaw === null} AND NOT EXISTS (SELECT 1 FROM locked WHERE key = 'players'))
+          OR EXISTS (SELECT 1 FROM locked WHERE key = 'players' AND value = ${JSON.stringify(playersRaw)}::jsonb))
+        AND ((${themesRaw === null} AND NOT EXISTS (SELECT 1 FROM locked WHERE key = 'event_themes'))
+          OR EXISTS (SELECT 1 FROM locked WHERE key = 'event_themes' AND value = ${JSON.stringify(themesRaw)}::jsonb))
+      )
+      UPDATE np_store SET value = ${JSON.stringify(nextAccounts)}::jsonb, updated_at = now()
+      WHERE key = 'accounts' AND EXISTS (SELECT 1 FROM eligible) RETURNING key
+    `;
+    if (written.length) return target;
+  }
+  throw themeAccessError(409, "Les données ont changé. Recharge la page puis réessaie.");
+}
+async function mutateAccountThemeAccess(caller, accountId, themeId, action) {
+  return mutateJsonStore(sql, "accounts", [], raw => {
+    const current = normalizeAccounts(raw);
+    assertThemeActorCurrent(caller.account, current.find(account => account.id === caller.account.id));
+    const target = current.find(account => account.id === accountId);
+    if (!target) throw themeAccessError(409, "Ce compte a changé. Recharge la page puis réessaie.");
+    if (action === "admin_revoke_theme") target.unlockedThemes = target.unlockedThemes.filter(id => id !== themeId);
+    else if (action === "admin_block_theme") {
+      if (!target.blockedThemes.includes(themeId)) target.blockedThemes.push(themeId);
+    } else target.blockedThemes = target.blockedThemes.filter(id => id !== themeId);
+    if (action !== "admin_unblock_theme" && normalizeThemeId(target.selectedTheme) === themeId) target.selectedTheme = "dark";
+    return { value: raw.map((record, index) => normalizeAccountRecord(record, index).id === target.id ? target : record) };
+  });
+}
 async function deleteAccountAndPlayer(caller) {
   const nextAccounts = caller.accounts.filter(account => account.id !== caller.account.id);
   if (!caller.account.pid || normalizeRole(caller.account.role) !== "joueur") {
@@ -918,14 +962,15 @@ if (action === "self_set_theme") {
   const caller = await getCallerAccount(event);
   if (!caller || !caller.account) return { statusCode: 401, headers, body: JSON.stringify({ error: "Connexion requise" }) };
   const rawThemeId = sanitizeStr(body.themeId, 128);
-  const themeId = normalizeThemeId(rawThemeId || 'dark') || 'dark';
-  if (!themeId) return { statusCode: 400, headers, body: JSON.stringify({ error: "Thème invalide" }) };
-  const target = caller.accounts.find(a => a.id === caller.account.id);
-  if (!target) return { statusCode: 404, headers, body: JSON.stringify({ error: "Compte introuvable" }) };
-  target.selectedTheme = themeId;
-  await saveAccounts(caller.accounts);
+  if (!rawThemeId) return { statusCode: 400, headers, body: JSON.stringify({ ok: false, error: "Thème invalide.", code: "UNKNOWN_THEME" }) };
+  const themeId = normalizeThemeId(rawThemeId);
+  const target = await selectAuthorizedTheme(caller, themeId);
   await audit(event, target, "self_set_theme", { themeId });
-  return sessionResponse(headers, target, 200, { ok: true, selectedTheme: themeId });
+  // This preference does not change a token claim. Issuing a cookie here could
+  // restore an old account when its delayed response arrives after logout.
+  return { statusCode: 200, headers, body: JSON.stringify({ ok: true, role: target.role, pid: target.pid || null,
+    name: target.pseudo, forcePasswordReset: !!target.forcePasswordReset, selectedTheme: themeId,
+    unlockedThemes: target.unlockedThemes }) };
 }
 
     if (action === "admin_grant_theme") {
@@ -986,14 +1031,13 @@ if (action === "self_set_theme") {
       if (!caller || !isAdmin(caller.account)) return { statusCode: 403, headers, body: JSON.stringify({ error: "Admin uniquement" }) };
       const accountId = sanitizeStr(body.accountId, 128);
       if (!isValidGenericId(accountId)) return { statusCode: 400, headers, body: JSON.stringify({ error: "Compte invalide" }) };
-      const themeId = sanitizeStr(body.themeId, 128);
+      const rawThemeId = sanitizeStr(body.themeId, 128);
+      const themeId = normalizeThemeId(rawThemeId);
       if (themeId && !isValidThemeId(themeId)) return { statusCode: 400, headers, body: JSON.stringify({ error: "Thème invalide" }) };
-      if (!accountId || !themeId) return { statusCode: 400, headers, body: JSON.stringify({ error: "Paramètres invalides" }) };
+      if (!accountId || !rawThemeId || !themeId) return { statusCode: 400, headers, body: JSON.stringify({ error: "Paramètres invalides" }) };
       const target = caller.accounts.find(a => a.id === accountId);
       if (!target) return { statusCode: 404, headers, body: JSON.stringify({ error: "Compte introuvable" }) };
-      target.unlockedThemes = Array.isArray(target.unlockedThemes) ? target.unlockedThemes.filter(t => t !== themeId) : [];
-      if (normalizeThemeId(target.selectedTheme) === themeId) target.selectedTheme = "dark";
-      await saveAccounts(caller.accounts);
+      await mutateAccountThemeAccess(caller, accountId, themeId, action);
       await audit(event, caller.account, "admin_revoke_theme", { accountId, themeId });
       return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
     }
@@ -1011,16 +1055,12 @@ if (action === "self_set_theme") {
       if (!accountId || !themeId) return { statusCode: 400, headers, body: JSON.stringify({ error: "Paramètres invalides" }) };
       const target = caller.accounts.find(a => a.id === accountId);
       if (!target) return { statusCode: 404, headers, body: JSON.stringify({ error: "Compte introuvable" }) };
-      target.blockedThemes = Array.isArray(target.blockedThemes) ? target.blockedThemes.map(normalizeThemeId).filter(Boolean) : [];
       if (action === "admin_block_theme") {
-        if (!target.blockedThemes.includes(themeId)) target.blockedThemes.push(themeId);
-        if (normalizeThemeId(target.selectedTheme) === themeId) target.selectedTheme = "dark";
-        await saveAccounts(caller.accounts);
+        await mutateAccountThemeAccess(caller, accountId, themeId, action);
         await audit(event, caller.account, "admin_block_theme", { accountId, themeId });
         return { statusCode: 200, headers, body: JSON.stringify({ ok: true, blocked: true }) };
       }
-      target.blockedThemes = target.blockedThemes.filter(t => normalizeThemeId(t) !== themeId);
-      await saveAccounts(caller.accounts);
+      await mutateAccountThemeAccess(caller, accountId, themeId, action);
       await audit(event, caller.account, "admin_unblock_theme", { accountId, themeId });
       return { statusCode: 200, headers, body: JSON.stringify({ ok: true, blocked: false }) };
     }
@@ -1088,6 +1128,9 @@ if (action === "self_set_theme") {
     if (err instanceof SyntaxError) return { statusCode: 400, headers, body: JSON.stringify({ ok: false, error: "JSON invalide" }) };
     if (_isDbUnavailableError(err)) return _dbUnavailableResponse(headers);
     if (err && err.statusCode === 409) return { statusCode: 409, headers, body: JSON.stringify({ ok: false, error: err.message, conflict: true }) };
+    if (err && [400, 403].includes(err.statusCode) && ["UNKNOWN_THEME", "THEME_UNAVAILABLE"].includes(err.code)) {
+      return { statusCode: err.statusCode, headers, body: JSON.stringify({ ok: false, error: err.message, code: err.code }) };
+    }
     console.error("Auth error:", err);
     return { statusCode: 500, headers, body: JSON.stringify({ ok: false, error: "Erreur interne" }) };
   }

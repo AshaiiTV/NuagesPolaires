@@ -26,24 +26,32 @@ const { createLocalApp } = require('./helpers/local-app');
     }
 
     const page = await accountPage('alice');
-    const card = id => page.locator('.np-theme-vault-card[data-theme-id="' + id + '"]');
+    const card = id => page.locator('[data-theme-preview="' + id + '"]');
     async function equip(id, key) {
       await card(id).focus();
+      const writesBefore = app.requests.filter(request => request.action === 'self_set_theme').length;
+      await page.keyboard.press(key);
+      await page.locator('#np-theme-preview-bar').waitFor({ state: 'visible' });
+      assert.equal(app.requests.filter(request => request.action === 'self_set_theme').length, writesBefore, 'Keyboard preview does not persist the theme');
       const saved = page.waitForResponse(response => response.url().endsWith('/.netlify/functions/auth') && response.request().postDataJSON()?.action === 'self_set_theme');
+      await page.locator('#np-theme-preview-apply').focus();
       await page.keyboard.press(key);
       assert.equal((await saved).status(), 200);
+      await page.waitForFunction(theme => getCurrentAccount()?.selectedTheme === theme, id);
       assert.equal(await page.evaluate(() => _currentTheme), id);
-      assert.equal(await card(id).getAttribute('aria-pressed'), 'true');
+      assert.equal(await page.locator('.np-theme-vault-card[data-theme-id="' + id + '"]').getAttribute('data-theme-state'), 'selected');
     }
     await equip('light', 'Enter');
-    await equip('dark', 'Space');
-    await equip('dark', 'Enter');
     await equip('dark', 'Space');
     const savesBeforeLocked = app.requests.filter(request => request.action === 'self_set_theme').length;
     for (const key of ['Enter', 'Space']) {
       await card('green').focus();
       await page.keyboard.press(key);
+      await page.locator('#np-theme-preview-bar').waitFor({ state: 'visible' });
       assert.equal(await page.evaluate(() => _currentTheme), 'dark');
+      assert.equal(await page.locator('#np-theme-preview-apply:enabled').count(), 0);
+      await page.locator('#np-theme-preview-cancel').focus();
+      await page.keyboard.press(key);
     }
     assert.equal(app.requests.filter(request => request.action === 'self_set_theme').length, savesBeforeLocked);
 
@@ -92,7 +100,7 @@ const { createLocalApp } = require('./helpers/local-app');
       _cs.active = true;
     });
     async function calls() { return staff.evaluate(() => __keyboardCombatCalls); }
-    await staff.locator('.np-theme-vault-card[data-theme-id="light"]').focus();
+    await staff.locator('[data-theme-preview="light"]').focus();
     await staff.keyboard.press('Space');
     assert.deepEqual(await calls(), { pass: 0, next: 0, undo: 0 });
     await staff.evaluate(() => { if (document.activeElement) document.activeElement.blur(); });

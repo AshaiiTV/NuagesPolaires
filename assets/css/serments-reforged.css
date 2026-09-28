@@ -1,0 +1,57 @@
+/* Painted armory. Theme colors stay owned by the companion's theme system. */
+.np-serment-emblem{border-radius:5px;overflow:hidden}
+.np-serment-monogram{font:500 18px var(--np-editorial,serif);border:1px solid var(--border2);color:var(--text);background:var(--bg3)}
+.serm-eyebrow{display:block;font:600 10px/1.5 var(--fb);letter-spacing:.17em;text-transform:uppercase;color:var(--text);margin-bottom:12px}
+.serm-catalogue-counts{display:flex;gap:12px 28px;flex-wrap:wrap;margin-top:22px;font:400 12px/1.6 var(--fb);color:var(--dim)}
+.serm-catalogue-counts b{font-weight:600;color:var(--text);font-size:18px;margin-right:4px}
+html[data-np-design="polar"] #s-app #serments .serm-catalogue-counts>span{font:400 12px/1.6 var(--fb);letter-spacing:0;text-transform:none;color:var(--dim)!important;margin:0}
+.serm-no-results{padding:32px 0;color:var(--dim);font-size:14px}
+html[data-np-design="polar"] #s-app #serments .serm-shell{gap:20px}
+html[data-np-design="polar"] #s-app #serments .serm-rarity-guide{padding-bottom:20px}
+html[data-np-design="polar"] #s-app #serments .serm-rarity-copy>span{font-size:clamp(30px,3vw,42px);margin-bottom:12px}
+html[data-np-design="polar"] #s-app #serments .serm-rarity-copy p{font-size:13px;line-height:1.75;margin:0;max-width:84ch}
+html[data-np-design="polar"] #s-app #serments .serm-toolbar{padding-bottom:18px}
+html[data-np-design="polar"] #s-app #serments .serm-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;align-items:start}
+html[data-np-design="polar"] #s-app #serments .serm-forged{padding:0!important;overflow:hidden;border:1px solid var(--border2)!important;border-radius:4px;background:var(--bg2)!important;scroll-margin-top:90px}
+html[data-np-design="polar"] #s-app #serments .serm-forged:focus-visible{outline:2px solid var(--glacier);outline-offset:5px}
+.serm-art{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;aspect-ratio:1.22;background:#0b1722;isolation:isolate}
+.serm-art::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 -45px 40px -35px #020810}
+.serm-art>.np-serment-emblem{display:block!important;width:100%!important;height:100%!important;max-width:none;border-radius:0;object-fit:contain!important;filter:none!important}
+.serm-art-rank{position:absolute;left:16px;bottom:13px;z-index:1;color:#ecdfc7;background:#11212ce8;border:1px solid #9e907d66;border-radius:2px;padding:4px 8px;font:500 10px/1.5 var(--fb);letter-spacing:.055em}
+.serm-card-body{padding:23px 22px 20px}
+html[data-np-design="polar"] #s-app #serments .serm-forged .serm-head{display:block;padding:0!important;margin:0 0 16px}
+.serm-card-category{display:block;font:600 9px/1.5 var(--fb);text-transform:uppercase;letter-spacing:.16em;color:var(--text);margin-bottom:8px}
+html[data-np-design="polar"] #s-app #serments .serm-forged .snm{font-size:29px;line-height:1.16;margin:0}
+html[data-np-design="polar"] #s-app #serments .serm-forged .swp{margin-top:6px;font-size:12px;line-height:1.6}
+html[data-np-design="polar"] #s-app #serments .serm-forged .serm-lineage{margin-top:9px;font-size:11px}
+.serm-pitch{font:500 15px/1.55 var(--np-editorial,serif);color:var(--text);margin:0 0 12px}
+html[data-np-design="polar"] #s-app #serments .serm-forged .serm-lore{font-size:12px;line-height:1.8;margin:0 0 18px}
+.serm-playbook{margin:0 0 18px;padding-block:11px;border-block:1px solid var(--border);font:400 12px/1.75 var(--fb);color:var(--dim)}
+.serm-playbook summary{cursor:pointer;color:var(--text);font-size:11px;min-height:24px;line-height:24px}
+.serm-playbook p{margin:12px 0 0}
+.serm-playbook b{display:block;margin-bottom:3px;font-size:10px;color:var(--text);font-weight:600}
+html[data-np-design="polar"] #s-app #serments .serm-forged .serm-stats{grid-template-columns:repeat(4,minmax(0,1fr));padding:13px 0;margin:0 0 20px;gap:0}
+html[data-np-design="polar"] #s-app #serments .serm-forged .sst{padding:0 6px}
+html[data-np-design="polar"] #s-app #serments .serm-forged .sstv{font-size:22px}
+html[data-np-design="polar"] #s-app #serments .serm-forged .sstl{font-size:9px;letter-spacing:0}
+html[data-np-design="polar"] #s-app #serments .serm-forged .serm-branch-head{padding:12px;min-height:60px;gap:5px 8px}
+html[data-np-design="polar"] #s-app #serments .serm-forged .serm-branch-title{font-size:12px;line-height:1.55}
+html[data-np-design="polar"] #s-app #serments .serm-forged .serm-branch-style{font-size:9px;border:0;padding:0;background:transparent}
+html[data-np-design="polar"] #s-app #serments .serm-forged :is(.serm-branch-desc,.serm-branch-phys){margin:2px 12px 14px;padding-left:9px;font-size:12px}
+html[data-np-design="polar"] #s-app #serments .serm-forged .serm-branch-progress{margin:0 12px 12px}
+.serm-forged .np-serment-rules{margin:0 12px 14px;padding:8px;background:var(--bg2);border-color:var(--border)}
+.serm-forged .np-serment-rules summary{font-size:11px}
+.serm-descendants{margin-top:18px;padding-top:15px;border-top:1px solid var(--border);display:flex;gap:7px;flex-wrap:wrap}
+.serm-descendants>span{flex-basis:100%;font:400 10px/1.6 var(--fb);color:var(--dim);margin-bottom:3px}
+.serm-descendants>button{cursor:pointer;max-width:100%;display:inline-flex;gap:8px;align-items:center;min-height:32px;padding:4px 8px;border:1px solid var(--border2);border-radius:2px;background:transparent;color:var(--text);font:400 11px/1.5 var(--fb)}
+.serm-descendants>button:hover{border-color:var(--glacier);background:var(--bg3)}
+.serm-descendants>button:focus-visible,.serm-playbook summary:focus-visible{outline:2px solid var(--glacier);outline-offset:3px}
+.np-personal-armory{display:grid;grid-template-columns:150px minmax(0,1fr);gap:24px;align-items:center;margin-bottom:24px}
+.np-personal-armory-art{aspect-ratio:1;background:#0b1722;overflow:hidden;border:1px solid var(--border2);border-radius:4px}
+.np-personal-armory-art>.np-serment-emblem{width:100%!important;height:100%!important;object-fit:contain!important;border-radius:0}
+.np-personal-armory .serm-pitch{margin-top:12px}
+.np-retired-note{padding:12px 14px;margin-bottom:16px;border:1px solid var(--border2);font:400 12px/1.7 var(--fb);color:var(--dim)}
+.rpg-oath>.np-serment-emblem{width:62px!important;height:62px!important;float:left;margin:0 14px 8px 0;border:1px solid var(--border2)}
+@media(max-width:1100px){html[data-np-design="polar"] #s-app #serments .serm-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.serm-art{aspect-ratio:1.35}}
+@media(max-width:650px){html[data-np-design="polar"] #s-app #serments .serm-grid{grid-template-columns:1fr}.serm-art{aspect-ratio:1.35}.serm-card-body{padding:20px}.serm-catalogue-counts{gap:8px 18px}.np-personal-armory{grid-template-columns:100px minmax(0,1fr);gap:15px}.np-personal-armory .snm{font-size:23px!important}.np-personal-armory .serm-pitch{font-size:13px}.np-serment-search{grid-template-columns:1fr auto}.np-serment-search label{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.serm-forged{scroll-behavior:auto}}

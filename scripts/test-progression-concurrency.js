@@ -16,6 +16,7 @@ function section(start, end) {
   return source.slice(from, to);
 }
 const code = [
+  section('function isSermVisibleInLibrary(nom,s){', 'function isStarterSerment('),
   section('function doLvlUp(p){', '// Save a detached draft;'),
   section('var _progressionSaving=', 'function refreshProgressionPanel('),
   section('function gemXPStock(player,type){', 'function popSSelects('),

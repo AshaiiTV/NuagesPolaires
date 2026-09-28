@@ -1,172 +1,26 @@
-/* Nuages Polaires — Theme Engine v257
-   Consolidated replacement for the old Theme Max v1-v8 stack.
-   Goals:
-   - one CSS injection
-   - one MutationObserver
-   - one metadata source
-   - preserved collection UX, premium previews and rare theme staging
+/* Nuages Polaires — synchronous theme rendering.
+   Palettes and tokens live exclusively in theme-catalog.js.
+   Existing decorations and collection remain compatible with the v257 CSS scope.
+   Rendering hooks update collection cards without observing arbitrary DOM styles.
 */
 (function(){
   'use strict';
 
   var ENGINE_VERSION = 'v257';
   var STYLE_ID = 'np-theme-engine-v257';
-  var TIMER = null;
   var METEOR_TIMER = null;
   var FILTER_STORAGE_KEY = 'np_theme_collection_filters_v257';
 
-  var CONFIG = {
-    dark: {
-      id:'dark', label:'Nuages Polaires', cls:'', rarity:'Base', category:'Base',
-      tagline:'Mystique polaire — un monde à écrire.',
-      desc:'Nuit d’encre, lumière d’aurore et ivoire. La signature visuelle de Nuages Polaires.',
-      colors:['#091519','#95cdbb','#c6b38b'],
-      tone:'dark',
-      vars:{
-        bg:'#091519', bg2:'#102327', bg3:'#172e32', bg4:'#213b3e',
-        text:'#f0eee5', dim:'#bdcdc8', faint:'#92aaa3',
-        accent:'#95cdbb', accentDim:'#648f83', accentBright:'#c6b38b',
-        accentRgb:'149,205,187', accent2Rgb:'198,179,139',
-        pageBg:'radial-gradient(ellipse at 90% 0%,rgba(149,205,187,.07),transparent 40rem),linear-gradient(180deg,#091519,#0b1a1d)'
-      }
-    },
-    light: {
-      id:'light', label:'Brume Claire', cls:'light', rarity:'Base', category:'Base',
-      tagline:'Une lecture plus claire et apaisée.',
-      desc:'Mode clair, propre et doux.',
-      colors:['#f4f5fa','#3a8fba','#9a7020'],
-      tone:'light',
-      vars:{
-        bg:'#f4f5fa', bg2:'#e8edf4', bg3:'#dce4ee', bg4:'#cbd8e5',
-        text:'#15202b', dim:'#405363', faint:'#6f8190',
-        accent:'#3a8fba', accentDim:'#1e6384', accentBright:'#9a7020',
-        accentRgb:'58,143,186', accent2Rgb:'154,112,32',
-        pageBg:'radial-gradient(circle at 18% 12%, rgba(58,143,186,.16), transparent 24rem),radial-gradient(circle at 82% 82%, rgba(154,112,32,.09), transparent 26rem),linear-gradient(180deg,#f7f9fc 0%,#e9eff6 52%,#dfe7f1 100%)'
-      }
-    },
-    violet: {
-      id:'violet', label:'Galactique', cls:'theme-violet', rarity:'Rare', category:'Rares',
-      tagline:'Constellations, nébuleuses et lumière d’orbite.',
-      desc:'Un thème spatial franc : ciel profond, étoiles vives, halos stellaires et verre cosmique.',
-      colors:['#03020b','#9b7cff','#73d8ff'],
-      tone:'dark',
-      vars:{
-        bg:'#03020b', bg2:'#090621', bg3:'#140d3d', bg4:'#21145f',
-        text:'#fcfaff', dim:'#d9d4f4', faint:'#9a93c7',
-        accent:'#9b7cff', accentDim:'#5a4ac4', accentBright:'#73d8ff',
-        accentRgb:'155,124,255', accent2Rgb:'115,216,255',
-        pageBg:'radial-gradient(ellipse at 50% -12%,rgba(203,194,255,.32),transparent 31rem),radial-gradient(circle at 14% 18%,rgba(124,84,255,.34),transparent 26rem),radial-gradient(circle at 86% 18%,rgba(71,206,255,.24),transparent 24rem),radial-gradient(ellipse at 74% 86%,rgba(220,92,255,.20),transparent 32rem),linear-gradient(180deg,#020108 0%,#07041b 34%,#100830 62%,#020108 100%)'
-      }
-    },
-    green: {
-      id:'green', label:'Sylvan', cls:'theme-green', rarity:'Rare', category:'Rares',
-      tagline:'Jungle dense, canopée vivante et sève lumineuse.',
-      desc:'Un thème jungle organique : feuillage humide, lianes mouvantes, mousse profonde et lumière dorée filtrée par la canopée.',
-      colors:['#031108','#51c56d','#d8c16a'],
-      tone:'dark',
-      vars:{
-        bg:'#031108', bg2:'#082111', bg3:'#12381d', bg4:'#1e552d',
-        text:'#f3fff0', dim:'#c9edbf', faint:'#8db883',
-        accent:'#51c56d', accentDim:'#1f7d40', accentBright:'#d8c16a',
-        accentRgb:'81,197,109', accent2Rgb:'216,193,106',
-        pageBg:'radial-gradient(ellipse at 12% -8%, rgba(118,229,133,.30), transparent 27rem),radial-gradient(circle at 82% 8%, rgba(216,193,106,.16), transparent 22rem),radial-gradient(ellipse at 44% 112%, rgba(8,73,28,.82), transparent 45rem),repeating-linear-gradient(108deg, rgba(129,229,118,.055) 0 2px, transparent 2px 42px),linear-gradient(180deg,#031108 0%,#082111 42%,#031008 100%)'
-      }
-    },
-    easter: {
-      id:'easter', label:'Pâques enchantées', cls:'theme-easter', rarity:'Saisonnier', category:'Saisonniers',
-      tagline:'Printemps vivant, mignon et coloré.',
-      desc:'Un printemps joyeux : fleurs, herbe, lumière douce et couleurs pastel.',
-      colors:['#f7fff2','#7fdc82','#ffd86b','#ffb6d8'],
-      tone:'light',
-      vars:{
-        bg:'#effbe9', bg2:'#e5f7de', bg3:'#d7f2cf', bg4:'#c6ebbd',
-        text:'#203227', dim:'#49655a', faint:'#668378',
-        accent:'#63c76c', accentDim:'#38914a', accentBright:'#ff83bc',
-        accentRgb:'127,220,130', accent2Rgb:'255,182,216',
-        pageBg:'radial-gradient(circle at 12% 10%, rgba(255,216,107,.34), transparent 20rem),radial-gradient(circle at 88% 14%, rgba(255,182,216,.28), transparent 18rem),radial-gradient(circle at 70% 82%, rgba(127,220,130,.28), transparent 25rem),linear-gradient(180deg,#f5fff1 0%,#eaf9e4 50%,#def2d5 100%)'
-      }
-    },
-    halloween: {
-      id:'halloween', label:'Veille d’Halloween', cls:'theme-halloween', rarity:'Saisonnier', category:'Saisonniers',
-      tagline:'Presque creepy, entre citrouille et brume.',
-      desc:'Nuit violette, lueur orange et ambiance inquiétante.',
-      colors:['#0a0911','#ff8f2b','#7c59ff','#d8d2ff'],
-      tone:'dark',
-      vars:{
-        bg:'#0a0911', bg2:'#110d18', bg3:'#191224', bg4:'#251830',
-        text:'#fff4ea', dim:'#e8ccb6', faint:'#a98e8d',
-        accent:'#ff8f2b', accentDim:'#a04b12', accentBright:'#d8d2ff',
-        accentRgb:'255,143,43', accent2Rgb:'124,89,255',
-        pageBg:'radial-gradient(circle at 84% 16%, rgba(255,143,43,.16), transparent 18rem),radial-gradient(circle at 18% 84%, rgba(124,89,255,.14), transparent 22rem),linear-gradient(180deg,#0a0911 0%,#110d18 50%,#05040a 100%)'
-      }
-    },
-    noel: {
-      id:'noel', label:'Noël en fête', cls:'theme-noel', rarity:'Saisonnier', category:'Saisonniers',
-      tagline:'Festif, chaleureux, rouge, vert et or.',
-      desc:'Un Noël lumineux, rouge, vert, doré et enneigé.',
-      colors:['#08140d','#d84a52','#2ea85f','#f2c66d'],
-      tone:'dark',
-      vars:{
-        bg:'#08140d', bg2:'#0d1e12', bg3:'#132816', bg4:'#1d361f',
-        text:'#fbfff9', dim:'#d8ead7', faint:'#9bb59e',
-        accent:'#d84a52', accentDim:'#8d2430', accentBright:'#f2c66d',
-        accentRgb:'216,74,82', accent2Rgb:'46,168,95',
-        pageBg:'radial-gradient(circle at 16% 14%, rgba(216,74,82,.16), transparent 22rem),radial-gradient(circle at 84% 18%, rgba(242,198,109,.12), transparent 20rem),radial-gradient(circle at 74% 82%, rgba(46,168,95,.12), transparent 24rem),linear-gradient(180deg,#08140d 0%,#102016 50%,#050b08 100%)'
-      }
-    },
-    aquaris: {
-      id:'aquaris', label:'Aquaris — Royaume englouti', cls:'theme-aquaris', rarity:'Rare', category:'Rares',
-      tagline:'Royaume englouti, cyan abyssal et or ancien.',
-      desc:'Palais noyés, lumière abyssale, cyan profond et or ancien.',
-      colors:['#011018','#48d6ef','#e5c878'],
-      tone:'dark',
-      vars:{
-        bg:'#011018', bg2:'#041a24', bg3:'#082b37', bg4:'#0d3f4e',
-        text:'#f0fcff', dim:'#c8e8ef', faint:'#8fb6c0',
-        accent:'#48d6ef', accentDim:'#15849a', accentBright:'#e5c878',
-        accentRgb:'72,214,239', accent2Rgb:'229,200,120',
-        pageBg:'repeating-linear-gradient(106deg,rgba(130,238,255,.055) 0 2px,transparent 2px 34px),radial-gradient(ellipse 780px 260px at 50% -8%, rgba(177,249,255,.16), transparent 72%),radial-gradient(circle at 15% 18%, rgba(72,214,239,.16), transparent 27rem),radial-gradient(circle at 84% 82%, rgba(229,200,120,.10), transparent 27rem),linear-gradient(180deg,#011018 0%,#062431 46%,#02090f 100%)'
-      }
-    },
-    bloodmoon: {
-      id:'bloodmoon', label:'BloodMoon', cls:'theme-bloodmoon', rarity:'Fondateur', category:'Fondateur',
-      tagline:'Lune rouge souveraine et tension rituelle.',
-      desc:'Noir rituel, lune carmine, menace souveraine et éclat cramoisi.',
-      signature:'Lune de sang',
-      colors:['#050102','#e3133f','#f0c76f'],
-      tone:'dark',
-      vars:{
-        bg:'#050102', bg2:'#0c0305', bg3:'#17060a', bg4:'#260912',
-        text:'#fff6f3', dim:'#f0c4bd', faint:'#b07d82',
-        accent:'#e3133f', accentDim:'#76061f', accentBright:'#ff7d92',
-        accentRgb:'227,19,63', accent2Rgb:'240,199,111',
-        pageBg:'radial-gradient(circle at 82% 12%, rgba(255,226,210,.98) 0 1rem, rgba(227,19,63,.98) 1.05rem 5.1rem, rgba(95,4,22,.62) 5.2rem 8.2rem, transparent 8.4rem),radial-gradient(circle at 18% 78%, rgba(227,19,63,.18), transparent 26rem),radial-gradient(circle at 74% 74%, rgba(240,199,111,.08), transparent 22rem),linear-gradient(180deg,#050102 0%,#120407 52%,#020101 100%)'
-      }
-    }
-  };
-
-  var ORDER = ['dark','light','violet','green','aquaris','easter','halloween','noel','bloodmoon'];
+  var CATALOG = window.NPThemeCatalog;
+  if(!CATALOG) throw new Error('Load theme-catalog.js before theme-max.js');
+  var ORDER = CATALOG.builtinIds.slice();
+  var REFRESHING_COLLECTION = false;
   var RARITY_ORDER = { 'Base':0, 'Classique':1, 'Saisonnier':2, 'Rare':3, 'Premium':3, 'Fondateur':4, 'Mythique':5 };
 
   var CSS = `
 /* === Nuages Polaires Theme Engine v257 === */
 html[data-theme-engine="v257"], body[data-theme-engine="v257"]{min-height:100%;}
 body[data-theme-engine="v257"]{
-  --tm-bg:#0d0e18;--tm-bg2:#141725;--tm-bg3:#1b2033;--tm-bg4:#232b43;
-  --tm-text:#f5f7fb;--tm-text-soft:rgba(245,247,251,.86);--tm-text-muted:rgba(199,212,223,.72);
-  --tm-dim:#c7d4df;--tm-faint:#8c9aaa;
-  --tm-accent:#7eb8d4;--tm-accent-dim:#477f9c;--tm-accent-bright:#c9a84c;
-  --tm-accent-rgb:126,184,212;--tm-accent-2-rgb:201,168,76;
-  --tm-border:rgba(126,184,212,.17);--tm-border-strong:rgba(201,168,76,.20);
-  --tm-card-bg:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.018)),rgba(14,18,31,.78);
-  --tm-card-bg-strong:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.024)),rgba(18,24,40,.84);
-  --tm-control-bg:linear-gradient(180deg,rgba(255,255,255,.065),rgba(255,255,255,.020)),rgba(16,22,36,.75);
-  --tm-control-bg-hover:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.032)),rgba(20,28,46,.82);
-  --tm-input-bg:rgba(8,12,22,.62);
-  --tm-shadow:0 22px 46px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.04);
-  --tm-shadow-soft:0 12px 28px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.035);
-  --tm-primary-text:#071019;
-  --tm-page-bg:radial-gradient(circle at 18% 12%, rgba(126,184,212,.13), transparent 24rem),radial-gradient(circle at 82% 82%, rgba(201,168,76,.09), transparent 26rem),linear-gradient(180deg,#0d0e18 0%,#141725 52%,#080a12 100%);
   color:var(--tm-text) !important;
   background:var(--tm-page-bg) !important;
   isolation:isolate;
@@ -212,40 +66,17 @@ body[data-theme-engine="v257"] :where(.btn:hover,button:hover,.nav-link:hover,.n
   border-color:var(--tm-border-strong) !important;
 }
 body[data-theme-engine="v257"] :where(.btn.primary,.btn-primary,.btn-main,.home-btn-primary,.home-btn.primary,.cta,.cta-primary,[data-primary="true"],button.primary){
-  background:linear-gradient(135deg,var(--tm-accent),var(--tm-accent-bright)) !important;
+  background:var(--tm-primary-bg) !important;
   color:var(--tm-primary-text) !important;
   border-color:rgba(255,255,255,.20) !important;
   font-weight:850 !important;
   box-shadow:0 14px 30px rgba(var(--tm-accent-rgb),.18), inset 0 1px 0 rgba(255,255,255,.18) !important;
 }
-body[data-theme-engine="v257"] a{color:var(--tm-accent) !important;}
+body[data-theme-engine="v257"] a{color:var(--tm-link) !important;}
 body[data-theme-engine="v257"][data-theme-active="light"],
 body[data-theme-engine="v257"][data-theme-tone="light"],
 body[data-theme-engine="v257"].light{
   color-scheme:light;
-  --tm-primary-text:#071019;
-  --tm-card-bg:linear-gradient(180deg,rgba(255,255,255,.98),rgba(246,250,255,.92)),rgba(58,143,186,.045);
-  --tm-card-bg-strong:linear-gradient(180deg,rgba(255,255,255,1),rgba(241,247,253,.96)),rgba(58,143,186,.065);
-  --tm-control-bg:linear-gradient(180deg,rgba(255,255,255,.97),rgba(237,245,252,.88)),rgba(58,143,186,.055);
-  --tm-control-bg-hover:linear-gradient(180deg,rgba(255,255,255,1),rgba(229,241,251,.94)),rgba(58,143,186,.085);
-  --tm-input-bg:linear-gradient(180deg,rgba(255,255,255,1),rgba(247,251,255,.96));
-  --tm-shadow:0 20px 42px rgba(31,57,88,.11), inset 0 1px 0 rgba(255,255,255,.78);
-  --tm-shadow-soft:0 12px 28px rgba(31,57,88,.09), inset 0 1px 0 rgba(255,255,255,.72);
-  --np-ui-text:var(--tm-text);
-  --np-ui-text-soft:var(--tm-text-soft);
-  --np-ui-muted:var(--tm-text-muted);
-  --np-ui-border-soft:rgba(58,143,186,.18);
-  --np-ui-border-strong:rgba(58,143,186,.30);
-  --np-ui-shadow:var(--tm-shadow-soft);
-  --np-ui-header-shadow:0 12px 28px rgba(31,57,88,.10), inset 0 1px 0 rgba(255,255,255,.78);
-  --np-ui-panel-surface:var(--tm-card-bg);
-  --np-ui-panel-surface-strong:var(--tm-card-bg-strong);
-  --np-ui-button-bg:var(--tm-control-bg);
-  --np-ui-button-hover:var(--tm-control-bg-hover);
-  --np-ui-input-bg:var(--tm-input-bg);
-  --np-ui-header-bg:linear-gradient(180deg,rgba(255,255,255,.995),rgba(236,246,252,.985)),radial-gradient(circle at 20% 0%,rgba(58,143,186,.12),transparent 42%);
-  --np-ui-dropdown-bg:linear-gradient(180deg,rgba(255,255,255,.998),rgba(241,247,253,.992)),radial-gradient(circle at 15% 0%,rgba(58,143,186,.10),transparent 45%);
-  --np-ui-chip-bg:linear-gradient(180deg,rgba(255,255,255,.98),rgba(237,245,252,.92)),rgba(58,143,186,.055);
 }
 body[data-theme-engine="v257"][data-theme-active="light"] :where(.card,.panel,.staff-panel,.modal,.login-card,.tab-content.tab-popup-active,.collection-card,.db-card,.settings-pane,.ev-card,.bcrd,.prog-panel,.role-opt.staff-card,.branch-modal-shell,.summary-card,.home-counter,.home-footer-item,.archive-card,.history-card,.sim-panel,.sim-fighter-card,.sim-log,.sim-history,.sim-notif,.sim-side,.theme-card-premium,.theme-preview-mini,.warnbox,.empty-state,.home-footer,.journal-entry,.activity-item,.collection-section,.arc-results,.arc-detail,.arc-card,.arc-detail-card,.arc-metric,.arc-roster-row,.arc-log-row),
 body[data-theme-engine="v257"][data-theme-tone="light"] :where(.card,.panel,.staff-panel,.modal,.login-card,.tab-content.tab-popup-active,.collection-card,.db-card,.settings-pane,.ev-card,.bcrd,.prog-panel,.role-opt.staff-card,.branch-modal-shell,.summary-card,.home-counter,.home-footer-item,.archive-card,.history-card,.sim-panel,.sim-fighter-card,.sim-log,.sim-history,.sim-notif,.sim-side,.theme-card-premium,.theme-preview-mini,.warnbox,.empty-state,.home-footer,.journal-entry,.activity-item,.collection-section,.arc-results,.arc-detail,.arc-card,.arc-detail-card,.arc-metric,.arc-roster-row,.arc-log-row),
@@ -364,57 +195,33 @@ body[data-theme-engine="v257"][data-theme-tone="light"] [style*="background:line
   border-color:var(--tm-border) !important;
   box-shadow:var(--tm-shadow-soft) !important;
 }
-body[data-theme-engine="v257"].theme-easter a{color:#b74d88 !important;}
+body[data-theme-engine="v257"].theme-easter a{color:var(--tm-link) !important;}
 body[data-theme-engine="v257"].theme-easter{
   color-scheme:light;
-  --tm-primary-text:#17311d;
-  --tm-card-bg:linear-gradient(180deg,rgba(255,255,255,.90),rgba(255,255,255,.74)),linear-gradient(135deg,rgba(127,220,130,.12),rgba(255,216,107,.10) 46%,rgba(255,182,216,.11));
-  --tm-card-bg-strong:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.82)),linear-gradient(135deg,rgba(127,220,130,.18),rgba(255,216,107,.13) 46%,rgba(255,182,216,.14));
-  --tm-control-bg:linear-gradient(180deg,rgba(255,255,255,.86),rgba(255,255,255,.68)),linear-gradient(135deg,rgba(127,220,130,.18),rgba(255,216,107,.16),rgba(255,182,216,.18));
-  --tm-control-bg-hover:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,255,255,.78)),linear-gradient(135deg,rgba(127,220,130,.28),rgba(255,216,107,.22),rgba(255,182,216,.26));
-  --tm-input-bg:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.75)),rgba(243,251,239,.92);
-  --tm-shadow:0 22px 44px rgba(80,120,84,.14), inset 0 1px 0 rgba(255,255,255,.66);
-  --tm-shadow-soft:0 14px 28px rgba(80,120,84,.12), inset 0 1px 0 rgba(255,255,255,.55);
 }
 body[data-theme-engine="v257"].theme-easter :where(.btn.primary,.btn-primary,.btn-main,.home-btn-primary,.home-btn.primary,.cta,.cta-primary,[data-primary="true"],button.primary){
-  background:linear-gradient(135deg,#7fdc82,#ffd86b 62%,#ffb6d8) !important;
-  color:#17311d !important;
+  background:var(--tm-primary-bg) !important;
+  color:var(--tm-primary-text) !important;
 }
 body[data-theme-engine="v257"].theme-noel :where(.btn.primary,.btn-primary,.btn-main,.home-btn-primary,.home-btn.primary,.cta,.cta-primary,[data-primary="true"],button.primary){
-  background:linear-gradient(135deg,#d84a52,#2ea85f 68%,#f2c66d) !important;
-  color:#fefcf7 !important;
+  background:var(--tm-primary-bg) !important;
+  color:var(--tm-primary-text) !important;
 }
 body[data-theme-engine="v257"].theme-halloween :where(.btn.primary,.btn-primary,.btn-main,.home-btn-primary,.home-btn.primary,.cta,.cta-primary,[data-primary="true"],button.primary){
-  background:linear-gradient(135deg,#ff8f2b,#7c59ff 70%,#d8d2ff) !important;
-  color:#150d17 !important;
+  background:var(--tm-primary-bg) !important;
+  color:var(--tm-primary-text) !important;
 }
 body[data-theme-engine="v257"].theme-aquaris :where(.btn.primary,.btn-primary,.btn-main,.home-btn-primary,.home-btn.primary,.cta,.cta-primary,[data-primary="true"],button.primary){
-  background:linear-gradient(135deg,#0a7084,#48d6ef 52%,#8ef4ff 74%,#e5c878) !important;
-  color:#031018 !important;
+  background:var(--tm-primary-bg) !important;
+  color:var(--tm-primary-text) !important;
 }
 body[data-theme-engine="v257"].theme-bloodmoon :where(.btn.primary,.btn-primary,.btn-main,.home-btn-primary,.home-btn.primary,.cta,.cta-primary,[data-primary="true"],button.primary){
-  background:linear-gradient(135deg,#71051e,#e3133f 55%,#ff7d92 80%,#f0c76f) !important;
-  color:#fff7f2 !important;
+  background:var(--tm-primary-bg) !important;
+  color:var(--tm-primary-text) !important;
 }
 
 /* Unified base: every theme uses the same UI skeleton and only swaps tokens. */
-body[data-theme-engine="v257"]{
-  --np-ui-text:var(--tm-text);
-  --np-ui-text-soft:var(--tm-text-soft);
-  --np-ui-muted:var(--tm-text-muted);
-  --np-ui-border-soft:rgba(var(--tm-accent-rgb),.18);
-  --np-ui-border-strong:rgba(var(--tm-accent-rgb),.30);
-  --np-ui-panel-surface:var(--tm-card-bg);
-  --np-ui-panel-surface-strong:var(--tm-card-bg-strong);
-  --np-ui-button-bg:var(--tm-control-bg);
-  --np-ui-button-hover:var(--tm-control-bg-hover);
-  --np-ui-input-bg:var(--tm-input-bg);
-  --np-ui-header-bg:var(--tm-card-bg-strong);
-  --np-ui-dropdown-bg:var(--tm-card-bg-strong);
-  --np-ui-chip-bg:linear-gradient(90deg,rgba(var(--tm-accent-rgb),.13),rgba(var(--tm-accent-rgb),.08));
-  --np-ui-shadow:var(--tm-shadow-soft);
-  --np-ui-header-shadow:var(--tm-shadow-soft);
-}
+
 body[data-theme-engine="v257"] :where(.app-header,#mobile-drawer > div:first-child,.nav-group-menu,.nav-dropdown-menu,.tab-content.tab-popup-active,.nav-dd,.nav-dropdown,.menu,.account-dd,.branch-dd,#nav-dropdown-root .nav-dropdown-menu,#nav-dropdown-root .nav-group-menu,#mobile-drawer,.cmdk,.branch-modal-shell){
   background:var(--np-ui-dropdown-bg) !important;
   color:var(--np-ui-text) !important;
@@ -442,7 +249,7 @@ body[data-theme-engine="v257"] :where(.btn:hover,.btn-out:hover,.mini-btn:hover,
   border-color:var(--np-ui-border-strong) !important;
 }
 body[data-theme-engine="v257"] :where(.btn.primary,.btn-primary,.btn-main,.home-btn-primary,.home-btn.primary,.cta,.cta-primary,[data-primary="true"],button.primary){
-  background:linear-gradient(135deg,var(--tm-accent),var(--tm-accent-bright)) !important;
+  background:var(--tm-primary-bg) !important;
   color:var(--tm-primary-text) !important;
 }
 body[data-theme-engine="v257"] :where(input,select,textarea,.inp,.search-input,.sim-search-input){
@@ -1397,18 +1204,22 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
 }
   `;
 
-  function normalize(id){
-    try{ if(typeof window.normalizeThemeId === 'function' && window.normalizeThemeId !== normalize) return window.normalizeThemeId(id); }catch(e){}
-    id = String(id || '').trim().toLowerCase();
-    if(!id || id === 'theme-default' || id === 'default') return 'dark';
-    if(id.indexOf('theme-') === 0) id = id.replace(/^theme-/, '');
-    if(id === 'red' || id === 'ecarlate' || id === 'écarlate') return 'dark';
-    if(id === 'aquarius') id = 'aquaris';
-    if(id === 'blood-moon' || id === 'lune-de-sang') id = 'bloodmoon';
-    return id;
+  function normalize(id){ return CATALOG.normalizeId(id); }
+
+  function catalogueEntries(){
+    try{
+      if(typeof window._getDbThemeEntries === 'function') return window._getDbThemeEntries();
+      if(typeof window.sto === 'function') return window.sto('event_themes') || [];
+    }catch(e){}
+    return [];
   }
 
-  function cfg(id){ return CONFIG[normalize(id)] || CONFIG.dark; }
+  function cfg(id){ return CATALOG.get(id, catalogueEntries()) || CATALOG.get('dark'); }
+
+  function syncAuthenticationMarker(){
+    var value=String(!!window.CU && !window.__logoutBusy);
+    if(document.body && document.body.getAttribute('data-np-authenticated')!==value) document.body.setAttribute('data-np-authenticated',value);
+  }
 
   function injectCss(){
     var old = document.getElementById(STYLE_ID);
@@ -1429,162 +1240,32 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
     return 'dark';
   }
 
-  function applyVars(id){
-    if(!document.body) return;
-    var c = cfg(id), v = c.vars || CONFIG.dark.vars;
-    var root = document.body.style;
-    ORDER.forEach(function(key){
-      var conf = CONFIG[key];
-      if(conf && conf.cls && conf.cls !== c.cls) document.body.classList.remove(conf.cls);
+  function applyThemeImmediately(id, entries){
+    if(!document.body) return null;
+    var theme = CATALOG.get(id, entries === undefined ? catalogueEntries() : entries);
+    if(!theme) return null;
+    // Resolve and validate every token before mutating the visible document.
+    var tokens = CATALOG.tokens(theme);
+    Array.prototype.slice.call(document.body.classList).forEach(function(cls){
+      if((cls === 'light' || cls.indexOf('theme-') === 0) && cls !== theme.cls) document.body.classList.remove(cls);
     });
-    if(c.id !== 'light') document.body.classList.remove('light');
-    if(c.cls && !document.body.classList.contains(c.cls)) document.body.classList.add(c.cls);
-    else if(c.id === 'light' && !document.body.classList.contains('light')) document.body.classList.add('light');
-    var textSoft = c.tone === 'light' ? 'rgba(32,50,39,.86)' : 'rgba(245,247,251,.86)';
-    var textMuted = c.tone === 'light' ? 'rgba(65,92,77,.72)' : 'rgba(199,212,223,.72)';
-    var panelBase = c.tone === 'light'
-      ? 'linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.74)),rgba(' + v.accentRgb + ',.045)'
-      : 'linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.014)),linear-gradient(180deg,' + v.bg2 + ',' + v.bg + ')';
-    var panelStrong = c.tone === 'light'
-      ? 'linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,255,255,.82)),rgba(' + v.accentRgb + ',.070)'
-      : 'linear-gradient(180deg,rgba(255,255,255,.060),rgba(255,255,255,.018)),linear-gradient(180deg,' + v.bg3 + ',' + v.bg2 + ')';
-    var controlBase = c.tone === 'light'
-      ? 'linear-gradient(180deg,rgba(255,255,255,.97),rgba(237,245,252,.88)),rgba(' + v.accentRgb + ',.055)'
-      : 'linear-gradient(180deg,rgba(255,255,255,.065),rgba(255,255,255,.020)),rgba(16,22,36,.75)';
-    var controlHover = c.tone === 'light'
-      ? 'linear-gradient(180deg,rgba(255,255,255,1),rgba(229,241,251,.94)),rgba(' + v.accentRgb + ',.085)'
-      : 'linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.032)),rgba(20,28,46,.82)';
-    var inputBase = c.tone === 'light'
-      ? 'linear-gradient(180deg,rgba(255,255,255,1),rgba(247,251,255,.96))'
-      : 'rgba(8,12,22,.62)';
-    var shadow = c.tone === 'light'
-      ? '0 20px 42px rgba(31,57,88,.11), inset 0 1px 0 rgba(255,255,255,.78)'
-      : '0 22px 46px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.04)';
-    var shadowSoft = c.tone === 'light'
-      ? '0 12px 28px rgba(31,57,88,.09), inset 0 1px 0 rgba(255,255,255,.72)'
-      : '0 12px 28px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.035)';
-    if(c.id === 'violet'){
-      panelBase = 'linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.028)),radial-gradient(ellipse at 12% 0%,rgba(155,124,255,.18),transparent 44%),radial-gradient(ellipse at 92% 100%,rgba(115,216,255,.10),transparent 36%),rgba(8,5,28,.72)';
-      panelStrong = 'linear-gradient(180deg,rgba(255,255,255,.115),rgba(255,255,255,.040)),radial-gradient(ellipse at 10% 0%,rgba(155,124,255,.24),transparent 46%),radial-gradient(ellipse at 90% 100%,rgba(115,216,255,.14),transparent 38%),rgba(13,8,42,.82)';
-      controlBase = 'linear-gradient(180deg,rgba(255,255,255,.105),rgba(255,255,255,.032)),linear-gradient(100deg,rgba(155,124,255,.18),rgba(115,216,255,.08)),rgba(11,8,35,.76)';
-      controlHover = 'linear-gradient(180deg,rgba(255,255,255,.145),rgba(255,255,255,.048)),linear-gradient(100deg,rgba(155,124,255,.28),rgba(115,216,255,.14)),rgba(16,10,50,.88)';
-      inputBase = 'linear-gradient(180deg,rgba(255,255,255,.060),rgba(255,255,255,.018)),rgba(5,3,20,.78)';
-      shadow = '0 26px 58px rgba(2,0,16,.44),0 0 34px rgba(155,124,255,.10),inset 0 1px 0 rgba(255,255,255,.08)';
-      shadowSoft = '0 16px 34px rgba(2,0,16,.34),0 0 22px rgba(115,216,255,.07),inset 0 1px 0 rgba(255,255,255,.06)';
-    }
-    if(c.id === 'green'){
-      panelBase = 'radial-gradient(ellipse at 12% 0%,rgba(57,182,107,.13),transparent 42%),radial-gradient(ellipse at 92% 100%,rgba(213,183,93,.08),transparent 36%),linear-gradient(180deg,rgba(255,255,255,.050),rgba(255,255,255,.016)),linear-gradient(180deg,#12351d,#07180d)';
-      panelStrong = 'radial-gradient(ellipse at 10% 0%,rgba(57,182,107,.18),transparent 44%),radial-gradient(ellipse at 86% 100%,rgba(213,183,93,.11),transparent 38%),linear-gradient(180deg,rgba(255,255,255,.070),rgba(255,255,255,.022)),linear-gradient(180deg,#1a4728,#0b2212)';
-      controlBase = 'linear-gradient(180deg,rgba(255,255,255,.070),rgba(255,255,255,.024)),linear-gradient(90deg,rgba(57,182,107,.16),rgba(213,183,93,.07)),rgba(8,32,16,.82)';
-      controlHover = 'linear-gradient(180deg,rgba(255,255,255,.105),rgba(255,255,255,.034)),linear-gradient(90deg,rgba(57,182,107,.24),rgba(213,183,93,.12)),rgba(11,45,22,.90)';
-      inputBase = 'linear-gradient(180deg,rgba(255,255,255,.040),rgba(255,255,255,.014)),rgba(3,17,8,.82)';
-      shadow = '0 24px 50px rgba(0,18,6,.34), inset 0 1px 0 rgba(198,255,210,.045)';
-      shadowSoft = '0 14px 30px rgba(0,18,6,.24), inset 0 1px 0 rgba(198,255,210,.035)';
-    }
-    var finalSoft = c.tone === 'light' ? 'rgba(54,75,64,.76)' : 'rgba(232,240,248,.76)';
-    var finalStrong = c.tone === 'light' ? 'rgba(25,36,30,.94)' : 'rgba(248,252,255,.96)';
-    var finalPress = c.tone === 'light'
-      ? controlBase
-      : 'linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.018)),linear-gradient(90deg,rgba(' + v.accentRgb + ',.12),rgba(' + v.accentRgb + ',.05))';
-    var finalPressStrong = c.tone === 'light'
-      ? controlHover
-      : 'linear-gradient(180deg,rgba(255,255,255,.085),rgba(255,255,255,.03)),linear-gradient(90deg,rgba(' + v.accentRgb + ',.18),rgba(' + v.accentRgb + ',.08))';
-    root.setProperty('--tm-bg', v.bg);
-    root.setProperty('--tm-bg2', v.bg2);
-    root.setProperty('--tm-bg3', v.bg3);
-    root.setProperty('--tm-bg4', v.bg4);
-    root.setProperty('--tm-text', v.text);
-    root.setProperty('--tm-dim', v.dim);
-    root.setProperty('--tm-faint', v.faint);
-    root.setProperty('--tm-accent', v.accent);
-    root.setProperty('--tm-accent-dim', v.accentDim);
-    root.setProperty('--tm-accent-bright', v.accentBright);
-    root.setProperty('--tm-accent-rgb', v.accentRgb);
-    root.setProperty('--tm-accent-2-rgb', v.accent2Rgb);
-    root.setProperty('--tm-page-bg', v.pageBg);
-    root.setProperty('--tm-text-soft', textSoft);
-    root.setProperty('--tm-text-muted', textMuted);
-    root.setProperty('--tm-border', 'rgba(' + v.accentRgb + ',.18)');
-    root.setProperty('--tm-border-strong', 'rgba(' + v.accent2Rgb + ',.25)');
-    root.setProperty('--tm-card-bg', panelBase);
-    root.setProperty('--tm-card-bg-strong', panelStrong);
-    root.setProperty('--tm-control-bg', controlBase);
-    root.setProperty('--tm-control-bg-hover', controlHover);
-    root.setProperty('--tm-input-bg', inputBase);
-    root.setProperty('--tm-shadow', shadow);
-    root.setProperty('--tm-shadow-soft', shadowSoft);
-
-    root.setProperty('--bg', v.bg);
-    root.setProperty('--bg2', v.bg2);
-    root.setProperty('--bg3', v.bg3);
-    root.setProperty('--bg4', v.bg4);
-    root.setProperty('--border', 'rgba(' + v.accentRgb + ',.15)');
-    root.setProperty('--border2', 'rgba(' + v.accentRgb + ',.25)');
-    root.setProperty('--glacier', v.accent);
-    root.setProperty('--glacier-dim', v.accentDim);
-    root.setProperty('--glacier-bright', v.accentBright);
-    root.setProperty('--glacier-dimcss', v.accentDim);
-    root.setProperty('--glow', 'rgba(' + v.accentRgb + ',.08)');
-    root.setProperty('--glow2', 'rgba(' + v.accentRgb + ',.05)');
-    root.setProperty('--text', v.text);
-    root.setProperty('--text-soft', textSoft);
-    root.setProperty('--dim', v.dim);
-    root.setProperty('--faint', v.faint);
-    root.setProperty('--gold', v.accentBright);
-    root.setProperty('--purple', v.accentDim);
-    root.setProperty('--theme-accent', v.accent);
-    root.setProperty('--theme-accent-rgb', v.accentRgb);
-    root.setProperty('--accent-rgb', v.accentRgb);
-    root.setProperty('--theme-contrast', v.text);
-    root.setProperty('--theme-contrast-soft', textSoft);
-    root.setProperty('--theme-panel', 'rgba(' + v.accentRgb + ',.08)');
-    root.setProperty('--theme-panel-strong', 'rgba(' + v.accentRgb + ',.16)');
-    root.setProperty('--theme-ring', 'rgba(' + v.accentRgb + ',.35)');
-    root.setProperty('--theme-glow-strong', 'rgba(' + v.accentRgb + ',.18)');
-    root.setProperty('--theme-tint', 'rgba(' + v.accentRgb + ',.04)');
-    root.setProperty('--theme-ui-soft', 'rgba(' + v.accentRgb + ',.16)');
-    root.setProperty('--theme-ui-strong', 'rgba(' + v.accentRgb + ',.24)');
-    root.setProperty('--theme-ui-fg', c.tone === 'light' ? 'rgba(25,36,30,.94)' : 'rgba(248,252,255,.94)');
-    root.setProperty('--theme-ui-fg-soft', c.tone === 'light' ? 'rgba(54,75,64,.76)' : 'rgba(232,240,248,.76)');
-    root.setProperty('--theme-ui-panel', panelBase);
-    root.setProperty('--theme-ui-panel-strong', panelStrong);
-    root.setProperty('--theme-ui-press', 'linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02)),linear-gradient(90deg,rgba(' + v.accentRgb + ',.09),rgba(' + v.accentRgb + ',.045))');
-    root.setProperty('--theme-ui-press-active', 'linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.03)),linear-gradient(90deg,rgba(' + v.accentRgb + ',.15),rgba(' + v.accentRgb + ',.08))');
-    root.setProperty('--theme-final-border-soft', 'rgba(' + v.accentRgb + ',.18)');
-    root.setProperty('--theme-final-border-strong', 'rgba(' + v.accentRgb + ',.34)');
-    root.setProperty('--theme-final-panel', panelBase);
-    root.setProperty('--theme-final-panel-soft', panelStrong);
-    root.setProperty('--theme-final-press', finalPress);
-    root.setProperty('--theme-final-press-strong', finalPressStrong);
-    root.setProperty('--theme-final-table-even', 'rgba(' + v.accentRgb + ',.05)');
-    root.setProperty('--theme-final-table-hover', 'rgba(' + v.accentRgb + ',.09)');
-    root.setProperty('--theme-final-soft', finalSoft);
-    root.setProperty('--theme-final-strong', finalStrong);
-    root.setProperty('--theme-final-shadow', shadowSoft);
-    root.setProperty('--np-ui-text', v.text);
-    root.setProperty('--np-ui-text-soft', textSoft);
-    root.setProperty('--np-ui-muted', textMuted);
-    root.setProperty('--np-ui-border-soft', 'rgba(' + v.accentRgb + ',.18)');
-    root.setProperty('--np-ui-border-strong', 'rgba(' + v.accentRgb + ',.30)');
-    root.setProperty('--np-ui-panel-surface', panelBase);
-    root.setProperty('--np-ui-panel-surface-strong', panelStrong);
-    root.setProperty('--np-ui-button-bg', controlBase);
-    root.setProperty('--np-ui-button-hover', controlHover);
-    root.setProperty('--np-ui-input-bg', inputBase);
-    root.setProperty('--np-ui-header-bg', panelStrong);
-    root.setProperty('--np-ui-dropdown-bg', panelStrong);
-    root.setProperty('--np-ui-chip-bg', 'linear-gradient(90deg,rgba(' + v.accentRgb + ',.13),rgba(' + v.accentRgb + ',.08))');
-    root.setProperty('--np-ui-shadow', shadowSoft);
-    root.setProperty('--np-ui-header-shadow', shadowSoft);
-    root.setProperty('--accent-solid-fg', c.tone === 'light' ? '#071019' : '#f8fcff');
-    root.setProperty('--accent-solid-shadow', c.tone === 'light' ? 'rgba(255,255,255,.45)' : 'rgba(0,0,0,.35)');
-
-    document.body.setAttribute('data-theme-engine', ENGINE_VERSION);
-    document.body.setAttribute('data-theme-active', c.id);
-    document.body.setAttribute('data-theme-tone', c.tone || 'dark');
-    document.documentElement.setAttribute('data-theme-engine', ENGINE_VERSION);
-    document.documentElement.setAttribute('data-theme-active', c.id);
-    document.documentElement.setAttribute('data-theme-tone', c.tone || 'dark');
+    if(theme.cls && !document.body.classList.contains(theme.cls)) document.body.classList.add(theme.cls);
+    [document.documentElement,document.body].forEach(function(element){
+      Object.keys(tokens).forEach(function(key){
+        if(element.style.getPropertyValue(key)!==tokens[key]) element.style.setProperty(key,tokens[key]);
+      });
+      element.setAttribute('data-theme-engine', ENGINE_VERSION);
+      element.setAttribute('data-theme-active', theme.id);
+      element.setAttribute('data-theme-tone', theme.tone);
+      element.style.colorScheme=theme.tone;
+    });
+    syncAuthenticationMarker();
+    syncGalaxyMeteorLoop(theme.id);
+    // Existing SVG adapters must read the palette after it has been committed.
+    if(typeof window.updateHeaderLogoTheme === 'function') window.updateHeaderLogoTheme();
+    if(typeof window.updateLaunchTheme === 'function') window.updateLaunchTheme();
+    if(typeof window.npRefreshThemeCanvas === 'function') window.npRefreshThemeCanvas();
+    return theme;
   }
 
   function prefersReducedMotion(){
@@ -1663,32 +1344,6 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
     else stopGalaxyMeteors();
   }
 
-  function patchThemeMetadata(){
-    try{
-      ['THEMES_BASE','THEMES_EVENT_BUILTIN','THEME_BASE_VISIBLE','THEME_SECRET_SLOTS'].forEach(function(key){
-        var arr = window[key];
-        if(!Array.isArray(arr)) return;
-        arr.forEach(function(t){
-          if(!t) return;
-          var id = normalize(t.id);
-          var c = CONFIG[id];
-          if(!c) return;
-          t.id = c.id;
-          t.name = c.label;
-          t.label = c.label;
-          t.cls = c.cls;
-          t.preview = c.colors.slice(0,3);
-          t.desc = c.desc;
-          t.description = c.desc;
-          t.rarity = c.rarity;
-          t.category = c.category;
-          t.event = c.rarity === 'Saisonnier';
-          t.tagline = c.tagline;
-        });
-      });
-    }catch(e){}
-  }
-
   function installGlobalHelpers(){
     window.normalizeThemeId = normalize;
 
@@ -1751,13 +1406,7 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
 
     window.themeMaxAuditReport = function(){
       var activeClasses = [];
-      try{
-        ORDER.forEach(function(id){
-          var conf = CONFIG[id];
-          if(conf && conf.cls && document.body.classList.contains(conf.cls)) activeClasses.push(conf.cls);
-        });
-        if(document.body.classList.contains('light')) activeClasses.push('light');
-      }catch(e){}
+      try{ activeClasses=Array.prototype.slice.call(document.body.classList).filter(function(cls){return cls==='light'||cls.indexOf('theme-')===0;}); }catch(e){}
       return {
         version:ENGINE_VERSION,
         active:activeTheme(),
@@ -1769,30 +1418,21 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
       };
     };
     window.themeMaxRefresh = refresh;
+    window.NPThemeEngine = {version:'1', apply:applyThemeImmediately, refreshCollection:refreshCollection, active:activeTheme, syncAuthentication:syncAuthenticationMarker};
     window.themeMaxPreviewColors = function(id){ return cfg(id).colors.slice(); };
   }
 
   function detectCardTheme(card){
-    var id = card.getAttribute('data-theme-id') || card.getAttribute('data-theme') || card.getAttribute('data-preview-theme') || '';
-    id = normalize(id);
-    if(CONFIG[id]) return id;
-    var txt = (card.textContent || '').toLowerCase();
-    if(txt.indexOf('pâques') >= 0 || txt.indexOf('paques') >= 0 || txt.indexOf('printemps') >= 0) return 'easter';
-    if(txt.indexOf('aquaris') >= 0 || txt.indexOf('englouti') >= 0 || txt.indexOf('aquarius') >= 0) return 'aquaris';
-    if(txt.indexOf('bloodmoon') >= 0 || txt.indexOf('lune de sang') >= 0) return 'bloodmoon';
-    if(txt.indexOf('noël') >= 0 || txt.indexOf('noel') >= 0 || txt.indexOf('hivernale') >= 0) return 'noel';
-    if(txt.indexOf('halloween') >= 0 || txt.indexOf('âmes') >= 0 || txt.indexOf('citrouille') >= 0) return 'halloween';
-    if(txt.indexOf('galactique') >= 0 || txt.indexOf('abyssal') >= 0 || txt.indexOf('violet') >= 0) return 'violet';
-    if(txt.indexOf('écarlate') >= 0 || txt.indexOf('ecarlate') >= 0) return 'dark';
-    if(txt.indexOf('sylvan') >= 0 || txt.indexOf('vert') >= 0) return 'green';
-    if(txt.indexOf('claire') >= 0 || txt.indexOf('light') >= 0) return 'light';
-    return 'dark';
+    var raw = card.getAttribute('data-theme-id') || card.getAttribute('data-theme-preview') || card.getAttribute('data-theme') || card.getAttribute('data-preview-theme');
+    if(!raw) return null;
+    var id=normalize(raw);
+    return CATALOG.get(id,catalogueEntries()) ? id : null;
   }
 
   function inferCardState(card, id){
     var txt = (card.textContent || '').toLowerCase();
     var cls = (card.className || '').toLowerCase();
-    var active = activeTheme();
+    var active = typeof window.getConfirmedThemeForCurrentUser === 'function' ? normalize(window.getConfirmedThemeForCurrentUser()) : activeTheme();
     if(id && active === id) return 'selected';
     if(card.matches('.selected,.is-active,.active,[data-active="true"]') || txt.indexOf('équipé') >= 0 || txt.indexOf('equipé') >= 0 || txt.indexOf('sélectionné') >= 0) return 'selected';
     if(card.matches('.locked,[data-locked="true"]') || txt.indexOf('verrou') >= 0 || txt.indexOf('locked') >= 0 || txt.indexOf('indisponible') >= 0) return 'locked';
@@ -1839,13 +1479,15 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
   function patchCards(){
     var cards = document.querySelectorAll('.theme-card-premium,.collection-card,.db-theme-admin-item');
     Array.prototype.forEach.call(cards, function(card){
+      if(card.matches('.secret,[data-theme-admin-card]')) return;
       var id = detectCardTheme(card);
+      if(!id) return;
       var c = cfg(id);
-      var colors = c.colors || CONFIG.dark.colors;
+      var colors = c.colors;
       card.setAttribute('data-theme-id', c.id);
       card.setAttribute('data-theme-rarity', c.rarity);
       card.setAttribute('data-theme-category', c.category);
-      card.setAttribute('data-theme-state', inferCardState(card, c.id));
+      if(!card.hasAttribute('data-theme-preview')) card.setAttribute('data-theme-state', inferCardState(card, c.id));
       card.style.setProperty('--card-bg', colors[0] || c.vars.bg);
       card.style.setProperty('--card-a', colors[1] || c.vars.accent);
       card.style.setProperty('--card-b', colors[2] || c.vars.accentBright);
@@ -1883,7 +1525,7 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
   }
 
   function getCards(){
-    return Array.prototype.slice.call(document.querySelectorAll('.theme-card-premium,.collection-card'));
+    return Array.prototype.slice.call(document.querySelectorAll('.theme-card-premium,.collection-card')).filter(function(card){ return !card.matches('.secret,[data-theme-admin-card]') && !!detectCardTheme(card); });
   }
 
   function ensureCollectionUx(){
@@ -2022,7 +1664,7 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
 
     var groups = document.querySelectorAll('.theme-collection-grid,.theme-grid,.themes-grid,.collection-grid,.premium-theme-grid');
     Array.prototype.forEach.call(groups, function(grid){
-      var children = Array.prototype.slice.call(grid.children).filter(function(el){ return el.matches('.theme-card-premium,.collection-card'); });
+      var children = Array.prototype.slice.call(grid.children).filter(function(el){ return el.matches('.theme-card-premium,.collection-card') && !el.matches('.secret,[data-theme-admin-card]') && !!detectCardTheme(el); });
       children.sort(function(a,b){
         var av = cardSortValue(a, f.sort || 'recommended');
         var bv = cardSortValue(b, f.sort || 'recommended');
@@ -2074,82 +1716,48 @@ body[data-theme-engine="v257"] [style*="box-shadow"][style*="126,184,212"]{
 
   function wrapRenderers(){
     ['renderThemeCollectionPremium','renderThemeGrid','renderAdminThemes','renderAppearanceSection','renderDB','renderDatabase'].forEach(function(name){
-      try{
-        var fn = window[name];
-        if(typeof fn === 'function' && !fn.__themeEngineV257){
-          var wrapped = function(){
-            var out = fn.apply(this, arguments);
-            scheduleRefresh();
-            setTimeout(refresh, 180);
-            return out;
-          };
-          wrapped.__themeEngineV257 = true;
-          window[name] = wrapped;
-        }
-      }catch(e){}
+      var fn = window[name];
+      if(typeof fn !== 'function' || fn.__themeEngineV257) return;
+      var wrapped = function(){
+        var out = fn.apply(this, arguments);
+        if(out && typeof out.then === 'function') return out.then(function(value){ refreshCollection(); return value; });
+        refreshCollection();
+        return out;
+      };
+      wrapped.__themeEngineV257 = true;
+      window[name] = wrapped;
     });
-
-    try{
-      if(typeof window.applyTheme === 'function' && !window.applyTheme.__themeEngineV257){
-        var oldApply = window.applyTheme;
-        var wrappedApply = function(){
-          var out = oldApply.apply(this, arguments);
-          scheduleRefresh();
-          setTimeout(refresh, 180);
-          return out;
-        };
-        wrappedApply.__themeEngineV257 = true;
-        window.applyTheme = wrappedApply;
-      }
-    }catch(e){}
   }
 
+  function refreshCollection(){
+    syncAuthenticationMarker();
+    if(REFRESHING_COLLECTION) return;
+    REFRESHING_COLLECTION = true;
+    try{ patchCards(); ensureCollectionUx(); }
+    finally{ REFRESHING_COLLECTION = false; }
+  }
+
+  // Compatibility entry point for diagnostics which temporarily change classes.
   function refresh(){
-    var id = activeTheme();
-    applyVars(id);
-    syncGalaxyMeteorLoop(id);
-    patchThemeMetadata();
-    patchCards();
-    ensureCollectionUx();
-  }
-
-  function scheduleRefresh(){
-    clearTimeout(TIMER);
-    TIMER = setTimeout(refresh, 90);
-  }
-
-  function observe(){
-    try{
-      var mo = new MutationObserver(function(muts){
-        for(var i=0;i<muts.length;i++){
-          var m = muts[i];
-          if(m.type === 'childList' || m.type === 'attributes'){
-            scheduleRefresh();
-            break;
-          }
-        }
-      });
-      mo.observe(document.body, {
-        subtree:true,
-        childList:true,
-        attributes:true,
-        attributeFilter:['class','style','data-theme-id','data-theme-state','data-theme-rarity']
-      });
-      window.__themeEngineV257Observer = mo;
-    }catch(e){}
+    var theme = applyThemeImmediately(activeTheme());
+    refreshCollection();
+    return theme;
   }
 
   function boot(){
     injectCss();
-    installGlobalHelpers();
-    patchThemeMetadata();
     wrapRenderers();
     refresh();
-    setTimeout(refresh, 300);
-    setTimeout(refresh, 1000);
-    observe();
+    if(window.matchMedia){
+      var motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+      var onMotion = function(){ if(motion.matches) stopGalaxyMeteors(); else syncGalaxyMeteorLoop(activeTheme()); };
+      if(motion.addEventListener) motion.addEventListener('change',onMotion);
+      else if(motion.addListener) motion.addListener(onMotion);
+    }
   }
 
+  // Publish the synchronous API as soon as this script is evaluated.
+  installGlobalHelpers();
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, {once:true});
   else boot();
 })();

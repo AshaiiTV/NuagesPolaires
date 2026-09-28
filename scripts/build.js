@@ -6,5 +6,5 @@ const dist=path.join(root,'dist');
 fs.rmSync(dist,{recursive:true,force:true});
 fs.mkdirSync(dist,{recursive:true});
 fs.copyFileSync(path.join(root,'index.html'),path.join(dist,'index.html'));
-fs.cpSync(path.join(root,'assets'),path.join(dist,'assets'),{recursive:true,filter:source=>path.basename(source)!=='.DS_Store'});
+fs.cpSync(path.join(root,'assets'),path.join(dist,'assets'),{recursive:true,filter:source=>path.basename(source)!=='.DS_Store'&&!(source.includes(path.join('serments','painted')+path.sep)&&source.endsWith('.png'))});
 console.log('Site statique préparé dans dist/ ; sources serveur et tests exclus.');
