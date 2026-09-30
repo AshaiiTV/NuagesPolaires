@@ -7156,27 +7156,22 @@ body.theme-aquaris .home-title{
           </div>
         </div>
       </header>
+      <section class="np-character-hud" aria-label="État du personnage">
+        <div class="np-hud-vitals">
+          <article class="np-hud-resource" data-resource="pv"><div class="np-hud-resource-head"><strong>PV</strong><span>Points de vie</span></div><div class="np-hud-value" id="pv-v">—</div><div class="bar" role="progressbar" aria-label="Points de vie" aria-valuemin="0"><div class="bf bpv" id="pv-b"></div></div></article>
+          <article class="np-hud-resource" data-resource="ep"><div class="np-hud-resource-head"><strong>EP</strong><span>Énergie physique</span></div><div class="np-hud-value" id="ep-v">—</div><div class="bar" role="progressbar" aria-label="Énergie physique" aria-valuemin="0"><div class="bf bep" id="ep-b"></div></div></article>
+          <article class="np-hud-resource" data-resource="em"><div class="np-hud-resource-head"><strong>EM</strong><span>Énergie magique</span></div><div class="np-hud-value" id="em-v">—</div><div class="bar" role="progressbar" aria-label="Énergie magique" aria-valuemin="0"><div class="bf bem" id="em-b"></div></div></article>
+        </div>
+        <div class="np-hud-progress"><header><strong id="p-niv">—</strong><span id="xp-v">—</span></header><div class="bar" role="progressbar" aria-label="Expérience du personnage" aria-valuemin="0"><div class="bf bxp" id="xp-b"></div></div><p class="np-hud-progress-note">Chaque niveau fait progresser tes caractéristiques et les valeurs de ta capacité.</p></div>
+        <div id="p-hud-serment" class="np-hud-oath"></div>
+      </section>
       <nav class="np-sheet-nav" aria-label="Sections de la fiche">
-        <button type="button" onclick="scrollFicheSection('np-sheet-resources')"><span>01</span> Ressources</button>
+        <button type="button" onclick="scrollFicheSection('np-sheet-resources')"><span>01</span> État</button>
         <button type="button" onclick="scrollFicheSection('np-sheet-equipment')"><span>02</span> Équipement</button>
         <button type="button" onclick="scrollFicheSection('np-sheet-stories')"><span>03</span> Journal</button>
         <button type="button" onclick="scrollFicheSection('np-sheet-oath')"><span>04</span> Serment</button>
       </nav>
-      <section id="np-sheet-resources" class="np-sheet-chapter" tabindex="-1" aria-labelledby="np-sheet-resources-title"><div class="np-sheet-section-heading"><div><p class="np-eyebrow">CHAPITRE 01</p><h2 id="np-sheet-resources-title">Les forces du moment.</h2><p>Ressources, progression et état du personnage.</p></div><span class="np-sheet-chapter-mark" aria-hidden="true">01</span></div>
-      <div class="g2 np-sheet-resource-grid">
-        <div class="card">
-          <div class="card-title">Statistiques</div>
-          <div class="sr"><div class="sh"><span class="sl">Points de Vie</span><span class="sv" id="pv-v"></span></div><div class="bar"><div class="bf bpv" id="pv-b"></div></div></div>
-          <div class="sr"><div class="sh"><span class="sl">Énergie Physique</span><span class="sv" id="ep-v"></span></div><div class="bar"><div class="bf bep" id="ep-b"></div></div></div>
-          <div class="sr"><div class="sh"><span class="sl">Énergie Magique</span><span class="sv" id="em-v"></span></div><div class="bar"><div class="bf bem" id="em-b"></div></div></div>
-        </div>
-        <div class="card">
-          <div class="card-title">Progression</div>
-          <div class="sr"><div class="sh"><span class="sl">Niveau</span><span class="sv" id="p-niv"></span></div></div>
-          <div class="sr"><div class="sh"><span class="sl">Expérience</span><span class="sv" id="xp-v"></span></div><div class="bar"><div class="bf bxp" id="xp-b"></div></div></div>
-          <p style="color:var(--dim);font-size:13px;line-height:1.7;">Un seul niveau fait progresser tes statistiques et les capacités de ton serment.</p>
-        </div>
-      </div>
+      <section id="np-sheet-resources" class="np-sheet-chapter" tabindex="-1" aria-labelledby="np-sheet-resources-title"><div class="np-sheet-section-heading"><div><p class="np-eyebrow">CHAPITRE 01</p><h2 id="np-sheet-resources-title">Ton état et tes réserves.</h2><p>Effets en cours et gemmes disponibles.</p></div><span class="np-sheet-chapter-mark" aria-hidden="true">01</span></div>
       <div class="np-sheet-status-grid"><div class="card mt16"><div class="card-title">Gemmes de Sang</div><div class="fx" id="p-gems"></div></div>
 
       <!-- STATUTS IRP -->
@@ -7257,7 +7252,7 @@ body.theme-aquaris .home-title{
       </div>
 
       </div></section>
-      <section id="np-sheet-oath" class="np-sheet-chapter" tabindex="-1" aria-labelledby="np-sheet-oath-title"><div class="np-sheet-section-heading"><div><p class="np-eyebrow">CHAPITRE 04</p><h2 id="np-sheet-oath-title">Le lien qui te définit.</h2><p>Ton serment, ses branches et les capacités débloquées par ton niveau.</p></div><span class="np-sheet-chapter-mark" aria-hidden="true">04</span></div>
+      <section id="np-sheet-oath" class="np-sheet-chapter" tabindex="-1" aria-labelledby="np-sheet-oath-title"><div class="np-sheet-section-heading"><div><p class="np-eyebrow">CHAPITRE 04</p><h2 id="np-sheet-oath-title">Le lien qui te définit.</h2><p>Ton serment, ses voies et les effets de ta capacité à ton niveau.</p></div><span class="np-sheet-chapter-mark" aria-hidden="true">04</span></div>
       <div id="p-serm-c"></div>
       </section>
     </div>

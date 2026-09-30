@@ -5634,8 +5634,10 @@ function renderFicheState(title,msg){
   if(ge("p-cls")) ge("p-cls").textContent="";
   if(ge("p-wpn")) ge("p-wpn").textContent="";
   if(ge("p-br")) ge("p-br").innerHTML="";
+  if(ge("p-hud-serment")) ge("p-hud-serment").innerHTML="";
   ["pv-v","ep-v","em-v","p-niv","xp-v"].forEach(function(id){ if(ge(id)) ge(id).textContent='—'; });
   ["pv-b","ep-b","em-b","xp-b"].forEach(function(id){ if(ge(id)) ge(id).style.width='0%'; });
+  document.querySelectorAll('.np-character-hud [role="progressbar"]').forEach(function(bar){bar.removeAttribute('aria-valuenow');bar.removeAttribute('aria-valuemax');bar.setAttribute('aria-valuetext','Indisponible');});
   ["p-gems","p-equip","p-inv-c","p-hist","p-journal-fiche-content","p-combat-hist-content","p-statuts-content"].forEach(function(id){ if(ge(id)) ge(id).innerHTML=""; });
   if(ge("p-serm-c")) ge("p-serm-c").innerHTML='<div class="card mt16"><div class="card-title">'+esc(title||'Ma fiche')+'</div><p style="color:var(--dim);line-height:1.8;">'+esc(msg||'La fiche est momentanément indisponible.')+'</p></div>';
 }
@@ -5673,6 +5675,16 @@ function scrollFicheSection(id){
   section.focus({preventScroll:true});
   section.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
 }
+function renderCharacterHUD(p,bundle){
+  var host=ge('p-hud-serment');if(!host)return;
+  var branch=bundle&&bundle.branch,ability=getSermentAbilityAtLevel(branch,p.level||1);
+  var key=p.id+'|'+(branch&&branch.nom||''),wasOpen=host.dataset.character===key&&!!host.querySelector('details[open]');
+  host.dataset.character=key;
+  if(!branch){host.innerHTML='<p class="np-hud-empty"><strong>Ta voie reste à choisir.</strong> Consulte ton serment pour découvrir ses capacités.</p><button type="button" class="btn btn-sm" onclick="scrollFicheSection(\'np-sheet-oath\')"><span>Voir mon serment</span></button>';return;}
+  if(!ability||(ability.niv||1)>(p.level||1)){host.innerHTML='<p class="np-hud-empty"><strong>'+esc(branch.nom)+'</strong> '+(ability?'Capacité accessible au niveau '+esc(ability.niv)+'.':'Aucune capacité disponible à ce niveau.')+'</p>';return;}
+  var operations=getSermentTierOperations(ability),name=String(branch.nom||'').replace(/^Branche\s+[A-Z]\s*[—–-]\s*/i,'');
+  host.innerHTML='<details class="np-hud-ability"'+(wasOpen?' open':'')+'><summary><span class="np-hud-ability-label">Ma capacité</span><strong>'+esc(ability.nom||name)+'</strong><span>Valeurs au niveau '+esc(p.level||1)+(operations.length?' · '+operations.length+' geste'+(operations.length>1?'s':''):'')+'</span></summary><div class="np-hud-ability-body">'+(name&&name!==ability.nom?'<p class="np-hud-branch-name">'+esc(name)+'</p>':'')+(!operations.length&&ability.cout?'<p class="np-hud-ability-cost">'+esc(ability.cout)+'</p>':'')+renderSermentOperations(ability,p.level||1)+'<button type="button" class="btn btn-sm" onclick="scrollFicheSection(\'np-sheet-oath\')"><span>Voir ma voie en détail</span></button></div></details>';
+}
 function renderView(){
   try{
     _restorePrivateShell("fiche");
@@ -5704,7 +5716,8 @@ function renderView(){
     if(ge("p-nom")) ge("p-nom").textContent=p.name;
     ge("p-cls").textContent=p.classe;
     ge("p-wpn").textContent=sermBundle.weapon||p.arme||"";
-    ge("p-br").innerHTML=sermBundle.branch?'<div class="brbox">Branche : '+esc(sermBundle.branch.nom)+'</div>':(p.branch&&p.branch!=="Aucune"?'<div class="brbox">Branche : '+esc(p.branch)+'</div>':"");
+    var branchLabel=sermBundle.branch?sermBundle.branch.nom:(p.branch&&p.branch!=="Aucune"?p.branch:"");
+    ge("p-br").innerHTML=branchLabel?'<div class="brbox">'+esc(String(branchLabel).replace(/^Branche\s+/i,"Voie "))+'</div>':"";
     var sCol=_sermColor(p.classe);
     var sheroEl=document.querySelector(".shero");
     if(sheroEl){
@@ -5738,6 +5751,12 @@ function renderView(){
     ge("p-niv").textContent="Niveau "+p.level;
     ge("xp-v").textContent=p.xp+" / "+p.xpMax+" XP";
     ge("xp-b").style.width=pct(p.xp,p.xpMax);
+    [['pv',p.pvCur,p.pvMax],['ep',p.epCur,p.epMax],['em',p.emCur,p.emMax],['xp',p.xp,p.xpMax]].forEach(function(row){
+      var fill=ge(row[0]+'-b'),bar=fill&&fill.parentElement;if(!bar)return;
+      var max=Math.max(0,Number(row[2])||0),value=Math.min(max,Math.max(0,Number(row[1])||0));
+      bar.setAttribute('aria-valuenow',value);bar.setAttribute('aria-valuemax',max);bar.setAttribute('aria-valuetext',row[1]+' sur '+row[2]);
+    });
+    renderCharacterHUD(p,sermBundle);
     var gems=(p.inventory||[]).filter(function(i){return i.category==="Gemme"&&i.qty>0;});
     var gd=ge("p-gems");
     if(!gems.length){ gd.innerHTML='<span style="color:var(--faint);font-style:italic;font-size:14px;">Aucune gemme.</span>'; }
@@ -7091,7 +7110,7 @@ function renderSerm(p){
   if(s.tagline) html+='<p class="serm-pitch">'+esc(s.tagline)+'</p>';
   if(s.vow) html+='<blockquote class="np-oath-vow">« '+esc(s.vow)+' »</blockquote>';
   // Stats
-  html+='<div class="sstats"><div class="sst"><div class="sstv">'+s.pvN+'</div><div class="sstl">PV/niv</div></div><div class="sst"><div class="sstv">'+s.epN+'</div><div class="sstl">EP/niv</div></div><div class="sst"><div class="sstv">'+s.emN+'</div><div class="sstl">EM/niv</div></div><div class="sst"><div class="sstv">'+s.dmg+'</div><div class="sstl">Dmg frappe</div></div></div>';
+  html+='<div class="sstats"><div class="sst"><div class="sstv">'+s.pvN+'</div><div class="sstl">PV/niv</div></div><div class="sst"><div class="sstv">'+s.epN+'</div><div class="sstl">EP/niv</div></div><div class="sst"><div class="sstv">'+s.emN+'</div><div class="sstl">EM/niv</div></div><div class="sst"><div class="sstv">'+s.dmg+'</div><div class="sstl">Dégâts de base</div></div></div>';
   // Lore
   html+='<div class="np-oath-lore">'+String(s.lore||'').split(/\n\s*\n/).map(function(paragraph){return '<p>'+esc(paragraph)+'</p>';}).join('')+'</div>';
   if(s.awakening||s.worldRole) html+='<details class="np-oath-story"><summary>Incarner ce serment</summary>'+[['Un éveil possible',s.awakening],['Parmi les rescapés',s.worldRole],['Ce qui évolue',s.evolutionMeaning],['L’arme liée',s.weaponDescription]].filter(function(row){return row[1];}).map(function(row){return '<p><strong>'+row[0]+'</strong>'+esc(row[1])+'</p>';}).join('')+'<p>Des pistes pour ton histoire, sans passé ni personnalité imposés.</p></details>';
