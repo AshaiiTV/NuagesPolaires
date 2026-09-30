@@ -1,5 +1,15 @@
-/* The Forge: an equipment constellation with an always-readable rules inspector. */
-html[data-np-design="polar"] #s-app #p-serments-c:has(> .oath-atlas) { max-width: min(1600px, 100%); }
+/* Forge des serments — choose a vow, read one path, then inspect one ability. */
+html[data-np-design="polar"] #s-app #p-serments-c:has(> .oath-atlas) {
+  max-width: min(1440px, 100%);
+}
+html[data-np-design="polar"] #s-app #serments > .tab-popup-close {
+  position: absolute !important;
+  top: 18px;
+  right: 20px;
+  float: none;
+  margin: 0;
+  z-index: 5;
+}
 #serments .oath-atlas {
   --oa-bg: var(--tm-bg, var(--bg, #111c23));
   --oa-panel: var(--tm-card-bg, var(--bg2, #17252c));
@@ -13,601 +23,455 @@ html[data-np-design="polar"] #s-app #p-serments-c:has(> .oath-atlas) { max-width
   --oa-line-strong: var(--tm-border-strong, var(--border2, #506469));
   --oa-accent: var(--tm-link, var(--glacier, #93cbbd));
   --oa-focus: var(--tm-focus, var(--glacier, #a6dfca));
-  --oa-copper: color-mix(in srgb, var(--gold, #d5a171) 75%, var(--oa-text));
-  --oa-branch-a: var(--oa-copper);
-  --oa-branch-b: var(--oa-accent);
   --oa-serif: var(--np-editorial, Georgia, serif);
   --oa-jade: #7ce4b4;
   --oa-azure: #8acbff;
   --oa-violet: #c6a2ff;
   --oa-gold: #f1c86e;
-  --oa-tier: var(--oa-jade);
-  width: 100%; min-width: 0; color: var(--oa-text); font-family: var(--fb, Manrope, Arial, sans-serif);
+  --oa-tier: var(--oa-accent);
+  width: 100%;
+  min-width: 0;
+  color: var(--oa-text);
+  font: 400 16px/1.6 var(--fb, Manrope, Arial, sans-serif);
 }
-#serments .oath-atlas *, #serments .oath-atlas *::before, #serments .oath-atlas *::after { box-sizing: border-box; }
-#serments .oath-atlas :where(h1,h2,h3,h4,p) { margin-top: 0; }
-#serments .oath-atlas :where(button,input) { font: inherit; }
-#serments .oath-atlas :where(button,summary,input):focus-visible { outline: 2px solid var(--oa-focus) !important; outline-offset: 4px !important; }
-#serments .oath-atlas button { border-radius: 2px !important; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+body:is([data-theme-tone="light"], [data-theme-active="light"], .light) #serments .oath-atlas {
+  --oa-jade: #176747;
+  --oa-azure: #225c96;
+  --oa-violet: #76439b;
+  --oa-gold: #775315;
+}
+#serments .oath-atlas *,
+#serments .oath-atlas *::before,
+#serments .oath-atlas *::after { box-sizing: border-box; }
+#serments .oath-atlas :where(h1, h2, h3, h4, h5, p) { margin-top: 0; }
+#serments .oath-atlas :where(h1, h2, h3, h4, h5) {
+  color: var(--oa-text);
+  letter-spacing: 0;
+  text-transform: none;
+  text-shadow: none;
+}
+#serments .oath-atlas :where(p, li, dd, dt) { overflow-wrap: anywhere; }
+#serments .oath-atlas :where(button, input, select, summary) { font: inherit; }
+#serments .oath-atlas :where(button, input, select) { letter-spacing: 0; text-transform: none; }
+#serments .oath-atlas :where(button, input, select, summary):focus-visible {
+  outline: 2px solid var(--oa-focus) !important;
+  outline-offset: 4px !important;
+}
+#serments .oath-atlas button {
+  min-height: 44px;
+  border-radius: 6px !important;
+  box-shadow: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+#serments .oath-atlas button:disabled { cursor: default; }
 #serments .oath-atlas [hidden] { display: none !important; }
-#serments .oath-eyebrow { display: block; margin: 0 0 5px; color: var(--oa-accent); font-size: 9px; font-weight: 750; line-height: 1.6; letter-spacing: .18em; text-transform: uppercase; }
+#serments .oath-atlas [data-tier-color="jade"] { --oa-tier: var(--oa-jade); }
+#serments .oath-atlas [data-tier-color="azure"] { --oa-tier: var(--oa-azure); }
+#serments .oath-atlas [data-tier-color="violet"] { --oa-tier: var(--oa-violet); }
+#serments .oath-atlas [data-tier-color="gold"] { --oa-tier: var(--oa-gold); }
 
-html[data-np-design="polar"] #s-app #serments > .tab-popup-close { position: absolute !important; top: 18px; right: 21px; float: none; margin: 0; z-index: 5; }
-
-/* Compact chrome leaves the first viewport to the selected weapon and its tree. */
-#serments .oath-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 57px 12px 0; margin-bottom: 13px; border-bottom: 1px solid var(--oa-line-strong); }
-#serments .oath-topbar h1 { margin: 0; color: var(--oa-text); font: 500 clamp(25px, 2.5vw, 36px)/1.1 var(--oa-serif); letter-spacing: -.025em; }
-#serments .oath-topbar .oath-eyebrow { font-size: 8px; }
-#serments .oath-topbar-meta { color: var(--oa-muted); font-size: 9px; line-height: 1.6; text-transform: uppercase; letter-spacing: .12em; }
-#serments .oath-counts { display: flex; align-items: center; gap: 24px; margin-left: auto; }
-#serments .oath-counts > * { display: flex; align-items: center; gap: 8px; color: var(--oa-muted); font-size: 9px; line-height: 1.3; text-transform: uppercase; letter-spacing: .08em; }
-#serments .oath-counts :is(strong,b) { color: var(--oa-text); font: 500 26px/1 var(--oa-serif); font-variant-numeric: lining-nums tabular-nums; }
-#serments .oath-counts span { max-width: none; }
-#serments :is(.oath-immersion-toggle,.oath-library-toggle,.oath-copy-build) { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 9px 13px; border: 1px solid var(--oa-line-strong) !important; border-radius: 2px !important; background: var(--oa-control) !important; color: var(--oa-text); font-size: 10px; font-weight: 650; line-height: 1.4; cursor: pointer; }
-#serments :is(.oath-immersion-toggle,.oath-library-toggle,.oath-copy-build):hover { background: var(--oa-hover) !important; border-color: var(--oa-accent) !important; }
-#serments .oath-layout { display: grid; grid-template-columns: 210px minmax(0, 1fr); align-items: start; gap: 16px; }
+/* Page and catalogue. The catalogue scrolls independently only on wide screens. */
+#serments .oath-topbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 28px;
+  padding: 0 52px 24px 0;
+  margin-bottom: 28px;
+  border-bottom: 1px solid var(--oa-line);
+}
+#serments .oath-topbar h1 { margin: 0 0 9px; font: 500 clamp(28px, 3vw, 38px)/1.18 var(--oa-serif); }
+#serments .oath-topbar p { max-width: 64ch; margin: 0; color: var(--oa-soft); font-size: 16px; }
+#serments .oath-catalogue-count { flex: none; color: var(--oa-muted); font-size: 14px; }
+#serments .oath-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); align-items: start; gap: 28px; }
 #serments .oath-stage { container: oath-stage / inline-size; min-width: 0; }
-
-/* A narrow, searchable armory: thumbnails carry the identity, text carries the facts. */
-#serments .oath-library { position: sticky; top: 90px; display: flex; flex-direction: column; min-width: 0; max-height: calc(100dvh - 106px); padding: 15px 10px 10px; border: 1px solid var(--oa-line); background: var(--oa-panel); }
-#serments .oath-library-head { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 3px 8px; padding: 0 4px 13px; border-bottom: 1px solid var(--oa-line); }
-#serments .oath-library-head .oath-eyebrow { width: 100%; font-size: 8px; }
-#serments .oath-library-head h2 { margin: 0; color: var(--oa-text); font: 500 22px/1.2 var(--oa-serif); }
-#serments #serment-result-count { color: var(--oa-muted); font-size: 9px; font-variant-numeric: tabular-nums; }
-#serments .oath-library-toggle { display: flex; justify-content: space-between; width: 100%; min-height: 30px; padding: 0; border: 0 !important; background: transparent !important; text-align: left; }
-#serments .oath-library-toggle strong { color: var(--oa-text); font: 500 22px/1.2 var(--oa-serif); }
-#serments .oath-library-toggle > span:last-child { display: none; }
-#serments .oath-library-body { display: flex; flex-direction: column; min-height: 0; }
-#serments .oath-search { display: block; width: 100%; min-width: 0; margin: 12px 0 0; }
-#serments .oath-search > span { display: block; margin-bottom: 5px; color: var(--oa-muted); font-size: 9px; }
-#serments .oath-search input { width: 100%; min-width: 0; height: 39px; padding: 9px 10px; border: 1px solid var(--oa-line-strong); border-radius: 2px; background: var(--tm-input-bg, var(--oa-bg)); color: var(--oa-text); font-size: 11px; }
+#serments .oath-library {
+  position: sticky;
+  top: 88px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-height: calc(100dvh - 108px);
+  border: 1px solid var(--oa-line);
+  border-radius: 8px;
+  background: var(--oa-panel);
+}
+#serments .oath-library-head { padding: 6px 14px; border-bottom: 1px solid var(--oa-line); }
+#serments .oath-library-head h2 { margin: 0; font-size: 16px; }
+#serments .oath-library-toggle,
+#serments .oath-library [data-toggle-library] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 0;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--oa-text);
+  font-size: 16px;
+  font-weight: 650;
+  text-align: left;
+}
+#serments .oath-library-toggle > span:last-child { color: var(--oa-muted); font-size: 14px; }
+#serments .oath-library-body { display: flex; flex-direction: column; min-height: 0; padding: 14px 10px 10px; }
+#serments .oath-search { display: block; width: 100%; margin: 0 0 14px; }
+#serments .oath-search > span,
+#serments .oath-filters label > span { display: block; margin-bottom: 6px; color: var(--oa-soft); font-size: 14px; }
+#serments .oath-search input,
+#serments .oath-filters select,
+#serments .oath-level-field input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 9px 10px;
+  border: 1px solid var(--oa-line-strong);
+  border-radius: 5px;
+  background: var(--tm-input-bg, var(--oa-bg));
+  color: var(--oa-text);
+  font-size: 16px;
+  line-height: 1.4;
+}
 #serments .oath-search input::placeholder { color: var(--oa-muted); opacity: 1; }
-#serments .oath-filter { display: flex; flex-wrap: wrap; gap: 4px; margin: 10px 0 0; }
-#serments .oath-filter + .oath-filter { margin: 9px 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--oa-line); }
-#serments .oath-filter-btn { min-height: 29px; padding: 5px 7px; border: 1px solid var(--oa-line) !important; border-radius: 2px !important; background: transparent !important; color: var(--oa-soft); font-size: 9px; font-weight: 650; line-height: 1.35; cursor: pointer; }
-#serments .oath-filter-btn:hover { background: var(--oa-hover) !important; border-color: var(--oa-accent) !important; }
-#serments .oath-filter-btn.is-active { background: color-mix(in srgb, var(--oa-accent) 12%, var(--oa-bg)) !important; border-color: var(--oa-accent) !important; color: var(--oa-text); }
-#serments .oath-list { display: grid; align-content: start; gap: 3px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--oa-line-strong) transparent; }
-#serments .oath-list-item { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 60px; padding: 7px 6px; border: 1px solid transparent !important; border-left: 2px solid transparent; border-radius: 2px !important; background: transparent !important; color: var(--oa-text); text-align: left; cursor: pointer; transition: background .18s, border-color .18s; }
-#serments .oath-list-item:hover { background: var(--oa-hover) !important; border-color: var(--oa-line) !important; }
-#serments .oath-list-item.is-active { background: color-mix(in srgb, var(--oa-accent) 10%, var(--oa-bg)) !important; border-color: var(--oa-line-strong) !important; border-left-color: var(--oa-accent) !important; }
-#serments .oath-list-art { display: block; flex: none; width: 40px; height: 44px; }
-#serments .oath-list-art :is(img,.np-serment-emblem,.np-serment-monogram) { display: flex; align-items: center; justify-content: center; width: 40px !important; height: 44px !important; max-width: 40px; max-height: 44px; margin: 0; object-fit: cover; border: 0; border-radius: 2px; overflow: hidden; }
-#serments .oath-list-art .np-serment-monogram { font: 500 23px/1 var(--oa-serif); }
-#serments .oath-list-copy { flex: 1; min-width: 0; }
-#serments .oath-list-copy strong { display: block; color: var(--oa-text); font-size: 11px; line-height: 1.4; font-weight: 650; overflow-wrap: anywhere; }
-#serments .oath-list-copy small { display: block; margin-top: 2px; color: var(--oa-muted); font-size: 9px; line-height: 1.4; }
-#serments .oath-list-arrow { color: var(--oa-accent); font-size: 13px; }
+#serments .oath-filters { display: grid; gap: 12px; margin-bottom: 16px; }
+#serments .oath-filters label { min-width: 0; }
+#serments #serment-result-count { margin: 0 3px 10px; color: var(--oa-muted); font-size: 14px; }
+#serments .oath-list {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--oa-line-strong) transparent;
+}
+#serments .oath-list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 72px;
+  padding: 8px;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  color: var(--oa-text);
+  text-align: left;
+}
+#serments .oath-list-item:hover { border-color: var(--oa-line) !important; background: var(--oa-hover) !important; }
+#serments .oath-list-item:is(.is-active, [aria-current="true"]) {
+  border-color: var(--oa-accent) !important;
+  background: color-mix(in srgb, var(--oa-accent) 9%, var(--oa-bg)) !important;
+}
+#serments .oath-list-art { display: block; flex: none; width: 42px; height: 52px; object-fit: cover; border-radius: 4px; }
+#serments .oath-list-art :is(img, .np-serment-emblem, .np-serment-monogram) {
+  display: grid;
+  place-items: center;
+  width: 42px !important;
+  height: 52px !important;
+  max-width: 42px;
+  max-height: 52px;
+  margin: 0;
+  border: 0;
+  border-radius: 4px;
+  object-fit: cover;
+  overflow: hidden;
+}
+#serments .oath-list-copy { min-width: 0; flex: 1; }
+#serments .oath-list-copy strong { display: block; color: var(--oa-text); font-size: 15px; font-weight: 650; line-height: 1.4; overflow-wrap: anywhere; }
+#serments .oath-list-copy small { display: block; margin-top: 4px; color: var(--oa-muted); font-size: 14px; line-height: 1.4; }
+#serments .oath-list-arrow { color: var(--oa-muted); }
 
-/* Equipment identity is deliberately short; its artwork lives inside the constellation. */
-#serments .oath-hero { position: relative; display: grid; grid-template-columns: minmax(0,1fr) minmax(250px, 38%); align-items: center; gap: 15px; min-height: 108px; padding: 12px 20px; margin-bottom: 14px; border: 1px solid var(--oa-line); border-top-color: var(--oa-copper); background: linear-gradient(120deg, color-mix(in srgb, var(--oa-copper) 5%, var(--oa-panel)), var(--oa-panel)); }
+/* A compact illustrated identity, followed by the two actual choices. */
+#serments .oath-hero { display: grid; grid-template-columns: minmax(0, 1fr) 160px; align-items: center; gap: 28px; padding-bottom: 24px; }
 #serments .oath-hero-content { min-width: 0; }
-#serments .oath-hero-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
-#serments .oath-pill, #serments .oath-hero-meta > span { color: var(--oa-accent); font-size: 8px; line-height: 1.6; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
-#serments .oath-pill + .oath-pill::before, #serments .oath-hero-meta > span + span::before { content: '·'; margin-right: 8px; color: var(--oa-muted); }
-#serments .oath-hero-title { margin: 0 0 7px; color: var(--oa-text); font: 500 clamp(40px, 3.3vw, 46px)/.98 var(--oa-serif); letter-spacing: -.035em; text-wrap: balance; overflow-wrap: anywhere; }
-#serments .oath-hero-weapon { margin: 0 0 8px; color: var(--oa-accent); font-size: 11px; line-height: 1.5; }
-#serments .oath-hero-tagline { max-width: 85ch; margin: 0; color: var(--oa-soft); font: italic 500 14px/1.4 var(--oa-serif); }
-#serments .oath-stats { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); margin: 0; border-left: 1px solid var(--oa-line); }
-#serments .oath-stat { display: block; min-width: 0; padding: 11px 13px; border-right: 1px solid var(--oa-line); }
-#serments .oath-stat:last-child { border-right: 0; }
-#serments .oath-stat strong { display: block; margin-bottom: 5px; color: var(--oa-text); font: 500 25px/1 var(--oa-serif); font-variant-numeric: lining-nums tabular-nums; }
-#serments .oath-stat span { color: var(--oa-muted); font-size: 8px; line-height: 1.5; letter-spacing: .08em; text-transform: uppercase; }
+#serments .oath-hero-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 10px; color: var(--oa-muted); font-size: 14px; }
+#serments .oath-hero-meta span + span::before { content: '·'; margin-right: 12px; }
+#serments .oath-hero-title { margin: 0 0 12px; font: 500 clamp(32px, 3.5vw, 46px)/1.12 var(--oa-serif); overflow-wrap: anywhere; }
+#serments .oath-hero-tagline { max-width: 65ch; margin: 0 0 12px; color: var(--oa-soft); font-size: 16px; line-height: 1.65; }
+#serments .oath-weapon-name { margin: 0; color: var(--oa-muted); font-size: 14px; }
+#serments .oath-hero-art { width: 160px; max-width: 180px; height: 180px; overflow: hidden; border: 1px solid var(--oa-line); border-radius: 8px; background: var(--oa-panel); }
+#serments .oath-hero-art :is(img, .np-serment-emblem, .np-serment-monogram) {
+  display: grid;
+  place-items: center;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  object-fit: cover;
+}
+#serments .oath-hero-art .np-serment-monogram { color: var(--oa-accent); font: 500 70px/1 var(--oa-serif); }
+#serments .oath-branches { margin: 28px 0; }
+#serments :is(.oath-branches, .oath-workbench-head, .oath-evolutions) h2 { margin: 0 0 8px; font-size: 22px; font-weight: 650; line-height: 1.3; }
+#serments .oath-section-intro { max-width: 75ch; margin: 0 0 18px; color: var(--oa-soft); font-size: 15px; line-height: 1.65; }
+#serments .oath-branch-switcher { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+#serments .oath-path-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  width: 100%;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--oa-line-strong) !important;
+  background: var(--oa-panel) !important;
+  color: var(--oa-text);
+  text-align: left;
+}
+#serments .oath-path-heading:hover { border-color: var(--oa-accent) !important; background: var(--oa-hover) !important; }
+#serments .oath-path-heading[aria-pressed="true"] { border-color: var(--oa-accent) !important; background: color-mix(in srgb, var(--oa-accent) 7%, var(--oa-panel)) !important; box-shadow: inset 0 0 0 1px var(--oa-accent); }
+#serments .oath-path-letter { display: grid; place-items: center; flex: none; width: 30px; height: 32px; border: 1px solid var(--oa-line-strong); border-radius: 4px; color: var(--oa-muted); font-size: 15px; font-weight: 650; }
+#serments .oath-path-heading[aria-pressed="true"] .oath-path-letter { border-color: var(--oa-accent); color: var(--oa-accent); }
+#serments .oath-branch-copy { flex: 1; min-width: 0; }
+#serments .oath-branch-copy strong { display: block; font-size: 18px; font-weight: 650; line-height: 1.4; overflow-wrap: anywhere; }
+#serments .oath-branch-pitch { display: block; margin-top: 7px; color: var(--oa-soft); font-size: 15px; line-height: 1.55; }
+#serments .oath-branch-selection { display: block; margin-top: 12px; color: var(--oa-muted); font-size: 14px; font-weight: 500; line-height: 1.5; }
+#serments .oath-path-heading[aria-pressed="true"] .oath-branch-selection { color: var(--oa-accent); font-weight: 650; }
 
-/* The constellations sit around the weapon, with a persistent inspector alongside. */
-#serments .oath-tree-grid { display: grid; grid-template-columns: minmax(0, 1fr) 352px; align-items: start; gap: 16px; min-width: 0; }
-#serments .oath-tree { position: relative; min-width: 0; overflow: hidden; border: 1px solid var(--oa-line-strong); background: var(--oa-bg); isolation: isolate; }
-#serments .oath-tree-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 17px 18px 13px; }
-#serments .oath-tree-heading h2 { margin: 0; color: var(--oa-text); font: 500 25px/1.1 var(--oa-serif); letter-spacing: -.025em; }
-#serments .oath-tree-heading .oath-eyebrow { font-size: 8px; }
-#serments .oath-tree-heading > span { color: var(--oa-muted); font-size: 8px; letter-spacing: .07em; }
-#serments .oath-view-tabs { display: inline-flex; align-items: center; flex: none; padding: 3px; border: 1px solid var(--oa-line) !important; background: var(--oa-panel) !important; }
-#serments .oath-view-tabs button { min-height: 32px; padding: 6px 9px; border: 1px solid transparent !important; border-radius: 0 !important; background: transparent !important; color: var(--oa-muted); font-size: 10px; font-weight: 650; cursor: pointer; }
-#serments .oath-view-tabs button:is(.is-active,[aria-selected="true"],[aria-pressed="true"]) { border-color: var(--oa-line-strong) !important; background: var(--oa-bg) !important; color: var(--oa-text); }
-#serments .oath-branch-switcher { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 14px; }
-#serments .oath-path-heading { --oa-path: var(--oa-branch-a); display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; min-height: 69px; padding: 11px 10px; border: 1px solid var(--oa-line) !important; border-top: 2px solid var(--oa-line-strong); border-radius: 2px !important; background: var(--oa-panel) !important; text-align: left; color: var(--oa-text); cursor: pointer; }
-#serments .oath-path-heading:nth-child(2) { --oa-path: var(--oa-branch-b); }
-#serments .oath-path-heading[aria-pressed="true"] { border-color: color-mix(in srgb, var(--oa-path) 55%, var(--oa-line)) !important; border-top-color: var(--oa-path) !important; background: color-mix(in srgb, var(--oa-path) 8%, var(--oa-bg)) !important; box-shadow: 0 0 25px color-mix(in srgb, var(--oa-path) 5%, transparent); }
-#serments .oath-path-heading:hover { border-color: var(--oa-path) !important; }
-#serments .oath-path-heading > span:nth-child(2) { flex: 1; min-width: 0; }
-#serments .oath-path-letter { display: grid; place-items: center; flex: none; width: 28px; height: 33px; border: 1px solid color-mix(in srgb, var(--oa-path) 60%, var(--oa-line)); color: var(--oa-path); font: 500 23px/1 var(--oa-serif); }
-#serments .oath-path-heading small { display: block; margin: 0 0 3px; color: var(--oa-path); font-size: 8px; font-weight: 700; line-height: 1.35; letter-spacing: .09em; text-transform: uppercase; }
-#serments .oath-path-heading strong { display: block; color: var(--oa-text); font: 500 17px/1.1 var(--oa-serif); overflow-wrap: anywhere; }
-#serments .oath-path-choice { color: var(--oa-path); font-size: 8px; }
-#serments .oath-map { position: relative; height: 540px; overflow: hidden; background: radial-gradient(ellipse at 50% 41%, color-mix(in srgb, var(--oa-accent) 12%, transparent), transparent 45%), radial-gradient(ellipse at 18% 68%, color-mix(in srgb, var(--oa-copper) 7%, transparent), transparent 36%); }
-#serments .oath-map::before { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(circle, color-mix(in srgb, var(--oa-text) 25%, transparent) .7px, transparent 1px) 0 0 / 39px 41px; mask-image: radial-gradient(ellipse, black, transparent 72%); opacity: .6; }
-#serments .oath-map::after { content: ''; position: absolute; top: 6%; bottom: 10%; left: 50%; width: 1px; background: linear-gradient(transparent, color-mix(in srgb, var(--oa-copper) 25%, transparent), transparent); pointer-events: none; z-index: -1; }
-#serments .oath-links { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-#serments .oath-link { fill: none; stroke: var(--oa-line-strong); stroke-width: 1.2; vector-effect: non-scaling-stroke; transition: stroke .35s, opacity .35s, filter .35s; opacity: .65; }
-#serments .oath-link[data-link-branch="0"] { --oa-path: var(--oa-branch-a); }
-#serments .oath-link[data-link-branch="1"] { --oa-path: var(--oa-branch-b); }
-#serments .oath-link.is-lit { stroke: var(--oa-path); stroke-width: 1.8; opacity: .8; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--oa-path) 40%, transparent)); }
-#serments .oath-link.is-current { stroke: var(--oa-path); stroke-width: 2.3; opacity: 1; filter: drop-shadow(0 0 5px var(--oa-path)); }
-#serments :is(.oath-paths,.oath-path,.oath-node-list) { position: absolute; inset: 0; pointer-events: none; }
-#serments .oath-path { --oa-path: var(--oa-branch-a); }
-#serments .oath-path[data-branch="1"] { --oa-path: var(--oa-branch-b); }
-#serments .oath-node { position: absolute; z-index: 3; left: var(--node-x); top: var(--node-y); display: flex; flex-direction: column; align-items: center; width: 126px; height: 54px; min-height: 54px; padding: 0; border: 0 !important; border-radius: 0 !important; background: transparent !important; color: var(--oa-text); text-align: center; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; }
-#serments .oath-node-orb { position: relative; display: grid; place-items: center; flex: none; width: 48px; height: 48px; margin: 3px 0; border: 1px solid var(--oa-line-strong) !important; background: var(--oa-panel) !important; color: var(--oa-muted); transform: rotate(45deg); transition: color .2s, box-shadow .2s, border-color .2s, background .2s; }
-#serments .oath-node-orb::before { content: ''; position: absolute; inset: 4px; border: 1px solid color-mix(in srgb, var(--oa-line-strong) 60%, transparent) !important; }
-#serments .oath-node-orb :is(svg,span) { width: 27px; height: 27px; transform: rotate(-45deg); }
-#serments .oath-node-copy { position: absolute; top: 66px; left: -3px; right: -3px; min-width: 0; }
-#serments .oath-node-level { display: block; margin-bottom: 3px; color: var(--oa-path); font-size: 8px; line-height: 1.25; font-weight: 750; letter-spacing: .14em; }
-#serments .oath-node-title { display: block; color: var(--oa-text); font-size: 11px; line-height: 1.25; font-weight: 650; overflow-wrap: anywhere; text-shadow: 0 1px var(--oa-bg), 1px 0 var(--oa-bg), -1px 0 var(--oa-bg); }
-#serments .oath-node-skill { display: block; margin-top: 3px; color: var(--oa-muted); font-size: 9px; line-height: 1.3; }
-#serments .oath-node-state { position: absolute; top: 21px; left: calc(50% + 38px); color: var(--oa-muted); font-size: 7px; line-height: 1.4; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
-#serments .oath-path[data-branch="0"] .oath-node-state { left: auto; right: calc(50% + 38px); }
-#serments .oath-node.is-locked .oath-node-orb { background: var(--oa-bg) !important; border-style: dashed; color: var(--oa-muted); }
-#serments .oath-node.is-locked .oath-node-title { color: var(--oa-soft); }
-#serments .oath-node.is-unlocked .oath-node-orb { color: var(--oa-path); border-color: var(--oa-path) !important; background: color-mix(in srgb, var(--oa-path) 9%, var(--oa-bg)) !important; }
-#serments .oath-path.is-chosen .oath-node.is-unlocked .oath-node-orb { box-shadow: 0 0 17px color-mix(in srgb, var(--oa-path) 14%, transparent), inset 0 0 12px color-mix(in srgb, var(--oa-path) 7%, transparent); }
-#serments .oath-node.is-current .oath-node-orb { color: var(--oa-bg); border-color: var(--oa-path) !important; background: var(--oa-path) !important; box-shadow: 0 0 20px color-mix(in srgb, var(--oa-path) 45%, transparent); }
-#serments .oath-node.is-current .oath-node-orb::before { border-color: color-mix(in srgb, var(--oa-bg) 45%, transparent) !important; }
-#serments .oath-node.is-current .oath-node-state { color: var(--oa-path); }
-#serments .oath-node.is-selected .oath-node-orb::after { content: ''; position: absolute; inset: -7px; border: 1px solid var(--oa-path) !important; box-shadow: 0 0 12px color-mix(in srgb, var(--oa-path) 18%, transparent); }
-#serments .oath-node.is-selected .oath-node-title { color: var(--oa-path); }
-#serments .oath-node:hover .oath-node-orb { border-color: var(--oa-text) !important; box-shadow: 0 0 24px color-mix(in srgb, var(--oa-path) 28%, transparent); }
+/* One level field and a short guide provide context before the ability. */
+#serments .oath-workbench { padding-top: 28px; border-top: 1px solid var(--oa-line); }
+#serments .oath-levelbar { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 10px 14px; margin: 0 0 22px; }
+#serments .oath-level-field { display: flex; align-items: center; gap: 12px; max-width: 100%; color: var(--oa-text); font-size: 15px; }
+#serments .oath-level-field > span { font-weight: 600; }
+#serments .oath-level-field input { width: 82px; flex: none; font-variant-numeric: tabular-nums; }
+#serments .oath-levelbar > p { flex: 1 0 100%; max-width: 75ch; margin: 0; color: var(--oa-muted); font-size: 14px; line-height: 1.6; }
+#serments :is(.oath-own-level, .oath-copy-build, .oath-compare-card > button),
+#serments .oath-atlas :is([data-preview-tier], [data-reveal-all]) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 10px 15px;
+  border: 1px solid var(--oa-line-strong) !important;
+  background: var(--oa-control) !important;
+  color: var(--oa-text);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: normal;
+}
+#serments :is(.oath-own-level, .oath-copy-build, .oath-compare-card > button):hover,
+#serments .oath-atlas :is([data-preview-tier], [data-reveal-all]):hover { border-color: var(--oa-accent) !important; background: var(--oa-hover) !important; }
+#serments .oath-play-guide:not(:empty) { margin-bottom: 24px; padding: 16px 20px; border-left: 3px solid var(--oa-line-strong); background: var(--oa-panel); }
+#serments .oath-play-guide dl { display: grid; grid-template-columns: 135px minmax(0, 1fr); gap: 9px 18px; margin: 0; }
+#serments .oath-play-guide dt { color: var(--oa-text); font-size: 15px; font-weight: 650; }
+#serments .oath-play-guide dd { margin: 0; color: var(--oa-soft); font-size: 15px; line-height: 1.6; }
+#serments .oath-tactical-tip { margin-top: 14px; padding-top: 4px; border: 0; border-top: 1px solid var(--oa-line); border-radius: 0; background: transparent; }
+#serments .oath-tactical-tip summary { min-height: 44px; padding: 10px 0; color: var(--oa-text); font-size: 14px; font-weight: 600; line-height: 1.6; cursor: pointer; }
+#serments .oath-tactical-tip summary::marker { color: var(--oa-muted); }
+#serments .oath-tactical-tip p { max-width: 75ch; margin: 0 0 4px; color: var(--oa-soft); font-size: 15px; line-height: 1.65; }
 
-/* Radially masked art dissolves into a slowly turning engraved ritual circle. */
-#serments .oath-constellation-center { position: absolute; z-index: 1; left: 50%; top: 42%; width: 190px; height: 260px; transform: translate(-50%, -50%); pointer-events: none; }
-#serments .oath-constellation-center::before { content: ''; position: absolute; inset: -15% -36%; border-radius: 50%; background: radial-gradient(ellipse, color-mix(in srgb, var(--oa-accent) 18%, transparent), transparent 67%); }
-#serments .oath-orbit { position: absolute; left: 50%; top: 50%; width: 260px; height: 260px; border: 1px solid color-mix(in srgb, var(--oa-copper) 23%, transparent); border-radius: 50%; transform: translate(-50%, -50%); animation: oath-orbit 75s linear infinite; }
-#serments .oath-orbit::before { content: ''; position: absolute; inset: 13px; border: 1px dashed color-mix(in srgb, var(--oa-accent) 30%, transparent); border-radius: 50%; }
-#serments .oath-orbit::after { content: '✧'; position: absolute; left: 50%; top: -10px; color: var(--oa-copper); font-size: 17px; line-height: 1; }
-#serments .oath-orbit:nth-child(2) { width: 308px; height: 308px; border-color: color-mix(in srgb, var(--oa-accent) 13%, transparent); animation-direction: reverse; animation-duration: 105s; }
-#serments .oath-orbit:nth-child(2)::before { inset: 6px; border-style: solid; border-color: color-mix(in srgb, var(--oa-copper) 9%, transparent); }
-#serments .oath-orbit:nth-child(2)::after { content: '◇'; top: 50%; left: -5px; color: var(--oa-accent); font-size: 10px; }
-#serments .oath-hero-art { position: absolute; inset: -18px -38px 0; overflow: visible; filter: drop-shadow(0 0 25px color-mix(in srgb, var(--oa-accent) 20%, transparent)); }
-#serments .oath-hero-art :is(img,.np-serment-emblem,.np-serment-monogram) { display: flex; align-items: center; justify-content: center; width: 100% !important; height: 100% !important; max-width: none !important; max-height: none !important; margin: 0; border: 0; border-radius: 0; object-fit: cover; mask-image: radial-gradient(ellipse 49% 48% at 50% 47%, black 35%, rgba(0,0,0,.9) 51%, transparent 100%); }
-#serments .oath-hero-art > .np-serment-monogram { color: var(--oa-accent); background: radial-gradient(ellipse, color-mix(in srgb, var(--oa-accent) 14%, var(--oa-bg)), transparent); font: 500 135px/1 var(--oa-serif); }
-#serments .oath-art-caption { position: absolute; z-index: 2; left: -22px; right: -22px; bottom: -27px; color: var(--oa-copper); font-size: 8px; font-weight: 700; letter-spacing: .14em; line-height: 1.5; text-align: center; text-transform: uppercase; text-shadow: 0 1px 5px var(--oa-bg); }
-#serments .oath-root { position: absolute; z-index: 2; top: 94%; left: 50%; display: flex; align-items: center; gap: 10px; width: max-content; max-width: 72%; padding: 9px 14px; border: 1px solid color-mix(in srgb, var(--oa-copper) 50%, var(--oa-line)); background: var(--oa-panel); color: var(--oa-text); text-align: center; transform: translate(-50%, -50%); }
-#serments .oath-root-sigil { width: 25px; height: 25px; flex: none; display: grid; place-items: center; color: var(--oa-copper); font-size: 23px; }
-#serments .oath-root-sigil svg { width: 25px; height: 25px; }
-#serments .oath-root strong { display: block; color: var(--oa-text); font: 500 17px/1.2 var(--oa-serif); }
-#serments .oath-root small { display: block; margin-bottom: 2px; color: var(--oa-copper); font-size: 7px; line-height: 1.5; letter-spacing: .13em; }
-#serments .oath-root > div > span { display: block; color: var(--oa-muted); font-size: 8px; line-height: 1.5; }
+/* Milestones stay compact. Color identifies a tier; text explains its state. */
+#serments .oath-skill-layout { display: grid; grid-template-columns: 224px minmax(360px, 1fr); align-items: start; gap: 24px; }
+#serments .oath-progression { min-width: 0; }
+#serments .oath-progression h3 { margin: 0 0 7px; font-size: 17px; font-weight: 650; line-height: 1.4; }
+#serments .oath-progression > p { margin: 0 0 14px; color: var(--oa-muted); font-size: 14px; line-height: 1.55; }
+#serments .oath-path { min-width: 0; }
+#serments .oath-node-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+#serments .oath-node-list > li { position: relative; min-width: 0; }
+#serments .oath-node-list > li + li::before { content: ''; position: absolute; top: -10px; left: 34px; width: 1px; height: 10px; background: var(--oa-line-strong); }
+#serments .oath-node {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  padding: 13px 12px;
+  border: 1px solid var(--oa-line) !important;
+  background: var(--oa-panel) !important;
+  color: var(--oa-text);
+  text-align: left;
+}
+#serments .oath-node:hover { border-color: var(--oa-tier) !important; background: var(--oa-hover) !important; }
+#serments .oath-node-marker { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; flex: none; width: 44px; min-height: 48px; padding: 4px; border: 1px solid var(--oa-tier); border-radius: 5px; color: var(--oa-tier); font-size: 16px; line-height: 1.25; font-variant-numeric: tabular-nums; }
+#serments .oath-node-marker small { color: inherit; font-size: 14px; font-weight: 400; line-height: 1.2; }
+#serments .oath-node-marker b { color: inherit; font-size: 18px; font-weight: 700; line-height: 1.2; }
+#serments .oath-node-copy { min-width: 0; flex: 1; }
+#serments .oath-node-title { display: block; color: var(--oa-text); font-size: 15px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+#serments .oath-node-state { display: block; margin-top: 5px; color: var(--oa-muted); font-size: 14px; font-weight: 400; line-height: 1.4; }
+#serments .oath-node.is-current .oath-node-marker { background: var(--oa-tier); color: var(--oa-bg); }
+#serments .oath-node.is-current .oath-node-state { color: var(--oa-tier); font-weight: 600; }
+#serments .oath-node.is-selected { border-color: var(--oa-tier) !important; background: color-mix(in srgb, var(--oa-tier) 6%, var(--oa-panel)) !important; box-shadow: inset 0 0 0 1px var(--oa-tier); }
+#serments .oath-node.is-locked .oath-node-marker { border-style: dashed; }
+#serments .oath-node.is-sealed .oath-node-title { color: var(--oa-soft); }
 
-/* The scrubber acts as a progression preview, including its next milestone. */
-#serments .oath-levelbar { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px 18px; padding: 15px 18px 12px; border-top: 1px solid var(--oa-line-strong); background: var(--oa-panel); }
-#serments .oath-levelbar .oath-eyebrow { font-size: 8px; }
-#serments .oath-levelbar h2 { margin: 0; color: var(--oa-text); font: 500 23px/1.1 var(--oa-serif); }
-#serments .oath-levelbar output { color: var(--oa-accent); font-variant-numeric: lining-nums tabular-nums; }
-#serments .oath-level-control { min-width: 0; }
-#serments .oath-level-control > label { display: block; color: var(--oa-muted); font-size: 9px; line-height: 1.5; }
-#serments .oath-level-row { display: flex; align-items: center; gap: 10px; }
-#serments .oath-level-step { display: inline-grid; place-items: center; flex: none; width: 30px; height: 32px; padding: 0; border: 1px solid var(--oa-line-strong) !important; background: var(--oa-bg) !important; color: var(--oa-text); font-size: 18px; cursor: pointer; }
-#serments .oath-level-step:hover { border-color: var(--oa-accent) !important; }
-#serments .oath-levelbar input[type="range"] { display: block; width: 100%; min-width: 0; min-height: 34px; padding: 0; accent-color: var(--oa-accent); cursor: pointer; }
-#serments .oath-levelbar input[type="range"] { appearance: none !important; -webkit-appearance: none !important; background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
-#serments .oath-levelbar input[type="range"]::-webkit-slider-runnable-track { height: 3px; border: 0; background: var(--oa-line-strong); }
-#serments .oath-levelbar input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5.5px; border: 2px solid var(--oa-accent); border-radius: 2px; background: var(--oa-bg); box-shadow: 0 0 9px color-mix(in srgb, var(--oa-accent) 30%, transparent); transform: rotate(45deg); }
-#serments .oath-levelbar input[type="range"]::-moz-range-track { height: 3px; border: 0; background: var(--oa-line-strong); }
-#serments .oath-levelbar input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border: 2px solid var(--oa-accent); border-radius: 2px; background: var(--oa-bg); box-shadow: 0 0 9px color-mix(in srgb, var(--oa-accent) 30%, transparent); transform: rotate(45deg); }
-#serments .oath-level-stops { display: flex; justify-content: space-between; gap: 5px; margin-top: 4px; }
-#serments .oath-level-stop { min-width: 32px; min-height: 26px; padding: 4px 6px; border: 1px solid transparent !important; background: transparent !important; color: var(--oa-muted); font-size: 9px; font-variant-numeric: tabular-nums; cursor: pointer; }
-#serments .oath-level-stop:is(.is-active,[aria-pressed="true"]), #serments .oath-level-stop:hover { border-color: var(--oa-accent) !important; color: var(--oa-accent); }
-#serments .oath-level-ends { display: flex; justify-content: space-between; color: var(--oa-muted); font-size: 9px; }
-#serments .oath-progress-readout { grid-column: 1 / -1; display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 6px 10px; min-width: 0; margin: 0; color: var(--oa-soft); font-size: 9px; line-height: 1.5; }
-#serments .oath-progress-readout strong { color: var(--oa-accent); font-weight: 650; }
-#serments .oath-progress-track { display: block; flex: 1 0 100%; height: 2px; overflow: hidden; background: var(--oa-line); }
-#serments .oath-progress-track > * { display: block; width: var(--progress, 0%); height: 100%; background: var(--oa-accent); box-shadow: 0 0 7px var(--oa-accent); transition: width .2s; }
-
-/* The inspector reads top to bottom: ability, actions, then optional context. */
-#serments .oath-inspector { position: sticky; top: 90px; min-width: 0; padding: 22px 20px; border: 1px solid var(--oa-line-strong); border-top: 3px solid var(--oa-accent); background: var(--oa-panel); }
-#serments .oath-inspector-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 14px; }
-#serments .oath-inspector-head .oath-eyebrow { margin: 0; font-size: 11px; letter-spacing: .06em; }
-#serments .oath-inspector-status { display: inline-block; max-width: 100%; padding: 4px 8px; border: 1px solid var(--oa-line-strong); border-radius: 4px; color: var(--oa-soft); font-size: 11px; font-weight: 650; line-height: 1.5; overflow-wrap: anywhere; }
-#serments .oath-inspector-status.is-unlocked { border-color: color-mix(in srgb, var(--oa-accent) 45%, var(--oa-line)); color: var(--oa-accent); }
-#serments .oath-inspector-index { margin: 0; color: var(--oa-accent); font-size: 12px; font-weight: 650; line-height: 1.5; }
-#serments .oath-inspector > h3 { margin: 0 0 8px; color: var(--oa-text); font: 500 28px/1.2 var(--oa-serif); overflow-wrap: anywhere; }
-#serments .oath-inspector-branch { margin: 0 0 22px; color: var(--oa-soft); font-size: 12px; line-height: 1.55; overflow-wrap: anywhere; }
-#serments .oath-cost { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 12px; padding: 12px 0; margin: 0 0 16px; border-top: 1px solid var(--oa-line); border-bottom: 1px solid var(--oa-line); }
-#serments .oath-cost span, #serments .oath-inspector-effect > span { color: var(--oa-accent); font-size: 11px; line-height: 1.5; font-weight: 700; }
-#serments .oath-cost strong { color: var(--oa-text); font-size: 14px; line-height: 1.55; font-weight: 650; overflow-wrap: anywhere; }
+/* The rule card reads as a document: title, named actions, then optional detail. */
+#serments .oath-inspector { min-width: 0; padding: 24px; border: 1px solid var(--oa-line-strong); border-top: 3px solid var(--oa-tier); border-radius: 8px; background: var(--oa-panel); }
+#serments .oath-back-to-levels { display: none; align-items: center; justify-content: center; gap: 8px; max-width: 100%; margin: 0 0 18px; padding: 9px 12px; border: 1px solid var(--oa-line-strong) !important; background: transparent !important; color: var(--oa-text); font-size: 14px; font-weight: 600; line-height: 1.5; text-align: left; }
+#serments .oath-back-to-levels:hover { border-color: var(--oa-accent) !important; background: var(--oa-hover) !important; }
+#serments .oath-inspector-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 15px; }
+#serments .oath-eyebrow,
+#serments .oath-inspector-index { color: var(--oa-muted); font-size: 14px; font-weight: 600; line-height: 1.5; }
+#serments .oath-inspector-status { display: inline-block; max-width: 100%; padding: 4px 9px; border: 1px solid var(--oa-line-strong); border-radius: 4px; color: var(--oa-soft); font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+#serments .oath-inspector-status.is-unlocked { border-color: color-mix(in srgb, var(--oa-tier) 60%, var(--oa-line)); color: var(--oa-tier); }
+#serments .oath-inspector > h3 { margin: 0 0 7px; font: 500 29px/1.2 var(--oa-serif); overflow-wrap: anywhere; scroll-margin-top: 90px; }
+#serments .oath-inspector-branch { margin: 0 0 24px; color: var(--oa-muted); font-size: 14px; line-height: 1.55; }
+#serments .oath-prior-note { margin: 0 0 20px; padding: 12px 14px; border-left: 2px solid var(--oa-line-strong); background: var(--oa-bg); color: var(--oa-soft); font-size: 14px; line-height: 1.6; }
 #serments .oath-inspector-effect { margin-bottom: 20px; }
-#serments .oath-inspector-effect > span { display: block; margin-bottom: 8px; }
-#serments .oath-inspector-effect p { margin: 0; color: var(--oa-text); font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
-#serments .oath-actions-heading { margin: 0 0 12px; }
-#serments .oath-actions-heading h4 { margin: 0 0 3px; color: var(--oa-text); font-size: 14px; font-weight: 700; line-height: 1.5; }
-#serments .oath-actions-heading p { color: var(--oa-muted); font-size: 12px; line-height: 1.5; }
-#serments .oath-ability-actions { display: grid; gap: 10px; }
-#serments .oath-ability-action { min-width: 0; padding: 14px; border: 1px solid var(--oa-line); border-left: 2px solid var(--oa-tier); border-radius: 4px; background: var(--oa-bg); }
-#serments .oath-ability-action-head { display: grid; gap: 8px; margin-bottom: 10px; }
-#serments .oath-ability-action h5 { margin: 0; color: var(--oa-text); font-size: 15px; font-weight: 700; line-height: 1.45; overflow-wrap: anywhere; }
-#serments .oath-action-cost { display: flex; flex-wrap: wrap; gap: 6px; }
-#serments .oath-action-cost span { max-width: 100%; padding: 3px 7px; border: 1px solid var(--oa-line-strong); border-radius: 4px; background: var(--oa-panel); color: var(--oa-text); font-size: 12px; font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
-#serments .oath-inspector-more { margin-top: 20px; border-bottom: 1px solid var(--oa-line); }
-#serments .oath-inspector :is(details,.oath-inspector-details) { margin: 0; padding: 0; border: 0; border-top: 1px solid var(--oa-line); border-radius: 0; background: transparent; }
-#serments .oath-inspector summary { min-height: 48px; padding: 13px 0; color: var(--oa-text); font-size: 13px; line-height: 1.6; font-weight: 650; cursor: pointer; }
-#serments .oath-inspector summary::marker { color: var(--oa-muted); font-size: 11px; }
-#serments :is(.oath-inspector-flavor,.oath-inspector-rules) { color: var(--oa-soft); font-size: 14px; line-height: 1.65; overflow-wrap: anywhere; }
-#serments .oath-inspector-flavor p { margin: 0 0 16px; }
-#serments .oath-inspector-flavor b { display: block; margin-bottom: 5px; color: var(--oa-text); font-size: 12px; line-height: 1.5; }
-#serments .oath-inspector-rules :is(h3,h4,dt,strong) { color: var(--oa-text); font-size: 13px; line-height: 1.55; font-weight: 700; }
-#serments .oath-inspector-rules dl { margin: 0 0 16px; }
-#serments .oath-inspector-rules dt { margin-top: 16px; }
+#serments .oath-actions-heading { margin-bottom: 13px; }
+#serments .oath-actions-heading h4 { margin: 0 0 4px; font-size: 16px; font-weight: 650; line-height: 1.5; }
+#serments .oath-actions-heading p { margin: 0; color: var(--oa-muted); font-size: 14px; line-height: 1.5; }
+#serments .oath-ability-actions { display: grid; gap: 12px; }
+#serments .oath-ability-action { min-width: 0; padding: 18px; border: 1px solid var(--oa-line); border-radius: 6px; background: var(--oa-bg); }
+#serments .oath-ability-action-head { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 12px; }
+#serments .oath-ability-action h5 { flex: 1 1 120px; margin: 0; color: var(--oa-text); font-size: 18px; font-weight: 650; line-height: 1.4; overflow-wrap: anywhere; }
+#serments .oath-action-cost { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; max-width: 100%; }
+#serments .oath-action-cost span { max-width: 100%; padding: 3px 7px; border: 1px solid var(--oa-line-strong); border-radius: 4px; background: var(--oa-panel); color: var(--oa-text); font-size: 14px; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
+#serments .oath-action-effect { max-width: 70ch; margin: 0; color: var(--oa-text); font-size: 16px; line-height: 1.65; overflow-wrap: anywhere; }
+#serments .oath-action-effect + .oath-action-effect { margin-top: 12px; }
+#serments .oath-resource-key { max-width: 70ch; margin: 0; color: var(--oa-muted); font-size: 14px; line-height: 1.65; }
+#serments .oath-cost { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 20px; padding: 12px 0; border-block: 1px solid var(--oa-line); }
+#serments .oath-cost span { color: var(--oa-muted); font-size: 14px; }
+#serments .oath-cost strong { color: var(--oa-text); font-size: 16px; font-weight: 600; }
+#serments .oath-inspector-more { margin-top: 24px; border-bottom: 1px solid var(--oa-line); }
+#serments .oath-inspector :is(details, .oath-inspector-details) { margin: 0; padding: 0; border: 0; border-top: 1px solid var(--oa-line); border-radius: 0; background: transparent; }
+#serments .oath-inspector summary { min-height: 48px; padding: 13px 0; color: var(--oa-text); font-size: 15px; font-weight: 600; line-height: 1.6; cursor: pointer; }
+#serments .oath-inspector summary::marker { color: var(--oa-muted); }
+#serments :is(.oath-inspector-flavor, .oath-inspector-rules) { color: var(--oa-soft); font-size: 15px; line-height: 1.7; overflow-wrap: anywhere; }
+#serments .oath-inspector-flavor p { margin: 0 0 18px; }
+#serments .oath-inspector-flavor b { display: block; margin-bottom: 6px; color: var(--oa-text); font-size: 15px; font-weight: 600; }
+#serments .oath-inspector-rules :is(h3, h4, dt, strong) { color: var(--oa-text); font-size: 15px; font-weight: 650; line-height: 1.6; }
+#serments .oath-inspector-rules dl { margin: 0 0 18px; }
+#serments .oath-inspector-rules dt { margin-top: 18px; }
 #serments .oath-inspector-rules dt:first-child { margin-top: 0; }
-#serments .oath-inspector-rules :is(p,dd) { margin: 5px 0 12px; color: var(--oa-soft); font-size: 14px; line-height: 1.65; }
-#serments .oath-inspector-rules :is(ul,ol) { padding-left: 19px; }
-#serments .oath-inspector-note { margin: 16px 0 0; color: var(--oa-muted); font-size: 12px; line-height: 1.6; }
-#serments .oath-copy-build { width: 100%; min-height: 44px; margin-top: 16px; font-size: 13px; border-color: var(--oa-line-strong) !important; color: var(--oa-text); }
+#serments .oath-inspector-rules :is(p, dd) { margin: 5px 0 14px; color: var(--oa-soft); font-size: 15px; line-height: 1.7; }
+#serments .oath-inspector-rules :is(ul, ol) { padding-left: 22px; }
+#serments .oath-inspector-note { margin: 18px 0 0; color: var(--oa-muted); font-size: 14px; line-height: 1.6; }
+#serments .oath-copy-build { margin-top: 18px; }
+#serments .oath-action-status { display: block; color: var(--oa-accent); font-size: 14px; line-height: 1.5; }
+#serments .oath-action-status:not(:empty) { padding-top: 10px; }
+#serments .oath-gate { padding-top: 8px; }
+#serments .oath-gate p { max-width: 65ch; margin: 0 0 16px; color: var(--oa-soft); font-size: 16px; line-height: 1.65; }
+#serments .oath-gate :is([data-preview-tier], [data-reveal-all]) { margin: 0 8px 8px 0; }
+#serments .oath-gate [data-preview-tier] { border-color: var(--oa-tier) !important; }
+#serments .oath-gate [data-reveal-all] { background: transparent !important; }
+#serments .oath-gate svg { width: 18px; height: 18px; flex: none; }
 
-/* Side-by-side reading is a second lens on the same current progression. */
-#serments .oath-compare { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; padding: 18px 14px; }
-#serments .oath-compare-card { --oa-path: var(--oa-branch-a); min-width: 0; padding: 17px 14px; border: 1px solid var(--oa-line-strong) !important; border-top: 2px solid var(--oa-path); background: var(--oa-panel) !important; }
-#serments .oath-compare-card:nth-child(2) { --oa-path: var(--oa-branch-b); }
-#serments .oath-compare-card .oath-eyebrow { color: var(--oa-path); }
-#serments .oath-compare-card h3 { margin: 0 0 13px; color: var(--oa-text); font: 500 25px/1.1 var(--oa-serif); overflow-wrap: anywhere; }
-#serments .oath-compare-card h4 { margin: 16px 0 8px; color: var(--oa-text); font-size: 12px; line-height: 1.5; }
-#serments .oath-compare-card p { color: var(--oa-soft); font-size: 12px; line-height: 1.75; overflow-wrap: anywhere; }
-#serments .oath-compare-card > button { width: 100%; min-height: 40px; padding: 8px 10px; margin-top: 8px; border: 1px solid var(--oa-path) !important; background: color-mix(in srgb, var(--oa-path) 8%, var(--oa-bg)) !important; color: var(--oa-text); font-size: 10px; font-weight: 650; cursor: pointer; }
-#serments .oath-compare-card > button:hover { background: color-mix(in srgb, var(--oa-path) 16%, var(--oa-bg)) !important; }
-#serments .oath-compare-card .oath-cost { margin: 0 0 8px; }
-
-/* The personal bond is readable before exploring its mechanical progression. */
-#serments .oath-identity { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 22px; margin: 0 0 16px; padding: 18px 20px; border: 1px solid var(--oa-line); border-left: 2px solid var(--oa-copper); background: var(--oa-panel); }
-#serments .oath-identity blockquote { margin: 5px 0 0; color: var(--oa-text); font: 500 23px/1.35 var(--oa-serif); }
-#serments .oath-identity p { margin: 0; color: var(--oa-soft); font-size: 12px; line-height: 1.75; }
-#serments .oath-identity button { margin-top: 10px; min-height: 36px; padding: 4px 0; border: 0 !important; background: transparent !important; color: var(--oa-accent); font-size: 11px; text-align: left; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
-#serments .oath-tier-story { margin: 0 0 16px; }
-#serments .oath-tier-story .oath-eyebrow { color: var(--oa-text); font-size: 12px; line-height: 1.5; letter-spacing: 0; text-transform: none; }
-#serments .oath-tier-story p { margin: 5px 0 0; color: var(--oa-soft); font-size: 14px; line-height: 1.65; }
-#serments .oath-world { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px 24px; padding-top: 18px; border-top: 1px solid var(--oa-line); }
-#serments .oath-world section:last-child { grid-column: 1 / -1; }
-#serments .oath-world h3 { margin: 0 0 8px; color: var(--oa-text); font: 500 23px/1.25 var(--oa-serif); }
-#serments .oath-world p { margin: 0; color: var(--oa-soft); font-size: 12px; line-height: 1.8; }
-#serments .oath-codex-body .oath-rp-note { margin: 18px 0 0; color: var(--oa-muted); font-size: 10px; }
-/* The detailed story and examples remain available beside the progression. */
-#serments .oath-codex { margin-top: 14px; border: 1px solid var(--oa-line); background: var(--oa-panel); }
-#serments .oath-codex > summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 54px; padding: 15px 20px; color: var(--oa-text); font: 500 22px/1.2 var(--oa-serif); cursor: pointer; list-style: none; }
-#serments .oath-codex > summary::-webkit-details-marker { display: none; }
-#serments .oath-codex > summary > span:last-child { margin-left: auto; color: var(--oa-accent); font: 400 22px/1 sans-serif; }
-#serments .oath-codex[open] > summary > span:last-child { transform: rotate(45deg); }
-#serments .oath-codex > summary .oath-eyebrow { margin: 0; font-size: 8px; }
-#serments .oath-codex > summary strong { font-weight: 500; }
-#serments .oath-codex-body { padding: 0 20px 20px; }
-#serments .oath-codex-body > p, #serments .oath-hero-lore, #serments .oath-weapon-detail { margin-bottom: 15px; color: var(--oa-soft); font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
-#serments .oath-weapon-detail b { display: block; color: var(--oa-text); }
-#serments .oath-brief { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; margin-top: 18px; padding-top: 17px; border-top: 1px solid var(--oa-line); }
-#serments .oath-brief span { display: block; margin-bottom: 7px; color: var(--oa-accent); font-size: 8px; font-weight: 700; letter-spacing: .1em; }
-#serments .oath-brief p { margin: 0; color: var(--oa-soft); font-size: 11px; line-height: 1.75; }
-#serments .oath-evolutions { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 18px; padding: 19px 20px; margin-top: 14px; border: 1px solid var(--oa-line); background: var(--oa-panel); }
-#serments .oath-evolutions h2 { margin: 0 0 7px; color: var(--oa-text); font: 500 25px/1.1 var(--oa-serif); }
-#serments .oath-evolutions p { margin: 0; max-width: 58ch; color: var(--oa-muted); font-size: 10px; line-height: 1.65; }
-#serments .oath-evo-links { display: flex; flex-wrap: wrap; gap: 8px; }
-#serments .oath-evo-btn { display: flex; align-items: center; gap: 10px; min-height: 67px; max-width: 240px; padding: 7px 12px 7px 7px; border: 1px solid var(--oa-line-strong) !important; background: var(--oa-bg) !important; color: var(--oa-text); text-align: left; cursor: pointer; }
+/* Optional layers retain a common, predictable disclosure pattern. */
+#serments :is(.oath-characteristics, .oath-help, .oath-reading-options, .oath-comparison, .oath-codex) {
+  margin: 0 0 10px;
+  border: 1px solid var(--oa-line);
+  border-radius: 6px;
+  background: var(--oa-panel);
+}
+#serments :is(.oath-characteristics, .oath-help, .oath-reading-options, .oath-comparison, .oath-codex) > summary {
+  min-height: 48px;
+  padding: 13px 17px;
+  color: var(--oa-text);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  cursor: pointer;
+}
+#serments :is(.oath-characteristics, .oath-help, .oath-reading-options, .oath-comparison, .oath-codex) > summary::marker { color: var(--oa-muted); }
+#serments :is(.oath-characteristics, .oath-help, .oath-reading-options, .oath-comparison, .oath-codex)[open] > summary { margin-bottom: 16px; border-bottom: 1px solid var(--oa-line); }
+#serments :is(.oath-help, .oath-reading-options) > :not(summary) { margin: 0 18px 18px; }
+#serments .oath-help :is(p, li) { max-width: 75ch; color: var(--oa-soft); font-size: 15px; line-height: 1.7; }
+#serments .oath-characteristics > p { max-width: 75ch; margin: 0 18px 18px; color: var(--oa-soft); font-size: 15px; line-height: 1.65; }
+#serments .oath-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; padding: 0 18px 18px; }
+#serments .oath-stat strong { display: block; margin-bottom: 5px; color: var(--oa-text); font-size: 20px; font-weight: 650; line-height: 1.4; }
+#serments .oath-stat span { display: block; color: var(--oa-muted); font-size: 14px; line-height: 1.5; }
+#serments .oath-reading-options { margin-top: 20px; }
+#serments .oath-reading-options label { display: flex; align-items: center; gap: 11px; min-height: 44px; color: var(--oa-text); font-size: 15px; line-height: 1.5; cursor: pointer; }
+#serments .oath-reading-options input { flex: none; width: 20px; height: 20px; margin: 0; accent-color: var(--oa-accent); }
+#serments .oath-reading-options p { max-width: 75ch; color: var(--oa-muted); font-size: 14px; line-height: 1.6; }
+#serments .oath-compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 0 18px 18px; }
+#serments .oath-compare-card { min-width: 0; padding: 18px; border: 1px solid var(--oa-line-strong); border-top: 3px solid var(--oa-tier); border-radius: 6px; background: var(--oa-bg); }
+#serments .oath-compare-card > h3 { margin: 0 0 8px; font-size: 20px; font-weight: 650; line-height: 1.4; overflow-wrap: anywhere; }
+#serments .oath-compare-card > p { margin-bottom: 20px; color: var(--oa-muted); font-size: 14px; line-height: 1.6; }
+#serments .oath-compare-card .oath-ability-action { padding: 15px; background: var(--oa-panel); }
+#serments .oath-compare-card .oath-action-cost span { background: var(--oa-bg); }
+#serments .oath-compare-card > button { margin-top: 10px; }
+#serments .oath-evolutions { margin: 28px 0; padding-top: 28px; border-top: 1px solid var(--oa-line); }
+#serments .oath-evolutions p { max-width: 75ch; margin: 0 0 16px; color: var(--oa-soft); font-size: 15px; line-height: 1.65; }
+#serments .oath-evo-links { display: flex; align-items: stretch; flex-wrap: wrap; gap: 12px; }
+#serments .oath-evo-btn { display: flex; align-items: center; flex: 1 1 260px; gap: 12px; min-width: 0; max-width: 440px; padding: 12px; border: 1px solid var(--oa-line-strong) !important; background: var(--oa-panel) !important; color: var(--oa-text); text-align: left; }
 #serments .oath-evo-btn:hover { border-color: var(--oa-accent) !important; background: var(--oa-hover) !important; }
-#serments .oath-evo-btn :is(.oath-evo-art,.oath-list-art) { flex: none; width: 46px; height: 51px; }
-#serments .oath-evo-btn :is(img,.np-serment-emblem,.np-serment-monogram) { display: block; width: 46px !important; height: 51px !important; object-fit: cover; border-radius: 0 !important; }
-#serments .oath-evo-btn small { display: block; margin-bottom: 3px; color: var(--oa-accent); font-size: 8px; line-height: 1.4; text-transform: uppercase; letter-spacing: .1em; }
-#serments .oath-evo-btn strong { display: block; color: var(--oa-text); font-size: 11px; line-height: 1.4; font-weight: 650; overflow-wrap: anywhere; }
-#serments .oath-evo-btn > span:last-child { color: var(--oa-accent); }
-#serments .oath-empty { margin: 14px; padding: 24px 18px; border: 1px dashed var(--oa-line-strong); color: var(--oa-soft); font-size: 12px; line-height: 1.75; text-align: center; }
-#serments .oath-empty-stage { margin: 0; }
-#serments .oath-atlas.is-immersive, #serments .oath-atlas:fullscreen { width: 100%; max-width: none; min-height: 100dvh; padding: 22px; overflow-y: auto; background: var(--oa-bg); }
-#serments .oath-atlas.is-immersive { position: fixed; inset: 0; z-index: 9999; }
-#serments .oath-atlas:is(.is-immersive,:fullscreen) .oath-library, #serments .oath-atlas:is(.is-immersive,:fullscreen) .oath-inspector { top: 16px; }
-#serments .oath-atlas:is(.is-immersive,:fullscreen) .oath-library { max-height: calc(100dvh - 125px); }
-#serments .oath-brand-mark { display: grid; place-items: center; flex: none; width: 41px; height: 41px; border: 1px solid var(--oa-copper); color: var(--oa-copper); transform: rotate(45deg); }
-#serments .oath-brand-mark svg { width: 24px; height: 24px; transform: rotate(-45deg); }
-#serments .oath-constellation-center > small { position: absolute; top: -20px; left: 0; right: 0; color: var(--oa-muted); font-size: 7px; font-weight: 700; letter-spacing: .22em; text-align: center; }
-#serments .oath-level-label > div { display: flex; align-items: center; gap: 9px; }
-#serments .oath-level-label output { min-width: 24px; color: var(--oa-text); font: 500 33px/1 var(--oa-serif); text-align: center; }
-#serments .oath-progress-readout { display: block; padding: 0 18px 17px; background: var(--oa-panel); }
-#serments .oath-progress-readout > div:first-child { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 9px; }
-#serments .oath-action-status { display: block; min-height: 0; padding-top: 6px; color: var(--oa-accent); font-size: 12px; line-height: 1.5; }
-#serments .oath-session-note { margin: 13px 0 0; color: var(--oa-muted); font-size: 9px; line-height: 1.6; text-align: right; }
-html[data-np-design="polar"] #s-app #p-serments-c:fullscreen { width: 100vw; max-width: none !important; height: 100dvh; padding: 22px !important; overflow: auto; background: var(--tm-bg, var(--bg)); }
-#serments #p-serments-c:fullscreen .oath-library, #serments #p-serments-c:fullscreen .oath-inspector { top: 16px; }
-#serments .oath-map.is-linear { height: auto; padding: 22px 18px; }
-#serments .oath-map.is-linear :is(.oath-links,.oath-constellation-center,.oath-root) { display: none; }
-#serments .oath-map.is-linear .oath-paths { position: relative; display: grid; gap: 18px; }
-#serments .oath-map.is-linear :is(.oath-path,.oath-node-list) { position: relative; inset: auto; }
-#serments .oath-map.is-linear .oath-node-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
-#serments .oath-map.is-linear .oath-node { position: relative; left: auto; top: auto; width: 100%; height: auto; min-height: 145px; padding: 16px 10px; border: 1px solid var(--oa-line) !important; background: var(--oa-panel) !important; transform: none; }
-#serments .oath-map.is-linear .oath-node-copy { position: static; margin-top: 14px; }
-#serments .oath-map.is-linear .oath-node-state { position: static; order: 3; margin-top: 7px; }
-@keyframes oath-orbit { to { transform: translate(-50%, -50%) rotate(360deg); } }
+#serments .oath-evo-art { flex: none; width: 48px; height: 58px; }
+#serments .oath-evo-art :is(img, .np-serment-emblem, .np-serment-monogram) { display: grid; place-items: center; width: 48px !important; height: 58px !important; max-width: 48px; max-height: 58px; margin: 0; border: 0; border-radius: 4px; object-fit: cover; }
+#serments .oath-evo-btn strong { display: block; color: var(--oa-text); font-size: 16px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+#serments .oath-evo-btn small,
+#serments .oath-evo-status { display: block; margin-top: 4px; color: var(--oa-muted); font-size: 14px; font-weight: 400; line-height: 1.5; }
+#serments .oath-evo-lock { flex: none; margin-left: auto; color: var(--oa-muted); }
+#serments .oath-evo-lock svg { width: 18px; height: 18px; }
+#serments .oath-codex-body { max-width: 90ch; padding: 0 20px 20px; }
+#serments .oath-codex-body :is(p, .oath-hero-lore, .oath-weapon-detail) { margin-bottom: 18px; color: var(--oa-soft); font-size: 16px; line-height: 1.75; overflow-wrap: anywhere; }
+#serments .oath-identity { margin: 4px 0 22px; padding: 5px 0 5px 20px; border-left: 2px solid var(--oa-accent); color: var(--oa-text); font: 500 24px/1.45 var(--oa-serif); }
+#serments .oath-world h3 { margin: 25px 0 10px; color: var(--oa-text); font-size: 19px; font-weight: 650; line-height: 1.4; }
+#serments .oath-codex-body .oath-rp-note { color: var(--oa-muted); font-size: 14px; }
+#serments .oath-empty { margin: 0; padding: 20px 12px; color: var(--oa-soft); font-size: 15px; line-height: 1.65; }
+#serments .oath-empty-stage { padding: 24px; border: 1px solid var(--oa-line); border-radius: 6px; }
 
-
-/* Progression HUD: tier colors belong to milestones, branch identity stays on the path headings. */
-body:is([data-theme-tone="light"],[data-theme-active="light"],.light) #serments .oath-atlas {
-  --oa-jade: #176747; --oa-azure: #225c96; --oa-violet: #76439b; --oa-gold: #775315;
+/* Stack before any rule card becomes a narrow column. */
+@container oath-stage (max-width: 760px) {
+  #serments .oath-skill-layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  #serments .oath-back-to-levels { display: inline-flex; }
+  #serments .oath-node-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  #serments .oath-node-list > li + li::before { display: none; }
+  #serments .oath-compare { grid-template-columns: minmax(0, 1fr); }
 }
-#serments [data-tier-color="jade"], #serments [data-current-color="jade"] { --oa-tier: var(--oa-jade); }
-#serments [data-tier-color="azure"], #serments [data-current-color="azure"] { --oa-tier: var(--oa-azure); }
-#serments [data-tier-color="violet"], #serments [data-current-color="violet"] { --oa-tier: var(--oa-violet); }
-#serments [data-tier-color="gold"], #serments [data-current-color="gold"] { --oa-tier: var(--oa-gold); }
-#serments .oath-node[data-tier-color], #serments .oath-link[data-tier-color] { --oa-path: var(--oa-tier); }
-#serments .oath-hero { grid-template-columns: minmax(180px,1fr) auto minmax(230px,32%); gap: 18px; }
-#serments .oath-rank-hud { position: relative; display: flex; align-items: center; gap: 13px; min-width: 155px; padding: 13px 17px; border: 1px solid color-mix(in srgb, var(--oa-tier) 45%, var(--oa-line)); background: radial-gradient(ellipse at 0 0, color-mix(in srgb, var(--oa-tier) 12%, transparent), transparent 80%), var(--oa-bg); }
-#serments .oath-rank-hud::before, #serments .oath-rank-hud::after { content: ''; position: absolute; width: 9px; height: 9px; border-color: var(--oa-tier); pointer-events: none; }
-#serments .oath-rank-hud::before { top: -1px; left: -1px; border-top: 2px solid var(--oa-tier); border-left: 2px solid var(--oa-tier); }
-#serments .oath-rank-hud::after { right: -1px; bottom: -1px; border-right: 2px solid var(--oa-tier); border-bottom: 2px solid var(--oa-tier); }
-#serments .oath-rank-sigil { display: grid; place-items: center; flex: none; width: 36px; height: 44px; color: var(--oa-tier); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--oa-tier) 22%, transparent)); }
-#serments .oath-rank-sigil svg { width: 34px; height: 34px; }
-#serments .oath-rank-hud small { display: block; margin-bottom: 4px; color: var(--oa-muted); font-size: 7px; font-weight: 750; letter-spacing: .16em; text-transform: uppercase; }
-#serments .oath-rank-hud strong { display: block; color: var(--oa-tier); font: 500 22px/1.1 var(--oa-serif); }
-#serments .oath-rank-hud div > span { display: block; margin-top: 5px; color: var(--oa-soft); font-size: 8px; line-height: 1.5; }
-#serments .oath-discovery-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 0 14px 13px; }
-#serments .oath-discovery-toolbar > p { flex: 1 0 100%; margin: -2px 0 0; color: var(--oa-muted); font-size: 9px; line-height: 1.5; }
-#serments .oath-mode-toggle { display: inline-flex; align-items: stretch; padding: 3px; border: 1px solid var(--oa-line-strong); background: var(--oa-panel); }
-#serments .oath-mode-toggle button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 33px; padding: 6px 10px; border: 1px solid transparent !important; background: transparent !important; color: var(--oa-soft); font-size: 9px; font-weight: 650; cursor: pointer; }
-#serments .oath-mode-toggle svg { width: 13px; height: 13px; }
-#serments .oath-mode-toggle button[aria-pressed="true"] { color: var(--oa-text); border-color: color-mix(in srgb, var(--oa-accent) 55%, var(--oa-line)) !important; background: color-mix(in srgb, var(--oa-accent) 12%, var(--oa-bg)) !important; box-shadow: inset 0 -2px var(--oa-accent); }
-#serments .oath-mode-toggle button:hover { background: var(--oa-hover) !important; }
-#serments .oath-state-legend { display: flex; flex-wrap: wrap; gap: 8px 11px; color: var(--oa-muted); font-size: 8px; }
-#serments .oath-state-legend > span { display: inline-flex; align-items: center; gap: 5px; }
-#serments .oath-state-legend svg { width: 12px; height: 12px; }
-#serments .oath-state-legend > span::before { content: ''; width: 5px; height: 5px; background: var(--oa-accent); transform: rotate(45deg); }
-#serments .oath-state-legend > span:nth-child(2)::before { background: transparent; border: 1px solid var(--oa-muted); }
-#serments .oath-state-legend > span:nth-child(3)::before { background: transparent; border: 1px dashed var(--oa-muted); }
-#serments .oath-state-legend > span:has(svg)::before { display: none; }
-#serments .oath-tier-legend { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 6px; margin: 12px 14px 0; }
-#serments .oath-tier-legend > span { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 5px; min-width: 0; padding: 7px 5px; border-top: 2px solid var(--oa-tier); background: color-mix(in srgb, var(--oa-tier) 6%, var(--oa-bg)); color: var(--oa-tier); font: 500 13px/1.25 var(--oa-serif); }
-#serments .oath-tier-legend i { font-style: normal; }
-#serments .oath-tier-legend b { color: var(--oa-text); font: 650 8px/1.4 var(--fb,Arial,sans-serif); letter-spacing: .025em; }
-#serments .oath-levelbar { margin: 0 14px 12px; padding: 12px 14px 9px; border: 1px solid var(--oa-line); border-left: 2px solid var(--oa-accent); background: linear-gradient(100deg, color-mix(in srgb, var(--oa-accent) 5%, var(--oa-panel)), var(--oa-panel)); }
-#serments .oath-own-level { width: 100%; min-height: 30px; padding: 5px 7px; margin-top: 8px; border: 1px solid var(--oa-line) !important; background: transparent !important; color: var(--oa-soft); font-size: 8px; cursor: pointer; }
-#serments .oath-own-level:hover { color: var(--oa-text); border-color: var(--oa-accent) !important; }
-#serments .oath-levelbar input[type="range"]::-webkit-slider-runnable-track { height: 4px; background: linear-gradient(90deg, var(--oa-jade) 0%, var(--oa-azure) 32%, var(--oa-violet) 66%, var(--oa-gold) 100%); opacity: .8; }
-#serments .oath-levelbar input[type="range"]::-moz-range-track { height: 4px; background: linear-gradient(90deg, var(--oa-jade) 0%, var(--oa-azure) 32%, var(--oa-violet) 66%, var(--oa-gold) 100%); opacity: .8; }
-#serments .oath-levelbar input[type="range"]::-webkit-slider-thumb { margin-top: -5px; }
-#serments .oath-map { background: radial-gradient(ellipse at 50% 45%, color-mix(in srgb, var(--oa-tier) 14%, transparent), transparent 44%), radial-gradient(ellipse at 10% 80%, color-mix(in srgb, var(--oa-jade) 7%, transparent), transparent 36%); transition: background .4s; }
-#serments .oath-map-mist { position: absolute; z-index: 1; inset: 0 0 auto; height: 40%; pointer-events: none; opacity: .6; background: radial-gradient(ellipse at 22% 5%, color-mix(in srgb, var(--oa-violet) 9%, transparent), transparent 65%), linear-gradient(var(--oa-bg), transparent); mask-image: linear-gradient(black, transparent); }
-#serments .oath-map .oath-constellation-center::before { background: radial-gradient(ellipse, color-mix(in srgb, var(--oa-tier) 20%, transparent), transparent 65%); }
-#serments .oath-map .oath-hero-art { filter: drop-shadow(0 0 25px color-mix(in srgb, var(--oa-tier) 24%, transparent)); }
-#serments .oath-map .oath-orbit { border-color: color-mix(in srgb, var(--oa-tier) 32%, transparent); }
-#serments .oath-map .oath-orbit::before { border-color: color-mix(in srgb, var(--oa-tier) 30%, transparent); }
-#serments .oath-link[data-tier-color] { stroke: color-mix(in srgb, var(--oa-tier) 25%, var(--oa-line)); stroke-dasharray: 4 5; }
-#serments .oath-link[data-tier-color].is-lit { stroke: var(--oa-tier); stroke-dasharray: none; stroke-width: 2; }
-#serments .oath-link[data-tier-color].is-current { stroke-width: 3; }
-#serments .oath-link.is-sealed { opacity: .3; stroke-dasharray: 1 7; }
-#serments .oath-node[data-tier-color] .oath-node-orb { border-color: color-mix(in srgb, var(--oa-tier) 60%, var(--oa-line)) !important; }
-#serments .oath-node[data-tier-color] .oath-node-orb::before { border-color: color-mix(in srgb, var(--oa-tier) 25%, transparent) !important; }
-#serments .oath-node-rank { position: absolute; z-index: 1; top: -11px; right: -11px; display: grid; place-items: center; width: 20px !important; height: 20px !important; padding: 1px; border: 1px solid color-mix(in srgb, var(--oa-tier) 60%, var(--oa-line)); background: var(--oa-bg); color: var(--oa-tier); font: 600 10px/1 var(--oa-serif); letter-spacing: -.05em; transform: rotate(-45deg); }
-#serments .oath-path[data-branch="1"] .oath-node-rank { top: auto; right: auto; bottom: -11px; left: -11px; }
-#serments .oath-node.is-current .oath-node-orb { box-shadow: 0 0 0 4px color-mix(in srgb, var(--oa-tier) 10%, transparent), 0 0 25px color-mix(in srgb, var(--oa-tier) 38%, transparent), inset 0 0 10px color-mix(in srgb, var(--oa-text) 20%, transparent); }
-#serments .oath-node.is-current .oath-node-orb::before { border-color: color-mix(in srgb, var(--oa-bg) 55%, transparent) !important; }
-#serments .oath-node.is-current .oath-node-state { font-weight: 850; }
-#serments .oath-node.is-current .oath-node-rank { border-color: var(--oa-tier); background: var(--oa-tier); color: var(--oa-bg); }
-#serments .oath-node.is-current .oath-node-title { color: var(--oa-tier); }
-#serments .oath-node.is-legacy .oath-node-orb { color: var(--oa-tier); background: color-mix(in srgb, var(--oa-tier) 5%, var(--oa-bg)) !important; box-shadow: none !important; }
-#serments .oath-node.is-legacy .oath-node-title { color: var(--oa-soft); }
-#serments .oath-node.is-locked .oath-node-orb { color: color-mix(in srgb, var(--oa-tier) 65%, var(--oa-muted)); background: var(--oa-bg) !important; border-style: dashed !important; }
-#serments .oath-node.is-locked .oath-node-orb > svg { width: 23px; height: 23px; }
-#serments .oath-node.is-next .oath-node-orb { border-color: var(--oa-tier) !important; box-shadow: 0 0 17px color-mix(in srgb, var(--oa-tier) 12%, transparent); }
-#serments .oath-node.is-next .oath-node-level { color: var(--oa-tier); }
-#serments .oath-node.is-sealed .oath-node-orb { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--oa-tier) 4%, var(--oa-bg)) 0 3px, var(--oa-bg) 3px 8px) !important; border-color: color-mix(in srgb, var(--oa-tier) 35%, var(--oa-line)) !important; color: var(--oa-muted); }
-#serments .oath-node.is-sealed .oath-node-orb::before { border-style: dashed !important; }
-#serments .oath-node.is-sealed .oath-node-title { color: var(--oa-muted); font-size: 14px; font-weight: 500; letter-spacing: .3em; }
-#serments .oath-node.is-sealed .oath-node-level { color: var(--oa-muted); }
-#serments .oath-node.is-sealed .oath-node-rank { color: var(--oa-soft); border-style: dashed; }
-#serments .oath-node.is-selected .oath-node-orb::after { border-color: var(--oa-tier) !important; }
-#serments .oath-node.is-revealing .oath-node-orb { animation: oath-tier-awaken 1.15s cubic-bezier(.18,.65,.3,1) both; }
-#serments .oath-inspector[data-tier-color] { border-top-color: var(--oa-tier); }
-#serments .oath-inspector[data-tier-color] :is(.oath-inspector-index,.oath-cost > span,.oath-inspector-effect > span,.oath-inspector-status.is-unlocked) { color: var(--oa-tier); }
-#serments .oath-inspector[data-tier-color] .oath-inspector-status.is-unlocked { border-color: color-mix(in srgb, var(--oa-tier) 45%, var(--oa-line)); }
-#serments .oath-inspector.is-sealed { border-style: solid; border-top-style: dashed; }
-#serments .oath-gate { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: stretch; min-width: 0; padding: 17px 12px; margin: 0 0 15px; border: 1px solid color-mix(in srgb, var(--oa-tier) 30%, var(--oa-line)); background: radial-gradient(ellipse at 50% 0, color-mix(in srgb, var(--oa-tier) 9%, transparent), transparent 65%), var(--oa-bg); text-align: center; }
-#serments .oath-gate-seal { display: grid; place-items: center; width: 66px; height: 66px; margin: 4px auto 17px; border: 1px dashed color-mix(in srgb, var(--oa-tier) 65%, var(--oa-line)); outline: 1px solid color-mix(in srgb, var(--oa-tier) 15%, transparent); outline-offset: 5px; color: var(--oa-tier); background: color-mix(in srgb, var(--oa-tier) 4%, var(--oa-bg)); transform: rotate(45deg); }
-#serments .oath-gate-seal svg { width: 32px; height: 32px; transform: rotate(-45deg); }
-#serments .oath-gate h3, #serments .oath-gate strong { margin: 0 0 8px; color: var(--oa-text); font: 500 24px/1.15 var(--oa-serif); overflow-wrap: anywhere; }
-#serments .oath-gate p { margin: 6px 0 12px; color: var(--oa-soft); font-size: 14px; line-height: 1.6; }
-#serments .oath-gate-goal { display: block; margin: 7px 0; color: var(--oa-tier); font-size: 12px; font-weight: 700; line-height: 1.5; }
-#serments .oath-gate-goal strong { display: block; margin-bottom: 3px; color: var(--oa-tier); font-size: 34px; }
-#serments .oath-gate-goal > span { display: block; color: var(--oa-soft); font-size: 12px; font-weight: 500; }
-#serments .oath-gate > small { display: block; margin-top: 12px; color: var(--oa-muted); font-size: 12px; line-height: 1.5; }
-#serments .oath-gate-progress { display: block; width: 100%; height: 5px; overflow: hidden; margin: 6px 0; border: 0; border-radius: 0; background: var(--oa-line); accent-color: var(--oa-tier); }
-#serments .oath-gate-progress > :is(i,span) { display: block; height: 100%; background: var(--oa-tier); box-shadow: 0 0 10px color-mix(in srgb, var(--oa-tier) 50%, transparent); }
-#serments progress.oath-gate-progress::-webkit-progress-bar { background: var(--oa-line); }
-#serments progress.oath-gate-progress::-webkit-progress-value { background: var(--oa-tier); }
-#serments progress.oath-gate-progress::-moz-progress-bar { background: var(--oa-tier); }
-#serments .oath-atlas [data-preview-tier], #serments .oath-atlas [data-reveal-all] { display: inline-flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 44px; margin-top: 9px; padding: 10px 11px; border: 1px solid var(--oa-tier) !important; background: color-mix(in srgb, var(--oa-tier) 10%, var(--oa-bg)) !important; color: var(--oa-text); font-size: 13px; font-weight: 700; line-height: 1.5; cursor: pointer; }
-#serments .oath-atlas [data-reveal-all] { border-color: var(--oa-line-strong) !important; background: transparent !important; color: var(--oa-soft); font-weight: 500; }
-#serments .oath-atlas :is([data-preview-tier],[data-reveal-all]):hover { border-color: var(--oa-tier) !important; background: color-mix(in srgb, var(--oa-tier) 16%, var(--oa-bg)) !important; }
-#serments .oath-atlas :is([data-preview-tier],[data-reveal-all]) svg { width: 15px; height: 15px; }
-#serments .oath-compare-card[data-tier-color] { --oa-path: var(--oa-tier); border-top: 2px solid var(--oa-tier) !important; }
-#serments .oath-compare-card.is-locked { border-top-style: dashed !important; }
-#serments .oath-compare-card.is-sealed { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--oa-tier) 3%, var(--oa-panel)) 0 3px, var(--oa-panel) 3px 10px) !important; }
-#serments .oath-next-quest { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: calc(100% - 28px); min-height: 73px; padding: 13px 16px; margin: 13px 14px; border: 1px solid color-mix(in srgb, var(--oa-tier) 55%, var(--oa-line)) !important; border-left: 3px solid var(--oa-tier) !important; background: linear-gradient(110deg, color-mix(in srgb, var(--oa-tier) 10%, var(--oa-bg)), var(--oa-panel)) !important; color: var(--oa-text); text-align: left; cursor: pointer; overflow: hidden; }
-#serments .oath-next-quest::before { content: ''; position: absolute; top: 0; bottom: 0; right: 40px; width: 40px; background: linear-gradient(105deg, transparent, color-mix(in srgb, var(--oa-tier) 5%, transparent)); transform: skewX(-16deg); pointer-events: none; }
-#serments .oath-next-quest > div { flex: 1; min-width: 0; }
-#serments .oath-next-quest.is-complete { cursor: default; }
-#serments .oath-next-quest small { display: block; margin-bottom: 5px; color: var(--oa-tier); font-size: 7px; font-weight: 750; line-height: 1.5; letter-spacing: .15em; text-transform: uppercase; }
-#serments .oath-next-quest strong { display: block; color: var(--oa-text); font: 500 21px/1.15 var(--oa-serif); }
-#serments .oath-next-quest div > span { display: block; margin-top: 5px; color: var(--oa-soft); font-size: 9px; line-height: 1.5; }
-#serments .oath-next-quest > :is(svg,span) { flex: none; width: 22px; height: 22px; color: var(--oa-tier); }
-#serments .oath-next-quest:hover { border-color: var(--oa-tier) !important; background: linear-gradient(110deg, color-mix(in srgb, var(--oa-tier) 16%, var(--oa-bg)), var(--oa-panel)) !important; box-shadow: 0 0 20px color-mix(in srgb, var(--oa-tier) 8%, transparent); }
-#serments .oath-next-quest:disabled { cursor: default; }
-#serments .oath-unlock-toast { position: absolute; z-index: 10; left: 50%; bottom: 24px; display: flex; align-items: center; gap: 12px; width: max-content; max-width: calc(100% - 34px); padding: 14px 22px; border: 1px solid var(--oa-tier); background: var(--oa-bg); color: var(--oa-tier); box-shadow: 0 0 0 5px color-mix(in srgb, var(--oa-tier) 5%, transparent), 0 8px 40px color-mix(in srgb, var(--oa-bg) 85%, transparent); pointer-events: none; opacity: 0; transform: translate(-50%, 12px); transition: opacity .25s, transform .25s; }
-#serments .oath-unlock-toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
-#serments .oath-unlock-toast > svg, #serments .oath-unlock-toast > span > svg { flex: none; width: 34px; height: 34px; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--oa-tier) 45%, transparent)); }
-#serments .oath-unlock-toast small { display: block; margin-bottom: 3px; font-size: 7px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
-#serments .oath-unlock-toast div > span { display: block; margin-top: 5px; color: var(--oa-soft); font-size: 9px; line-height: 1.4; }
-#serments .oath-unlock-toast strong { display: block; color: var(--oa-text); font: 500 23px/1.15 var(--oa-serif); }
-#serments .oath-evo-btn { position: relative; }
-#serments .oath-evo-btn.is-locked { border-style: dashed !important; }
-#serments .oath-evo-btn.is-locked .oath-evo-art { opacity: .55; filter: grayscale(.85); }
-#serments .oath-evo-btn.is-ready { border-color: color-mix(in srgb, var(--oa-gold) 55%, var(--oa-line)) !important; background: linear-gradient(110deg, color-mix(in srgb, var(--oa-gold) 7%, var(--oa-bg)), var(--oa-bg)) !important; }
-#serments .oath-evo-status { display: block; margin-top: 5px; color: var(--oa-muted); font-size: 7px; font-weight: 700; line-height: 1.5; text-transform: uppercase; letter-spacing: .045em; }
-#serments .oath-evo-btn.is-ready .oath-evo-status { color: var(--oa-gold); }
-#serments .oath-evo-lock { display: grid; place-items: center; flex: none; width: 17px; height: 20px; color: var(--oa-muted); }
-#serments .oath-evo-lock svg { width: 16px; height: 16px; }
-@keyframes oath-tier-awaken {
-  0% { transform: rotate(45deg) scale(.72); filter: brightness(1.6); box-shadow: 0 0 0 0 color-mix(in srgb, var(--oa-tier) 55%, transparent); }
-  45% { transform: rotate(45deg) scale(1.14); filter: brightness(1.25); box-shadow: 0 0 0 22px transparent, 0 0 45px color-mix(in srgb, var(--oa-tier) 65%, transparent); }
-  100% { transform: rotate(45deg) scale(1); filter: none; }
+@container oath-stage (max-width: 580px) {
+  #serments .oath-hero { grid-template-columns: minmax(0, 1fr) 105px; gap: 16px; }
+  #serments .oath-hero-art { width: 105px; height: 125px; }
+  #serments .oath-hero-title { font-size: 34px; }
+  #serments .oath-branch-switcher { grid-template-columns: minmax(0, 1fr); }
+  #serments .oath-path-heading { padding: 16px; }
+  #serments .oath-play-guide dl { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  #serments .oath-play-guide dd + dt { margin-top: 8px; }
+  #serments .oath-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 }
-@container oath-stage (max-width: 1000px) {
-  #serments .oath-hero { grid-template-columns: minmax(0,1fr) auto; }
-  #serments .oath-stats { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--oa-line); margin: 0 -20px -12px; }
-  #serments .oath-stat { padding: 9px 20px; }
-  #serments .oath-stat strong { display: inline; margin-right: 8px; font-size: 23px; }
-}
-
-@container oath-stage (max-width: 1040px) {
-  #serments .oath-tree-grid { grid-template-columns: minmax(0, 1fr); }
-  #serments .oath-inspector { position: static; width: 100%; max-width: 680px; margin-inline: auto; padding: 24px; }
-  #serments .oath-evolutions { grid-template-columns: minmax(0,1fr); }
+@container oath-stage (max-width: 410px) {
+  #serments .oath-hero { grid-template-columns: minmax(0, 1fr) 76px; gap: 14px; align-items: start; }
+  #serments .oath-hero-content { display: contents; }
+  #serments .oath-hero-meta, #serments .oath-hero-title { grid-column: 1; margin-bottom: 0; }
+  #serments .oath-hero-art { grid-column: 2; grid-row: 1 / span 2; width: 76px; height: 100px; }
+  #serments .oath-hero-tagline, #serments .oath-weapon-name { grid-column: 1 / -1; margin-bottom: 0; }
+  #serments .oath-hero-title { font-size: 30px; }
+  #serments .oath-node { display: block; height: 100%; padding: 12px; }
+  #serments .oath-node-marker { flex-direction: row; gap: 5px; width: fit-content; min-width: 36px; min-height: 32px; margin-bottom: 9px; padding: 4px 8px; }
+  #serments .oath-node-marker b { font-size: 16px; }
+  #serments .oath-node-title { font-size: 14px; }
+  #serments .oath-node-state { font-size: 14px; }
+  #serments .oath-inspector { padding: 20px 16px; }
+  #serments .oath-inspector > h3 { font-size: 27px; }
+  #serments .oath-ability-action { padding: 15px; }
+  #serments .oath-ability-action-head { display: grid; gap: 8px; }
+  #serments .oath-compare { padding-inline: 12px; }
+  #serments .oath-compare-card { padding: 15px 12px; }
 }
 @media (max-width: 1100px) and (min-width: 761px) {
-  #serments .oath-layout { grid-template-columns: 190px minmax(0,1fr); gap: 12px; }
-  #serments .oath-counts { gap: 12px; }
-
+  #serments .oath-layout { gap: 20px; }
+  #serments .oath-topbar { align-items: flex-start; flex-direction: column; gap: 10px; }
 }
 @media (max-width: 760px) {
-  #serments .oath-identity, #serments .oath-world { grid-template-columns: minmax(0,1fr); gap: 16px; }
-  #serments .oath-identity { padding: 16px; }
-  html[data-np-design="polar"] #s-app #serments > .tab-popup-close { top: 14px; right: 14px; width: 32px; min-width: 32px; height: 32px; min-height: 32px; }
-  #serments .oath-topbar > div:nth-child(2) { max-width: calc(100% - 87px); }
-  #serments .oath-topbar { align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 11px; padding: 0 0 12px; }
-  #serments .oath-topbar h1 { font-size: 27px; }
-  #serments .oath-brand-mark { width: 29px; height: 29px; margin-right: 2px; }
-  #serments .oath-brand-mark svg { width: 20px; height: 20px; }
-  #serments .oath-counts { gap: 16px; margin-left: 0; }
-  #serments .oath-counts :is(strong,b) { font-size: 21px; }
-  #serments .oath-counts > * { font-size: 7px; gap: 5px; }
-  #serments .oath-counts span { max-width: none; }
-  #serments .oath-immersion-toggle { margin-left: auto; font-size: 9px; min-height: 38px; padding: 8px 10px; }
+  html[data-np-design="polar"] #s-app #serments > .tab-popup-close { top: 12px; right: 12px; }
+  #serments .oath-topbar { display: block; padding: 0 38px 20px 0; margin-bottom: 18px; }
+  #serments .oath-topbar h1 { font-size: 29px; }
+  #serments .oath-catalogue-count { display: block; margin-top: 10px; }
   #serments .oath-layout { display: block; }
-  #serments .oath-library { position: static; max-height: none; padding: 0; margin-bottom: 12px; }
-  #serments .oath-library-head { padding: 10px 13px; border: 0; gap: 0 9px; }
-  #serments .oath-library-head .oath-eyebrow { width: 100%; margin: 0; font-size: 7px; }
-  #serments .oath-library-head h2 { font-size: 20px; }
-  #serments .oath-library-toggle { display: inline-flex; width: 100%; min-height: 37px; padding: 0; font-size: 9px; }
-  #serments .oath-library-toggle > span:last-child { display: inline; }
-  #serments .oath-library-toggle strong { margin-right: auto; }
-  #serments .oath-library-body { display: none; padding: 0 12px 12px; border-top: 1px solid var(--oa-line); }
+  #serments .oath-library { position: static; max-height: none; margin-bottom: 24px; }
+  #serments .oath-library-head { border-bottom: 0; padding: 8px 16px; }
+  #serments .oath-library-body { display: none; padding: 16px 12px 12px; border-top: 1px solid var(--oa-line); }
   #serments .oath-library.is-open .oath-library-body { display: flex; }
-  #serments .oath-list { max-height: 295px; grid-template-columns: repeat(2,minmax(0,1fr)); }
-  #serments .oath-filter-btn { min-height: 36px; padding: 7px 10px; }
-  #serments .oath-hero { display: block; min-height: 0; padding: 14px 16px 0; }
-  #serments .oath-hero-title { font-size: clamp(40px, 10vw, 58px); }
-  #serments .oath-hero-tagline { font-size: 16px; }
-  #serments .oath-stats { margin: 12px -16px 0; border-left: 0; border-top: 1px solid var(--oa-line); }
-  #serments .oath-stat { display: block; padding: 10px 12px; }
-  #serments .oath-stat strong { display: block; margin-bottom: 3px; font-size: 25px; }
-  #serments .oath-stat span { font-size: 7px; }
-  #serments .oath-tree-grid { display: block; }
-  #serments .oath-tree-heading { padding: 15px 12px; }
-  #serments .oath-tree-heading h2 { font-size: 24px; }
-  #serments .oath-view-tabs button { min-height: 36px; padding: 7px 8px; font-size: 9px; }
-  #serments .oath-branch-switcher { padding: 0 10px; gap: 8px; }
-  #serments .oath-path-heading { align-items: start; gap: 7px; min-height: 84px; padding: 11px 8px; }
-  #serments .oath-path-letter { width: 22px; height: 27px; font-size: 19px; }
-  #serments .oath-path-heading strong { font-size: 17px; }
-  #serments .oath-path-heading small { font-size: 7px; line-height: 1.5; }
-  #serments .oath-map { display: grid; grid-template-columns: minmax(0,1fr); height: auto; padding: 10px 12px 18px; }
-  #serments .oath-links { display: none; }
-  #serments .oath-constellation-center { position: relative; grid-row: 1; left: auto; top: auto; width: 150px; height: 195px; margin: 2px auto 26px; transform: none; }
-  #serments .oath-hero-art { inset: -5px -20px 0; }
-  #serments .oath-orbit { width: 190px; height: 190px; }
-  #serments .oath-orbit:nth-child(2) { width: 215px; height: 215px; }
-  #serments .oath-art-caption { left: -30px; right: -30px; bottom: -15px; font-size: 7px; }
-  #serments .oath-root { position: relative; grid-row: 2; left: auto; top: auto; width: fit-content; max-width: 100%; margin: 0 auto 23px; padding: 8px 12px; transform: none; }
-  #serments .oath-root-sigil svg { width: 25px; height: 25px; }
-#serments .oath-root strong { font-size: 16px; }
-  #serments .oath-paths { position: relative; grid-row: 3; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
-  #serments .oath-path, #serments .oath-node-list { position: relative; inset: auto; min-width: 0; }
-  #serments .oath-path::before { content: attr(data-branch-label); display: block; padding: 5px 0 12px; color: var(--oa-path); font-size: 8px; font-weight: 750; letter-spacing: .18em; text-align: center; text-transform: uppercase; }
-  #serments .oath-node-list { display: grid; gap: 23px; }
-  #serments .oath-node-list::before { content: ''; position: absolute; left: 50%; top: 30px; bottom: 90px; width: 1px; background: color-mix(in srgb, var(--oa-path) 45%, var(--oa-line)) !important; }
-  #serments .oath-node { position: relative; left: auto; top: auto; width: 100%; height: auto; min-height: 123px; padding: 13px 5px 10px; border: 1px solid var(--oa-line) !important; background: var(--oa-bg) !important; transform: none; }
-  #serments .oath-node.is-selected { border-color: var(--oa-path) !important; background: color-mix(in srgb, var(--oa-path) 5%, var(--oa-bg)) !important; }
-  #serments .oath-node-orb { width: 39px; height: 39px; margin: 3px 0 14px; }
-  #serments .oath-node-orb svg { width: 23px; height: 23px; }
-  #serments .oath-node-copy { position: static; }
-  #serments .oath-node-title { font-size: 11px; line-height: 1.35; }
-  #serments .oath-node-level { font-size: 8px; }
-  #serments .oath-node-state { position: static; order: 3; margin-top: 7px; font-size: 7px; }
-  #serments .oath-levelbar { padding: 14px 12px; gap: 10px 13px; }
-  #serments .oath-levelbar h2 { font-size: 22px; }
-  #serments .oath-level-step { width: 34px; height: 40px; }
-  #serments .oath-level-stop { min-height: 35px; }
-  #serments .oath-level-row { gap: 5px; }
-  #serments .oath-inspector { position: static; margin-top: 16px; padding: 20px 16px; }
-  #serments .oath-inspector > h3 { font-size: 26px; }
-  #serments .oath-compare { gap: 9px; padding: 16px 10px; }
-  #serments .oath-compare-card { padding: 13px 10px; }
-  #serments .oath-compare-card h3 { font-size: 23px; }
-  #serments .oath-compare-card p { font-size: 11px; }
-  #serments .oath-compare-card .oath-cost { flex-direction: column; align-items: flex-start; gap: 2px; }
-  #serments .oath-brief { grid-template-columns: 1fr; gap: 17px; }
-  #serments .oath-evolutions { grid-template-columns: 1fr; padding: 18px; }
-  #serments .oath-evo-links { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
-  #serments .oath-evo-btn { min-width: 0; max-width: none; padding: 6px; gap: 7px; }
-  #serments .oath-evo-btn strong { font-size: 10px; }
-  #serments .oath-atlas:is(.is-immersive,:fullscreen) { padding: 12px; }
+  #serments .oath-list { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 360px; }
+  #serments .oath-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #serments .oath-branches { margin-block: 24px; }
+  #serments .oath-workbench { padding-top: 24px; }
+  #serments .oath-play-guide:not(:empty) { padding: 15px 16px; }
+  #serments .oath-evo-btn { max-width: none; }
 }
 @media (max-width: 420px) {
-  #serments .oath-topbar h1 { font-size: 25px; }
-  #serments .oath-counts { gap: 11px; }
-
-  #serments .oath-library-head .oath-eyebrow { display: none; }
-  #serments .oath-library-head h2 { font-size: 19px; }
-  #serments .oath-list { grid-template-columns: 1fr; }
-  #serments .oath-levelbar { grid-template-columns: 1fr; }
-  #serments .oath-codex > summary { flex-wrap: wrap; gap: 5px 10px; font-size: 20px; }
-  #serments .oath-codex > summary .oath-eyebrow { width: 100%; }
-  #serments .oath-levelbar > :first-child { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-  #serments .oath-evo-links { grid-template-columns: 1fr; }
+  #serments .oath-list { grid-template-columns: minmax(0, 1fr); }
+  #serments .oath-topbar { padding-right: 26px; }
+  #serments .oath-level-field { width: 100%; justify-content: space-between; }
 }
-
-@media (min-width: 761px) {
-  #serments .oath-map:not(.is-linear) { height: 600px; }
-  #serments .oath-map:not(.is-linear) .oath-node-copy { top: 63px; }
-  #serments .oath-map:not(.is-linear) .oath-node-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-}
-@media (max-width: 760px) {
-  #serments .oath-topbar { display: grid; grid-template-columns: 35px minmax(0,1fr) auto; gap: 11px 9px; }
-  #serments .oath-topbar > div:nth-child(2) { grid-column: 2 / -1; min-width: 0; max-width: none; margin-right: 38px; }
-  #serments .oath-counts { grid-column: 1 / 3; }
-  #serments .oath-immersion-toggle { grid-column: 3; }
-  #serments .oath-levelbar > .oath-level-label { align-items: center; }
-  #serments .oath-hero { display: grid; grid-template-columns: minmax(0,1fr); gap: 13px; }
-  #serments .oath-level-label > .oath-own-level { width: auto; min-height: 36px; margin-top: 0; }
-  #serments .oath-rank-hud { width: 100%; min-width: 0; padding: 10px 13px; gap: 12px; }
-  #serments .oath-rank-hud > div { display: grid; grid-template-columns: 1fr auto; align-items: baseline; flex: 1; gap: 0 12px; }
-  #serments .oath-rank-hud small { grid-column: 1 / -1; }
-  #serments .oath-rank-hud div > span { margin: 0; text-align: right; }
-  #serments .oath-rank-sigil { width: 31px; height: 36px; }
-  #serments .oath-rank-sigil svg { width: 29px; height: 29px; }
-  #serments .oath-stats { margin: 0 -16px; }
-  #serments .oath-stat { padding: 10px 12px; }
-  #serments .oath-stat strong { display: block; font-size: 25px; margin: 0 0 3px; }
-  #serments .oath-discovery-toolbar { padding: 0 10px 12px; gap: 9px; }
-  #serments .oath-mode-toggle { width: 100%; }
-  #serments .oath-mode-toggle button { flex: 1; min-height: 38px; }
-  #serments .oath-state-legend { width: 100%; justify-content: center; gap: 12px; font-size: 8px; }
-  #serments .oath-tier-legend { margin: 10px 10px 7px; gap: 4px; }
-  #serments .oath-tier-legend > span { flex-direction: column; gap: 3px; font-size: 12px; padding: 7px 3px; }
-  #serments .oath-tier-legend b { font-size: 7px; }
-  #serments .oath-levelbar { margin: 0 10px 12px; padding: 12px; }
-  #serments .oath-node[data-tier-color] { border-top: 2px solid color-mix(in srgb, var(--oa-tier) 50%, var(--oa-line)) !important; }
-  #serments .oath-node.is-current { border-color: var(--oa-tier) !important; background: linear-gradient(160deg, color-mix(in srgb, var(--oa-tier) 12%, var(--oa-bg)), var(--oa-bg)) !important; }
-  #serments .oath-node.is-selected { border-color: var(--oa-tier) !important; }
-  #serments .oath-node.is-sealed { border-style: dashed !important; }
-  #serments .oath-node-rank { width: 17px !important; height: 17px !important; top: -10px; left: auto; right: -10px; font-size: 9px; }
-  #serments .oath-path[data-branch="1"] .oath-node-rank { top: -10px; right: -10px; bottom: auto; left: auto; }
-  #serments .oath-node.is-sealed .oath-node-title { font-size: 13px; }
-  #serments .oath-map-mist { height: 260px; }
-  #serments .oath-next-quest { width: calc(100% - 20px); margin: 10px; padding: 12px; }
-  #serments .oath-next-quest strong { font-size: 20px; }
-  #serments .oath-gate { padding: 20px 15px; }
-  #serments .oath-unlock-toast { position: fixed; bottom: 22px; max-width: calc(100vw - 40px); padding: 13px 18px; }
-  #serments .oath-unlock-toast strong { font-size: 21px; }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  #serments .oath-atlas *, #serments .oath-atlas *::before, #serments .oath-atlas *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  #serments .oath-atlas *,
+  #serments .oath-atlas *::before,
+  #serments .oath-atlas *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
-
-#serments .oath-play-guide:not(:empty) { padding: 15px 18px; border-bottom: 1px solid var(--oa-line); background: var(--oa-panel); }
-#serments .oath-play-guide .np-oath-game-guide { color: var(--oa-soft); }
-#serments .oath-play-guide .np-oath-game-guide > strong { color: var(--oa-text); }
-#serments .np-oath-operation > div { display: grid; gap: 4px; }
-#serments .np-oath-operation strong { color: var(--oa-text); font-size: 12px; }
-#serments .np-oath-operation span { color: var(--oa-accent); font-size: 10px; letter-spacing: 0; }
-#serments .oath-inspector-effect .np-oath-operation p { margin-top: 7px; color: var(--oa-soft); font-size: 12px; line-height: 1.7; }
-#serments .oath-compare-card .np-oath-game-guide { padding-bottom: 10px; }

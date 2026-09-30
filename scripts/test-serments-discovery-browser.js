@@ -13,7 +13,7 @@ const expansion = require('../assets/js/serments-reforged-data');
 (async () => {
   const app = await createLocalApp();
   const output = path.resolve(process.env.NP_TEST_OUTPUT || 'test-results/serments-discovery');
-  const inspectorOutput = path.resolve('test-results/serments-inspector');
+  const inspectorOutput = path.resolve('test-results/forge-readable');
   fs.mkdirSync(output, { recursive: true });
   fs.mkdirSync(inspectorOutput, { recursive: true });
   const errors = [];
@@ -43,11 +43,22 @@ const expansion = require('../assets/js/serments-reforged-data');
     const node = (branch, tier) => atlas.locator('.oath-node[data-node-branch="' + branch + '"][data-node-tier="' + tier + '"]');
     const inspector = () => atlas.locator('.oath-inspector');
     async function setLevel(level) {
-      await atlas.locator('#oath-level').evaluate((element, value) => {
-        element.value = String(value);
-        element.dispatchEvent(new Event('input', { bubbles: true }));
-      }, level);
+      await atlas.locator('#oath-level').fill(String(level));
       assert.equal(await atlas.locator('#oath-level').inputValue(), String(level));
+    }
+    async function setDisclosure(selector, open) {
+      const disclosure = atlas.locator(selector);
+      if ((await disclosure.getAttribute('open') !== null) !== open) await disclosure.locator(':scope > summary').click();
+      assert.equal(await disclosure.getAttribute('open') !== null, open);
+    }
+    async function setDiscovery(enabled) {
+      await setDisclosure('.oath-reading-options', true);
+      await atlas.locator('#oath-hide-future').setChecked(enabled);
+      assert.equal(await atlas.locator('#oath-hide-future').isChecked(), enabled);
+    }
+    async function chooseBranch(index) {
+      await atlas.locator('[data-choose-branch="' + index + '"]').click();
+      assert.equal(await atlas.locator('.oath-path-heading[aria-pressed="true"]').getAttribute('data-choose-branch'), String(index));
     }
     async function assertNoOverflow(label) {
       const widths = await page.evaluate(() => ({
@@ -73,21 +84,31 @@ const expansion = require('../assets/js/serments-reforged-data');
       await assertOperationCards(inspector().locator('.oath-inspector-effect'), tier, level);
     }
 
-    assert.equal(await atlas.locator('[data-discovery="on"]').getAttribute('aria-pressed'), 'true', 'La découverte est active à l’ouverture.');
+    assert.equal(await atlas.locator('#oath-hide-future').isChecked(), false, 'Les règles publiques sont consultables dès l’ouverture.');
+    assert.equal(await atlas.locator('#oath-level').getAttribute('type'), 'number');
+    assert.equal(await atlas.locator('#oath-level').inputValue(), '1', 'L’ouverture reprend le niveau du personnage lié.');
     assert.equal(await atlas.locator('.oath-list-item').count(), 34, 'Les entrées masquées par le staff restent exclues du catalogue.');
-    assert.equal(await atlas.locator('.oath-node').count(), 8);
+    assert.equal(await atlas.locator('.oath-path').count(), 1, 'Une seule voie est présentée à la fois.');
+    assert.equal(await atlas.locator('.oath-node').count(), 4);
+    assert.equal(await atlas.locator('.oath-path-heading').count(), 2);
     for (const branch of [0, 1]) {
+      await chooseBranch(branch);
       for (const [tier, color] of ['jade', 'azure', 'violet', 'gold'].entries()) {
         assert.equal(await node(branch, tier).getAttribute('data-tier-color'), color, 'Chaque étape possède son identité chromatique.');
       }
     }
-
+    await chooseBranch(0);
+    assert.equal(await atlas.locator('.oath-node.is-locked').count(), 4);
+    assert.equal(await atlas.locator('.oath-node.is-sealed').count(), 0);
+    await node(0, 3).click();
+    await assertInspectorActions(pugiliste.branches[0], 3, 1);
+    assert.ok(await atlas.locator('.oath-play-guide').count(), 'Le guide est accessible avant le premier niveau en lecture complète.');
+    await setDiscovery(true);
     await setLevel(1);
-    assert.equal(await atlas.locator('.oath-node.is-locked').count(), 8);
-    assert.equal(await atlas.locator('.oath-node.is-sealed').count(), 6);
-    assert.equal(await atlas.locator('.oath-node.is-next').count(), 2);
+    assert.equal(await atlas.locator('.oath-node.is-locked').count(), 4);
+    assert.equal(await atlas.locator('.oath-node.is-sealed').count(), 3);
     assert.equal(await atlas.locator('.oath-node.is-current').count(), 0);
-    assert.deepEqual(await atlas.locator('.oath-node.is-sealed .oath-node-title').allTextContents(), Array(6).fill('???'));
+    assert.deepEqual(await atlas.locator('.oath-node.is-sealed .oath-node-title').allTextContents(), Array(3).fill('???'));
     assert.equal(await atlas.locator('.oath-evo-btn[data-evolution="Cestuaire"]').evaluate(element => element.classList.contains('is-locked')), true);
     await node(0, 3).click();
     assert.equal(await inspector().evaluate(element => element.classList.contains('is-locked')), true);
@@ -96,66 +117,66 @@ const expansion = require('../assets/js/serments-reforged-data');
     assertEffectHidden(await inspector().textContent(), pugiliste.branches[0].paliers[3], 'Apogée scellée');
     assert.equal(await inspector().locator('.oath-inspector-effect').count(), 0, 'Une capacité scellée ne laisse pas son effet dans le DOM de l’inspecteur.');
     assert.equal(await inspector().locator('.np-oath-operation,.oath-ability-action,.oath-tier-story,.oath-inspector-flavor').count(), 0, 'Cartes, manifestation et narration de voie restent absentes du DOM verrouillé.');
-    assert.equal(await atlas.locator('.np-oath-game-guide').count(), 0, 'Un guide ne révèle pas les gestes d’une branche dont aucun palier n’est débloqué.');
+    assert.equal(await atlas.locator('.oath-play-guide').count(), 0, 'Un guide ne révèle pas les gestes d’une branche dont aucun palier n’est débloqué.');
     await node(0, 0).click();
     assert.equal(await node(0, 0).locator('.oath-node-title').textContent(), pugiliste.branches[0].paliers[0].manifestation ? pugiliste.branches[0].paliers[0].nom : 'Éveil');
-    assertEffectHidden(await inspector().textContent(), pugiliste.branches[0].paliers[0], 'Prochain éveil');
+    assertEffectHidden(await inspector().textContent(), pugiliste.branches[0].paliers[0], 'Prochain éveil', false);
     assert.equal(await inspector().locator('.oath-inspector-effect').count(), 0);
-    await atlas.locator('[data-oath-view="compare"]').click();
+    await setDisclosure('.oath-comparison', true);
     for (const [index, branch] of pugiliste.branches.entries()) {
       const card = atlas.locator('.oath-compare-card').nth(index);
       assertEffectHidden(await card.textContent(), branch.paliers[0], 'Comparaison verrouillée ' + index, branch.paliers[0].nom !== branch.nom);
       assert.equal(await card.locator('.oath-inspector-effect').count(), 0);
-      assert.equal(await card.locator('.np-oath-game-guide,.np-oath-operation,.oath-ability-action').count(), 0, 'La comparaison verrouillée ne révèle ni guide ni geste.');
+      assert.equal(await card.locator('.oath-play-guide,.np-oath-operation,.oath-ability-action').count(), 0, 'La comparaison verrouillée ne révèle ni guide ni geste.');
     }
     await atlas.locator('.oath-compare-card').first().locator('[data-preview-tier]').click();
     assert.equal(await atlas.locator('#oath-level').inputValue(), '2');
-    assert.equal(await page.evaluate(() => document.activeElement?.matches('.oath-compare-card h3')), true, 'Simuler un palier en comparaison conserve le focus dans la vue visible.');
+    assert.equal(await page.evaluate(() => document.activeElement?.matches('.oath-inspector h3')), true, 'Simuler un palier mène à un titre de capacité ou de voie.');
     await setLevel(1);
-    await atlas.locator('[data-oath-view="tree"]').click();
-    observations.push('Découverte niveau 1 : deux prochains éveils et six mystères scellés ; capacités masquées dans les inspecteurs et effets absents des comparaisons verrouillées.');
+    await setDisclosure('.oath-comparison', false);
+    observations.push('Lecture complète par défaut ; option de découverte niveau 1 : un prochain éveil et trois mystères scellés, sans effets ni coûts dans le DOM verrouillé.');
 
     await setLevel(5);
-    assert.equal(await atlas.locator('.oath-node.is-unlocked').count(), 4);
-    assert.equal(await atlas.locator('.oath-node.is-next').count(), 2);
-    assert.equal(await atlas.locator('.oath-node.is-sealed').count(), 2);
+    assert.equal(await atlas.locator('.oath-node.is-unlocked').count(), 2);
+    assert.equal(await atlas.locator('.oath-node.is-sealed').count(), 1);
     assert.equal(await atlas.locator('.oath-node.is-current').count(), 1);
     assert.equal(await atlas.locator('.oath-node.is-current').getAttribute('data-required-level'), '5');
-    const toast = atlas.locator('.oath-unlock-toast[role="status"]');
-    assert.equal(await toast.count(), 1);
-    assert.ok((await toast.textContent()).trim(), 'Le franchissement de paliers annonce la progression.');
     await node(0, 1).click();
     assert.equal(await inspector().getAttribute('data-tier-color'), 'azure');
     await assertInspectorActions(pugiliste.branches[0], 1, 5);
-    await atlas.locator('[data-oath-view="compare"]').click();
+    await setDisclosure('.oath-comparison', true);
     for (const [index, branch] of pugiliste.branches.entries()) {
       await assertOperationCards(atlas.locator('.oath-compare-card').nth(index).locator('.oath-inspector-effect'), branch.paliers[1], 5);
     }
-    await atlas.locator('[data-oath-view="tree"]').click();
-    const slider = atlas.locator('#oath-level');
-    await slider.focus();
-    await page.keyboard.press('ArrowRight');
-    assert.equal(await slider.inputValue(), '6');
-    assert.equal(await page.evaluate(() => document.activeElement?.id), 'oath-level', 'La progression conserve le focus du curseur.');
+    await setDisclosure('.oath-comparison', false);
+    const levelInput = atlas.locator('#oath-level');
+    await levelInput.focus();
+    await page.keyboard.press('ArrowUp');
+    assert.equal(await levelInput.inputValue(), '6');
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'oath-level', 'Changer le niveau au clavier conserve le focus.');
     await assertInspectorActions(pugiliste.branches[0], 1, 6);
     assert.ok((await inspector().locator('.oath-ability-action').first().textContent()).includes('24 dégâts'), 'Le palier de niveau 5 affiche bien 18 + 6 au niveau intermédiaire 6.');
+    await setLevel(35);
+    await assertInspectorActions(pugiliste.branches[0], 3, 35);
     await setLevel(5);
     await node(0, 3).click();
     await inspector().locator('[data-preview-tier]').click();
     assert.equal(await atlas.locator('#oath-level').inputValue(), '10', 'L’aperçu projette le niveau requis sans attribuer la capacité.');
-    assert.equal(await atlas.locator('.oath-node.is-unlocked').count(), 8);
+    assert.equal(await atlas.locator('.oath-node.is-unlocked').count(), 4);
     assert.equal(await atlas.locator('.oath-node.is-current').count(), 1);
-    assert.equal(await atlas.locator('.oath-node.is-legacy').count(), 6, 'Les six paliers antérieurs sont remplacés.');
+    assert.equal(await atlas.locator('.oath-node.is-legacy').count(), 3, 'Les trois paliers antérieurs de la voie sont remplacés.');
     await assertInspectorActions(pugiliste.branches[0], 3, 10);
-    observations.push('Progression 1 → 5 → 10 : couleurs par étape, annonce de déblocage, aperçu au niveau requis et un seul palier applicable.');
+    observations.push('Progression 1 → 5 → 10 : couleurs par étape, aperçu au niveau requis et un seul palier applicable ; champ niveau utilisable au clavier sans perte de focus.');
 
     await atlas.locator('[data-own-level]').click();
     assert.equal(await atlas.locator('#oath-level').inputValue(), '1', 'Mon niveau reprend le niveau du personnage lié sans le modifier.');
+    await chooseBranch(1);
     await node(1, 3).click();
     await inspector().locator('[data-reveal-all]').click();
-    assert.equal(await atlas.locator('[data-discovery="off"]').getAttribute('aria-pressed'), 'true');
-    assert.equal(await atlas.locator('#oath-level').inputValue(), '1', 'Consulter le Codex ne simule pas une montée de niveau.');
-    assert.equal(await atlas.locator('.oath-node.is-locked').count(), 8, 'Le Codex révèle les informations sans rendre les capacités applicables.');
+    assert.equal(await atlas.locator('#oath-hide-future').isChecked(), false);
+    assert.equal(await page.evaluate(() => document.activeElement?.matches('.oath-inspector h3')), true, 'Révéler les règles replace le focus sur la fiche lisible.');
+    assert.equal(await atlas.locator('#oath-level').inputValue(), '1', 'Consulter toutes les règles ne simule pas une montée de niveau.');
+    assert.equal(await atlas.locator('.oath-node.is-locked').count(), 4, 'Révéler les informations ne rend pas les capacités applicables.');
     await assertInspectorActions(pugiliste.branches[1], 3, 1);
     await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -164,37 +185,39 @@ const expansion = require('../assets/js/serments-reforged-data');
     await inspector().locator('[data-copy-build]').click();
     await page.waitForFunction(() => !!window.__discoveryCopiedText);
     assert.ok((await page.evaluate(() => window.__discoveryCopiedText)).includes(pugiliste.branches[1].paliers[3].desc));
-    await atlas.locator('[data-discovery="on"]').focus();
-    await page.keyboard.press('Enter');
-    assert.equal(await atlas.locator('[data-discovery="on"]').getAttribute('aria-pressed'), 'true');
-    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-discovery')), 'on', 'Changer de mode au clavier conserve le focus.');
+    await setDisclosure('.oath-reading-options', true);
+    await atlas.locator('#oath-hide-future').focus();
+    await page.keyboard.press('Space');
+    assert.equal(await atlas.locator('#oath-hide-future').isChecked(), true);
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'oath-hide-future', 'Changer de mode au clavier conserve le focus.');
     assertEffectHidden(await inspector().textContent(), pugiliste.branches[1].paliers[3], 'Retour en découverte');
-    await atlas.locator('[data-discovery="off"]').focus();
-    await page.keyboard.press('Enter');
-    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-discovery')), 'off');
-    assert.equal(await atlas.locator('[data-discovery="off"]').getAttribute('aria-pressed'), 'true');
-    await atlas.locator('[data-discovery="on"]').click();
-    observations.push('Codex et retour en découverte : masquage réversible, niveau conservé, copie autorisée des règles consultées et focus clavier maintenu.');
+    await page.keyboard.press('Space');
+    assert.equal(await atlas.locator('#oath-hide-future').isChecked(), false);
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'oath-hide-future');
+    await setDiscovery(true);
+    observations.push('Option de découverte réversible, niveau conservé, copie autorisée des règles consultées et focus clavier maintenu.');
 
+    assert.match(await atlas.locator('.oath-evolutions').textContent(), /staff/i);
     await atlas.locator('.oath-evo-btn[data-evolution="Cestuaire"]').click();
     assert.equal(await atlas.locator('.oath-hero-title').textContent(), 'Cestuaire');
     assert.equal(await atlas.locator('#oath-level').inputValue(), '1');
-    assert.equal(await atlas.locator('.oath-node.is-locked').count(), 8);
-    assert.match(await atlas.locator('.oath-root').textContent(), /NIVEAU 10/);
+    assert.equal(await atlas.locator('.oath-node.is-locked').count(), 4);
+    assert.equal(await atlas.locator('.oath-node').first().getAttribute('data-required-level'), '10');
     await atlas.locator('.oath-evo-btn[data-evolution="Pugiliste"]').click();
+    await chooseBranch(0);
     await setLevel(5);
     await assertNoOverflow('Bureau');
     await page.screenshot({ path: path.join(output, 'discovery-desktop.png'), animations: 'disabled' });
     await page.setViewportSize({ width: 390, height: 844 });
     await assertNoOverflow('Mobile');
     await setLevel(1);
-    await atlas.locator('[data-oath-view="compare"]').click();
+    await setDisclosure('.oath-comparison', true);
     await atlas.locator('.oath-compare-card').first().locator('[data-preview-tier]').click();
-    assert.equal(await page.evaluate(() => document.activeElement?.matches('.oath-compare-card h3')), true, 'Sur mobile, la simulation en comparaison mène au titre de la voie visible.');
-    await atlas.locator('[data-oath-view="tree"]').click();
+    assert.equal(await page.evaluate(() => document.activeElement?.matches('.oath-inspector h3')), true, 'Sur mobile, la simulation mène à un titre lisible.');
+    await setDisclosure('.oath-comparison', false);
     await setLevel(5);
     await node(0, 3).click();
-    assert.equal(await page.evaluate(() => document.activeElement?.tagName), 'H3', 'Sur mobile, inspecter une rune mène au titre de sa fiche.');
+    assert.equal(await page.evaluate(() => document.activeElement?.matches('.oath-inspector h3')), true, 'Sur mobile, inspecter un palier mène au titre de sa fiche.');
     await page.screenshot({ path: path.join(output, 'discovery-mobile.png'), animations: 'disabled' });
 
     // Reproduce the dense panel reported by the user. The three operations
@@ -223,30 +246,25 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.equal(await flavor.locator('summary').textContent(), 'Imaginaire & incarnation');
     assert.equal(await flavor.getAttribute('open'), null, 'L’imaginaire est replié pour laisser les règles immédiatement lisibles.');
     assert.ok((await flavor.textContent()).includes(arbaletrier.branches[0].paliers[1].manifestation), 'Le récit reste disponible dans le panneau.');
-    await assertNoOverflow('Inspecteur Arbalétrier bureau');
-    await inspector().screenshot({ path: path.join(inspectorOutput, 'arbaletrier-desktop.png'), animations: 'disabled' });
-    await atlas.locator('.oath-tree-grid').screenshot({ path: path.join(inspectorOutput, 'arbaletrier-tree-1440.png'), animations: 'disabled' });
-    const desktopPlacement = await atlas.locator('.oath-tree-grid').evaluate(element => {
-      const tree = element.querySelector('.oath-tree').getBoundingClientRect();
-      const panel = element.querySelector('.oath-inspector').getBoundingClientRect();
-      return { treeWidth: Math.round(tree.width), inspectorWidth: Math.round(panel.width), layout: panel.left >= tree.right ? 'latéral' : 'sous l’arbre' };
-    });
     await flavor.locator('summary').focus();
     await page.keyboard.press('Enter');
     assert.equal(await flavor.getAttribute('open'), '', 'Le récit reste accessible au clavier.');
     await page.keyboard.press('Enter');
     await flavor.locator('summary').evaluate(element => element.blur());
-    await page.setViewportSize({ width: 390, height: 844 });
-    await assertNoOverflow('Inspecteur Arbalétrier mobile');
-    await inspector().screenshot({ path: path.join(inspectorOutput, 'arbaletrier-mobile.png'), animations: 'disabled' });
-    await page.setViewportSize({ width: 320, height: 740 });
-    await assertNoOverflow('Inspecteur Arbalétrier petit mobile');
-    await inspector().screenshot({ path: path.join(inspectorOutput, 'arbaletrier-mobile-320.png'), animations: 'disabled' });
-    await page.setViewportSize({ width: 1280, height: 900 });
+    const placements = [];
+    for (const [width, height] of [[1440, 1000], [1024, 900], [390, 844], [320, 740]]) {
+      await page.setViewportSize({ width, height });
+      await assertNoOverflow('Lecture Arbalétrier ' + width + ' px');
+      await inspector().screenshot({ path: path.join(inspectorOutput, 'arbaletrier-panel-' + width + '.png'), animations: 'disabled' });
+      await atlas.screenshot({ path: path.join(inspectorOutput, 'arbaletrier-page-' + width + '.png'), animations: 'disabled' });
+      placements.push(await atlas.locator('.oath-skill-layout').evaluate(element => {
+        const path = element.querySelector('.oath-progression').getBoundingClientRect();
+        const panel = element.querySelector('.oath-inspector').getBoundingClientRect();
+        return { viewport: innerWidth, progressionWidth: Math.round(path.width), inspectorWidth: Math.round(panel.width), layout: panel.left >= path.right ? 'latéral' : 'vertical' };
+      }));
+    }
     await node(0, 1).click();
-    assert.equal(await page.evaluate(() => document.activeElement?.matches('.oath-inspector h3')), true, 'Au bureau, inspecter une rune mène au panneau quand il se trouve sous l’arbre.');
-    await assertNoOverflow('Inspecteur Arbalétrier petit bureau');
-    await atlas.locator('.oath-tree-grid').screenshot({ path: path.join(inspectorOutput, 'arbaletrier-tree-1280.png'), animations: 'disabled' });
+    assert.equal(await page.evaluate(() => document.activeElement?.matches('.oath-inspector h3')), true, 'Sur petit écran, sélectionner un palier mène à sa fiche.');
     await page.setViewportSize({ width: 390, height: 844 });
 
     // Staff prose takes precedence over stale structured catalogue rules.
@@ -289,11 +307,11 @@ const expansion = require('../assets/js/serments-reforged-data');
       surface.innerHTML = renderSermentOperations(tier, 5);
       return surface.querySelectorAll('.np-oath-operation').length === 0 && surface.querySelector('p')?.textContent === tier.desc;
     }), true, 'Le rendu partagé par la fiche conserve le paragraphe staff sans anciens coûts.');
-    await atlas.locator('[data-oath-view="compare"]').click();
+    await setDisclosure('.oath-comparison', true);
     const staffComparison = atlas.locator('.oath-compare-card').first();
     assert.equal(await staffComparison.locator('.oath-cost strong').textContent(), '2 actions / 9 EP');
     await assertOperationCards(staffComparison.locator('.oath-inspector-effect'), staffTier, 5);
-    await atlas.locator('[data-oath-view="tree"]').click();
+    await setDisclosure('.oath-comparison', false);
     await page.evaluate(() => {
       window.getAllSD = window.__originalInspectorCatalogue;
       delete window.__originalInspectorCatalogue;
@@ -305,7 +323,7 @@ const expansion = require('../assets/js/serments-reforged-data');
       await assertInspectorActions(expansion.definitions[name].branches[0], 0, 10);
       assert.match(await inspector().locator('.oath-ability-action[data-operation="' + operation + '"] .oath-action-effect').textContent(), constraint, 'La séparation des coûts conserve les consommables et limites : ' + name);
     }
-    observations.push('Inspecteur Arbalétrier niveau 5 : trois actions avec coûts séparés, 29 dégâts calculés, récit replié et accessible au clavier ; aucune ancienne opération ne remplace une description ou un coût staff. Consommables conservés et dose mère répétable explicitée. Captures 1440/1280/390/320px sans débordement ; position 1440px : ' + JSON.stringify(desktopPlacement) + '.');
+    observations.push('Inspecteur Arbalétrier niveau 5 : trois actions avec coûts séparés, 29 dégâts calculés, récit replié et accessible au clavier ; aucune ancienne opération ne remplace une description ou un coût staff. Consommables conservés et dose mère répétable explicitée. Captures 1440/1024/390/320 px sans débordement ; placements : ' + JSON.stringify(placements) + '.');
 
     // Staff definitions can have more branches or milestones than the four
     // standard stages. Inject a browser-only fixture, preserving its live API.
@@ -326,15 +344,15 @@ const expansion = require('../assets/js/serments-reforged-data');
       };
       NPSermentsAtlas.focus('QA parcours personnalisé');
     });
-    assert.equal(await atlas.locator('.oath-map.is-linear').count(), 1, 'Les structures staff utilisent la disposition linéaire adaptée.');
-    assert.equal(await atlas.locator('.oath-path').count(), 3);
-    assert.equal(await atlas.locator('.oath-node').count(), 15);
-    assert.equal(await atlas.locator('#oath-level').getAttribute('max'), '25', 'Le curseur respecte aussi les niveaux définis par le staff au-delà de 20.');
+    assert.equal(await atlas.locator('.oath-path-heading').count(), 3, 'Toutes les voies staff restent accessibles.');
+    assert.equal(await atlas.locator('.oath-path').count(), 1);
+    assert.equal(await atlas.locator('.oath-node').count(), 5);
+    assert.equal(await atlas.locator('#oath-level').getAttribute('max'), null, 'Le champ de niveau ne plafonne pas la progression des personnages.');
     assert.equal(await atlas.locator('.oath-list-item[data-serment="QA serment secret du staff"]').count(), 0);
     await setLevel(5);
-    assert.equal(await atlas.locator('.oath-node.is-unlocked').count(), 6);
-    assert.equal(await atlas.locator('.oath-node.is-next').count(), 3);
-    assert.equal(await atlas.locator('.oath-node.is-sealed').count(), 6);
+    assert.equal(await atlas.locator('.oath-node.is-unlocked').count(), 2);
+    assert.equal(await atlas.locator('.oath-node.is-sealed').count(), 2);
+    await chooseBranch(2);
     await node(2, 4).click();
     assert.ok(!(await inspector().textContent()).includes('Effet de test 2/4'));
     await inspector().locator('[data-preview-tier]').click();
