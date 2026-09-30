@@ -172,7 +172,7 @@ html[data-np-design="polar"] #s-app #fiche .np-hud-ability-body .np-oath-operati
 html[data-np-design="polar"] #s-app #fiche .np-hud-ability-body > p {max-width:75ch;margin:12px 0 0;color:var(--hud-soft);font:400 15px/1.65 var(--fb);overflow-wrap:anywhere}
 html[data-np-design="polar"] #s-app #fiche .np-hud-ability-body > p:first-child {margin-top:0}
 html[data-np-design="polar"] #s-app #fiche .np-hud-ability-body button,
-html[data-np-design="polar"] #s-app #fiche .np-hud-oath > button {max-width:100%;min-height:44px;margin-top:16px;padding:10px 15px;border:1px solid var(--hud-line-strong);border-radius:5px;background:var(--hud-bg);color:var(--hud-text);font:600 14px/1.5 var(--fb);letter-spacing:0;text-transform:none;white-space:normal;cursor:pointer}
+html[data-np-design="polar"] #s-app #fiche .np-hud-oath > button {max-width:100%;min-height:44px;margin-top:16px;padding:10px 15px;border:1px solid var(--hud-line-strong);border-radius:5px;background:var(--hud-bg);color:var(--hud-text);font:600 14px/1.5 var(--fb)!important;letter-spacing:0;text-transform:none;white-space:normal;cursor:pointer}
 html[data-np-design="polar"] #s-app #fiche .np-hud-ability-body button:hover,
 html[data-np-design="polar"] #s-app #fiche .np-hud-oath > button:hover {border-color:var(--tm-link,var(--accent));background:var(--tm-control-bg,var(--bg3))}
 html[data-np-design="polar"] #s-app #fiche .np-hud-empty {margin:0;padding:18px;border:1px solid var(--hud-line);border-radius:7px;background:var(--hud-panel);color:var(--hud-soft);font:400 15px/1.65 var(--fb);overflow-wrap:anywhere}
@@ -210,10 +210,11 @@ html[data-np-design="polar"] #s-app #fiche .np-character-hud :is(summary,button)
   html[data-np-design="polar"] #s-app #fiche .np-sheet-stories-grid{grid-template-columns:1fr}
 }
 @media(max-width:680px){
-  html[data-np-design="polar"] #s-app #fiche .np-sheet-hero{display:grid!important;grid-template-columns:64px minmax(0,1fr);align-items:start;gap:16px;min-height:0;padding:20px 18px!important}
+  html[data-np-design="polar"] #s-app #fiche .np-sheet-hero{display:grid!important;grid-template-columns:64px minmax(0,1fr)!important;align-items:start;justify-items:stretch;text-align:left;gap:16px;min-height:0;padding:20px 18px!important}
   html[data-np-design="polar"] #s-app #fiche #p-av{flex:0 0 auto;width:64px!important}
   html[data-np-design="polar"] #s-app #fiche #p-av :is(.sav,.savph){width:64px;height:82px;font-size:38px}
   html[data-np-design="polar"] #s-app #fiche .sinfo{width:100%;padding-right:24px}
+  html[data-np-design="polar"] #s-app #fiche .sheet-head{text-align:left}
   html[data-np-design="polar"] #s-app #fiche .sheet-identity{flex-basis:100%}
   html[data-np-design="polar"] #s-app #fiche .np-sheet-kicker{display:none}
   html[data-np-design="polar"] #s-app #fiche #p-nom{margin-bottom:8px;font-size:32px!important}
