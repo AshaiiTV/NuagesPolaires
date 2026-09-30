@@ -6152,6 +6152,7 @@ function getPalierStageLabel(level,idx,total){
 }
 
 function renderAllSerments(tid){
+  if(window.NPSermentsAtlas){window.NPSermentsAtlas.render(tid);return;}
   var el=ge(tid); if(!el) return;
   var all=getAllSD();
   var html='<div class="serm-shell">';
@@ -6595,6 +6596,7 @@ function renderSermCard(nom,s){
 }
 
 function focusSerment(name){
+  if(window.NPSermentsAtlas){window.NPSermentsAtlas.focus(name);return;}
   _sermFilter=null;_sermLevelFilter=null;_sermSearch=name;
   var search=ge('serment-search');if(search) search.value=name;
   applySermentFilters();
