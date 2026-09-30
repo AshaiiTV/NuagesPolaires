@@ -1189,8 +1189,7 @@ var _logShowArchive=null;
 
 async function _dbBootstrap() {
   var sessionGeneration = _dbSessionGeneration;
-  // Mettre à jour le message du loader
-  var loaderMsg = document.querySelector("#db-loader .np-loader-status") || document.querySelector("#db-loader div");
+  if(window.NPLoader) window.NPLoader.stage("world");
   // Version du schéma — si changé, invalider le cache localStorage
   var CACHE_VERSION="np_v9_private_cache"; // v22 data integrity & schema normalization
   var cacheOk=localStorage.getItem("np_cache_version")===CACHE_VERSION;
@@ -1204,7 +1203,6 @@ async function _dbBootstrap() {
     var timeoutPromise = new Promise(function(_, reject){
       setTimeout(function(){ reject(new Error("timeout")); }, 5000);
     });
-    if(loaderMsg) loaderMsg.textContent = "Connexion à la base…";
     // Le cookie httpOnly est envoyé automatiquement avec credentials:"same-origin"
     // Le serveur filtre les clés privées selon l'auth du cookie
     var data = await Promise.race([_loadPublicBundle(), timeoutPromise]);
@@ -1226,7 +1224,7 @@ async function _dbBootstrap() {
   } catch (e) {
     if(sessionGeneration !== _dbSessionGeneration || window.__logoutBusy) return;
     console.warn("DB hors ligne ou timeout, fallback localStorage:", e.message||e);
-    if(loaderMsg) loaderMsg.textContent = "Mode hors-ligne — chargement du cache local…";
+    if(window.NPLoader) window.NPLoader.stage("offline");
     // Charger depuis localStorage (fallback offline)
     // Clés privées exclues : on ne restaure jamais accounts/players hors-ligne.
     var cacheLoaded=0;
@@ -9791,27 +9789,11 @@ function renderMJList(){
 // INIT ASYNC
 // ==========================================
 function _removeLoader(){
-  var l=document.getElementById("db-loader");
-  if(l){
-    l.classList.add("is-done");
-    setTimeout(function(){ try{l.remove();}catch(e){} },260);
-  }
+  if(window.NPLoader) window.NPLoader.finish();
 }
 
-// Loader démarrage
-var _loaderEl=document.createElement("div");
-_loaderEl.id="db-loader";
-_loaderEl.style.cssText="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:9999;";
-_loaderEl.innerHTML='<div class="np-loader-bg" aria-hidden="true"><span></span><span></span><span></span></div>'
-  +'<div class="np-loader-panel" role="status" aria-live="polite">'
-    +'<div class="np-loader-mark" aria-hidden="true">'
-      +npLoaderCompassSvg({cls:'np-loader-compass',uid:'np-loader',width:82,height:82})
-    +'</div>'
-    +'<div class="np-loader-brand">Nuages Polaires</div>'
-    +'<div class="np-loader-status">Connexion...</div>'
-    +'<div class="np-loader-line" aria-hidden="true"><span></span></div>'
-  +'</div>';
-document.body.appendChild(_loaderEl);
+// La scène suit les étapes réelles du démarrage, sans délai minimum.
+if(window.NPLoader) window.NPLoader.mount(npLoaderCompassSvg({cls:'np-loader-compass',uid:'np-loader'}));
 
 // Masquage DOM préventif des éléments staff — supprimés si pas de token JWT
 // Les classes CSS staff-only existent déjà mais sont DOM-accessible
@@ -9839,6 +9821,7 @@ _dbBootstrap().then(function() {
     // Données publiques disponibles sans auth (bestiaire, etc.)
     _initPublicData();
     // _tryAutoLogin est maintenant async — vérifie le cookie httpOnly via le serveur
+    if(window.NPLoader) window.NPLoader.stage("session");
     _tryAutoLogin().then(function(loggedIn){
       if(_bootstrapSessionGeneration !== _dbSessionGeneration || window.__logoutBusy) return;
       if(loggedIn && _resetAccountId){ _removeLoader(); showScreen('s-reset'); return; }
