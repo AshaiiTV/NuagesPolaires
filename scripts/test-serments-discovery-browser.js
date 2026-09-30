@@ -56,6 +56,8 @@ const expansion = require('../assets/js/serments-reforged-data');
     }
     function assertEffectHidden(text, tier, label, hideName = true) {
       assert.ok(!text.includes(tier.desc), label + ': la description doit rester masquée.');
+      if (tier.cout) assert.ok(!text.includes(tier.cout), label + ': le coût doit rester masqué.');
+      if (tier.manifestation) assert.ok(!text.includes(tier.manifestation), label + ': la manifestation doit rester masquée.');
       if (hideName && tier.nom) assert.ok(!text.includes(tier.nom), label + ': le nom de la capacité doit rester masqué.');
     }
 
@@ -82,15 +84,19 @@ const expansion = require('../assets/js/serments-reforged-data');
     assertEffectHidden(await inspector().textContent(), pugiliste.branches[0].paliers[3], 'Apogée scellée');
     assert.equal(await inspector().locator('.oath-inspector-effect').count(), 0, 'Une capacité scellée ne laisse pas son effet dans le DOM de l’inspecteur.');
     await node(0, 0).click();
-    assert.equal(await node(0, 0).locator('.oath-node-title').textContent(), 'Éveil');
+    assert.equal(await node(0, 0).locator('.oath-node-title').textContent(), pugiliste.branches[0].paliers[0].manifestation ? pugiliste.branches[0].paliers[0].nom : 'Éveil');
     assertEffectHidden(await inspector().textContent(), pugiliste.branches[0].paliers[0], 'Prochain éveil');
     assert.equal(await inspector().locator('.oath-inspector-effect').count(), 0);
     await atlas.locator('[data-oath-view="compare"]').click();
     for (const [index, branch] of pugiliste.branches.entries()) {
       const card = atlas.locator('.oath-compare-card').nth(index);
-      assertEffectHidden(await card.textContent(), branch.paliers[0], 'Comparaison verrouillée ' + index, false);
+      assertEffectHidden(await card.textContent(), branch.paliers[0], 'Comparaison verrouillée ' + index, branch.paliers[0].nom !== branch.nom);
       assert.equal(await card.locator('.oath-inspector-effect').count(), 0);
     }
+    await atlas.locator('.oath-compare-card').first().locator('[data-preview-tier]').click();
+    assert.equal(await atlas.locator('#oath-level').inputValue(), '2');
+    assert.equal(await page.evaluate(() => document.activeElement?.matches('.oath-compare-card h3')), true, 'Simuler un palier en comparaison conserve le focus dans la vue visible.');
+    await setLevel(1);
     await atlas.locator('[data-oath-view="tree"]').click();
     observations.push('Découverte niveau 1 : deux prochains éveils et six mystères scellés ; capacités masquées dans les inspecteurs et effets absents des comparaisons verrouillées.');
 
@@ -164,6 +170,12 @@ const expansion = require('../assets/js/serments-reforged-data');
     await page.screenshot({ path: path.join(output, 'discovery-desktop.png'), animations: 'disabled' });
     await page.setViewportSize({ width: 390, height: 844 });
     await assertNoOverflow('Mobile');
+    await setLevel(1);
+    await atlas.locator('[data-oath-view="compare"]').click();
+    await atlas.locator('.oath-compare-card').first().locator('[data-preview-tier]').click();
+    assert.equal(await page.evaluate(() => document.activeElement?.matches('.oath-compare-card h3')), true, 'Sur mobile, la simulation en comparaison mène au titre de la voie visible.');
+    await atlas.locator('[data-oath-view="tree"]').click();
+    await setLevel(5);
     await node(0, 3).click();
     assert.equal(await page.evaluate(() => document.activeElement?.tagName), 'H3', 'Sur mobile, inspecter une rune mène au titre de sa fiche.');
     await page.screenshot({ path: path.join(output, 'discovery-mobile.png'), animations: 'disabled' });

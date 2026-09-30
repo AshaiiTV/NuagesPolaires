@@ -157,7 +157,7 @@
   function compareMarkup(branches){
     return '<section class="oath-compare" aria-label="Comparaison des voies au niveau '+state.level+'">'+branches.map(function(br,bi){
       var tiers=br.paliers||[],index=Math.max(0,currentIndex(br)),tier=tiers[index],masked=tier&&obscured(br,index);
-      return '<article class="oath-compare-card'+(masked?' is-locked':'')+'" data-tier-color="'+tierColor(index)+'" data-branch="'+bi+'"><span class="oath-eyebrow">Voie '+String.fromCharCode(65+bi)+' · '+esc(br.style||'Spécialisation')+'</span><h3>'+esc(branchName(br,bi))+'</h3><p class="oath-compare-status">'+esc(currentIndex(br)<0?'Prochain palier · Niv. '+(tier&&tier.niv||'—'):'Palier applicable · Niv. '+(tier&&tier.niv||'—'))+'</p>'+(masked?gateMarkup(br,tier,index):((br.summary||br.desc?'<p>'+esc(br.summary||br.desc)+'</p>':'')+(tier?'<div class="oath-cost"><span>COÛT PRINCIPAL</span><strong>'+esc(tier.cout||'Voir effet')+'</strong></div><div class="oath-inspector-effect"><p>'+esc(tier.desc||br.desc||'Effet à définir.')+'</p></div>':'')))+'<button type="button" data-inspect-branch="'+bi+'">Explorer cette voie <span aria-hidden="true">↗</span></button></article>';
+      return '<article class="oath-compare-card'+(masked?' is-locked':'')+'" data-tier-color="'+tierColor(index)+'" data-branch="'+bi+'"><span class="oath-eyebrow">Voie '+String.fromCharCode(65+bi)+' · '+esc(br.style||'Spécialisation')+'</span><h3 tabindex="-1">'+esc(branchName(br,bi))+'</h3><p class="oath-compare-status">'+esc(currentIndex(br)<0?'Prochain palier · Niv. '+(tier&&tier.niv||'—'):'Palier applicable · Niv. '+(tier&&tier.niv||'—'))+'</p>'+(masked?gateMarkup(br,tier,index):((br.summary||br.desc?'<p>'+esc(br.summary||br.desc)+'</p>':'')+(tier?'<div class="oath-cost"><span>COÛT PRINCIPAL</span><strong>'+esc(tier.cout||'Voir effet')+'</strong></div><div class="oath-inspector-effect"><p>'+esc(tier.desc||br.desc||'Effet à définir.')+'</p></div>':'')))+'<button type="button" data-inspect-branch="'+bi+'">Explorer cette voie <span aria-hidden="true">↗</span></button></article>';
     }).join('')+'</section>';
   }
   function evolutionMarkup(item,items){
@@ -230,8 +230,8 @@
     var target=mount.querySelector('[data-discovery="'+(enabled?'on':'off')+'"]');if(target)target.focus({preventScroll:true});
   }
   function previewLevel(value){
-    levelInput(value);var node=mount.querySelector('.oath-node.is-current');if(node)node.focus({preventScroll:true});
-    if(mobile()){var heading=mount.querySelector('.oath-inspector h3');if(heading){heading.focus({preventScroll:true});heading.scrollIntoView({behavior:motion(),block:'start'});}}
+    levelInput(value);var target=state.view==='compare'?mount.querySelector('.oath-compare-card[data-branch="'+state.branch+'"] h3'):mount.querySelector(mobile()?'.oath-inspector h3':'.oath-node.is-current');
+    if(target){target.focus({preventScroll:true});if(mobile())target.scrollIntoView({behavior:motion(),block:'start'});}
   }
   function inspect(branch,tier,fromCompare){
     var branches=branchesOf(selected());state.branch=branch;state.tier=tier==null?Math.max(0,currentIndex(branches[branch])):tier;
