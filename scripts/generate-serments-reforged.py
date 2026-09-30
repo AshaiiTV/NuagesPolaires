@@ -47,8 +47,10 @@ def build(allow_draft=False):
         for authored_branch, spec, old_branch in zip(authored['branches'], contract['branches'], old['branches']):
             assert authored_branch['key'] == spec['key'] == old_branch['key']
             branch = copy.deepcopy(spec)
-            for key in ('summary', 'visual', 'example'):
+            for key in ('summary', 'visual', 'example', 'roleplay', 'tierNames', 'tierNarratives'):
                 branch[key] = authored_branch[key]
+            assert len(branch['tierNames']) == len(branch['tierNarratives']) == 4, name
+            assert len(set(branch['tierNames'])) == 4, f'{name}: repeated tier title'
             branch['rule'] = clean_rule(branch.get('rule'))
             branch['legacyNames'] = [old_branch['name']]
             branch['distinction'] = branch['summary']
@@ -65,7 +67,9 @@ def build(allow_draft=False):
                 assert branch.get('operations'), f'{name}: missing operation contract'
                 assert branch.get('cost'), f'{name}: missing activation cost'
                 assert len({t['effect'] for t in branch['tiers']}) == 4, f'{name}: repeated progression'
-            for tier in branch['tiers']:
+            for index, tier in enumerate(branch['tiers']):
+                tier['title'] = branch['tierNames'][index]
+                tier['narrative'] = branch['tierNarratives'][index]
                 # A palier remains selected between thresholds; damage must use
                 # N rather than freezing the preview at the threshold's level.
                 tier['effect'] = clean_rule(tier.get('effectFormula') or tier['effect'])
@@ -135,10 +139,10 @@ def build(allow_draft=False):
         key:branch.key, nom:branch.name, summary:branch.summary,
         legacyNames:branch.legacyNames || [],
         style:branch.style || (former.cat === "melee" ? "Contrôle" : former.cat === "distance" ? "Distance" : "Concentration"),
-        descPhys:branch.visual, flavor:branch.example, desc:branch.summary,
+        descPhys:branch.visual, flavor:branch.example, desc:branch.summary, roleplay:branch.roleplay,
         combatRules:branch,
         paliers:branch.tiers.map(function(tier) {
-          return {niv:tier.level, nom:branch.name, cout:costText(tier.cost || branch.cost), desc:tier.effect,
+          return {niv:tier.level, nom:tier.title || branch.name, manifestation:tier.narrative || "", cout:costText(tier.cost || branch.cost), desc:tier.effect,
             combatRules:{key:branch.key, name:branch.name, model:branch.model, level:tier.level,
               effect:tier.effect, cost:tier.cost || branch.cost, unlocks:tier.unlocks || []}};
         })
@@ -149,6 +153,7 @@ def build(allow_draft=False):
       dataVersion:authored.version, reforged:true, retired:false, hidden:false,
       arme:entry.weapon, weaponDescription:entry.weaponDescription,
       tagline:entry.tagline, fantasy:entry.tagline, lore:entry.lore,
+      vow:entry.vow, awakening:entry.awakening, worldRole:entry.worldRole, evolutionMeaning:entry.evolutionMeaning,
       playstyle:entry.playstyle, decision:entry.decision, counterplay:entry.counterplay,
       distinction:entry.distinction, artSlug:entry.artSlug,
       icon:"", emblem:art, logo:art,

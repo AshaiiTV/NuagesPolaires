@@ -55,6 +55,35 @@ test('Retirement is enforced in selectors even for an old visibility override',(
   assert.equal(visible('Serment du staff',{hidden:true}),false);
 });
 
+test('Authored identities and tier manifestations reach the player catalogue without changing the combat contract',()=>{
+  const source=JSON.parse(fs.readFileSync(path.join(root,'docs/serments-reforged-source.json'),'utf8'));
+  const contract=JSON.parse(fs.readFileSync(path.join(root,'docs/serments-reforged-mechanics.json'),'utf8'));
+  const clean=text=>text.replaceAll('corrosion reforgée','corrosion alchimique').replaceAll('protection reforgée','protection de serment').replaceAll('empoisonnement natif','empoisonnement');
+  for(const entry of source.entries){
+    const runtime=reforged.definitions[entry.name],mechanics=contract.entries.find(item=>item.name===entry.name);
+    for(const key of ['vow','awakening','worldRole','evolutionMeaning']){
+      assert.ok(entry[key]?.trim(),entry.name+' '+key);
+      assert.equal(runtime[key],entry[key]);
+    }
+    assert.equal(entry.lore.split(/\n\s*\n/).length,2,entry.name+' readable story paragraphs');
+    for(const [bi,branch] of entry.branches.entries()){
+      const rendered=runtime.branches[bi],rules=mechanics.branches[bi];
+      assert.equal(rendered.roleplay,branch.roleplay);
+      assert.equal(new Set(branch.tierNames).size,4);
+      assert.deepEqual(rendered.combatRules.cost,rules.cost);
+      assert.equal(rendered.combatRules.model,rules.model);
+      for(const [ti,tier] of rendered.paliers.entries()){
+        assert.equal(tier.nom,branch.tierNames[ti]);
+        assert.equal(tier.manifestation,branch.tierNarratives[ti]);
+        assert.ok(tier.manifestation?.trim());
+        assert.equal(tier.desc,clean(rules.tiers[ti].effectFormula||rules.tiers[ti].effect));
+        assert.deepEqual(tier.combatRules.cost,rules.tiers[ti].cost||rules.cost);
+        assert.deepEqual(tier.combatRules.unlocks,rules.tiers[ti].unlocks||[]);
+      }
+    }
+  }
+});
+
 test('Historical branch labels resolve to the same exclusive branch without rewriting a character',()=>{
   const normalize=fn('normalizeBranchLabel',{});
   const matches=fn('branchMatchesLabel',{normalizeBranchLabel:normalize});

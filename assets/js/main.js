@@ -7107,10 +7107,12 @@ function renderSerm(p){
   html+='<div><div class="snm">'+esc(p.classe)+'</div><div class="swp">'+esc(bundle.weapon||s.arme||p.arme||"")+'</div>'+renderSermLineage(p.classe,s,false)+'<div class="serm-level-pill '+escAttr(getSermLevelClass(p.classe,s))+'">'+esc(bundle.sermLevel||getSermLevelLabel(p.classe,s))+'</div></div>';
   html+='</div>';
   if(s.tagline) html+='<p class="serm-pitch">'+esc(s.tagline)+'</p>';
+  if(s.vow) html+='<blockquote class="np-oath-vow">« '+esc(s.vow)+' »</blockquote>';
   // Stats
   html+='<div class="sstats"><div class="sst"><div class="sstv">'+s.pvN+'</div><div class="sstl">PV/niv</div></div><div class="sst"><div class="sstv">'+s.epN+'</div><div class="sstl">EP/niv</div></div><div class="sst"><div class="sstv">'+s.emN+'</div><div class="sstl">EM/niv</div></div><div class="sst"><div class="sstv">'+s.dmg+'</div><div class="sstl">Dmg frappe</div></div></div>';
   // Lore
-  html+='<p style="font-style:italic;color:var(--dim);font-size:14px;line-height:1.7;margin-bottom:16px;border-left:2px solid var(--glacier-dim);padding-left:12px;">'+esc(s.lore)+'</p>';
+  html+='<div class="np-oath-lore">'+String(s.lore||'').split(/\n\s*\n/).map(function(paragraph){return '<p>'+esc(paragraph)+'</p>';}).join('')+'</div>';
+  if(s.awakening||s.worldRole) html+='<details class="np-oath-story"><summary>Incarner ce serment</summary>'+[['Un éveil possible',s.awakening],['Parmi les rescapés',s.worldRole],['Ce qui évolue',s.evolutionMeaning],['L’arme liée',s.weaponDescription]].filter(function(row){return row[1];}).map(function(row){return '<p><strong>'+row[0]+'</strong>'+esc(row[1])+'</p>';}).join('')+'<p>Des pistes pour ton histoire, sans passé ni personnalité imposés.</p></details>';
   html+='<div class="dv"></div>';
 
   // Branches
@@ -7144,7 +7146,8 @@ function renderSerm(p){
     html+='</div>';
 
     // Description flavor branche
-    if(br.flavor) html+='<p style="font-size:13px;color:var(--dim);font-style:italic;margin-bottom:12px;line-height:1.6;border-left:2px solid '+col+';padding-left:10px;opacity:.85;">'+esc(br.flavor)+'</p>';
+    if(br.roleplay) html+='<div class="np-oath-lore"><p>'+esc(br.summary||br.desc)+'</p><details class="np-oath-story"><summary>Donner vie à cette voie</summary><p>'+esc(br.roleplay)+'</p><p><strong>En combat</strong>'+esc(br.descPhys)+'</p><p><strong>Un échange possible</strong>'+esc(br.flavor)+'</p></details></div>';
+    else if(br.flavor) html+='<p style="font-size:13px;color:var(--dim);font-style:italic;margin-bottom:12px;line-height:1.6;border-left:2px solid '+col+';padding-left:10px;opacity:.85;">'+esc(br.flavor)+'</p>';
     else if(br.desc) html+='<p style="font-size:13px;color:var(--dim);font-style:italic;margin-bottom:12px;line-height:1.6;border-left:2px solid '+col+';padding-left:10px;opacity:.8;">'+esc(br.desc)+'</p>';
 
     html+=renderSermentRules(br);
@@ -7171,6 +7174,7 @@ function renderSerm(p){
         if(currentPal){
           html+='<div class="serm-palier-focus-top"><span>Palier actif</span><strong>'+esc(currentPal.nom)+'</strong>'+(currentPal.cout?'<em>'+esc(currentPal.cout)+'</em>':'')+'</div>';
           if(currentPal.desc) html+='<p>'+esc(currentPal.desc)+'</p>';
+          if(currentPal.manifestation) html+='<p class="np-oath-manifestation">'+esc(currentPal.manifestation)+'</p>';
         } else {
           html+='<div class="serm-palier-focus-top"><span>Départ</span><strong>Aucun palier débloqué</strong></div>';
         }

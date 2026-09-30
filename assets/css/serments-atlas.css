@@ -228,7 +228,19 @@ html[data-np-design="polar"] #s-app #serments > .tab-popup-close { position: abs
 #serments .oath-compare-card > button:hover { background: color-mix(in srgb, var(--oa-path) 16%, var(--oa-bg)) !important; }
 #serments .oath-compare-card .oath-cost { margin: 0 0 8px; }
 
-/* Lore and evolutions enrich exploration without pushing the tree below the fold. */
+/* The personal bond is readable before exploring its mechanical progression. */
+#serments .oath-identity { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 22px; margin: 0 0 16px; padding: 18px 20px; border: 1px solid var(--oa-line); border-left: 2px solid var(--oa-copper); background: var(--oa-panel); }
+#serments .oath-identity blockquote { margin: 5px 0 0; color: var(--oa-text); font: 500 23px/1.35 var(--oa-serif); }
+#serments .oath-identity p { margin: 0; color: var(--oa-soft); font-size: 12px; line-height: 1.75; }
+#serments .oath-identity button { margin-top: 10px; min-height: 36px; padding: 4px 0; border: 0 !important; background: transparent !important; color: var(--oa-accent); font-size: 11px; text-align: left; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
+#serments .oath-tier-story { grid-column: 1 / -1; margin: 0 0 14px; padding: 0 0 0 12px; border-left: 1px solid var(--oa-accent); }
+#serments .oath-tier-story p { margin: 5px 0 0; color: var(--oa-soft); font-size: 12px; line-height: 1.75; }
+#serments .oath-world { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px 24px; padding-top: 18px; border-top: 1px solid var(--oa-line); }
+#serments .oath-world section:last-child { grid-column: 1 / -1; }
+#serments .oath-world h3 { margin: 0 0 8px; color: var(--oa-text); font: 500 23px/1.25 var(--oa-serif); }
+#serments .oath-world p { margin: 0; color: var(--oa-soft); font-size: 12px; line-height: 1.8; }
+#serments .oath-codex-body .oath-rp-note { margin: 18px 0 0; color: var(--oa-muted); font-size: 10px; }
+/* The detailed story and examples remain available beside the progression. */
 #serments .oath-codex { margin-top: 14px; border: 1px solid var(--oa-line); background: var(--oa-panel); }
 #serments .oath-codex > summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 54px; padding: 15px 20px; color: var(--oa-text); font: 500 22px/1.2 var(--oa-serif); cursor: pointer; list-style: none; }
 #serments .oath-codex > summary::-webkit-details-marker { display: none; }
@@ -297,6 +309,8 @@ html[data-np-design="polar"] #s-app #p-serments-c:fullscreen { width: 100vw; max
 
 }
 @media (max-width: 760px) {
+  #serments .oath-identity, #serments .oath-world { grid-template-columns: minmax(0,1fr); gap: 16px; }
+  #serments .oath-identity { padding: 16px; }
   html[data-np-design="polar"] #s-app #serments > .tab-popup-close { top: 14px; right: 14px; width: 32px; min-width: 32px; height: 32px; min-height: 32px; }
   #serments .oath-topbar > div:nth-child(2) { max-width: calc(100% - 87px); }
   #serments .oath-topbar { align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 11px; padding: 0 0 12px; }

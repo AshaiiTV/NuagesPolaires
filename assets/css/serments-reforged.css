@@ -55,3 +55,13 @@ html[data-np-design="polar"] #s-app #serments .serm-forged .serm-branch-progress
 @media(max-width:1100px){html[data-np-design="polar"] #s-app #serments .serm-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.serm-art{aspect-ratio:1.35}}
 @media(max-width:650px){html[data-np-design="polar"] #s-app #serments .serm-grid{grid-template-columns:1fr}.serm-art{aspect-ratio:1.35}.serm-card-body{padding:20px}.serm-catalogue-counts{gap:8px 18px}.np-personal-armory{grid-template-columns:100px minmax(0,1fr);gap:15px}.np-personal-armory .snm{font-size:23px!important}.np-personal-armory .serm-pitch{font-size:13px}.np-serment-search{grid-template-columns:1fr auto}.np-serment-search label{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.serm-forged{scroll-behavior:auto}}
+
+/* Narrative details on the personal sheet use the active theme's text tokens. */
+.np-oath-vow { margin: 16px 0; padding: 12px 16px; border-left: 2px solid var(--tm-link, var(--glacier)); color: var(--tm-text, var(--text)); font: 500 22px/1.45 var(--fd); }
+.np-oath-lore, .np-oath-story { color: var(--tm-text, var(--text)); font-size: 13px; line-height: 1.8; }
+.np-oath-lore p { margin: 0 0 12px; }
+.np-oath-story { padding: 10px 0; margin: 12px 0; border-top: 1px solid var(--border); }
+.np-oath-story summary { padding: 6px 0; min-height: 36px; cursor: pointer; color: var(--tm-link, var(--glacier)); }
+.np-oath-story p { margin: 12px 0; }
+.np-oath-story strong { display: block; margin-bottom: 3px; }
+.np-oath-manifestation { padding-left: 12px; border-left: 1px solid var(--tm-link, var(--glacier)); }
