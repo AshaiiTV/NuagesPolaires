@@ -1,26 +1,53 @@
 {
-  "name": "nuages-polaires",
-  "version": "297.0.0",
-  "description": "Compagnon officiel — Nuages Polaires",
-  "packageManager": "npm@10.9.0",
-  "engines": {
-    "node": ">=24 <25"
-  },
-  "dependencies": {
-    "@neondatabase/serverless": "^0.10.4"
-  },
-  "private": true,
-  "scripts": {
-    "check": "node scripts/check.js",
-    "test:auth": "node scripts/test-auth-flows.js",
-    "test": "node --test scripts/test-auth-security.js scripts/test-db-security.js scripts/test-integration.js scripts/test-beast-persistence.js scripts/test-archive-persistence.js scripts/test-session-isolation.js scripts/test-legacy-recovery.js scripts/test-system-log.js scripts/test-auth-target.js scripts/test-gameplay-persistence.js scripts/test-rpg-persistence.js scripts/test-store-backup.js scripts/test-player-actions.js scripts/test-player-actions-front.js scripts/test-event-staff.js scripts/test-first-steps.js scripts/test-unified-progression.js scripts/test-progression-concurrency.js scripts/test-progression-reads.js",
-    "test:browser": "node scripts/test-browser.js && node scripts/test-rpg-browser.js && node scripts/test-player-actions-browser.js && node scripts/test-event-staff-browser.js && node scripts/test-adventure-browser.js && node scripts/test-account-keyboard-browser.js && node scripts/test-unified-progression-browser.js",
-    "build": "npm run check && npm test && node scripts/build.js",
-    "backup:store": "node scripts/backup-store.js",
-    "backup:verify": "node scripts/verify-backup.js"
-  },
-  "devDependencies": {
-    "@electric-sql/pglite": "^0.5.8",
-    "playwright": "^1.62.1"
-  }
+	"name": "nuages-polaires",
+	"private": true,
+	"version": "298.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"lint": "prettier --check . && eslint .",
+		"format": "prettier --write .",
+		"test:unit": "vitest",
+		"test": "npm run test:unit -- --run && npm run test:e2e",
+		"test:e2e": "playwright install && playwright test",
+		"db:push": "drizzle-kit push",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate": "drizzle-kit migrate",
+		"db:studio": "drizzle-kit studio"
+	},
+	"devDependencies": {
+		"@electric-sql/pglite": "^0.5.8",
+		"@eslint/js": "^10.0.1",
+		"@playwright/test": "^1.60.0",
+		"@sveltejs/adapter-netlify": "^6.0.4",
+		"@sveltejs/kit": "^2.63.0",
+		"@sveltejs/vite-plugin-svelte": "^7.1.2",
+		"@types/node": "^24",
+		"@vitest/browser-playwright": "^4.1.8",
+		"drizzle-kit": "^0.31.11",
+		"eslint": "^10.4.1",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-svelte": "^3.19.0",
+		"globals": "^17.6.0",
+		"playwright": "^1.60.0",
+		"prettier": "^3.8.3",
+		"prettier-plugin-svelte": "^4.1.0",
+		"svelte": "^5.56.1",
+		"svelte-check": "^4.6.0",
+		"typescript": "^6.0.3",
+		"typescript-eslint": "^8.60.1",
+		"vite": "^8.0.16",
+		"vitest": "^4.1.8",
+		"vitest-browser-svelte": "^2.1.1"
+	},
+	"dependencies": {
+		"@neondatabase/serverless": "^1.1.0",
+		"drizzle-orm": "^0.45.3",
+		"zod": "^4.6.5"
+	}
 }
