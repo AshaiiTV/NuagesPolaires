@@ -165,6 +165,7 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.notEqual(lastPalier, firstPalier, 'L’inspecteur suit le nœud sélectionné.');
     assert.equal(await atlas.locator('.oath-inspector h3').textContent(), pugiliste.branches[1].paliers[3].nom);
     assert.equal(await atlas.locator('.oath-tier-story p').textContent(), pugiliste.branches[1].paliers[3].manifestation);
+    assert.equal(await atlas.locator('details.oath-inspector-flavor').getAttribute('open'), null, 'L’imaginaire est conservé dans un volet replié pour privilégier les règles.');
     assert.equal(await unlockedNodes.last().locator('.oath-node-title').textContent(), pugiliste.branches[1].paliers[3].nom);
     assert.ok(await unlockedNodes.last().evaluate(element => element.classList.contains('is-selected')));
     const secondBranch = atlas.locator('.oath-path-heading[data-choose-branch="1"]');

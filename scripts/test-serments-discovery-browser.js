@@ -12,7 +12,9 @@ const expansion = require('../assets/js/serments-reforged-data');
 (async () => {
   const app = await createLocalApp();
   const output = path.resolve(process.env.NP_TEST_OUTPUT || 'test-results/serments-discovery');
+  const inspectorOutput = path.resolve('test-results/serments-inspector');
   fs.mkdirSync(output, { recursive: true });
+  fs.mkdirSync(inspectorOutput, { recursive: true });
   const errors = [];
   const observations = [];
   let browser, page;
@@ -59,6 +61,16 @@ const expansion = require('../assets/js/serments-reforged-data');
       if (tier.cout) assert.ok(!text.includes(tier.cout), label + ': le coût doit rester masqué.');
       if (tier.manifestation) assert.ok(!text.includes(tier.manifestation), label + ': la manifestation doit rester masquée.');
       if (hideName && tier.nom) assert.ok(!text.includes(tier.nom), label + ': le nom de la capacité doit rester masqué.');
+    }
+    async function assertInspectorActions(branch, tierIndex) {
+      const tier = branch.paliers[tierIndex];
+      const operations = branch.combatRules.tiers.find(entry => entry.level === tier.niv).operations;
+      const cards = inspector().locator('.oath-ability-action');
+      assert.deepEqual(await cards.locator('h5').allTextContents(), operations.map(operation => operation.label), 'Chaque opération possède sa propre carte nommée.');
+      for (let index = 0; index < operations.length; index++) {
+        assert.ok((await cards.nth(index).locator('.oath-action-effect').textContent()).trim(), 'Chaque action conserve son effet.');
+        assert.ok(await cards.nth(index).locator('.oath-action-cost span').count(), 'Chaque action présente son propre coût.');
+      }
     }
 
     assert.equal(await atlas.locator('[data-discovery="on"]').getAttribute('aria-pressed'), 'true', 'La découverte est active à l’ouverture.');
@@ -111,7 +123,7 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.ok((await toast.textContent()).trim(), 'Le franchissement de paliers annonce la progression.');
     await node(0, 1).click();
     assert.equal(await inspector().getAttribute('data-tier-color'), 'azure');
-    assert.equal(await inspector().locator('.oath-inspector-effect p').textContent(), pugiliste.branches[0].paliers[1].desc);
+    await assertInspectorActions(pugiliste.branches[0], 1);
     await atlas.locator('[data-oath-view="compare"]').click();
     for (const [index, branch] of pugiliste.branches.entries()) {
       assert.equal(await atlas.locator('.oath-compare-card').nth(index).locator('.oath-inspector-effect p').textContent(), branch.paliers[1].desc);
@@ -129,7 +141,7 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.equal(await atlas.locator('.oath-node.is-unlocked').count(), 8);
     assert.equal(await atlas.locator('.oath-node.is-current').count(), 1);
     assert.equal(await atlas.locator('.oath-node.is-legacy').count(), 6, 'Les six paliers antérieurs sont remplacés.');
-    assert.equal(await inspector().locator('.oath-inspector-effect p').textContent(), pugiliste.branches[0].paliers[3].desc);
+    await assertInspectorActions(pugiliste.branches[0], 3);
     observations.push('Progression 1 → 5 → 10 : couleurs par étape, annonce de déblocage, aperçu au niveau requis et un seul palier applicable.');
 
     await atlas.locator('[data-own-level]').click();
@@ -139,7 +151,7 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.equal(await atlas.locator('[data-discovery="off"]').getAttribute('aria-pressed'), 'true');
     assert.equal(await atlas.locator('#oath-level').inputValue(), '1', 'Consulter le Codex ne simule pas une montée de niveau.');
     assert.equal(await atlas.locator('.oath-node.is-locked').count(), 8, 'Le Codex révèle les informations sans rendre les capacités applicables.');
-    assert.equal(await inspector().locator('.oath-inspector-effect p').textContent(), pugiliste.branches[1].paliers[3].desc);
+    await assertInspectorActions(pugiliste.branches[1], 3);
     await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
       value: { writeText: async text => { window.__discoveryCopiedText = text; } }
@@ -179,6 +191,101 @@ const expansion = require('../assets/js/serments-reforged-data');
     await node(0, 3).click();
     assert.equal(await page.evaluate(() => document.activeElement?.tagName), 'H3', 'Sur mobile, inspecter une rune mène au titre de sa fiche.');
     await page.screenshot({ path: path.join(output, 'discovery-mobile.png'), animations: 'disabled' });
+
+    // Reproduce the dense panel reported by the user. The three operations
+    // must be readable independently, with no cost duplicated in the effect.
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.evaluate(() => NPSermentsAtlas.focus('Arbalétrier'));
+    await setLevel(5);
+    await node(0, 1).click();
+    assert.equal(await inspector().locator('h3').textContent(), 'Le cran tenu');
+    const arbaletrier = expansion.definitions['Arbalétrier'];
+    await assertInspectorActions(arbaletrier.branches[0], 1);
+    const actions = inspector().locator('.oath-ability-action');
+    assert.equal(await actions.count(), 3);
+    assert.deepEqual(await actions.nth(0).locator('.oath-action-cost span').allTextContents(), ['1 action', '6 EP']);
+    for (const index of [1, 2]) {
+      assert.deepEqual(await actions.nth(index).locator('.oath-action-cost span').allTextContents(), ['1 action', '4 EP']);
+    }
+    const effects = await actions.locator('.oath-action-effect').allTextContents();
+    assert.match(effects[0], /Charge 1 carreau/);
+    assert.match(effects[1], /29 dégâts/);
+    assert.match(effects[1], /carreau consommé/);
+    assert.match(effects[2], /Prochain tir \+12 dégâts/);
+    assert.match(effects[2], /défense annule cette surtension/);
+    for (const effect of effects) assert.doesNotMatch(effect, /1 action|[46] EP|24 \+ N/, 'Les coûts et la formule non calculée ne se répètent pas dans les effets.');
+    const flavor = inspector().locator('details.oath-inspector-flavor');
+    assert.equal(await flavor.locator('summary').textContent(), 'Imaginaire & incarnation');
+    assert.equal(await flavor.getAttribute('open'), null, 'L’imaginaire est replié pour laisser les règles immédiatement lisibles.');
+    assert.ok((await flavor.textContent()).includes(arbaletrier.branches[0].paliers[1].manifestation), 'Le récit reste disponible dans le panneau.');
+    await assertNoOverflow('Inspecteur Arbalétrier bureau');
+    await inspector().screenshot({ path: path.join(inspectorOutput, 'arbaletrier-desktop.png'), animations: 'disabled' });
+    await atlas.locator('.oath-tree-grid').screenshot({ path: path.join(inspectorOutput, 'arbaletrier-tree-1440.png'), animations: 'disabled' });
+    const desktopPlacement = await atlas.locator('.oath-tree-grid').evaluate(element => {
+      const tree = element.querySelector('.oath-tree').getBoundingClientRect();
+      const panel = element.querySelector('.oath-inspector').getBoundingClientRect();
+      return { treeWidth: Math.round(tree.width), inspectorWidth: Math.round(panel.width), layout: panel.left >= tree.right ? 'latéral' : 'sous l’arbre' };
+    });
+    await flavor.locator('summary').focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await flavor.getAttribute('open'), '', 'Le récit reste accessible au clavier.');
+    await page.keyboard.press('Enter');
+    await flavor.locator('summary').evaluate(element => element.blur());
+    await page.setViewportSize({ width: 390, height: 844 });
+    await assertNoOverflow('Inspecteur Arbalétrier mobile');
+    await inspector().screenshot({ path: path.join(inspectorOutput, 'arbaletrier-mobile.png'), animations: 'disabled' });
+    await page.setViewportSize({ width: 320, height: 740 });
+    await assertNoOverflow('Inspecteur Arbalétrier petit mobile');
+    await inspector().screenshot({ path: path.join(inspectorOutput, 'arbaletrier-mobile-320.png'), animations: 'disabled' });
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await node(0, 1).click();
+    assert.equal(await page.evaluate(() => document.activeElement?.matches('.oath-inspector h3')), true, 'Au bureau, inspecter une rune mène au panneau quand il se trouve sous l’arbre.');
+    await assertNoOverflow('Inspecteur Arbalétrier petit bureau');
+    await atlas.locator('.oath-tree-grid').screenshot({ path: path.join(inspectorOutput, 'arbaletrier-tree-1280.png'), animations: 'disabled' });
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    // Staff prose takes precedence over stale structured catalogue rules.
+    await page.evaluate(() => {
+      window.__originalInspectorCatalogue = window.getAllSD;
+      window.getAllSD = function () {
+        const catalogue = window.__originalInspectorCatalogue();
+        const definition = JSON.parse(JSON.stringify(catalogue['Arbalétrier']));
+        const tier = definition.branches[0].paliers[1];
+        tier.desc = 'Règle personnalisée du staff : le carreau trace une balise bleue.';
+        tier.cout = '2 actions / 9 EP';
+        return Object.assign({}, catalogue, { 'Arbalétrier': definition });
+      };
+      NPSermentsAtlas.focus('Arbalétrier');
+    });
+    await node(0, 1).click();
+    assert.equal(await inspector().locator('.oath-ability-action').count(), 0, 'Les anciennes opérations ne remplacent pas une description staff.');
+    assert.ok((await inspector().locator('.oath-inspector-effect').textContent()).includes('Règle personnalisée du staff : le carreau trace une balise bleue.'));
+    assert.ok((await inspector().textContent()).includes('2 actions / 9 EP'), 'Le coût personnalisé reste visible.');
+    assert.doesNotMatch(await inspector().locator('.oath-inspector-effect').textContent(), /Armer l’arbalète|Tirer un carreau|Prochain tir \+12|29 dégâts/);
+    await page.evaluate(() => {
+      window.getAllSD = function () {
+        const catalogue = window.__originalInspectorCatalogue();
+        const definition = JSON.parse(JSON.stringify(catalogue['Arbalétrier']));
+        definition.branches[0].paliers[1].cout = '2 actions / 9 EP';
+        return Object.assign({}, catalogue, { 'Arbalétrier': definition });
+      };
+      NPSermentsAtlas.focus('Arbalétrier');
+    });
+    await node(0, 1).click();
+    assert.equal(await inspector().locator('.oath-ability-action').count(), 0, 'Un coût staff modifié seul interdit aussi les anciennes cartes de coûts.');
+    assert.ok((await inspector().textContent()).includes('2 actions / 9 EP'));
+    assert.ok((await inspector().locator('.oath-inspector-effect').textContent()).includes(arbaletrier.branches[0].paliers[1].desc), 'Le texte staff reste intact quand seul son coût est modifié.');
+    await page.evaluate(() => {
+      window.getAllSD = window.__originalInspectorCatalogue;
+      delete window.__originalInspectorCatalogue;
+    });
+    for (const [name, operation, constraint] of [['Alchimiste', 'brew', /1 des 3 fioles du combat/], ['Prismancien', 'shoot', /une facette/], ['Distillateur', 'mother', /UNE fois par combat/]]) {
+      await page.evaluate(name => NPSermentsAtlas.focus(name), name);
+      await setLevel(10);
+      await node(0, 0).click();
+      assert.match(await inspector().locator('.oath-ability-action[data-operation="' + operation + '"] .oath-action-effect').textContent(), constraint, 'La séparation des coûts conserve les consommables et limites : ' + name);
+    }
+    observations.push('Inspecteur Arbalétrier niveau 5 : trois actions avec coûts séparés, 29 dégâts calculés, récit replié et accessible au clavier ; aucune ancienne opération ne remplace une description ou un coût staff. Consommables et limite par combat conservés. Captures 1440/1280/390/320px sans débordement ; position 1440px : ' + JSON.stringify(desktopPlacement) + '.');
 
     // Staff definitions can have more branches or milestones than the four
     // standard stages. Inject a browser-only fixture, preserving its live API.
