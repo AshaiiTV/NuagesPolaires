@@ -378,11 +378,11 @@ var SD={
         {niv:10,nom:"Tenue de Ligne",cout:"5 EM — 1 action",desc:"Distance : 16+Niv. CAC : 28+Niv + repousse."}
       ]}},
 
-  "Flécheur":{arme:"Arc du serment",pvN:3,epN:5,emN:4,dmg:10,type:"Tranchant",
-    lore:"Le Flécheur est le serment de ceux qui savent attendre sans faiblir. Il ne récompense pas seulement la bonne vue ou la main stable ; il récompense la capacité à garder le monde entier immobile dans sa tête jusqu'à ce que la cible devienne évidente. Son arc du serment n'est pas une arme de panique. C'est une ligne tendue entre patience et conséquence. Le Flécheur paraît souvent distant, presque absent du tumulte, mais cette distance est une concentration. Il voit les trajectoires, les erreurs d'appui, les secondes où l'ennemi cesse de protéger son propre avenir. Quand il tire, ce n'est pas pour participer au combat. C'est pour le corriger.",
+  "Archer":{arme:"Arc du serment",pvN:3,epN:5,emN:4,dmg:10,type:"Tranchant",
+    lore:"L’Archer est le serment de ceux qui savent attendre sans faiblir. Il ne récompense pas seulement la bonne vue ou la main stable ; il récompense la capacité à garder le monde entier immobile dans sa tête jusqu'à ce que la cible devienne évidente. Son arc du serment n'est pas une arme de panique. C'est une ligne tendue entre patience et conséquence. L’Archer paraît souvent distant, presque absent du tumulte, mais cette distance est une concentration. Il voit les trajectoires, les erreurs d'appui, les secondes où l'ennemi cesse de protéger son propre avenir. Quand il tire, ce n'est pas pour participer au combat. C'est pour le corriger.",
     bA:{nom:"Branche A — Salve Aveugle",style:"AOE",
       descPhys:"Plusieurs flèches partent en même temps, en arc large. Elles ne cherchent pas une cible précise — elles saturent l'espace. Quiconque se trouve dans la zone reçoit.",
-      flavor:"Salve Aveugle est le moment où le Flécheur renonce à la perfection pour contrôler une zone entière. Ce n'est pas élégant, pas propre, pas toujours confortable pour les alliés. Mais pendant quelques secondes, le terrain cesse d'appartenir à ceux qui s'y trouvent.",
+      flavor:"Salve Aveugle est le moment où l’Archer renonce à la perfection pour contrôler une zone entière. Ce n'est pas élégant, pas propre, pas toujours confortable pour les alliés. Mais pendant quelques secondes, le terrain cesse d'appartenir à ceux qui s'y trouvent.",
       paliers:[
         {niv:2,nom:"Salve Aveugle",cout:"6 EM — 1 action",desc:"Zone à distance. Toutes entités dans la zone — ennemies ET alliées — subissent 7+Niv."},
         {niv:5,nom:"Salve Aveugle",cout:"6 EM — 1 action",desc:"9+Niv à toutes entités dans la zone."},
@@ -390,8 +390,8 @@ var SD={
         {niv:10,nom:"Salve Aveugle",cout:"6 EM — 1 action",desc:"15+Niv à toutes entités dans la zone."}
       ]},
     bB:{nom:"Branche B — Flèche de Jugement",style:"Concentration",
-      descPhys:"Le Flécheur s'immobilise. Tout le reste disparaît — le mouvement, le bruit, les alliés. Il ne reste que la cible et la corde tendue à l'extrême. Plus il attend, plus la flèche porte loin et fort. Quand elle part, c'est une sentence.",
-      flavor:"Flèche de Jugement transforme l'attente en poids. Chaque action conservée devient de la tension dans la corde, du silence dans le bras, de la certitude dans le tir. Quand la flèche part enfin, elle porte avec elle tout ce que le Flécheur a refusé de faire avant.",
+      descPhys:"L’Archer s'immobilise. Tout le reste disparaît — le mouvement, le bruit, les alliés. Il ne reste que la cible et la corde tendue à l'extrême. Plus il attend, plus la flèche porte loin et fort. Quand elle part, c'est une sentence.",
+      flavor:"Flèche de Jugement transforme l'attente en poids. Chaque action conservée devient de la tension dans la corde, du silence dans le bras, de la certitude dans le tir. Quand la flèche part enfin, elle porte avec elle tout ce que l’Archer a refusé de faire avant.",
       paliers:[
         {niv:2,nom:"Flèche de Jugement",cout:"8 EM — coûte toutes les actions restantes du tour",desc:"0 action sacrifiée : 7+Niv. 1 action : 14+Niv. 2 actions : 20+Niv. Interdit en surcadençage."},
         {niv:5,nom:"Flèche de Jugement",cout:"8 EM",desc:"0 action : 11+Niv. 1 action : 18+Niv. 2 actions : 26+Niv."},
@@ -698,7 +698,7 @@ function _normalizePlayerRecord(player, idx){
   var out = _ensurePlainObject(_npClone(player));
   out.id = String(out.id || _slugDataId('p_', out.name || idx, idx));
   out.name = String(out.name || ('Joueur ' + (idx+1))).trim().slice(0, 80);
-  out.classe = String(out.classe || out.class || '').trim();
+  out.classe = NPProgression.normalizeSermentName(String(out.classe || out.class || '').trim());
   out = NPProgression.normalizePlayer(out, getAllSD()[out.classe]);
   out.xpMax = Math.max(1, Math.floor(_safeFiniteNumber(out.xpMax, 30)));
   out.xp = Math.max(0, Math.floor(_safeFiniteNumber(out.xp, 0)));
@@ -807,7 +807,13 @@ function _normalizeCombatArchiveRecord(entry, idx){
   var out = _ensurePlainObject(_npClone(entry));
   out.id = String(out.id || _slugDataId('arc_', out.label || out.title || out.savedAt || idx, idx));
   out.savedAt = _safeFiniteNumber(out.savedAt, _safeFiniteNumber(out.archivedAt, Date.now()));
-  if(Array.isArray(out.fighters)) out.fighters = out.fighters.slice(0, 80);
+  if(Array.isArray(out.fighters)) out.fighters = out.fighters.slice(0, 80).map(function(f){
+    if(f&&typeof NPProgression!=='undefined'&&NPProgression.normalizeSermentName){
+      if(f.classe)f.classe=NPProgression.normalizeSermentName(f.classe);
+      if(f.class)f.class=NPProgression.normalizeSermentName(f.class);
+    }
+    return f;
+  });
   if(Array.isArray(out.log)) out.log = out.log.slice(-1200);
   if(Array.isArray(out.entries)) out.entries = out.entries.slice(-1200);
   return out;
@@ -1572,7 +1578,7 @@ function getBeastCatalogEntry(idOrBeast){
   return beast ? _npClone(beast.catalog || _normalizeBeastRecord(beast, 0).catalog) : null;
 }
 // Serments custom (stock_s, fusionn_s avec SD au runtime)
-function gsd(){return sto("serments_custom")||{};}
+function gsd(){var custom=sto("serments_custom")||{};return typeof NPProgression!=='undefined'&&NPProgression.normalizeSermentDefinitions?NPProgression.normalizeSermentDefinitions(custom):custom;}
 function compactSermentsCustom(s){
   var result={};
   Object.keys(s||{}).forEach(function(name){
@@ -6050,7 +6056,7 @@ async function playerConsume(){
 
 var WEAPON_ICONS={
   "Duelliste":"⚔","Bretteur":"⚔","Claymore":"⚔","Lame d'Honneur":"⚔","Sauvageon":"🪓","Croisé":"🛡","Rodeur":"🗡","Rôdeur":"🗡",
-  "Traqueur":"🏹","Flecheur":"🏹","Flécheur":"🏹","Elementaliste":"👊","Élémentaliste":"👊",
+  "Traqueur":"🏹","Archer":"🏹","Elementaliste":"👊","Élémentaliste":"👊",
   "Evocateur":"🪄","Évocateur":"🪄","Conjurateur":"⛓","Arcaniste":"🔮"
 };
 var STYLE_COLORS={
@@ -6063,7 +6069,7 @@ var STYLE_COLORS={
 };
 var SERM_CATS={
   "Duelliste":"melee","Bretteur":"melee","Claymore":"melee","Lame d'Honneur":"melee","Sauvageon":"melee","Croisé":"melee","Rôdeur":"melee",
-  "Traqueur":"melee","Flécheur":"distance","Elementaliste":"melee",
+  "Traqueur":"melee","Archer":"distance","Elementaliste":"melee",
   "Evocateur":"magie","Conjurateur":"soutien","Arcaniste":"magie"
 };
 var SERM_LEVELS={
@@ -8720,7 +8726,7 @@ function renderCombat(tid){
   h+='</tbody></table>';
   h+='<div class="hlbox"><strong>Formule des dégâts :</strong> Dégâts = Damage de base (Serment) + Niveau du personnage. <em>Exemple : Duelliste niveau 3 — Frappe = 11 + 3 = 14 PV infligés.</em></div>';
   h+='<div class="hlbox"><strong>Pugilat :</strong> Tout personnage peut frapper à mains nues — <strong>3 + Niveau du porteur</strong>, 6 EP, 1 action. Applicable à tous, quelle que soit la classe ou le Serment.</div>';
-  h+='<div class="hlbox"><strong>Note importante :</strong> Se déplacer (10 EP) place le personnage hors de portée de frappe au corps à corps. Pour les porteurs d\'un Serment à arme non-mêlée (Flécheur, Arcaniste), la frappe de base représente un coup de poing.</div>';
+  h+='<div class="hlbox"><strong>Note importante :</strong> Se déplacer (10 EP) place le personnage hors de portée de frappe au corps à corps. Pour les porteurs d\'un Serment à arme non-mêlée (Archer, Arcaniste), la frappe de base représente un coup de poing.</div>';
   h+='</div>';
 
   // ── VI. SURCADENÇAGE ──
@@ -10985,7 +10991,7 @@ function cHydrateCombatState(state){
   if(state.active&&!state.order.length) state.order=state.fighters.map(function(_,index){return index;});
   state.turn=Math.max(0,Math.min(state.order.length,Math.floor(Number(state.turn)||0)));
   if(['idle','declaration','resolution'].indexOf(state.phase)<0) state.phase=state.active?'declaration':'idle';
-  state.fighters.forEach(function(f){if(!f) return; if(!Array.isArray(f.statuts)) f.statuts=[]; cEnsureFighterCid(f);});
+  state.fighters.forEach(function(f){if(!f) return; if(typeof NPProgression!=='undefined'&&NPProgression.normalizeSermentName){if(f.classe)f.classe=NPProgression.normalizeSermentName(f.classe);if(f.class)f.class=NPProgression.normalizeSermentName(f.class);}if(!Array.isArray(f.statuts)) f.statuts=[]; cEnsureFighterCid(f);});
   return state;
 }
 function combatHasMeaningfulState(state){
@@ -11628,7 +11634,7 @@ function cBuildAbilityOptionsForPalier(info, pal, actLeft){
     });
     return out;
   }
-  if(f.classe==='Flécheur' && /Jugement/i.test(name)){
+  if(f.classe==='Archer' && /Jugement/i.test(name)){
     var shots=[];
     var re2=/([012])\s*action[^:]*:\s*(\d+)\+Niv/ig, m2;
     while((m2=re2.exec(desc))) shots.push({sac:parseInt(m2[1],10), base:parseInt(m2[2],10)});
@@ -16401,7 +16407,7 @@ function _drawItem(doc,item,x,y,WHITE,DIM,FAINT,accentCol){
 function _sermColor(classe){
   var cols={
     "Duelliste":"#7eb8d4","Bretteur":"#89d89a","Claymore":"#c9a84c","Lame d'Honneur":"#c9a84c","Sauvageon":"#c94a4a","Croisé":"#c9a84c",
-    "Rôdeur":"#6db88a","Traqueur":"#c084d4","Flécheur":"#7eb8d4",
+    "Rôdeur":"#6db88a","Traqueur":"#c084d4","Archer":"#7eb8d4",
     "Élémentaliste":"#c9a84c","Évocateur":"#c084d4","Conjurateur":"#6db88a","Arcaniste":"#a8d4f0"
   };
   return cols[classe]||"#7eb8d4";

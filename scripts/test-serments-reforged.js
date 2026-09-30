@@ -101,7 +101,7 @@ test('Historical branch labels resolve to the same exclusive branch without rewr
 test('Every public and historical weapon has a painted master and lightweight delivery assets; unknown labels stay text',()=>{
   const context={};context.window=context;
   vm.runInNewContext(fs.readFileSync(path.join(root,'assets/js/serments-emblems.js'),'utf8'),context);
-  const names=[...reforged.activeNames,'Duelliste','Sauvageon','Croisé','Rôdeur','Traqueur','Flécheur','Elementaliste','Evocateur','Conjurateur','Arcaniste','Bretteur','Claymore',"Lame d'Honneur"];
+  const names=[...reforged.activeNames,'Duelliste','Sauvageon','Croisé','Rôdeur','Traqueur','Archer','Elementaliste','Evocateur','Conjurateur','Arcaniste','Bretteur','Claymore',"Lame d'Honneur"];
   const paths=new Set();
   for(const name of names){
     const file=context.NPSermentArt[name];assert.match(file,/^assets\/serments\/painted\/[a-z0-9-]+\.jpg$/,name);

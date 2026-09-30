@@ -30,7 +30,7 @@
       {values:{damage:value(0,3),drain:value(4,2)},ops:[operation('drain','Lance drainante',5,'Frappe pour {damage} dégâts et retire {drain} EP à la cible.',{value:'$damage',epDrain:'$drain',targetType:'enemy'})]},
       {values:{distance:value(0,3),melee:value(6,3)},ops:[operation('reach','Frappe à portée de lance',5,'Frappe à distance pour {distance} dégâts, sans déplacer le porteur.',{value:'$distance',targetType:'enemy'}),operation('push','Repousser au contact',5,'Au contact : {melee} dégâts et repousse la cible. Se rapprocher demande une action de déplacement.',{value:'$melee',repulse:true,targetType:'enemy'})]}
     ],
-    'Flécheur':[
+    'Archer':[
       {values:{damage:value(5,2)},ops:[operation('volley','Salve aveugle',6,'{damage} dégâts à toutes les entités dans la zone visée à distance, alliées comme ennemies.',{value:'$damage',aoe:true,aoeIncludesAllies:true,targetType:'none'})]},
       {values:{quick:value(3,3),aimed:value(10,3),full:value(16,3)},ops:[operation('judge1','Jugement · 1 action',8,'Consacre 1 action à un tir de {quick} dégâts. Interdit en surcadençage.',{value:'$quick',targetType:'enemy',actsSacr:0,noOverclock:true}),operation('judge2','Jugement · 2 actions',8,'Consacre 2 actions à un tir de {aimed} dégâts. Interdit en surcadençage.',{value:'$aimed',targetType:'enemy',actsSacr:1,noOverclock:true},2),operation('judge3','Jugement · 3 actions',8,'Consacre 3 actions à un tir de {full} dégâts. Interdit en surcadençage.',{value:'$full',targetType:'enemy',actsSacr:2,noOverclock:true},3)]}
     ],

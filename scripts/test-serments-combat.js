@@ -97,7 +97,7 @@ test('a zero-action abandonment consumes no extra action and no energy',()=>{
   const c=environment('Piquier','A',5);c.act('main');c.act('release');assert.equal(c.cDeclCount(0),1);c.finish();assert.equal(c._cs.fighters[0].epCur,496);assert.equal(c.NPSermentsCombat.getState(0).stage,'idle');
 });
 test('the thirteen existing serments retain their legacy ability and damage route',()=>{
-  for(const name of ['Duelliste','Bretteur','Claymore','Lame d’Honneur','Sauvageon','Croisé','Rôdeur','Traqueur','Flécheur','Elementaliste','Evocateur','Conjurateur','Arcaniste']){
+  for(const name of ['Duelliste','Bretteur','Claymore','Lame d’Honneur','Sauvageon','Croisé','Rôdeur','Traqueur','Archer','Elementaliste','Evocateur','Conjurateur','Arcaniste']){
     const c=environment(name,'A',10);assert.deepEqual(c.cGetAbilityOptions(0),['legacy']);assert.equal(c.oldCalls,1);c.cDeclareAction(0,'frappe',{target:1});c.finish();assert.equal(c.attacks.length,1,name);
   }
 });
