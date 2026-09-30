@@ -14,12 +14,13 @@
     "check": "node scripts/check.js && node scripts/generate-serments-reforged-mechanics.js --check",
     "test:auth": "node scripts/test-auth-flows.js",
     "test": "node --test scripts/test-auth-security.js scripts/test-db-security.js scripts/test-integration.js scripts/test-beast-persistence.js scripts/test-archive-persistence.js scripts/test-session-isolation.js scripts/test-legacy-recovery.js scripts/test-system-log.js scripts/test-auth-target.js scripts/test-gameplay-persistence.js scripts/test-rpg-persistence.js scripts/test-store-backup.js scripts/test-player-actions.js scripts/test-player-actions-front.js scripts/test-event-staff.js scripts/test-first-steps.js scripts/test-unified-progression.js scripts/test-progression-concurrency.js scripts/test-progression-reads.js scripts/test-theme-access.js scripts/test-theme-catalog.js scripts/test-serments-expansion.js scripts/test-serments-combat.js scripts/test-serments-reforged.js scripts/test-serments-reforged-combat.js scripts/test-serments-linear.js scripts/test-serments-linear-imports.js",
-    "test:browser": "node scripts/test-browser.js && node scripts/test-rpg-browser.js && node scripts/test-player-actions-browser.js && node scripts/test-event-staff-browser.js && node scripts/test-adventure-browser.js && node scripts/test-account-keyboard-browser.js && node scripts/test-unified-progression-browser.js && node scripts/test-theme-selection-browser.js && node scripts/test-theme-matrix-browser.js && node scripts/test-serments-expansion-browser.js && node scripts/test-serments-discovery-browser.js && node scripts/test-serments-linear-browser.js && node scripts/test-archer-browser.js",
+    "test:browser": "node scripts/test-loading-browser.js && node scripts/test-browser.js && node scripts/test-rpg-browser.js && node scripts/test-player-actions-browser.js && node scripts/test-event-staff-browser.js && node scripts/test-adventure-browser.js && node scripts/test-account-keyboard-browser.js && node scripts/test-unified-progression-browser.js && node scripts/test-theme-selection-browser.js && node scripts/test-theme-matrix-browser.js && node scripts/test-serments-expansion-browser.js && node scripts/test-serments-discovery-browser.js && node scripts/test-serments-linear-browser.js && node scripts/test-archer-browser.js",
     "build": "npm run check && npm test && node scripts/build.js",
     "backup:store": "node scripts/backup-store.js",
     "backup:verify": "node scripts/verify-backup.js",
     "art:prepare": "node scripts/prepare-serments-art.js",
-    "serments:generate": "node scripts/generate-serments-reforged-mechanics.js && python3 scripts/generate-serments-reforged.py"
+    "serments:generate": "node scripts/generate-serments-reforged-mechanics.js && python3 scripts/generate-serments-reforged.py",
+    "test:loading": "node scripts/test-loading-browser.js"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
