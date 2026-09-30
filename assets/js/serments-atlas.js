@@ -139,24 +139,46 @@
     var levels=Array.from(new Set([1].concat(branches.flatMap(function(br){return (br.paliers||[]).map(function(t){return Number(t.niv);}).filter(function(n){return Number.isFinite(n)&&n>=1;});}),[max]))).sort(function(a,b){return a-b;});
     return '<section class="oath-levelbar"><div class="oath-level-label"><span class="oath-eyebrow">Niveau simulé</span><div><button type="button" class="oath-level-step" data-step-level="-1" aria-label="Diminuer le niveau">−</button><output id="oath-level-value" for="oath-level">'+state.level+'</output><button type="button" class="oath-level-step" data-step-level="1" aria-label="Augmenter le niveau">+</button></div>'+(mine?'<button type="button" class="oath-own-level" data-own-level>Mon niveau · '+mine+'</button>':'')+'</div><div class="oath-level-control"><label for="oath-level">Fais évoluer la constellation</label><input id="oath-level" type="range" min="1" max="'+max+'" step="1" value="'+state.level+'"><div class="oath-level-stops">'+levels.map(function(level){return '<button type="button" class="oath-level-stop" data-level-stop="'+level+'" aria-pressed="'+(level===state.level)+'">'+level+'</button>';}).join('')+'</div></div></section>';
   }
+  function inspectorCosts(cost){
+    cost=cost||{};var actions=cost.actions==null?1:cost.actions,parts=[actions+' action'+(actions>1?'s':'')];
+    if(cost.ep)parts.push(cost.ep+' EP');if(cost.em)parts.push(cost.em+' EM');if(cost.pv)parts.push(cost.pv+' PV');
+    return parts;
+  }
+  function inspectorOperations(branch,tier){
+    var rules=tier.combatRules;
+    if(rules&&rules.cost&&tier.cout!=null&&tier.cout!==inspectorCosts(rules.cost).join(' / ')) return [];
+    if(typeof getSermentTierOperations==='function') return getSermentTierOperations(tier);
+    if(rules&&Array.isArray(rules.operations)) return tier.desc===rules.effect?rules.operations:[];
+    var source=(branch.combatRules&&branch.combatRules.tiers||[]).find(function(item){return Number(item.level)===Number(tier.niv);});
+    // A staff-authored description takes precedence over the original structured rules.
+    return source&&(tier.desc===source.effect||tier.desc===source.effectFormula)&&Array.isArray(source.operations)?source.operations:[];
+  }
+  function inspectorActions(branch,tier){
+    var operations=inspectorOperations(branch,tier),level=Math.max(state.level,Number(tier.niv)||1);
+    if(!operations.length) return (tier.cout?'<div class="oath-cost"><span>Coût</span><strong>'+esc(tier.cout)+'</strong></div>':'')+'<div class="oath-inspector-effect"><div class="oath-actions-heading"><h4>Effet de la capacité</h4></div>'+paragraphs(tier.desc||branch.desc||'Effet à définir.','oath-action-effect')+'</div>';
+    return '<div class="oath-inspector-effect"><div class="oath-actions-heading"><h4>Actions disponibles</h4><p>Valeurs au niveau '+level+'</p></div><div class="oath-ability-actions">'+operations.map(function(op){
+      var costs=inspectorCosts(op.cost);
+      var rule=String(op.ruleFormula||op.rule||'').replace(/\((-?\d+) \+ N\)/g,function(_,base){return String(Number(base)+level);}).replace(/^\d+ actions?(?:\s*(?:,|et|\/)\s*\d+\s*(?:EP|EM|PV))*/,'').replace(/^[.,;]\s*/,'').trim().replace(/^et\s+/,'Consomme ');
+      return '<article class="oath-ability-action" data-operation="'+escAttr(op.id||'')+'"><div class="oath-ability-action-head"><h5>'+esc(op.label||'Action')+'</h5><div class="oath-action-cost" aria-label="Coût de l’action">'+costs.map(function(value){return '<span>'+esc(value)+'</span>';}).join('')+'</div></div><p class="oath-action-effect">'+esc(rule)+'</p></article>';
+    }).join('')+'</div></div>';
+  }
   function inspectorMarkup(branch,tier,index,total){
     if(!branch||!tier) return '<section class="oath-inspector"><p class="oath-empty">Les capacités de ce serment restent à définir.</p></section>';
     var actual=currentIndex(branch),unlocked=Number(tier.niv)<=state.level;
-    var status=!unlocked?(sealed(branch,index)?'Scellé':'Verrouillé')+' · Niveau '+tier.niv:index===actual?'Palier actif en aperçu':'Palier remplacé au niveau actuel';
+    var status=!unlocked?(sealed(branch,index)?'Scellé':'Verrouillé'):index===actual?'Actif · aperçu':'Palier remplacé';
     if(obscured(branch,index)) return '<section class="oath-inspector is-locked'+(sealed(branch,index)?' is-sealed':'')+'" data-tier-color="'+tierColor(index)+'"><div class="oath-inspector-head"><span class="oath-eyebrow">Un sceau à révéler</span><span class="oath-inspector-status is-locked" role="status">'+esc(status)+'</span></div><div class="oath-inspector-index">VOIE '+String.fromCharCode(65+state.branch)+' / SCEAU '+tierRoman(index)+' / NIV. '+esc(tier.niv)+'</div><h3 tabindex="-1">'+esc(sealed(branch,index)?'Pouvoir inconnu':nodeLabel(index,total))+'</h3>'+gateMarkup(branch,tier,index)+'</section>';
-    var html='<section class="oath-inspector'+(!unlocked?' is-locked':'')+'" data-tier-color="'+tierColor(index)+'"><div class="oath-inspector-head"><span class="oath-eyebrow">Capacité inspectée</span><span class="oath-inspector-status '+(unlocked?'is-unlocked':'is-locked')+'" role="status">'+esc(status)+'</span></div><div class="oath-inspector-sigil" aria-hidden="true">'+glyph(index)+'</div><div class="oath-inspector-index">VOIE '+String.fromCharCode(65+state.branch)+' / '+esc(nodeLabel(index,total))+' / NIV. '+esc(tier.niv)+'</div><h3 tabindex="-1">'+esc(tier.nom||branchName(branch,state.branch))+'</h3>';
-    if(tier.cout&&!getSermentTierOperations(tier).length) html+='<div class="oath-cost"><span>COÛT</span><strong>'+esc(tier.cout)+'</strong></div>';
-    html+='<div class="oath-inspector-effect"><span>GESTES AU NIVEAU '+Math.max(state.level,Number(tier.niv)||1)+'</span>'+renderSermentOperations(tier,state.level)+'</div>';
-    if(tier.manifestation) html+='<div class="oath-tier-story"><span class="oath-eyebrow">Ce qui se manifeste</span><p>'+esc(tier.manifestation)+'</p></div>';
-    if(branch.descPhys||branch.flavor||branch.visual){
-      html+='<details class="oath-inspector-flavor"><summary>Incarner cette voie</summary>';
+    var html='<section class="oath-inspector'+(!unlocked?' is-locked':'')+'" data-tier-color="'+tierColor(index)+'"><div class="oath-inspector-head"><span class="oath-inspector-index">Niveau '+esc(tier.niv)+' · '+esc(nodeLabel(index,total))+'</span><span class="oath-inspector-status '+(unlocked?'is-unlocked':'is-locked')+'" role="status">'+esc(status)+'</span></div><h3 tabindex="-1">'+esc(tier.nom||branchName(branch,state.branch))+'</h3><p class="oath-inspector-branch">Voie '+String.fromCharCode(65+state.branch)+' · '+esc(branchName(branch,state.branch))+'</p>';
+    html+=inspectorActions(branch,tier)+'<div class="oath-inspector-more">';
+    if(tier.manifestation||branch.descPhys||branch.flavor||branch.visual||branch.roleplay){
+      html+='<details class="oath-inspector-flavor"><summary>Imaginaire &amp; incarnation</summary>';
+      if(tier.manifestation) html+='<div class="oath-tier-story"><b>Ce qui se manifeste</b><p>'+esc(tier.manifestation)+'</p></div>';
       if(branch.descPhys||branch.visual) html+='<p><b>En combat</b>'+esc(branch.descPhys||branch.visual)+'</p>';
       if(branch.roleplay) html+='<p><b>Une question pour le porteur</b>'+esc(branch.roleplay)+'</p>';
       if(branch.flavor) html+='<p><b>Un échange possible</b>'+esc(branch.flavor)+'</p>';
       html+='</details>';
     }
     if(branch.combatRules) html+='<div class="oath-inspector-rules">'+renderSermentRules(branch)+'</div>';
-    html+='<p class="oath-inspector-note">Une seule voie. Seul son palier le plus élevé atteint s’applique. Les coûts propres aux opérations sont précisés dans l’effet.</p><button type="button" class="oath-copy-build" data-copy-build>Copier ce parcours <span aria-hidden="true">↗</span></button><span class="oath-action-status" role="status"></span></section>';
+    html+='</div><p class="oath-inspector-note">Seul le dernier palier atteint de ta voie s’applique.</p><button type="button" class="oath-copy-build" data-copy-build>Copier ce parcours <span aria-hidden="true">↗</span></button><span class="oath-action-status" role="status"></span></section>';
     return html;
   }
   function compareMarkup(branches){
@@ -235,15 +257,19 @@
     state.discovery=enabled;refreshStage();
     var target=mount.querySelector('[data-discovery="'+(enabled?'on':'off')+'"]');if(target)target.focus({preventScroll:true});
   }
+  function inspectorBelowTree(){
+    var tree=mount.querySelector('.oath-tree'),panel=mount.querySelector('.oath-inspector');
+    return tree&&panel&&panel.getBoundingClientRect().top>=tree.getBoundingClientRect().bottom-1;
+  }
   function previewLevel(value){
-    levelInput(value);var target=state.view==='compare'?mount.querySelector('.oath-compare-card[data-branch="'+state.branch+'"] h3'):mount.querySelector(mobile()?'.oath-inspector h3':'.oath-node.is-current');
-    if(target){target.focus({preventScroll:true});if(mobile())target.scrollIntoView({behavior:motion(),block:'start'});}
+    levelInput(value);var scroll=mobile()||(state.view!=='compare'&&inspectorBelowTree()),target=state.view==='compare'?mount.querySelector('.oath-compare-card[data-branch="'+state.branch+'"] h3'):mount.querySelector(scroll?'.oath-inspector h3':'.oath-node.is-current');
+    if(target){target.focus({preventScroll:true});if(scroll)target.scrollIntoView({behavior:motion(),block:'start'});}
   }
   function inspect(branch,tier,fromCompare){
     var branches=branchesOf(selected());state.branch=branch;state.tier=tier==null?Math.max(0,currentIndex(branches[branch])):tier;
     if(fromCompare) state.view='tree';remember();refreshStage();
     var target=mount.querySelector('.oath-node.is-selected');if(target) target.focus({preventScroll:true});
-    if(mobile()){var heading=mount.querySelector('.oath-inspector h3');if(heading){heading.focus({preventScroll:true});heading.scrollIntoView({behavior:motion(),block:'start'});}}
+    if(mobile()||inspectorBelowTree()){var heading=mount.querySelector('.oath-inspector h3');if(heading){heading.focus({preventScroll:true});heading.scrollIntoView({behavior:motion(),block:'start'});}}
   }
   async function copyBuild(){
     var item=selected(),branch=branchesOf(item)[state.branch],tier=branch&&branch.paliers&&branch.paliers[state.tier];if(!item||!tier||obscured(branch,state.tier)) return;

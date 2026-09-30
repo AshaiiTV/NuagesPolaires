@@ -6138,7 +6138,7 @@ function getSermentTierOperations(tier){
   if(!rules||tier.desc!==rules.effect||!Array.isArray(rules.operations))return [];
   var cost=rules.cost||{},costs=[(cost.actions||1)+' action'+(cost.actions>1?'s':'')];
   if(cost.ep)costs.push(cost.ep+' EP');if(cost.em)costs.push(cost.em+' EM');if(cost.pv)costs.push(cost.pv+' PV');
-  return tier.cout&&tier.cout!==costs.join(' / ')?[]:rules.operations;
+  return tier.cout!=null&&tier.cout!==costs.join(' / ')?[]:rules.operations;
 }
 function renderSermentOperations(tier,level){
   var operations=getSermentTierOperations(tier);
@@ -13737,7 +13737,7 @@ body .nav-group-menu .nav-section-header{
         declBtns.forEach(function(btn){
           var oathEngine=window.NPSermentsReforgedCombat;
           var oathReason=oathEngine&&oathEngine.nativeReason&&oathEngine.nativeReason(fi,btn.a,{});
-          if(oathReason){btn.disabled=true;btn.disabledReason=oathReason;btn.sub=oathReason;}
+          if(oathReason){btn.disabled=true;btn.disabledReason=oathReason;btn.sub=/deux mains/.test(oathReason)?'Mains engagées · Reprendre la garde':/mains sont engagées/.test(oathReason)?'Prise tenue · Relâcher la prise':/Prise active/.test(oathReason)?'Prise active · Rompre le lien':/tir chargé/.test(oathReason)?'Utiliser le tir du serment ci-dessous':/rotation/.test(oathReason)?'Rotation en cours · Utiliser le fléau':oathReason;}
           var needsTgt=btn.a==="frappe"||btn.a==="pugilat";
           var val=btn.a==="frappe"?dmg:btn.a==="pugilat"?pugDmg:0;
           var isDisabled=!!btn.disabled;
@@ -13751,7 +13751,7 @@ body .nav-group-menu .nav-section-header{
             :needsTgt
             ?"var _t=parseInt(document.getElementById('decl-tgt-"+fi+"').value);if(isNaN(_t)){var _s=document.getElementById('decl-tgt-"+fi+"');_s.style.borderColor='var(--red)';_s.style.boxShadow='0 0 0 2px rgba(201,74,74,0.4)';setTimeout(function(){_s.style.borderColor='';_s.style.boxShadow='';},1500);return;}cDeclareAction("+fi+",'"+(btn.a)+"',{target:_t,value:"+val+"})"
             :"cDeclareAction("+fi+",'"+(btn.a)+"',{target:undefined,value:"+val+"})";
-          h+='<button '+(isDisabled?'disabled aria-disabled="true" title="'+esc(btn.disabledReason||'Action indisponible')+'" ':'')+'onclick="'+onclickCode+'" style="padding:7px 4px;background:'+baseBg+';border:1px solid '+borderCol+';cursor:'+(isDisabled?'not-allowed':'pointer')+';text-align:center;transition:all .15s;opacity:'+(isDisabled?'.55':'1')+';" onmouseover="this.style.background=\''+jsesc(hoverBg)+'\'" onmouseout="this.style.background=\''+jsesc(baseBg)+'\'">'
+          h+='<button '+(oathReason?'class="rf-native-blocked" ':'')+(isDisabled?'disabled aria-disabled="true" title="'+esc(btn.disabledReason||'Action indisponible')+'" ':'')+'onclick="'+onclickCode+'" style="padding:7px 4px;background:'+baseBg+';border:1px solid '+borderCol+';cursor:'+(isDisabled?'not-allowed':'pointer')+';text-align:center;transition:all .15s;opacity:'+(isDisabled?'.55':'1')+';" onmouseover="this.style.background=\''+jsesc(hoverBg)+'\'" onmouseout="this.style.background=\''+jsesc(baseBg)+'\'">'
             +'<div style="font-size:11px;color:'+textCol+';">'+btn.l+'</div>'
             +(btn.sub?'<div style="font-family:var(--fm);font-size:8px;color:'+subCol+';margin-top:1px;">'+btn.sub+'</div>':"")
             +'</button>';

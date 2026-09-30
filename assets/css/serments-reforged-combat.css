@@ -37,3 +37,7 @@
 #p-combat-mj-c .rf-target-label select { width: 100%; min-width: 0; min-height: 40px; padding: 8px; color: var(--tm-text, var(--text)); background: var(--tm-control-bg, var(--bg)); border: 1px solid var(--border2); border-radius: 2px; font: 400 12px/1.5 var(--fb); }
 #p-combat-mj-c .rf-target-label select:focus-visible { outline: 2px solid var(--tm-link, var(--glacier)); outline-offset: 3px; }
 @media(max-width:760px) { #p-combat-mj-c .rf-operation-group > div { grid-template-columns: 1fr; } }
+
+#p-combat-mj-c button.rf-native-blocked:disabled { opacity: 1 !important; border-style: dashed !important; }
+#p-combat-mj-c button.rf-native-blocked > div:first-child { color: var(--tm-text, var(--text)) !important; }
+#p-combat-mj-c button.rf-native-blocked > div:last-child { font: 400 11px/1.5 var(--fb) !important; color: var(--tm-text-soft, var(--dim)) !important; padding: 3px; text-transform: none; letter-spacing: 0; }
