@@ -1,0 +1,93 @@
+/* A continuous descent from the horizon into the rock below it.
+ * Scenery stays decorative; the document keeps its natural scroll and flow. */
+html[data-np-design="polar"] #s-home{
+  --np-depth-ink:#091519;
+  --np-depth-text:#a6c1b8;
+  --np-depth-wash:22%;
+  --np-sky-shift:0px;
+  --np-depth-shift:0px;
+  --np-mist-shift:0px;
+}
+html[data-np-design="polar"] #s-home #np-home-content{position:relative;isolation:isolate}
+html[data-np-design="polar"] #s-home .np-hero{z-index:1;max-width:none}
+html[data-np-design="polar"] #s-home .np-hero-landscape{
+  transform:translate3d(0,var(--np-sky-shift),0);
+  mask-image:linear-gradient(#000 72%,transparent 100%);
+  -webkit-mask-image:linear-gradient(#000 72%,transparent 100%);
+}
+html[data-np-design="polar"] #s-home .np-hero-shade{
+  background:linear-gradient(90deg,#09151970,transparent 74%),linear-gradient(180deg,#09151955,transparent 16%);
+}
+html[data-np-design="polar"] #s-home .np-world-depths{
+  position:relative;isolation:isolate;margin-top:-160px;padding-top:160px;
+}
+html[data-np-design="polar"] #s-home .np-world-scenery{
+  position:absolute;inset:-120px 0 -120px;z-index:-2;pointer-events:none;
+  transform:translate3d(0,var(--np-depth-shift),0);
+  mask-image:linear-gradient(transparent,#000 240px,#000 calc(100% - 340px),transparent calc(100% - 80px));
+  -webkit-mask-image:linear-gradient(transparent,#000 240px,#000 calc(100% - 340px),transparent calc(100% - 80px));
+}
+html[data-np-design="polar"] #s-home .np-world-scenery img{
+  display:block;width:100%;height:100%;object-fit:cover;object-position:center;
+}
+html[data-np-design="polar"] #s-home .np-world-scenery::after{
+  content:"";position:absolute;inset:0;
+  background:color-mix(in srgb,var(--np-depth-ink) var(--np-depth-wash),transparent);
+}
+html[data-np-design="polar"] #s-home .np-world-mist{
+  position:absolute;inset:0 -12%;z-index:-1;pointer-events:none;opacity:.4;
+  background:radial-gradient(ellipse 65% 8% at 68% 18%,#b1ccc51a,transparent 75%),radial-gradient(ellipse 70% 10% at 20% 52%,#a7d1c821,transparent 75%),radial-gradient(ellipse 45% 7% at 80% 78%,#a7d1c814,transparent 75%);
+  transform:translate3d(0,var(--np-mist-shift),0);
+}
+html[data-np-design="polar"] #s-home .np-community{
+  position:relative;background:color-mix(in srgb,var(--np-depth-ink) 68%,transparent);
+  width:100%;max-width:none;padding:30px max(6%,calc((100% - 1408px)/2));
+  border-color:#d4e4dd18;
+}
+html[data-np-design="polar"] #s-home .np-depth-passage{
+  height:clamp(180px,20vw,290px);width:88%;max-width:1408px;margin:auto;
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:16px;
+  color:var(--np-depth-text);font:500 8px/1.5 var(--fb);letter-spacing:.23em;
+}
+html[data-np-design="polar"] #s-home .np-depth-passage i{
+  display:block;width:1px;height:56px;margin-left:3px;
+  background:linear-gradient(var(--np-depth-text),transparent);opacity:.6;
+}
+html[data-np-design="polar"] #s-home .np-depth-passage>span:last-child{font-size:18px;font-weight:400}
+html[data-np-design="polar"] #s-home :is(.np-story,.np-oath){padding-top:90px;padding-bottom:160px}
+html[data-np-design="polar"] #s-home :is(.np-story,.np-oath)::after{
+  content:"";position:absolute;inset:0 -5%;z-index:-1;pointer-events:none;
+  background:radial-gradient(ellipse at center,color-mix(in srgb,var(--np-depth-ink) 80%,transparent),color-mix(in srgb,var(--np-depth-ink) 45%,transparent) 55%,transparent 75%);
+}
+html[data-np-design="polar"] #s-home .np-oath{padding-top:110px;border-top-color:#d4e4dd30}
+html[data-np-design="polar"] #s-home .np-oath-visual{background:none}
+html[data-np-design="polar"] #s-home .np-invitation{padding-top:100px;padding-bottom:110px;border-bottom:0}
+html[data-np-design="polar"] #s-home .np-colophon{position:relative;z-index:1}
+
+/* Account themes still own text and surface colors, including light palettes. */
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home{
+  --np-depth-ink:var(--tm-bg);
+  --np-depth-text:var(--tm-text-soft);
+  --np-depth-wash:76%;
+}
+html[data-np-design="polar"] body[data-np-authenticated="true"][data-theme-engine] #s-home .np-hero-shade{
+  background:linear-gradient(90deg,var(--tm-bg),color-mix(in srgb,var(--tm-bg) 90%,transparent) 45%,color-mix(in srgb,var(--tm-bg) 50%,transparent))!important;
+}
+
+@media(max-width:760px){
+  html[data-np-design="polar"] #s-home .np-hero-shade{background:linear-gradient(90deg,#0915199e,#09151908),linear-gradient(180deg,#09151955,transparent 50%)}
+  html[data-np-design="polar"] #s-home .np-world-depths{margin-top:-130px;padding-top:130px}
+  html[data-np-design="polar"] #s-home .np-world-scenery{inset:-90px -36% -90px}
+  html[data-np-design="polar"] #s-home .np-world-scenery img{object-position:62% center}
+  html[data-np-design="polar"] #s-home .np-community{padding:28px 6% 32px}
+  html[data-np-design="polar"] #s-home .np-depth-passage{height:190px}
+  html[data-np-design="polar"] #s-home :is(.np-story,.np-oath){padding-top:54px;padding-bottom:95px}
+  html[data-np-design="polar"] #s-home .np-invitation{padding-top:65px;padding-bottom:75px}
+  html[data-np-design="polar"] #s-home .np-world-mist{opacity:.25}
+}
+@media(prefers-reduced-motion:reduce){
+  html[data-np-design="polar"] #s-home :is(.np-hero-landscape,.np-world-scenery,.np-world-mist){transform:none!important}
+}
+@media print{
+  html[data-np-design="polar"] #s-home :is(.np-world-scenery,.np-world-mist,.np-depth-passage){display:none}
+}

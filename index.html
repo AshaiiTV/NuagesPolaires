@@ -6365,6 +6365,7 @@ body.theme-aquaris .home-title{
 <link rel="stylesheet" href="./assets/css/polar-account.css">
 <link rel="stylesheet" href="./assets/css/theme-selection.css">
 <link rel="stylesheet" href="./assets/css/theme-surfaces.css">
+<link rel="stylesheet" href="./assets/css/home-depth.css">
 </head>
 <body>
 <section id="s-first-steps" class="screen" aria-label="Premiers pas dans Nuages Polaires">
@@ -6405,6 +6406,12 @@ body.theme-aquaris .home-title{
       <div class="np-hero-caption"><span class="np-caption-rule" aria-hidden="true"></span><p>« Le monde n’est pas mort.<br><em>Il attend.</em> »</p></div>
     </section>
 
+    <div class="np-world-depths">
+      <div class="np-world-scenery" aria-hidden="true">
+        <img src="./assets/images/nuages-polaires-depths-v2.jpg" width="1024" height="1536" alt="" loading="lazy" decoding="async">
+      </div>
+      <div class="np-world-mist" aria-hidden="true"></div>
+
     <section class="np-community" aria-label="La vie du serveur">
       <div class="np-community-title"><span class="np-eyebrow">LES TRACES DE NOTRE PASSAGE</span><span>Un monde qui s’écrit à plusieurs.</span></div>
       <div class="np-metrics">
@@ -6415,6 +6422,8 @@ body.theme-aquaris .home-title{
         <div class="np-metric"><span id="hf-gemmes">—</span><span>Gemmes distribuées</span></div>
       </div>
     </section>
+
+    <div class="np-depth-passage" aria-hidden="true"><span>SOUS LA SURFACE</span><i></i><span>↓</span></div>
 
     <section class="np-story np-section" id="np-univers" aria-labelledby="np-story-title">
       <div class="np-section-label"><span>01</span> L’UNIVERS</div>
@@ -6435,6 +6444,7 @@ body.theme-aquaris .home-title{
     <section class="np-invitation np-section" aria-labelledby="np-invitation-title">
       <span class="np-eyebrow">LA SUITE N’EST PAS ENCORE ÉCRITE</span><h2 id="np-invitation-title">Laissez votre trace.</h2><p>Découvrez les règles, créez votre compte et rejoignez une histoire collective.</p><button type="button" class="np-action np-action-primary" onclick="showScreen('s-hrp')">Commencer l’aventure <span aria-hidden="true">↗</span></button>
     </section>
+    </div>
   </main>
 
   <footer class="np-colophon"><span>NUAGES POLAIRES <small>Le compagnon d’un monde à écrire.</small></span><div><button type="button" onclick="showScreen('s-hrp')">Règlement</button><button type="button" onclick="openRpgPrototype()">RPG — expérimental <span aria-hidden="true">↗</span></button></div></footer>
@@ -8852,5 +8862,6 @@ body[class*="theme-"] ::selection{
 <script src="./assets/js/visual-audit-polish.js"></script>
 <script src="./assets/js/database-admin-polish.js"></script>
 <script src="./assets/js/rpg-prototype.js"></script>
+<script src="./assets/js/home-depth.js"></script>
 </body>
 </html>
