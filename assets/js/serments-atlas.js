@@ -1,8 +1,8 @@
 /* The public Forge explores live rules without assigning a character's oath. */
 (function(root){
   'use strict';
-  var state={name:'',level:5,branch:0,tier:0,cat:'',rank:'',search:'',view:'tree',picks:{},libraryOpen:false};
-  var mount=null;
+  var state={name:'',level:5,branch:0,tier:0,cat:'',rank:'',search:'',view:'tree',discovery:true,picks:{},libraryOpen:false};
+  var mount=null,noticeTimer=null,revealTimer=null;
   var glyphs=[
     '<path d="m12 2 2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6Z"/>',
     '<path d="m15 2-9 12h6l-3 8 10-13h-7Z"/>',
@@ -31,6 +31,46 @@
     (branch&&branch.paliers||[]).forEach(function(tier,index){if(Number(tier.niv)<=state.level) found=index;});
     return found;
   }
+  function tierColor(index){return ['jade','azure','violet','gold'][Math.min(3,Math.max(0,index))];}
+  function tierRoman(index){return ['I','II','III','IV','V','VI','VII','VIII'][index]||String(index+1);}
+  function icon(kind){
+    var paths={lock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/>',sealed:'<path d="m12 2 9 10-9 10-9-10Z"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 4m0 3v.2"/>',eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',arrow:'<path d="M4 12h16m-6-6 6 6-6 6"/>',check:'<path d="m5 12 4 4L19 6"/>'};
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+paths[kind]+'</svg>';
+  }
+  function ownLevel(){
+    var player=typeof CU!=='undefined'&&CU&&CU.pid&&typeof gpid==='function'?gpid(CU.pid):null;
+    var value=Number(player&&player.level);return Number.isFinite(value)&&value>=1?Math.floor(value):null;
+  }
+  function maxLevel(branches){return Math.max(20,state.level,ownLevel()||1,...branches.flatMap(function(br){return (br.paliers||[]).map(function(t){var n=Number(t.niv);return Number.isFinite(n)&&n>0?n:1;});}));}
+  function locked(branch,index){return Number((branch.paliers||[])[index]?.niv)>state.level;}
+  function sealed(branch,index){return state.discovery&&index>currentIndex(branch)+1;}
+  function obscured(branch,index){return state.discovery&&locked(branch,index);}
+  function rankMarkup(branch){
+    var index=currentIndex(branch),tiers=branch&&branch.paliers||[];
+    return '<div class="oath-rank-hud" data-tier-color="'+tierColor(index)+'"><span class="oath-rank-sigil" aria-hidden="true">'+(index<0?icon('lock'):glyph(index))+'</span><div><small>RANG DANS L’APERÇU</small><strong>'+esc(index<0?'En sommeil':nodeLabel(index,tiers.length))+'</strong><span>'+esc(index<0?'Le premier sceau attend':'Sceau '+tierRoman(index)+' · Niveau '+tiers[index].niv)+'</span></div></div>';
+  }
+  function discoveryMarkup(){
+    return '<div class="oath-discovery-toolbar"><div class="oath-mode-toggle" aria-label="Visibilité des capacités"><button type="button" data-discovery="on" aria-pressed="'+state.discovery+'">'+icon('sealed')+'Découverte</button><button type="button" data-discovery="off" aria-pressed="'+!state.discovery+'">'+icon('eye')+'Codex complet</button></div><div class="oath-state-legend"><span>'+icon('check')+'Révélé</span><span>'+icon('lock')+'Verrouillé</span><span>'+icon('sealed')+'Scellé</span></div><p>'+esc(state.discovery?'Atteins les seuils de l’aperçu pour dissiper le voile.':'Toutes les capacités publiques sont consultables, même avant leur niveau.')+'</p></div>';
+  }
+  function tierLegend(branch){return '<div class="oath-tier-legend" aria-label="Couleurs des paliers">'+(branch&&branch.paliers||[]).map(function(t,i,all){return '<span data-tier-color="'+tierColor(i)+'"><i>'+tierRoman(i)+'</i><b>'+esc(nodeLabel(i,all.length))+'</b></span>';}).join('')+'</div>';}
+  function gateMarkup(branch,tier,index){
+    var hidden=sealed(branch,index),left=Math.max(0,Number(tier.niv)-state.level),percent=Math.min(100,state.level/Math.max(1,Number(tier.niv))*100);
+    return '<div class="oath-gate"><div class="oath-gate-seal">'+icon(hidden?'sealed':'lock')+'</div><span class="oath-eyebrow">'+(hidden?'Un pouvoir reste dans l’ombre':'Le prochain seuil t’attend')+'</span><p>'+esc(hidden?'Son nom, sa manifestation et son effet se révéleront dans l’aperçu au niveau '+tier.niv+'.':'Cette capacité attend le niveau '+tier.niv+'. Explore ce seuil pour découvrir son effet.')+'</p><div class="oath-gate-goal"><strong>'+left+'</strong><span>niveau'+(left>1?'x':'')+' avant révélation</span></div><div class="oath-gate-progress" aria-hidden="true"><i style="width:'+percent+'%"></i></div><button type="button" data-preview-tier="'+escAttr(tier.niv)+'">Simuler le niveau '+esc(tier.niv)+icon('arrow')+'</button><button type="button" class="oath-reveal-link" data-reveal-all>Lire dans le Codex complet</button><small>Simulation uniquement · aucun changement sur ta fiche.</small></div>';
+  }
+  function nextQuest(branch){
+    var tiers=branch&&branch.paliers||[],index=currentIndex(branch)+1,next=tiers[index];
+    if(!next)return '<div class="oath-next-quest is-complete" data-tier-color="gold">'+glyph(3)+'<div><small>VOIE PARACHEVÉE</small><strong>Tous les sceaux révélés</strong><span>Cette voie a atteint son apogée dans l’aperçu.</span></div></div>';
+    return '<button type="button" class="oath-next-quest" data-tier-color="'+tierColor(index)+'" data-next-tier="'+escAttr(next.niv)+'">'+icon('lock')+'<div><small>PROCHAIN OBJECTIF · APERÇU</small><strong>'+esc(nodeLabel(index,tiers.length))+' · Niveau '+esc(next.niv)+'</strong><span>Encore '+(Number(next.niv)-state.level)+' niveau'+(Number(next.niv)-state.level>1?'x':'')+' · Explorer ce seuil</span></div>'+icon('arrow')+'</button>';
+  }
+  function showUnlock(oldLevel,branch){
+    var tiers=branch&&branch.paliers||[],crossed=tiers.filter(function(t){return Number(t.niv)>oldLevel&&Number(t.niv)<=state.level;});
+    var toast=mount.querySelector('.oath-unlock-toast');
+    clearTimeout(noticeTimer);if(toast){toast.classList.remove('is-visible');toast.innerHTML='';}
+    if(!crossed.length)return;
+    var index=currentIndex(branch);if(toast){toast.dataset.tierColor=tierColor(index);toast.innerHTML=glyph(index)+'<div><small>RÉVÉLATION DANS L’APERÇU</small><strong>'+esc(crossed.length>1?crossed.length+' paliers révélés':nodeLabel(index,tiers.length)+' révélé')+'</strong><span>Niveau '+state.level+' · '+esc(branchName(branch,state.branch))+'</span></div>';toast.classList.add('is-visible');noticeTimer=setTimeout(function(){if(toast.isConnected)toast.classList.remove('is-visible');},4400);}
+    mount.querySelectorAll('.oath-node').forEach(function(node){if(Number(node.dataset.requiredLevel)>oldLevel&&Number(node.dataset.requiredLevel)<=state.level)node.classList.add('is-revealing');});
+    clearTimeout(revealTimer);revealTimer=setTimeout(function(){if(mount)mount.querySelectorAll('.is-revealing').forEach(function(n){n.classList.remove('is-revealing');});},1100);
+  }
   function searchText(item){return normal([item.name,item.data.arme,item.data.evolvesFrom,item.data.playstyle,item.data.tagline,item.data.lore,item.data.vow,branchesOf(item).map(function(br){return br.nom+' '+(br.style||'')+' '+(br.paliers||[]).map(function(tier){return tier.nom||'';}).join(' ');}).join(' ')].join(' '));}
   function filtered(items){var query=normal(state.search).trim();return items.filter(function(item){return (!state.cat||category(item)===state.cat)&&(!state.rank||rank(item)===state.rank)&&(!query||searchText(item).indexOf(query)!==-1);});}
   function remember(){if(state.name) state.picks[state.name]={branch:state.branch,tier:state.tier};}
@@ -55,7 +95,7 @@
   }
   function listMarkup(items){
     if(!items.length) return '<p class="oath-empty">Aucun serment trouvé. Essaie un autre nom ou type.</p>';
-    return items.map(function(item){return '<button type="button" class="oath-list-item'+(item.name===state.name?' is-active':'')+'" data-serment="'+escAttr(item.name)+'" data-level="'+escAttr(rank(item))+'" data-cat="'+escAttr(category(item))+'" aria-pressed="'+(item.name===state.name)+'"><span class="oath-list-art">'+getSermEmblem(item.name,52)+'</span><span class="oath-list-copy"><strong>'+esc(item.name)+'</strong><small>'+esc(getSermEvolutionFrom(item.name,item.data)?'↑ '+getSermEvolutionFrom(item.name,item.data):getSermCatLabel(category(item)))+'</small></span><span class="oath-list-arrow" aria-hidden="true">›</span></button>';}).join('');
+    return items.map(function(item){var gated=state.level<minimum(item),evolution=!!getSermEvolutionFrom(item.name,item.data);return '<button type="button" class="oath-list-item'+(item.name===state.name?' is-active':'')+(gated?' is-gated':'')+'" data-serment="'+escAttr(item.name)+'" data-min-level="'+minimum(item)+'" data-level="'+escAttr(rank(item))+'" data-cat="'+escAttr(category(item))+'" aria-pressed="'+(item.name===state.name)+'"><span class="oath-list-art">'+getSermEmblem(item.name,52)+'</span><span class="oath-list-copy"><strong>'+esc(item.name)+'</strong><small>'+esc(evolution?'Évolution · Niv. '+minimum(item):getSermCatLabel(category(item)))+'</small></span><span class="oath-list-lock"'+(gated?'':' hidden')+'>'+icon('lock')+'</span><span class="oath-list-arrow" aria-hidden="true">›</span></button>';}).join('');
   }
   function stat(value,label){return '<div class="oath-stat"><strong>'+esc(value==null?'—':value)+'</strong><span>'+esc(label)+'</span></div>';}
   function coords(branch,index,total){
@@ -70,21 +110,19 @@
       var previous={x:50,y:94},tiers=branch.paliers||[],active=currentIndex(branch);
       tiers.forEach(function(tier,ti){
         var point=coords(bi,ti,tiers.length),middle=(previous.y+point.y)/2;
-        html+='<path class="oath-link'+(ti<=active?' is-lit':'')+(bi===state.branch&&ti<=active?' is-current':'')+'" data-link-branch="'+bi+'" data-link-tier="'+ti+'" vector-effect="non-scaling-stroke" d="M '+previous.x+' '+previous.y+' C '+previous.x+' '+middle+' '+point.x+' '+middle+' '+point.x+' '+point.y+'"/>';
+        html+='<path class="oath-link'+(ti<=active?' is-lit':'')+(bi===state.branch&&ti<=active?' is-current':'')+(sealed(branch,ti)?' is-sealed':'')+'" data-tier-color="'+tierColor(ti)+'" data-link-branch="'+bi+'" data-link-tier="'+ti+'" vector-effect="non-scaling-stroke" d="M '+previous.x+' '+previous.y+' C '+previous.x+' '+middle+' '+point.x+' '+middle+' '+point.x+' '+point.y+'"/>';
         previous=point;
       });
     });
     return html+'</svg>';
   }
-  function nodeState(branch,bi,ti){var current=currentIndex(branch);return ti>current?'À venir':ti===current?(bi===state.branch?'Actif':'Alternative'):'Remplacé';}
+  function nodeState(branch,bi,ti){var current=currentIndex(branch);return sealed(branch,ti)?'Scellé':ti>current?'Verrouillé':ti===current?(bi===state.branch?'Actif':'Alternative'):'Remplacé';}
+  function nodeMarkup(branch,bi,ti){
+    var tiers=branch.paliers||[],tier=tiers[ti],active=currentIndex(branch),point=coords(bi,ti,tiers.length),inspected=bi===state.branch&&ti===state.tier,hidden=sealed(branch,ti),blocked=locked(branch,ti);
+    return '<button type="button" class="oath-node '+(blocked?'is-locked':'is-unlocked')+(hidden?' is-sealed':'')+(ti===active+1?' is-next':'')+(ti<active?' is-legacy':'')+(bi===state.branch&&ti===active?' is-current':'')+(inspected?' is-selected':'')+'" style="--node-x:'+point.x+'%;--node-y:'+point.y+'%" data-tier-color="'+tierColor(ti)+'" data-node-branch="'+bi+'" data-node-tier="'+ti+'" data-required-level="'+escAttr(tier.niv)+'" aria-pressed="'+inspected+'" aria-label="Voie '+String.fromCharCode(65+bi)+', niveau '+escAttr(tier.niv)+', '+escAttr(hidden?'Pouvoir inconnu':tierLabel(tier,ti,tiers.length))+', '+escAttr(nodeState(branch,bi,ti))+'"><span class="oath-node-orb">'+(hidden?icon('sealed'):blocked?icon('lock'):glyph(ti))+'<small class="oath-node-rank">'+tierRoman(ti)+'</small></span><span class="oath-node-copy"><small class="oath-node-level">NIV. '+esc(tier.niv)+'</small><strong class="oath-node-title">'+esc(hidden?'???':tierLabel(tier,ti,tiers.length))+'</strong></span><span class="oath-node-state">'+esc(nodeState(branch,bi,ti))+'</span></button>';
+  }
   function pathMarkup(branch,bi){
-    var tiers=branch.paliers||[],active=currentIndex(branch);
-    var html='<section class="oath-path'+(bi===state.branch?' is-chosen':'')+'" data-branch="'+bi+'" data-branch-label="Voie '+String.fromCharCode(65+bi)+'" aria-label="'+escAttr(branchName(branch,bi))+'"><div class="oath-node-list">';
-    tiers.forEach(function(tier,ti){
-      var point=coords(bi,ti,tiers.length),inspected=bi===state.branch&&ti===state.tier;
-      html+='<button type="button" class="oath-node '+(ti<=active?'is-unlocked':'is-locked')+(bi===state.branch&&ti===active?' is-current':'')+(inspected?' is-selected':'')+'" style="--node-x:'+point.x+'%;--node-y:'+point.y+'%" data-node-branch="'+bi+'" data-node-tier="'+ti+'" data-required-level="'+escAttr(tier.niv)+'" aria-pressed="'+inspected+'" aria-label="Voie '+String.fromCharCode(65+bi)+', niveau '+escAttr(tier.niv)+', '+escAttr(tierLabel(tier,ti,tiers.length))+', '+escAttr(nodeState(branch,bi,ti))+'"><span class="oath-node-orb">'+glyph(ti)+'</span><span class="oath-node-copy"><small class="oath-node-level">NIV. '+esc(tier.niv)+'</small><strong class="oath-node-title">'+esc(tierLabel(tier,ti,tiers.length))+'</strong></span><span class="oath-node-state">'+esc(nodeState(branch,bi,ti))+'</span></button>';
-    });
-    return html+'</div></section>';
+    return '<section class="oath-path'+(bi===state.branch?' is-chosen':'')+'" data-branch="'+bi+'" data-branch-label="Voie '+String.fromCharCode(65+bi)+'" aria-label="'+escAttr(branchName(branch,bi))+'"><div class="oath-node-list">'+(branch.paliers||[]).map(function(t,ti){return nodeMarkup(branch,bi,ti);}).join('')+'</div></section>';
   }
   function branchSwitch(branch,bi){return '<button type="button" class="oath-path-heading'+(bi===state.branch?' is-chosen':'')+'" data-choose-branch="'+bi+'" aria-pressed="'+(bi===state.branch)+'"><span class="oath-path-letter">'+String.fromCharCode(65+bi)+'</span><span><small>'+esc(branch.style||'Spécialisation')+'</small><strong>'+esc(branchName(branch,bi))+'</strong></span></button>';}
   function progressMarkup(branch){
@@ -92,14 +130,16 @@
     return '<div class="oath-progress-readout"><div><span>'+count+' / '+tiers.length+' paliers atteints</span><strong>'+esc(next?'Prochain éveil · Niv. '+next.niv:'Voie à son apogée')+'</strong></div><div class="oath-progress-track"><i style="width:'+(tiers.length?count/tiers.length*100:0)+'%"></i></div></div>';
   }
   function levelMarkup(branches){
-    var levels=Array.from(new Set([1].concat(branches.flatMap(function(br){return (br.paliers||[]).map(function(t){return Number(t.niv);});}),[20]))).sort(function(a,b){return a-b;});
-    return '<section class="oath-levelbar"><div class="oath-level-label"><span class="oath-eyebrow">Niveau exploré</span><div><button type="button" class="oath-level-step" data-step-level="-1" aria-label="Diminuer le niveau">−</button><output id="oath-level-value" for="oath-level">'+state.level+'</output><button type="button" class="oath-level-step" data-step-level="1" aria-label="Augmenter le niveau">+</button></div></div><div class="oath-level-control"><label for="oath-level">Projette ta progression</label><input id="oath-level" type="range" min="1" max="20" step="1" value="'+state.level+'"><div class="oath-level-stops">'+levels.map(function(level){return '<button type="button" class="oath-level-stop" data-level-stop="'+level+'" aria-pressed="'+(level===state.level)+'">'+level+'</button>';}).join('')+'</div></div></section>';
+    var max=maxLevel(branches),mine=ownLevel();
+    var levels=Array.from(new Set([1].concat(branches.flatMap(function(br){return (br.paliers||[]).map(function(t){return Number(t.niv);}).filter(function(n){return Number.isFinite(n)&&n>=1;});}),[max]))).sort(function(a,b){return a-b;});
+    return '<section class="oath-levelbar"><div class="oath-level-label"><span class="oath-eyebrow">Niveau simulé</span><div><button type="button" class="oath-level-step" data-step-level="-1" aria-label="Diminuer le niveau">−</button><output id="oath-level-value" for="oath-level">'+state.level+'</output><button type="button" class="oath-level-step" data-step-level="1" aria-label="Augmenter le niveau">+</button></div>'+(mine?'<button type="button" class="oath-own-level" data-own-level>Mon niveau · '+mine+'</button>':'')+'</div><div class="oath-level-control"><label for="oath-level">Fais évoluer la constellation</label><input id="oath-level" type="range" min="1" max="'+max+'" step="1" value="'+state.level+'"><div class="oath-level-stops">'+levels.map(function(level){return '<button type="button" class="oath-level-stop" data-level-stop="'+level+'" aria-pressed="'+(level===state.level)+'">'+level+'</button>';}).join('')+'</div></div></section>';
   }
   function inspectorMarkup(branch,tier,index,total){
     if(!branch||!tier) return '<section class="oath-inspector"><p class="oath-empty">Les capacités de ce serment restent à définir.</p></section>';
     var actual=currentIndex(branch),unlocked=Number(tier.niv)<=state.level;
-    var status=!unlocked?'À venir · Niveau '+tier.niv:index===actual?'Palier actif en aperçu':'Palier remplacé au niveau actuel';
-    var html='<section class="oath-inspector"><div class="oath-inspector-head"><span class="oath-eyebrow">Capacité inspectée</span><span class="oath-inspector-status '+(unlocked?'is-unlocked':'is-locked')+'" role="status">'+esc(status)+'</span></div><div class="oath-inspector-sigil" aria-hidden="true">'+glyph(index)+'</div><div class="oath-inspector-index">VOIE '+String.fromCharCode(65+state.branch)+' / '+esc(nodeLabel(index,total))+' / NIV. '+esc(tier.niv)+'</div><h3 tabindex="-1">'+esc(tier.nom||branchName(branch,state.branch))+'</h3>';
+    var status=!unlocked?(sealed(branch,index)?'Scellé':'Verrouillé')+' · Niveau '+tier.niv:index===actual?'Palier actif en aperçu':'Palier remplacé au niveau actuel';
+    if(obscured(branch,index)) return '<section class="oath-inspector is-locked'+(sealed(branch,index)?' is-sealed':'')+'" data-tier-color="'+tierColor(index)+'"><div class="oath-inspector-head"><span class="oath-eyebrow">Un sceau à révéler</span><span class="oath-inspector-status is-locked" role="status">'+esc(status)+'</span></div><div class="oath-inspector-index">VOIE '+String.fromCharCode(65+state.branch)+' / SCEAU '+tierRoman(index)+' / NIV. '+esc(tier.niv)+'</div><h3 tabindex="-1">'+esc(sealed(branch,index)?'Pouvoir inconnu':nodeLabel(index,total))+'</h3>'+gateMarkup(branch,tier,index)+'</section>';
+    var html='<section class="oath-inspector'+(!unlocked?' is-locked':'')+'" data-tier-color="'+tierColor(index)+'"><div class="oath-inspector-head"><span class="oath-eyebrow">Capacité inspectée</span><span class="oath-inspector-status '+(unlocked?'is-unlocked':'is-locked')+'" role="status">'+esc(status)+'</span></div><div class="oath-inspector-sigil" aria-hidden="true">'+glyph(index)+'</div><div class="oath-inspector-index">VOIE '+String.fromCharCode(65+state.branch)+' / '+esc(nodeLabel(index,total))+' / NIV. '+esc(tier.niv)+'</div><h3 tabindex="-1">'+esc(tier.nom||branchName(branch,state.branch))+'</h3>';
     if(tier.cout) html+='<div class="oath-cost"><span>COÛT PRINCIPAL</span><strong>'+esc(tier.cout)+'</strong></div>';
     html+='<div class="oath-inspector-effect"><span>EFFET DU PALIER</span><p>'+esc(tier.desc||branch.desc||'Effet à définir.')+'</p></div>';
     if(tier.manifestation) html+='<div class="oath-tier-story"><span class="oath-eyebrow">Ce qui se manifeste</span><p>'+esc(tier.manifestation)+'</p></div>';
@@ -116,14 +156,14 @@
   }
   function compareMarkup(branches){
     return '<section class="oath-compare" aria-label="Comparaison des voies au niveau '+state.level+'">'+branches.map(function(br,bi){
-      var tiers=br.paliers||[],index=Math.max(0,currentIndex(br)),tier=tiers[index];
-      return '<article class="oath-compare-card" data-branch="'+bi+'"><span class="oath-eyebrow">Voie '+String.fromCharCode(65+bi)+' · '+esc(br.style||'Spécialisation')+'</span><h3>'+esc(branchName(br,bi))+'</h3><p class="oath-compare-status">'+esc(currentIndex(br)<0?'Prochain palier · Niv. '+(tier&&tier.niv||'—'):'Palier applicable · Niv. '+(tier&&tier.niv||'—'))+'</p>'+(br.summary||br.desc?'<p>'+esc(br.summary||br.desc)+'</p>':'')+(tier?'<div class="oath-cost"><span>COÛT PRINCIPAL</span><strong>'+esc(tier.cout||'Voir effet')+'</strong></div><div class="oath-inspector-effect"><p>'+esc(tier.desc||br.desc||'Effet à définir.')+'</p></div>':'')+'<button type="button" data-inspect-branch="'+bi+'">Explorer cette voie <span aria-hidden="true">↗</span></button></article>';
+      var tiers=br.paliers||[],index=Math.max(0,currentIndex(br)),tier=tiers[index],masked=tier&&obscured(br,index);
+      return '<article class="oath-compare-card'+(masked?' is-locked':'')+'" data-tier-color="'+tierColor(index)+'" data-branch="'+bi+'"><span class="oath-eyebrow">Voie '+String.fromCharCode(65+bi)+' · '+esc(br.style||'Spécialisation')+'</span><h3>'+esc(branchName(br,bi))+'</h3><p class="oath-compare-status">'+esc(currentIndex(br)<0?'Prochain palier · Niv. '+(tier&&tier.niv||'—'):'Palier applicable · Niv. '+(tier&&tier.niv||'—'))+'</p>'+(masked?gateMarkup(br,tier,index):((br.summary||br.desc?'<p>'+esc(br.summary||br.desc)+'</p>':'')+(tier?'<div class="oath-cost"><span>COÛT PRINCIPAL</span><strong>'+esc(tier.cout||'Voir effet')+'</strong></div><div class="oath-inspector-effect"><p>'+esc(tier.desc||br.desc||'Effet à définir.')+'</p></div>':'')))+'<button type="button" data-inspect-branch="'+bi+'">Explorer cette voie <span aria-hidden="true">↗</span></button></article>';
     }).join('')+'</section>';
   }
   function evolutionMarkup(item,items){
     var parent=getSermEvolutionFrom(item.name,item.data),links=items.filter(function(candidate){return getSermEvolutionFrom(candidate.name,candidate.data)===item.name||candidate.name===parent;});
     if(!links.length) return '';
-    return '<section class="oath-evolutions"><div><span class="oath-eyebrow">Au-delà du serment</span><h2>La métamorphose</h2><p>Atteins le niveau requis, puis reçois ton évolution du staff.</p></div><div class="oath-evo-links">'+links.map(function(link){return '<button type="button" class="oath-evo-btn" data-evolution="'+escAttr(link.name)+'"><span class="oath-evo-art">'+getSermEmblem(link.name,64)+'</span><span><small>'+esc(link.name===parent?'Revenir à l’origine':'Évolution · Niv. '+minimum(link))+'</small><strong>'+esc(link.name)+'</strong></span><span aria-hidden="true">↗</span></button>';}).join('')+'</div></section>';
+    return '<section class="oath-evolutions"><div><span class="oath-eyebrow">Au-delà du serment</span><h2>La métamorphose</h2><p>Atteins le niveau requis, puis reçois ton évolution du staff.</p></div><div class="oath-evo-links">'+links.map(function(link){var origin=link.name===parent,gated=!origin&&state.level<minimum(link);return '<button type="button" class="oath-evo-btn'+(gated?' is-locked':origin?'':' is-ready')+'" data-evolution="'+escAttr(link.name)+'"><span class="oath-evo-art">'+getSermEmblem(link.name,64)+'</span><span><small>'+esc(origin?'Revenir à l’origine':'Évolution · Niv. '+minimum(link))+'</small><strong>'+esc(link.name)+'</strong>'+(!origin?'<span class="oath-evo-status">'+esc(gated?'Niveau requis non atteint':'Niveau atteint · attribution staff')+'</span>':'')+'</span><span class="oath-evo-lock" aria-hidden="true">'+icon(gated?'lock':'arrow')+'</span></button>';}).join('')+'</div></section>';
   }
   function stageMarkup(item,items){
     if(!item) return '<div class="oath-empty oath-empty-stage">Aucun serment ne correspond à ces filtres. Ajuste ta recherche.</div>';
@@ -133,11 +173,11 @@
     if(!tiers[state.tier]) state.tier=Math.max(0,currentIndex(branch));
     var tier=tiers[state.tier];
     var heroArt=getSermEmblem(item.name,640).replace('loading="lazy"','loading="eager" fetchpriority="high"');
-    var html='<section class="oath-hero"><div class="oath-hero-content"><div class="oath-hero-meta"><span>'+esc(getSermCatLabel(category(item)))+'</span><span>'+esc(getSermEvolutionFrom(item.name,data)?'Évolution · Niv. '+minimum(item):'Serment d’origine')+'</span></div><h2 class="oath-hero-title" tabindex="-1">'+esc(item.name)+'</h2><p class="oath-hero-tagline">'+esc(data.tagline||data.pitch||data.fantasy||data.arme)+'</p></div><div class="oath-stats">'+stat(data.pvN,'PV / niv.')+stat(data.epN,'EP / niv.')+stat(data.emN,'EM / niv.')+stat(data.dmg,'Dégâts')+'</div></section>';
+    var html='<section class="oath-hero"><div class="oath-hero-content"><div class="oath-hero-meta"><span>'+esc(getSermCatLabel(category(item)))+'</span><span>'+esc(getSermEvolutionFrom(item.name,data)?'Évolution · Niv. '+minimum(item):'Serment d’origine')+'</span></div><h2 class="oath-hero-title" tabindex="-1">'+esc(item.name)+'</h2><p class="oath-hero-tagline">'+esc(data.tagline||data.pitch||data.fantasy||data.arme)+'</p></div>'+rankMarkup(branch)+'<div class="oath-stats">'+stat(data.pvN,'PV / niv.')+stat(data.epN,'EP / niv.')+stat(data.emN,'EM / niv.')+stat(data.dmg,'Dégâts')+'</div></section>';
     if(data.vow) html+='<section class="oath-identity" aria-label="L’esprit du serment"><div><span class="oath-eyebrow">Des mots pour le porter</span><blockquote>« '+esc(data.vow)+' »</blockquote></div><div><p>'+esc(String(data.lore||'').split(/\n\s*\n/)[0])+'</p><button type="button" data-read-story>Lire le récit & imaginer son éveil <span aria-hidden="true">↓</span></button></div></section>';
-    html+='<div class="oath-tree-grid"><section class="oath-tree"><div class="oath-tree-heading"><div><span class="oath-eyebrow">'+(branches.length===2?'Deux':branches.length)+' voies · un engagement</span><h2 tabindex="-1">Trace ta voie</h2></div><div class="oath-view-tabs" aria-label="Mode de lecture"><button type="button" data-oath-view="tree" aria-pressed="'+(state.view==='tree')+'">Constellation</button><button type="button" data-oath-view="compare" aria-pressed="'+(state.view==='compare')+'">Comparer</button></div></div><div class="oath-branch-switcher">'+branches.map(branchSwitch).join('')+'</div>';
-    html+='<div class="oath-map'+(branches.length!==2||branches.some(function(br){return (br.paliers||[]).length>4;})?' is-linear':'')+'"'+(state.view==='tree'?'':' hidden')+'>'+linkMarkup(branches)+'<div class="oath-constellation-center"><div class="oath-orbit" aria-hidden="true"></div><div class="oath-orbit oath-orbit-inner" aria-hidden="true"></div><div class="oath-hero-art">'+heroArt+'</div><span class="oath-art-caption">'+esc(data.arme||item.name)+'</span><small>ARME LIÉE</small></div><div class="oath-paths">'+branches.map(pathMarkup).join('')+'</div><div class="oath-root"><span class="oath-root-sigil" aria-hidden="true">'+glyph(0)+'</span><div><small>NIVEAU '+String(minimum(item)).padStart(2,'0')+'</small><strong>'+esc(getSermEvolutionFrom(item.name,data)?'Serment évolué':'Le pacte originel')+'</strong></div></div></div>';
-    html+='<div class="oath-compare-wrap"'+(state.view==='compare'?'':' hidden')+'>'+compareMarkup(branches)+'</div>'+levelMarkup(branches)+progressMarkup(branch)+'</section>'+inspectorMarkup(branch,tier,state.tier,tiers.length)+'</div>';
+    html+='<div class="oath-tree-grid"><section class="oath-tree"><div class="oath-tree-heading"><div><span class="oath-eyebrow">'+(branches.length===2?'Deux':branches.length)+' voies · un engagement</span><h2 tabindex="-1">Trace ta voie</h2></div><div class="oath-view-tabs" aria-label="Mode de lecture"><button type="button" data-oath-view="tree" aria-pressed="'+(state.view==='tree')+'">Constellation</button><button type="button" data-oath-view="compare" aria-pressed="'+(state.view==='compare')+'">Comparer</button></div></div>'+discoveryMarkup()+'<div class="oath-branch-switcher">'+branches.map(branchSwitch).join('')+'</div>'+tierLegend(branch);
+    html+='<div class="oath-map'+(branches.length!==2||branches.some(function(br){return (br.paliers||[]).length>4;})?' is-linear':'')+'" data-current-color="'+tierColor(currentIndex(branch))+'"'+(state.view==='tree'?'':' hidden')+'><div class="oath-map-mist" aria-hidden="true"></div>'+linkMarkup(branches)+'<div class="oath-constellation-center"><div class="oath-orbit" aria-hidden="true"></div><div class="oath-orbit oath-orbit-inner" aria-hidden="true"></div><div class="oath-hero-art">'+heroArt+'</div><span class="oath-art-caption">'+esc(data.arme||item.name)+'</span><small>ARME LIÉE</small></div><div class="oath-paths">'+branches.map(pathMarkup).join('')+'</div><div class="oath-root"><span class="oath-root-sigil" aria-hidden="true">'+glyph(0)+'</span><div><small>NIVEAU '+String(minimum(item)).padStart(2,'0')+'</small><strong>'+esc(getSermEvolutionFrom(item.name,data)?'Serment évolué':'Le pacte originel')+'</strong></div></div></div>';
+    html+='<div class="oath-compare-wrap"'+(state.view==='compare'?'':' hidden')+'>'+compareMarkup(branches)+'</div>'+levelMarkup(branches)+progressMarkup(branch)+nextQuest(branch)+'<div class="oath-unlock-toast" role="status" aria-live="polite" aria-atomic="true"></div></section>'+inspectorMarkup(branch,tier,state.tier,tiers.length)+'</div>';
     html+=evolutionMarkup(item,items);
     html+='<details class="oath-codex"><summary><span class="oath-eyebrow">Les archives du serment</span><strong>L’histoire & l’art du combat</strong><span aria-hidden="true">+</span></summary><div class="oath-codex-body">';
     if(data.lore) html+=paragraphs(data.lore,'oath-hero-lore');
@@ -168,21 +208,30 @@
     if(resetFilters||mobile()){var heading=mount.querySelector('.oath-hero-title');heading.focus({preventScroll:true});heading.scrollIntoView({behavior:motion(),block:'start'});}
   }
   function levelInput(value){
-    state.level=Math.max(1,Math.min(20,Number(value)||1));
-    var branches=branchesOf(selected()),branch=branches[state.branch],tiers=branch&&branch.paliers||[];
+    var branches=branchesOf(selected()),branch=branches[state.branch],tiers=branch&&branch.paliers||[],oldLevel=state.level;
+    state.level=Math.max(1,Math.min(maxLevel(branches),Math.floor(Number(value)||1)));
     state.tier=Math.max(0,currentIndex(branch));remember();
-    document.getElementById('oath-level').value=state.level;document.getElementById('oath-level-value').textContent=state.level;
-    mount.querySelectorAll('.oath-node').forEach(function(node){
-      var bi=Number(node.dataset.nodeBranch),ti=Number(node.dataset.nodeTier),br=branches[bi],active=currentIndex(br),inspected=bi===state.branch&&ti===state.tier;
-      node.classList.toggle('is-unlocked',ti<=active);node.classList.toggle('is-locked',ti>active);node.classList.toggle('is-current',bi===state.branch&&ti===active);node.classList.toggle('is-selected',inspected);node.setAttribute('aria-pressed',String(inspected));
-      node.querySelector('.oath-node-state').textContent=nodeState(br,bi,ti);
-      node.setAttribute('aria-label','Voie '+String.fromCharCode(65+bi)+', niveau '+node.dataset.requiredLevel+', '+tierLabel(br.paliers[ti],ti,(br.paliers||[]).length)+', '+nodeState(br,bi,ti));
-    });
-    mount.querySelectorAll('.oath-link').forEach(function(link){var bi=Number(link.dataset.linkBranch),ti=Number(link.dataset.linkTier),active=currentIndex(branches[bi]);link.classList.toggle('is-lit',ti<=active);link.classList.toggle('is-current',bi===state.branch&&ti<=active);});
+    var slider=document.getElementById('oath-level');slider.max=maxLevel(branches);slider.value=state.level;document.getElementById('oath-level-value').textContent=state.level;
+    mount.querySelectorAll('.oath-node').forEach(function(node){var bi=Number(node.dataset.nodeBranch),ti=Number(node.dataset.nodeTier);node.outerHTML=nodeMarkup(branches[bi],bi,ti);});
+    mount.querySelectorAll('.oath-link').forEach(function(link){var bi=Number(link.dataset.linkBranch),ti=Number(link.dataset.linkTier),active=currentIndex(branches[bi]);link.classList.toggle('is-lit',ti<=active);link.classList.toggle('is-current',bi===state.branch&&ti<=active);link.classList.toggle('is-sealed',sealed(branches[bi],ti));});
     mount.querySelectorAll('[data-level-stop]').forEach(function(button){button.setAttribute('aria-pressed',String(Number(button.dataset.levelStop)===state.level));});
-    var inspector=mount.querySelector('.oath-inspector');if(inspector) inspector.outerHTML=inspectorMarkup(branch,tiers[state.tier],state.tier,tiers.length);
-    var progress=mount.querySelector('.oath-progress-readout');if(progress) progress.outerHTML=progressMarkup(branch);
-    var comparison=mount.querySelector('.oath-compare-wrap');if(comparison) comparison.innerHTML=compareMarkup(branches);
+    var inspector=mount.querySelector('.oath-inspector');if(inspector)inspector.outerHTML=inspectorMarkup(branch,tiers[state.tier],state.tier,tiers.length);
+    var progress=mount.querySelector('.oath-progress-readout');if(progress)progress.outerHTML=progressMarkup(branch);
+    var quest=mount.querySelector('.oath-next-quest');if(quest)quest.outerHTML=nextQuest(branch);
+    var rank=mount.querySelector('.oath-rank-hud');if(rank)rank.outerHTML=rankMarkup(branch);
+    var map=mount.querySelector('.oath-map');if(map)map.dataset.currentColor=tierColor(currentIndex(branch));
+    var comparison=mount.querySelector('.oath-compare-wrap');if(comparison)comparison.innerHTML=compareMarkup(branches);
+    var evolution=mount.querySelector('.oath-evolutions');if(evolution)evolution.outerHTML=evolutionMarkup(selected(),catalogue());
+    mount.querySelectorAll('.oath-list-item').forEach(function(button){var gated=Number(button.dataset.minLevel)>state.level;button.classList.toggle('is-gated',gated);button.querySelector('.oath-list-lock').hidden=!gated;});
+    showUnlock(oldLevel,branch);
+  }
+  function setDiscovery(enabled){
+    state.discovery=enabled;refreshStage();
+    var target=mount.querySelector('[data-discovery="'+(enabled?'on':'off')+'"]');if(target)target.focus({preventScroll:true});
+  }
+  function previewLevel(value){
+    levelInput(value);var node=mount.querySelector('.oath-node.is-current');if(node)node.focus({preventScroll:true});
+    if(mobile()){var heading=mount.querySelector('.oath-inspector h3');if(heading){heading.focus({preventScroll:true});heading.scrollIntoView({behavior:motion(),block:'start'});}}
   }
   function inspect(branch,tier,fromCompare){
     var branches=branchesOf(selected());state.branch=branch;state.tier=tier==null?Math.max(0,currentIndex(branches[branch])):tier;
@@ -191,7 +240,7 @@
     if(mobile()){var heading=mount.querySelector('.oath-inspector h3');if(heading){heading.focus({preventScroll:true});heading.scrollIntoView({behavior:motion(),block:'start'});}}
   }
   async function copyBuild(){
-    var item=selected(),branch=branchesOf(item)[state.branch],tier=branch&&branch.paliers&&branch.paliers[state.tier];if(!item||!tier) return;
+    var item=selected(),branch=branchesOf(item)[state.branch],tier=branch&&branch.paliers&&branch.paliers[state.tier];if(!item||!tier||obscured(branch,state.tier)) return;
     var text=[item.name+' — '+branchName(branch,state.branch),'Aperçu au niveau '+state.level+' · Palier inspecté : niveau '+tier.niv,item.data.arme,tier.nom||branchName(branch,state.branch),tier.manifestation||'','Coût principal : '+(tier.cout||'voir effet'),tier.desc||branch.desc||'Effet à définir.','Une seule voie ; seul le palier le plus élevé atteint s’applique.'].join('\n');
     var status=mount.querySelector('.oath-action-status');
     try{await navigator.clipboard.writeText(text);if(status) status.textContent='Parcours copié.';}catch(error){if(status) status.textContent='Copie indisponible dans ce navigateur.';}
@@ -205,6 +254,11 @@
   function syncImmersion(){if(!mount) return;var atlas=mount.querySelector('.oath-atlas');if(!atlas) return;var active=document.fullscreenElement===mount||atlas.classList.contains('is-immersive'),button=mount.querySelector('[data-immersion]');if(button){button.setAttribute('aria-pressed',String(active));button.innerHTML='<span aria-hidden="true">'+(active?'⊡':'⛶')+'</span> '+(active?'Quitter':'Immersion');}}
   function onClick(event){
     var button=event.target.closest('button');if(!button||!mount.contains(button)) return;
+    if(button.hasAttribute('data-discovery')) return setDiscovery(button.dataset.discovery==='on');
+    if(button.hasAttribute('data-reveal-all')) return setDiscovery(false);
+    if(button.hasAttribute('data-preview-tier')) return previewLevel(button.dataset.previewTier);
+    if(button.hasAttribute('data-next-tier')) return previewLevel(button.dataset.nextTier);
+    if(button.hasAttribute('data-own-level')) return levelInput(ownLevel()||1);
     if(button.hasAttribute('data-serment')) return selectName(button.dataset.serment,false);
     if(button.hasAttribute('data-evolution')) return selectName(button.dataset.evolution,true);
     if(button.hasAttribute('data-cat')){state.cat=button.dataset.cat;refresh();return;}

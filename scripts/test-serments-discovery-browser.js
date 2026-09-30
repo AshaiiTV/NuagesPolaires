@@ -1,0 +1,226 @@
+'use strict';
+
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { chromium } = require('playwright');
+const { createLocalApp } = require('./helpers/local-app');
+const expansion = require('../assets/js/serments-reforged-data');
+
+// Browser exploration against isolated PostgreSQL. This scenario never connects
+// to production and must leave character data exactly as it found it.
+(async () => {
+  const app = await createLocalApp();
+  const output = path.resolve(process.env.NP_TEST_OUTPUT || 'test-results/serments-discovery');
+  fs.mkdirSync(output, { recursive: true });
+  const errors = [];
+  const observations = [];
+  let browser, page;
+  try {
+    browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    const session = await app.cookie('admin');
+    await context.addCookies([{ name: 'np_session', value: session.slice('np_session='.length), url: app.origin, httpOnly: true, sameSite: 'Strict' }]);
+    page = await context.newPage();
+    page.setDefaultTimeout(15000);
+    page.on('pageerror', error => errors.push(error.stack || error.message));
+    await page.route('https://**/*', route => route.abort());
+    await page.goto(app.origin, { waitUntil: 'load' });
+    await page.waitForFunction(() => window.CU && (CU.pseudo || CU.name) === 'Admin');
+    await page.waitForFunction(() => !document.getElementById('login-transition-overlay')?.classList.contains('active'));
+    await page.evaluate(() => switchDropTab('serments', null, ''));
+    const atlas = page.locator('#serments-grid.oath-atlas');
+    await atlas.waitFor({ state: 'visible' });
+    const before = await app.read('players');
+    const requestStart = app.requests.length;
+    const pugiliste = expansion.definitions.Pugiliste;
+    await page.evaluate(() => NPSermentsAtlas.focus('Pugiliste'));
+
+    const node = (branch, tier) => atlas.locator('.oath-node[data-node-branch="' + branch + '"][data-node-tier="' + tier + '"]');
+    const inspector = () => atlas.locator('.oath-inspector');
+    async function setLevel(level) {
+      await atlas.locator('#oath-level').evaluate((element, value) => {
+        element.value = String(value);
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+      }, level);
+      assert.equal(await atlas.locator('#oath-level').inputValue(), String(level));
+    }
+    async function assertNoOverflow(label) {
+      const widths = await page.evaluate(() => ({
+        viewport: innerWidth,
+        document: document.documentElement.scrollWidth,
+        atlas: document.querySelector('.oath-atlas').getBoundingClientRect().width
+      }));
+      assert.ok(widths.document <= widths.viewport + 1, label + ': débordement horizontal ' + JSON.stringify(widths));
+      assert.ok(widths.atlas <= widths.viewport + 1, label + ': la forge dépasse le viewport ' + JSON.stringify(widths));
+    }
+    function assertEffectHidden(text, tier, label, hideName = true) {
+      assert.ok(!text.includes(tier.desc), label + ': la description doit rester masquée.');
+      if (hideName && tier.nom) assert.ok(!text.includes(tier.nom), label + ': le nom de la capacité doit rester masqué.');
+    }
+
+    assert.equal(await atlas.locator('[data-discovery="on"]').getAttribute('aria-pressed'), 'true', 'La découverte est active à l’ouverture.');
+    assert.equal(await atlas.locator('.oath-list-item').count(), 34, 'Les entrées masquées par le staff restent exclues du catalogue.');
+    assert.equal(await atlas.locator('.oath-node').count(), 8);
+    for (const branch of [0, 1]) {
+      for (const [tier, color] of ['jade', 'azure', 'violet', 'gold'].entries()) {
+        assert.equal(await node(branch, tier).getAttribute('data-tier-color'), color, 'Chaque étape possède son identité chromatique.');
+      }
+    }
+
+    await setLevel(1);
+    assert.equal(await atlas.locator('.oath-node.is-locked').count(), 8);
+    assert.equal(await atlas.locator('.oath-node.is-sealed').count(), 6);
+    assert.equal(await atlas.locator('.oath-node.is-next').count(), 2);
+    assert.equal(await atlas.locator('.oath-node.is-current').count(), 0);
+    assert.deepEqual(await atlas.locator('.oath-node.is-sealed .oath-node-title').allTextContents(), Array(6).fill('???'));
+    assert.equal(await atlas.locator('.oath-evo-btn[data-evolution="Cestuaire"]').evaluate(element => element.classList.contains('is-locked')), true);
+    await node(0, 3).click();
+    assert.equal(await inspector().evaluate(element => element.classList.contains('is-locked')), true);
+    assert.equal(await inspector().getAttribute('data-tier-color'), 'gold');
+    assert.equal(await inspector().locator('.oath-gate').count(), 1);
+    assertEffectHidden(await inspector().textContent(), pugiliste.branches[0].paliers[3], 'Apogée scellée');
+    assert.equal(await inspector().locator('.oath-inspector-effect').count(), 0, 'Une capacité scellée ne laisse pas son effet dans le DOM de l’inspecteur.');
+    await node(0, 0).click();
+    assert.equal(await node(0, 0).locator('.oath-node-title').textContent(), 'Éveil');
+    assertEffectHidden(await inspector().textContent(), pugiliste.branches[0].paliers[0], 'Prochain éveil');
+    assert.equal(await inspector().locator('.oath-inspector-effect').count(), 0);
+    await atlas.locator('[data-oath-view="compare"]').click();
+    for (const [index, branch] of pugiliste.branches.entries()) {
+      const card = atlas.locator('.oath-compare-card').nth(index);
+      assertEffectHidden(await card.textContent(), branch.paliers[0], 'Comparaison verrouillée ' + index, false);
+      assert.equal(await card.locator('.oath-inspector-effect').count(), 0);
+    }
+    await atlas.locator('[data-oath-view="tree"]').click();
+    observations.push('Découverte niveau 1 : deux prochains éveils et six mystères scellés ; capacités masquées dans les inspecteurs et effets absents des comparaisons verrouillées.');
+
+    await setLevel(5);
+    assert.equal(await atlas.locator('.oath-node.is-unlocked').count(), 4);
+    assert.equal(await atlas.locator('.oath-node.is-next').count(), 2);
+    assert.equal(await atlas.locator('.oath-node.is-sealed').count(), 2);
+    assert.equal(await atlas.locator('.oath-node.is-current').count(), 1);
+    assert.equal(await atlas.locator('.oath-node.is-current').getAttribute('data-required-level'), '5');
+    const toast = atlas.locator('.oath-unlock-toast[role="status"]');
+    assert.equal(await toast.count(), 1);
+    assert.ok((await toast.textContent()).trim(), 'Le franchissement de paliers annonce la progression.');
+    await node(0, 1).click();
+    assert.equal(await inspector().getAttribute('data-tier-color'), 'azure');
+    assert.equal(await inspector().locator('.oath-inspector-effect p').textContent(), pugiliste.branches[0].paliers[1].desc);
+    await atlas.locator('[data-oath-view="compare"]').click();
+    for (const [index, branch] of pugiliste.branches.entries()) {
+      assert.equal(await atlas.locator('.oath-compare-card').nth(index).locator('.oath-inspector-effect p').textContent(), branch.paliers[1].desc);
+    }
+    await atlas.locator('[data-oath-view="tree"]').click();
+    const slider = atlas.locator('#oath-level');
+    await slider.focus();
+    await page.keyboard.press('ArrowRight');
+    assert.equal(await slider.inputValue(), '6');
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'oath-level', 'La progression conserve le focus du curseur.');
+    await setLevel(5);
+    await node(0, 3).click();
+    await inspector().locator('[data-preview-tier]').click();
+    assert.equal(await atlas.locator('#oath-level').inputValue(), '10', 'L’aperçu projette le niveau requis sans attribuer la capacité.');
+    assert.equal(await atlas.locator('.oath-node.is-unlocked').count(), 8);
+    assert.equal(await atlas.locator('.oath-node.is-current').count(), 1);
+    assert.equal(await atlas.locator('.oath-node.is-legacy').count(), 6, 'Les six paliers antérieurs sont remplacés.');
+    assert.equal(await inspector().locator('.oath-inspector-effect p').textContent(), pugiliste.branches[0].paliers[3].desc);
+    observations.push('Progression 1 → 5 → 10 : couleurs par étape, annonce de déblocage, aperçu au niveau requis et un seul palier applicable.');
+
+    await atlas.locator('[data-own-level]').click();
+    assert.equal(await atlas.locator('#oath-level').inputValue(), '1', 'Mon niveau reprend le niveau du personnage lié sans le modifier.');
+    await node(1, 3).click();
+    await inspector().locator('[data-reveal-all]').click();
+    assert.equal(await atlas.locator('[data-discovery="off"]').getAttribute('aria-pressed'), 'true');
+    assert.equal(await atlas.locator('#oath-level').inputValue(), '1', 'Consulter le Codex ne simule pas une montée de niveau.');
+    assert.equal(await atlas.locator('.oath-node.is-locked').count(), 8, 'Le Codex révèle les informations sans rendre les capacités applicables.');
+    assert.equal(await inspector().locator('.oath-inspector-effect p').textContent(), pugiliste.branches[1].paliers[3].desc);
+    await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: async text => { window.__discoveryCopiedText = text; } }
+    }));
+    await inspector().locator('[data-copy-build]').click();
+    await page.waitForFunction(() => !!window.__discoveryCopiedText);
+    assert.ok((await page.evaluate(() => window.__discoveryCopiedText)).includes(pugiliste.branches[1].paliers[3].desc));
+    await atlas.locator('[data-discovery="on"]').focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await atlas.locator('[data-discovery="on"]').getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-discovery')), 'on', 'Changer de mode au clavier conserve le focus.');
+    assertEffectHidden(await inspector().textContent(), pugiliste.branches[1].paliers[3], 'Retour en découverte');
+    await atlas.locator('[data-discovery="off"]').focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-discovery')), 'off');
+    assert.equal(await atlas.locator('[data-discovery="off"]').getAttribute('aria-pressed'), 'true');
+    await atlas.locator('[data-discovery="on"]').click();
+    observations.push('Codex et retour en découverte : masquage réversible, niveau conservé, copie autorisée des règles consultées et focus clavier maintenu.');
+
+    await atlas.locator('.oath-evo-btn[data-evolution="Cestuaire"]').click();
+    assert.equal(await atlas.locator('.oath-hero-title').textContent(), 'Cestuaire');
+    assert.equal(await atlas.locator('#oath-level').inputValue(), '1');
+    assert.equal(await atlas.locator('.oath-node.is-locked').count(), 8);
+    assert.match(await atlas.locator('.oath-root').textContent(), /NIVEAU 10/);
+    await atlas.locator('.oath-evo-btn[data-evolution="Pugiliste"]').click();
+    await setLevel(5);
+    await assertNoOverflow('Bureau');
+    await page.screenshot({ path: path.join(output, 'discovery-desktop.png'), animations: 'disabled' });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await assertNoOverflow('Mobile');
+    await node(0, 3).click();
+    assert.equal(await page.evaluate(() => document.activeElement?.tagName), 'H3', 'Sur mobile, inspecter une rune mène au titre de sa fiche.');
+    await page.screenshot({ path: path.join(output, 'discovery-mobile.png'), animations: 'disabled' });
+
+    // Staff definitions can have more branches or milestones than the four
+    // standard stages. Inject a browser-only fixture, preserving its live API.
+    await page.evaluate(() => {
+      window.__originalDiscoveryCatalogue = window.getAllSD;
+      const definition = {
+        cat: 'magie', level: 'basic', arme: 'Arme de test', pvN: 1, epN: 1, emN: 1, dmg: 1,
+        branches: Array.from({ length: 3 }, (_, branch) => ({
+          nom: 'Voie de test ' + branch,
+          paliers: [2, 4, 6, 8, 25].map((niv, tier) => ({ niv, nom: 'Capacité de test ' + branch + '/' + tier, cout: '1 EP', desc: 'Effet de test ' + branch + '/' + tier }))
+        }))
+      };
+      window.getAllSD = function () {
+        return Object.assign({}, window.__originalDiscoveryCatalogue(), {
+          'QA parcours personnalisé': definition,
+          'QA serment secret du staff': Object.assign({}, definition, { hidden: true })
+        });
+      };
+      NPSermentsAtlas.focus('QA parcours personnalisé');
+    });
+    assert.equal(await atlas.locator('.oath-map.is-linear').count(), 1, 'Les structures staff utilisent la disposition linéaire adaptée.');
+    assert.equal(await atlas.locator('.oath-path').count(), 3);
+    assert.equal(await atlas.locator('.oath-node').count(), 15);
+    assert.equal(await atlas.locator('#oath-level').getAttribute('max'), '25', 'Le curseur respecte aussi les niveaux définis par le staff au-delà de 20.');
+    assert.equal(await atlas.locator('.oath-list-item[data-serment="QA serment secret du staff"]').count(), 0);
+    await setLevel(5);
+    assert.equal(await atlas.locator('.oath-node.is-unlocked').count(), 6);
+    assert.equal(await atlas.locator('.oath-node.is-next').count(), 3);
+    assert.equal(await atlas.locator('.oath-node.is-sealed').count(), 6);
+    await node(2, 4).click();
+    assert.ok(!(await inspector().textContent()).includes('Effet de test 2/4'));
+    await inspector().locator('[data-preview-tier]').click();
+    assert.equal(await atlas.locator('#oath-level').inputValue(), '25');
+    assert.equal(await inspector().locator('.oath-inspector-effect p').textContent(), 'Effet de test 2/4');
+    await assertNoOverflow('Mobile avec trois voies et cinq paliers');
+    await page.evaluate(() => {
+      window.getAllSD = window.__originalDiscoveryCatalogue;
+      delete window.__originalDiscoveryCatalogue;
+      NPSermentsAtlas.focus('Pugiliste');
+    });
+    observations.push('Évolutions explorables avant attribution ; structures staff à trois voies et cinq paliers jusqu’au niveau 25 accessibles sur mobile, entrées staff cachées exclues.');
+
+    assert.deepEqual(await app.read('players'), before, 'Découverte, aperçu, Codex, évolution et copie ne modifient aucun personnage.');
+    assert.deepEqual(app.requests.slice(requestStart).filter(request => request.name === 'db' && request.key === 'players' && request.action !== 'get'), [], 'Aucune écriture de personnage n’est envoyée.');
+    assert.deepEqual(errors, [], 'Aucune erreur navigateur.');
+    assert.deepEqual(app.errors, [], 'Aucune erreur de la fixture serveur.');
+    fs.writeFileSync(path.join(output, 'results.json'), JSON.stringify({ ok: true, observations }, null, 2));
+    console.log('Serments discovery browser: OK');
+    observations.forEach(observation => console.log(' - ' + observation));
+  } catch (error) {
+    if (page) await page.screenshot({ path: path.join(output, 'failure.png'), animations: 'disabled' }).catch(() => {});
+    throw error;
+  } finally {
+    if (browser) await browser.close();
+    await app.close();
+  }
+})().catch(error => { console.error(error); process.exitCode = 1; });

@@ -17,6 +17,11 @@ html[data-np-design="polar"] #s-app #p-serments-c:has(> .oath-atlas) { max-width
   --oa-branch-a: var(--oa-copper);
   --oa-branch-b: var(--oa-accent);
   --oa-serif: var(--np-editorial, Georgia, serif);
+  --oa-jade: #7ce4b4;
+  --oa-azure: #8acbff;
+  --oa-violet: #c6a2ff;
+  --oa-gold: #f1c86e;
+  --oa-tier: var(--oa-jade);
   width: 100%; min-width: 0; color: var(--oa-text); font-family: var(--fb, Manrope, Arial, sans-serif);
 }
 #serments .oath-atlas *, #serments .oath-atlas *::before, #serments .oath-atlas *::after { box-sizing: border-box; }
@@ -292,6 +297,146 @@ html[data-np-design="polar"] #s-app #p-serments-c:fullscreen { width: 100vw; max
 #serments .oath-map.is-linear .oath-node-state { position: static; order: 3; margin-top: 7px; }
 @keyframes oath-orbit { to { transform: translate(-50%, -50%) rotate(360deg); } }
 
+
+/* Progression HUD: tier colors belong to milestones, branch identity stays on the path headings. */
+body:is([data-theme-tone="light"],[data-theme-active="light"],.light) #serments .oath-atlas {
+  --oa-jade: #176747; --oa-azure: #225c96; --oa-violet: #76439b; --oa-gold: #775315;
+}
+#serments [data-tier-color="jade"], #serments [data-current-color="jade"] { --oa-tier: var(--oa-jade); }
+#serments [data-tier-color="azure"], #serments [data-current-color="azure"] { --oa-tier: var(--oa-azure); }
+#serments [data-tier-color="violet"], #serments [data-current-color="violet"] { --oa-tier: var(--oa-violet); }
+#serments [data-tier-color="gold"], #serments [data-current-color="gold"] { --oa-tier: var(--oa-gold); }
+#serments .oath-node[data-tier-color], #serments .oath-link[data-tier-color] { --oa-path: var(--oa-tier); }
+#serments .oath-hero { grid-template-columns: minmax(180px,1fr) auto minmax(230px,32%); gap: 18px; }
+#serments .oath-rank-hud { position: relative; display: flex; align-items: center; gap: 13px; min-width: 155px; padding: 13px 17px; border: 1px solid color-mix(in srgb, var(--oa-tier) 45%, var(--oa-line)); background: radial-gradient(ellipse at 0 0, color-mix(in srgb, var(--oa-tier) 12%, transparent), transparent 80%), var(--oa-bg); }
+#serments .oath-rank-hud::before, #serments .oath-rank-hud::after { content: ''; position: absolute; width: 9px; height: 9px; border-color: var(--oa-tier); pointer-events: none; }
+#serments .oath-rank-hud::before { top: -1px; left: -1px; border-top: 2px solid var(--oa-tier); border-left: 2px solid var(--oa-tier); }
+#serments .oath-rank-hud::after { right: -1px; bottom: -1px; border-right: 2px solid var(--oa-tier); border-bottom: 2px solid var(--oa-tier); }
+#serments .oath-rank-sigil { display: grid; place-items: center; flex: none; width: 36px; height: 44px; color: var(--oa-tier); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--oa-tier) 22%, transparent)); }
+#serments .oath-rank-sigil svg { width: 34px; height: 34px; }
+#serments .oath-rank-hud small { display: block; margin-bottom: 4px; color: var(--oa-muted); font-size: 7px; font-weight: 750; letter-spacing: .16em; text-transform: uppercase; }
+#serments .oath-rank-hud strong { display: block; color: var(--oa-tier); font: 500 22px/1.1 var(--oa-serif); }
+#serments .oath-rank-hud div > span { display: block; margin-top: 5px; color: var(--oa-soft); font-size: 8px; line-height: 1.5; }
+#serments .oath-discovery-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 0 14px 13px; }
+#serments .oath-discovery-toolbar > p { flex: 1 0 100%; margin: -2px 0 0; color: var(--oa-muted); font-size: 9px; line-height: 1.5; }
+#serments .oath-mode-toggle { display: inline-flex; align-items: stretch; padding: 3px; border: 1px solid var(--oa-line-strong); background: var(--oa-panel); }
+#serments .oath-mode-toggle button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 33px; padding: 6px 10px; border: 1px solid transparent !important; background: transparent !important; color: var(--oa-soft); font-size: 9px; font-weight: 650; cursor: pointer; }
+#serments .oath-mode-toggle svg { width: 13px; height: 13px; }
+#serments .oath-mode-toggle button[aria-pressed="true"] { color: var(--oa-text); border-color: color-mix(in srgb, var(--oa-accent) 55%, var(--oa-line)) !important; background: color-mix(in srgb, var(--oa-accent) 12%, var(--oa-bg)) !important; box-shadow: inset 0 -2px var(--oa-accent); }
+#serments .oath-mode-toggle button:hover { background: var(--oa-hover) !important; }
+#serments .oath-state-legend { display: flex; flex-wrap: wrap; gap: 8px 11px; color: var(--oa-muted); font-size: 8px; }
+#serments .oath-state-legend > span { display: inline-flex; align-items: center; gap: 5px; }
+#serments .oath-state-legend svg { width: 12px; height: 12px; }
+#serments .oath-state-legend > span::before { content: ''; width: 5px; height: 5px; background: var(--oa-accent); transform: rotate(45deg); }
+#serments .oath-state-legend > span:nth-child(2)::before { background: transparent; border: 1px solid var(--oa-muted); }
+#serments .oath-state-legend > span:nth-child(3)::before { background: transparent; border: 1px dashed var(--oa-muted); }
+#serments .oath-state-legend > span:has(svg)::before { display: none; }
+#serments .oath-tier-legend { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 6px; margin: 12px 14px 0; }
+#serments .oath-tier-legend > span { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 5px; min-width: 0; padding: 7px 5px; border-top: 2px solid var(--oa-tier); background: color-mix(in srgb, var(--oa-tier) 6%, var(--oa-bg)); color: var(--oa-tier); font: 500 13px/1.25 var(--oa-serif); }
+#serments .oath-tier-legend i { font-style: normal; }
+#serments .oath-tier-legend b { color: var(--oa-text); font: 650 8px/1.4 var(--fb,Arial,sans-serif); letter-spacing: .025em; }
+#serments .oath-levelbar { margin: 0 14px 12px; padding: 12px 14px 9px; border: 1px solid var(--oa-line); border-left: 2px solid var(--oa-accent); background: linear-gradient(100deg, color-mix(in srgb, var(--oa-accent) 5%, var(--oa-panel)), var(--oa-panel)); }
+#serments .oath-own-level { width: 100%; min-height: 30px; padding: 5px 7px; margin-top: 8px; border: 1px solid var(--oa-line) !important; background: transparent !important; color: var(--oa-soft); font-size: 8px; cursor: pointer; }
+#serments .oath-own-level:hover { color: var(--oa-text); border-color: var(--oa-accent) !important; }
+#serments .oath-levelbar input[type="range"]::-webkit-slider-runnable-track { height: 4px; background: linear-gradient(90deg, var(--oa-jade) 0%, var(--oa-azure) 32%, var(--oa-violet) 66%, var(--oa-gold) 100%); opacity: .8; }
+#serments .oath-levelbar input[type="range"]::-moz-range-track { height: 4px; background: linear-gradient(90deg, var(--oa-jade) 0%, var(--oa-azure) 32%, var(--oa-violet) 66%, var(--oa-gold) 100%); opacity: .8; }
+#serments .oath-levelbar input[type="range"]::-webkit-slider-thumb { margin-top: -5px; }
+#serments .oath-map { background: radial-gradient(ellipse at 50% 45%, color-mix(in srgb, var(--oa-tier) 14%, transparent), transparent 44%), radial-gradient(ellipse at 10% 80%, color-mix(in srgb, var(--oa-jade) 7%, transparent), transparent 36%); transition: background .4s; }
+#serments .oath-map-mist { position: absolute; z-index: 1; inset: 0 0 auto; height: 40%; pointer-events: none; opacity: .6; background: radial-gradient(ellipse at 22% 5%, color-mix(in srgb, var(--oa-violet) 9%, transparent), transparent 65%), linear-gradient(var(--oa-bg), transparent); mask-image: linear-gradient(black, transparent); }
+#serments .oath-map .oath-constellation-center::before { background: radial-gradient(ellipse, color-mix(in srgb, var(--oa-tier) 20%, transparent), transparent 65%); }
+#serments .oath-map .oath-hero-art { filter: drop-shadow(0 0 25px color-mix(in srgb, var(--oa-tier) 24%, transparent)); }
+#serments .oath-map .oath-orbit { border-color: color-mix(in srgb, var(--oa-tier) 32%, transparent); }
+#serments .oath-map .oath-orbit::before { border-color: color-mix(in srgb, var(--oa-tier) 30%, transparent); }
+#serments .oath-link[data-tier-color] { stroke: color-mix(in srgb, var(--oa-tier) 25%, var(--oa-line)); stroke-dasharray: 4 5; }
+#serments .oath-link[data-tier-color].is-lit { stroke: var(--oa-tier); stroke-dasharray: none; stroke-width: 2; }
+#serments .oath-link[data-tier-color].is-current { stroke-width: 3; }
+#serments .oath-link.is-sealed { opacity: .3; stroke-dasharray: 1 7; }
+#serments .oath-node[data-tier-color] .oath-node-orb { border-color: color-mix(in srgb, var(--oa-tier) 60%, var(--oa-line)) !important; }
+#serments .oath-node[data-tier-color] .oath-node-orb::before { border-color: color-mix(in srgb, var(--oa-tier) 25%, transparent) !important; }
+#serments .oath-node-rank { position: absolute; z-index: 1; top: -11px; right: -11px; display: grid; place-items: center; width: 20px !important; height: 20px !important; padding: 1px; border: 1px solid color-mix(in srgb, var(--oa-tier) 60%, var(--oa-line)); background: var(--oa-bg); color: var(--oa-tier); font: 600 10px/1 var(--oa-serif); letter-spacing: -.05em; transform: rotate(-45deg); }
+#serments .oath-path[data-branch="1"] .oath-node-rank { top: auto; right: auto; bottom: -11px; left: -11px; }
+#serments .oath-node.is-current .oath-node-orb { box-shadow: 0 0 0 4px color-mix(in srgb, var(--oa-tier) 10%, transparent), 0 0 25px color-mix(in srgb, var(--oa-tier) 38%, transparent), inset 0 0 10px color-mix(in srgb, var(--oa-text) 20%, transparent); }
+#serments .oath-node.is-current .oath-node-orb::before { border-color: color-mix(in srgb, var(--oa-bg) 55%, transparent) !important; }
+#serments .oath-node.is-current .oath-node-state { font-weight: 850; }
+#serments .oath-node.is-current .oath-node-rank { border-color: var(--oa-tier); background: var(--oa-tier); color: var(--oa-bg); }
+#serments .oath-node.is-current .oath-node-title { color: var(--oa-tier); }
+#serments .oath-node.is-legacy .oath-node-orb { color: var(--oa-tier); background: color-mix(in srgb, var(--oa-tier) 5%, var(--oa-bg)) !important; box-shadow: none !important; }
+#serments .oath-node.is-legacy .oath-node-title { color: var(--oa-soft); }
+#serments .oath-node.is-locked .oath-node-orb { color: color-mix(in srgb, var(--oa-tier) 65%, var(--oa-muted)); background: var(--oa-bg) !important; border-style: dashed !important; }
+#serments .oath-node.is-locked .oath-node-orb > svg { width: 23px; height: 23px; }
+#serments .oath-node.is-next .oath-node-orb { border-color: var(--oa-tier) !important; box-shadow: 0 0 17px color-mix(in srgb, var(--oa-tier) 12%, transparent); }
+#serments .oath-node.is-next .oath-node-level { color: var(--oa-tier); }
+#serments .oath-node.is-sealed .oath-node-orb { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--oa-tier) 4%, var(--oa-bg)) 0 3px, var(--oa-bg) 3px 8px) !important; border-color: color-mix(in srgb, var(--oa-tier) 35%, var(--oa-line)) !important; color: var(--oa-muted); }
+#serments .oath-node.is-sealed .oath-node-orb::before { border-style: dashed !important; }
+#serments .oath-node.is-sealed .oath-node-title { color: var(--oa-muted); font-size: 14px; font-weight: 500; letter-spacing: .3em; }
+#serments .oath-node.is-sealed .oath-node-level { color: var(--oa-muted); }
+#serments .oath-node.is-sealed .oath-node-rank { color: var(--oa-soft); border-style: dashed; }
+#serments .oath-node.is-selected .oath-node-orb::after { border-color: var(--oa-tier) !important; }
+#serments .oath-node.is-revealing .oath-node-orb { animation: oath-tier-awaken 1.15s cubic-bezier(.18,.65,.3,1) both; }
+#serments .oath-inspector[data-tier-color] { border-top-color: var(--oa-tier); background: linear-gradient(145deg, color-mix(in srgb, var(--oa-tier) 7%, var(--oa-panel)), var(--oa-panel) 50%); }
+#serments .oath-inspector[data-tier-color] :is(.oath-inspector-index,.oath-inspector-sigil,.oath-cost > span,.oath-inspector-effect > span,.oath-inspector-status.is-unlocked) { color: var(--oa-tier); }
+#serments .oath-inspector[data-tier-color] .oath-inspector-sigil { border-color: var(--oa-tier); background: color-mix(in srgb, var(--oa-tier) 9%, var(--oa-bg)); }
+#serments .oath-inspector[data-tier-color] .oath-inspector-effect { border-left-color: var(--oa-tier); }
+#serments .oath-inspector[data-tier-color] .oath-inspector-status.is-unlocked { border-color: color-mix(in srgb, var(--oa-tier) 45%, var(--oa-line)); }
+#serments .oath-inspector.is-sealed { border-style: solid; border-top-style: dashed; }
+#serments .oath-inspector.is-locked .oath-inspector-sigil { border-style: dashed; }
+#serments .oath-gate { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: stretch; min-width: 0; padding: 17px 12px; margin: 0 0 15px; border: 1px solid color-mix(in srgb, var(--oa-tier) 30%, var(--oa-line)); background: radial-gradient(ellipse at 50% 0, color-mix(in srgb, var(--oa-tier) 9%, transparent), transparent 65%), var(--oa-bg); text-align: center; }
+#serments .oath-gate-seal { display: grid; place-items: center; width: 66px; height: 66px; margin: 4px auto 17px; border: 1px dashed color-mix(in srgb, var(--oa-tier) 65%, var(--oa-line)); outline: 1px solid color-mix(in srgb, var(--oa-tier) 15%, transparent); outline-offset: 5px; color: var(--oa-tier); background: color-mix(in srgb, var(--oa-tier) 4%, var(--oa-bg)); transform: rotate(45deg); }
+#serments .oath-gate-seal svg { width: 32px; height: 32px; transform: rotate(-45deg); }
+#serments .oath-gate h3, #serments .oath-gate strong { margin: 0 0 8px; color: var(--oa-text); font: 500 24px/1.15 var(--oa-serif); overflow-wrap: anywhere; }
+#serments .oath-gate p { margin: 6px 0 12px; color: var(--oa-soft); font-size: 11px; line-height: 1.7; }
+#serments .oath-gate-goal { display: block; margin: 7px 0; color: var(--oa-tier); font-size: 9px; font-weight: 700; line-height: 1.5; }
+#serments .oath-gate-goal strong { display: block; margin-bottom: 3px; color: var(--oa-tier); font-size: 34px; }
+#serments .oath-gate-goal > span { display: block; color: var(--oa-soft); font-size: 9px; font-weight: 500; }
+#serments .oath-gate > small { display: block; margin-top: 12px; color: var(--oa-muted); font-size: 8px; line-height: 1.5; }
+#serments .oath-gate-progress { display: block; width: 100%; height: 5px; overflow: hidden; margin: 6px 0; border: 0; border-radius: 0; background: var(--oa-line); accent-color: var(--oa-tier); }
+#serments .oath-gate-progress > :is(i,span) { display: block; height: 100%; background: var(--oa-tier); box-shadow: 0 0 10px color-mix(in srgb, var(--oa-tier) 50%, transparent); }
+#serments progress.oath-gate-progress::-webkit-progress-bar { background: var(--oa-line); }
+#serments progress.oath-gate-progress::-webkit-progress-value { background: var(--oa-tier); }
+#serments progress.oath-gate-progress::-moz-progress-bar { background: var(--oa-tier); }
+#serments .oath-atlas [data-preview-tier], #serments .oath-atlas [data-reveal-all] { display: inline-flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 43px; margin-top: 9px; padding: 10px 11px; border: 1px solid var(--oa-tier) !important; background: color-mix(in srgb, var(--oa-tier) 10%, var(--oa-bg)) !important; color: var(--oa-text); font-size: 10px; font-weight: 700; line-height: 1.4; cursor: pointer; }
+#serments .oath-atlas [data-reveal-all] { border-color: var(--oa-line-strong) !important; background: transparent !important; color: var(--oa-soft); font-weight: 500; }
+#serments .oath-atlas :is([data-preview-tier],[data-reveal-all]):hover { border-color: var(--oa-tier) !important; background: color-mix(in srgb, var(--oa-tier) 16%, var(--oa-bg)) !important; }
+#serments .oath-atlas :is([data-preview-tier],[data-reveal-all]) svg { width: 15px; height: 15px; }
+#serments .oath-compare-card[data-tier-color] { --oa-path: var(--oa-tier); border-top: 2px solid var(--oa-tier) !important; }
+#serments .oath-compare-card.is-locked { border-top-style: dashed !important; }
+#serments .oath-compare-card.is-sealed { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--oa-tier) 3%, var(--oa-panel)) 0 3px, var(--oa-panel) 3px 10px) !important; }
+#serments .oath-next-quest { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: calc(100% - 28px); min-height: 73px; padding: 13px 16px; margin: 13px 14px; border: 1px solid color-mix(in srgb, var(--oa-tier) 55%, var(--oa-line)) !important; border-left: 3px solid var(--oa-tier) !important; background: linear-gradient(110deg, color-mix(in srgb, var(--oa-tier) 10%, var(--oa-bg)), var(--oa-panel)) !important; color: var(--oa-text); text-align: left; cursor: pointer; overflow: hidden; }
+#serments .oath-next-quest::before { content: ''; position: absolute; top: 0; bottom: 0; right: 40px; width: 40px; background: linear-gradient(105deg, transparent, color-mix(in srgb, var(--oa-tier) 5%, transparent)); transform: skewX(-16deg); pointer-events: none; }
+#serments .oath-next-quest > div { flex: 1; min-width: 0; }
+#serments .oath-next-quest.is-complete { cursor: default; }
+#serments .oath-next-quest small { display: block; margin-bottom: 5px; color: var(--oa-tier); font-size: 7px; font-weight: 750; line-height: 1.5; letter-spacing: .15em; text-transform: uppercase; }
+#serments .oath-next-quest strong { display: block; color: var(--oa-text); font: 500 21px/1.15 var(--oa-serif); }
+#serments .oath-next-quest div > span { display: block; margin-top: 5px; color: var(--oa-soft); font-size: 9px; line-height: 1.5; }
+#serments .oath-next-quest > :is(svg,span) { flex: none; width: 22px; height: 22px; color: var(--oa-tier); }
+#serments .oath-next-quest:hover { border-color: var(--oa-tier) !important; background: linear-gradient(110deg, color-mix(in srgb, var(--oa-tier) 16%, var(--oa-bg)), var(--oa-panel)) !important; box-shadow: 0 0 20px color-mix(in srgb, var(--oa-tier) 8%, transparent); }
+#serments .oath-next-quest:disabled { cursor: default; }
+#serments .oath-unlock-toast { position: absolute; z-index: 10; left: 50%; bottom: 24px; display: flex; align-items: center; gap: 12px; width: max-content; max-width: calc(100% - 34px); padding: 14px 22px; border: 1px solid var(--oa-tier); background: var(--oa-bg); color: var(--oa-tier); box-shadow: 0 0 0 5px color-mix(in srgb, var(--oa-tier) 5%, transparent), 0 8px 40px color-mix(in srgb, var(--oa-bg) 85%, transparent); pointer-events: none; opacity: 0; transform: translate(-50%, 12px); transition: opacity .25s, transform .25s; }
+#serments .oath-unlock-toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
+#serments .oath-unlock-toast > svg, #serments .oath-unlock-toast > span > svg { flex: none; width: 34px; height: 34px; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--oa-tier) 45%, transparent)); }
+#serments .oath-unlock-toast small { display: block; margin-bottom: 3px; font-size: 7px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
+#serments .oath-unlock-toast div > span { display: block; margin-top: 5px; color: var(--oa-soft); font-size: 9px; line-height: 1.4; }
+#serments .oath-unlock-toast strong { display: block; color: var(--oa-text); font: 500 23px/1.15 var(--oa-serif); }
+#serments .oath-evo-btn { position: relative; }
+#serments .oath-evo-btn.is-locked { border-style: dashed !important; }
+#serments .oath-evo-btn.is-locked .oath-evo-art { opacity: .55; filter: grayscale(.85); }
+#serments .oath-evo-btn.is-ready { border-color: color-mix(in srgb, var(--oa-gold) 55%, var(--oa-line)) !important; background: linear-gradient(110deg, color-mix(in srgb, var(--oa-gold) 7%, var(--oa-bg)), var(--oa-bg)) !important; }
+#serments .oath-evo-status { display: block; margin-top: 5px; color: var(--oa-muted); font-size: 7px; font-weight: 700; line-height: 1.5; text-transform: uppercase; letter-spacing: .045em; }
+#serments .oath-evo-btn.is-ready .oath-evo-status { color: var(--oa-gold); }
+#serments .oath-evo-lock { display: grid; place-items: center; flex: none; width: 17px; height: 20px; color: var(--oa-muted); }
+#serments .oath-evo-lock svg { width: 16px; height: 16px; }
+@keyframes oath-tier-awaken {
+  0% { transform: rotate(45deg) scale(.72); filter: brightness(1.6); box-shadow: 0 0 0 0 color-mix(in srgb, var(--oa-tier) 55%, transparent); }
+  45% { transform: rotate(45deg) scale(1.14); filter: brightness(1.25); box-shadow: 0 0 0 22px transparent, 0 0 45px color-mix(in srgb, var(--oa-tier) 65%, transparent); }
+  100% { transform: rotate(45deg) scale(1); filter: none; }
+}
+@container oath-stage (max-width: 1000px) {
+  #serments .oath-hero { grid-template-columns: minmax(0,1fr) auto; }
+  #serments .oath-stats { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--oa-line); margin: 0 -20px -12px; }
+  #serments .oath-stat { padding: 9px 20px; }
+  #serments .oath-stat strong { display: inline; margin-right: 8px; font-size: 23px; }
+}
+
 @container oath-stage (max-width: 835px) {
   #serments .oath-tree-grid { grid-template-columns: minmax(0, 1fr); }
   #serments .oath-inspector { position: static; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 0 24px; }
@@ -407,6 +552,52 @@ html[data-np-design="polar"] #s-app #p-serments-c:fullscreen { width: 100vw; max
   #serments .oath-levelbar > :first-child { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
   #serments .oath-evo-links { grid-template-columns: 1fr; }
 }
+
+@media (min-width: 761px) {
+  #serments .oath-map:not(.is-linear) { height: 600px; }
+  #serments .oath-map:not(.is-linear) .oath-node-copy { top: 63px; }
+  #serments .oath-map:not(.is-linear) .oath-node-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+}
+@media (max-width: 760px) {
+  #serments .oath-topbar { display: grid; grid-template-columns: 35px minmax(0,1fr) auto; gap: 11px 9px; }
+  #serments .oath-topbar > div:nth-child(2) { grid-column: 2 / -1; min-width: 0; max-width: none; margin-right: 38px; }
+  #serments .oath-counts { grid-column: 1 / 3; }
+  #serments .oath-immersion-toggle { grid-column: 3; }
+  #serments .oath-levelbar > .oath-level-label { align-items: center; }
+  #serments .oath-hero { display: grid; grid-template-columns: minmax(0,1fr); gap: 13px; }
+  #serments .oath-level-label > .oath-own-level { width: auto; min-height: 36px; margin-top: 0; }
+  #serments .oath-rank-hud { width: 100%; min-width: 0; padding: 10px 13px; gap: 12px; }
+  #serments .oath-rank-hud > div { display: grid; grid-template-columns: 1fr auto; align-items: baseline; flex: 1; gap: 0 12px; }
+  #serments .oath-rank-hud small { grid-column: 1 / -1; }
+  #serments .oath-rank-hud div > span { margin: 0; text-align: right; }
+  #serments .oath-rank-sigil { width: 31px; height: 36px; }
+  #serments .oath-rank-sigil svg { width: 29px; height: 29px; }
+  #serments .oath-stats { margin: 0 -16px; }
+  #serments .oath-stat { padding: 10px 12px; }
+  #serments .oath-stat strong { display: block; font-size: 25px; margin: 0 0 3px; }
+  #serments .oath-discovery-toolbar { padding: 0 10px 12px; gap: 9px; }
+  #serments .oath-mode-toggle { width: 100%; }
+  #serments .oath-mode-toggle button { flex: 1; min-height: 38px; }
+  #serments .oath-state-legend { width: 100%; justify-content: center; gap: 12px; font-size: 8px; }
+  #serments .oath-tier-legend { margin: 10px 10px 7px; gap: 4px; }
+  #serments .oath-tier-legend > span { flex-direction: column; gap: 3px; font-size: 12px; padding: 7px 3px; }
+  #serments .oath-tier-legend b { font-size: 7px; }
+  #serments .oath-levelbar { margin: 0 10px 12px; padding: 12px; }
+  #serments .oath-node[data-tier-color] { border-top: 2px solid color-mix(in srgb, var(--oa-tier) 50%, var(--oa-line)) !important; }
+  #serments .oath-node.is-current { border-color: var(--oa-tier) !important; background: linear-gradient(160deg, color-mix(in srgb, var(--oa-tier) 12%, var(--oa-bg)), var(--oa-bg)) !important; }
+  #serments .oath-node.is-selected { border-color: var(--oa-tier) !important; }
+  #serments .oath-node.is-sealed { border-style: dashed !important; }
+  #serments .oath-node-rank { width: 17px !important; height: 17px !important; top: -10px; left: auto; right: -10px; font-size: 9px; }
+  #serments .oath-path[data-branch="1"] .oath-node-rank { top: -10px; right: -10px; bottom: auto; left: auto; }
+  #serments .oath-node.is-sealed .oath-node-title { font-size: 13px; }
+  #serments .oath-map-mist { height: 260px; }
+  #serments .oath-next-quest { width: calc(100% - 20px); margin: 10px; padding: 12px; }
+  #serments .oath-next-quest strong { font-size: 20px; }
+  #serments .oath-gate { padding: 20px 15px; }
+  #serments .oath-unlock-toast { position: fixed; bottom: 22px; max-width: calc(100vw - 40px); padding: 13px 18px; }
+  #serments .oath-unlock-toast strong { font-size: 21px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   #serments .oath-atlas *, #serments .oath-atlas *::before, #serments .oath-atlas *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
