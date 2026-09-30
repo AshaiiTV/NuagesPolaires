@@ -1,4 +1,4 @@
-/* A reading-first catalogue. Exploration never assigns an oath or alters a character. */
+/* A readable skill forge. Exploration never assigns an oath or alters a character. */
 (function(root){
   'use strict';
   var state={name:'',level:1,branch:0,tier:0,cat:'',rank:'',search:'',discovery:false,picks:{},libraryOpen:false};
@@ -66,7 +66,7 @@
   function branchPitch(branch){return branch.gameplay&&branch.gameplay.pitch||branch.summary||branch.desc||branch.style||'Consulte les capacités de cette voie.';}
   function branchSwitch(branch,bi){
     var hidden=state.discovery&&currentIndex(branch)<0;
-    return '<button type="button" class="oath-path-heading'+(bi===state.branch?' is-chosen':'')+'" data-choose-branch="'+bi+'" aria-pressed="'+(bi===state.branch)+'"><span class="oath-path-letter" aria-hidden="true">'+String.fromCharCode(65+bi)+'</span><span class="oath-branch-copy"><strong>'+esc(branchName(branch,bi))+'</strong><span class="oath-branch-pitch">'+esc(hidden?'Les détails de cette voie sont masqués par ton option de lecture.':branchPitch(branch))+'</span><small class="oath-branch-selection">'+(bi===state.branch?'Voie consultée':'Voir les capacités →')+'</small></span></button>';
+    return '<button type="button" class="oath-path-heading'+(bi===state.branch?' is-chosen':'')+'" data-choose-branch="'+bi+'" aria-controls="oath-selected-ability" aria-pressed="'+(bi===state.branch)+'"><span class="oath-path-letter" aria-hidden="true">'+String.fromCharCode(65+bi)+'</span><span class="oath-branch-copy"><strong>'+esc(branchName(branch,bi))+'</strong><span class="oath-branch-pitch">'+esc(hidden?'Les détails de cette voie sont masqués par ton option de lecture.':branchPitch(branch))+'</span><small class="oath-branch-selection">'+(bi===state.branch?'Voie consultée':'Voir les capacités →')+'</small></span></button>';
   }
   function gameGuideMarkup(branch){
     if(!branch||!branch.gameplay||state.discovery&&currentIndex(branch)<0)return '';
@@ -75,7 +75,7 @@
   function nodeState(branch,index){return sealed(branch,index)?'Capacité masquée':locked(branch,index)?'À venir':index===currentIndex(branch)?'Palier de référence':'Ancien palier';}
   function nodeMarkup(branch,bi,index){
     var tier=branch.paliers[index],active=currentIndex(branch),hidden=sealed(branch,index),blocked=locked(branch,index),inspected=bi===state.branch&&index===state.tier;
-    return '<button type="button" class="oath-node '+(blocked?'is-locked':'is-unlocked')+(hidden?' is-sealed':'')+(index===nextIndex(branch)?' is-next':'')+(!blocked&&index!==active?' is-legacy':'')+(bi===state.branch&&index===active?' is-current':'')+(inspected?' is-selected':'')+'" data-tier-color="'+tierColor(index)+'" data-node-branch="'+bi+'" data-node-tier="'+index+'" data-required-level="'+escAttr(tier.niv)+'" aria-pressed="'+inspected+'" aria-label="Niveau '+escAttr(tier.niv)+', '+escAttr(hidden?'Capacité masquée':tierLabel(tier,index))+', '+escAttr(nodeState(branch,index))+'"><span class="oath-node-marker"><small>Niv.</small><b>'+esc(tier.niv)+'</b></span><span class="oath-node-copy"><strong class="oath-node-title">'+esc(hidden?'???':tierLabel(tier,index))+'</strong><small class="oath-node-state">'+esc(nodeState(branch,index))+'</small></span></button>';
+    return '<button type="button" class="oath-node '+(blocked?'is-locked':'is-unlocked')+(hidden?' is-sealed':'')+(index===nextIndex(branch)?' is-next':'')+(!blocked&&index!==active?' is-legacy':'')+(!blocked&&index===active?' is-current':'')+(inspected?' is-selected':'')+'" data-tier-color="'+tierColor(index)+'" data-node-branch="'+bi+'" data-node-tier="'+index+'" data-required-level="'+escAttr(tier.niv)+'" aria-controls="oath-selected-ability" aria-pressed="'+inspected+'" aria-label="Voie '+String.fromCharCode(65+bi)+' — '+escAttr(branchName(branch,bi))+', niveau '+escAttr(tier.niv)+', '+escAttr(hidden?'Capacité masquée':tierLabel(tier,index))+', '+escAttr(nodeState(branch,index))+'"><span class="oath-node-marker"><small>Niv.</small><b>'+esc(tier.niv)+'</b></span><span class="oath-node-copy"><strong class="oath-node-title">'+esc(hidden?'???':tierLabel(tier,index))+'</strong><small class="oath-node-state">'+esc((inspected?'Consulté · ':'')+nodeState(branch,index))+'</small></span></button>';
   }
   function pathMarkup(branch,bi){
     return '<div class="oath-path" data-branch="'+bi+'"><ol class="oath-node-list">'+orderedTiers(branch).map(function(entry){return '<li>'+nodeMarkup(branch,bi,entry.index)+'</li>';}).join('')+'</ol></div>';
@@ -112,10 +112,10 @@
     }).join('')+'</div></div>';
   }
   function inspectorMarkup(branch,tier,index){
-    if(!branch||!tier)return '<section class="oath-inspector"><h3 tabindex="-1">Capacités à venir</h3><p>Les capacités de cette voie restent à définir.</p></section>';
+    if(!branch||!tier)return '<section id="oath-selected-ability" class="oath-inspector"><h3 tabindex="-1">Capacités à venir</h3><p>Les capacités de cette voie restent à définir.</p></section>';
     var unlocked=!locked(branch,index),status=!unlocked?'À partir du niveau '+tier.niv:index===currentIndex(branch)?'Applicable au niveau '+state.level:'Ancien palier';
     var head='<div class="oath-inspector-head"><span class="oath-inspector-index">Niveau '+esc(tier.niv)+'</span><span class="oath-inspector-status '+(unlocked?'is-unlocked':'is-locked')+'">'+esc(status)+'</span></div>';
-    var html='<section class="oath-inspector'+(!unlocked?' is-locked':'')+(sealed(branch,index)?' is-sealed':'')+'" data-tier-color="'+tierColor(index)+'"><button type="button" class="oath-back-to-levels" data-back-to-levels>↑ Revenir aux paliers</button>'+head;
+    var html='<section id="oath-selected-ability" class="oath-inspector'+(!unlocked?' is-locked':'')+(sealed(branch,index)?' is-sealed':'')+'" data-tier-color="'+tierColor(index)+'"><button type="button" class="oath-back-to-levels" data-back-to-levels>↑ Revenir aux paliers</button>'+head;
     if(obscured(branch,index))return html+'<h3 tabindex="-1">'+esc(sealed(branch,index)?'Capacité à découvrir':tierLabel(tier,index))+'</h3>'+gateMarkup(branch,tier,index)+'</section>';
     html+='<h3 tabindex="-1">'+esc(tierLabel(tier,index))+'</h3><p class="oath-inspector-branch">'+esc(branchName(branch,state.branch))+'</p>';
     if(unlocked&&index!==currentIndex(branch))html+='<p class="oath-prior-note">Au niveau '+state.level+', cette capacité est remplacée par le palier de niveau '+esc(branch.paliers[currentIndex(branch)].niv)+'.</p>';
@@ -131,9 +131,14 @@
     if(branch.combatRules)html+='<div class="oath-inspector-rules">'+renderSermentRules(branch)+'</div>';
     return html+'</div><button type="button" class="oath-copy-build" data-copy-build>Copier cette fiche</button><span class="oath-action-status" role="status"></span></section>';
   }
-  function skillMarkup(branch){
-    var tiers=branch&&branch.paliers||[];
-    return gameGuideMarkup(branch)+'<div class="oath-skill-layout"><nav class="oath-progression" aria-label="Paliers de '+escAttr(branch?branchName(branch,state.branch):'la voie')+'"><h3>Progression</h3><p>Sélectionne un niveau pour lire ses actions.</p>'+pathMarkup(branch,state.branch)+'</nav>'+inspectorMarkup(branch,tiers[state.tier],state.tier)+'</div>';
+  function forgeMarkup(item,branches){
+    var art=getSermEmblem(item.name,360).replace('loading="lazy"','loading="eager" fetchpriority="high"');
+    var tierCount=Math.max.apply(null,[1].concat(branches.map(function(branch){return (branch.paliers||[]).length;})));
+    return '<nav class="oath-progression oath-forge" aria-label="Arbre des voies de '+escAttr(item.name)+'"><header class="oath-forge-heading"><h3>'+esc(branches.length===2?'Une arme, deux voies':branches.length+' voies pour cette arme')+'</h3><p>Sélectionne un palier pour lire ses actions. Le dernier palier atteint remplace le précédent.</p></header><div class="oath-forge-grid" data-branch-count="'+branches.length+'" style="--oa-tier-count:'+tierCount+'"><div class="oath-forge-core"><div class="oath-forge-weapon">'+art+'</div><p class="oath-forge-core-label">Arme du serment</p><strong class="oath-forge-weapon-name">'+esc(item.data.arme||item.name)+'</strong></div>'+branches.map(function(branch,bi){return '<section class="oath-forge-path'+(bi===state.branch?' is-chosen':'')+'" data-branch="'+bi+'" aria-label="Voie '+String.fromCharCode(65+bi)+' : '+escAttr(branchName(branch,bi))+'">'+branchSwitch(branch,bi)+pathMarkup(branch,bi)+'</section>';}).join('')+'</div></nav>';
+  }
+  function skillMarkup(item,branches){
+    var branch=branches[state.branch],tiers=branch&&branch.paliers||[];
+    return forgeMarkup(item,branches)+'<section class="oath-selected-skill"><header class="oath-selected-heading"><h3>La capacité consultée</h3></header>'+gameGuideMarkup(branch)+inspectorMarkup(branch,tiers[state.tier],state.tier)+'</section>';
   }
   function compareMarkup(branches){
     return '<div class="oath-compare">'+branches.map(function(branch,bi){
@@ -162,11 +167,9 @@
     if(!branches[state.branch])state.branch=0;
     var branch=branches[state.branch],tiers=branch&&branch.paliers||[];
     if(!tiers[state.tier])state.tier=defaultTier(branch);
-    var art=getSermEmblem(item.name,240).replace('loading="lazy"','loading="eager" fetchpriority="high"');
-    var html='<section class="oath-hero"><div class="oath-hero-content"><div class="oath-hero-meta"><span>'+esc(getSermCatLabel(category(item)))+'</span><span>'+esc(getSermEvolutionFrom(item.name,data)?'Évolution · niveau '+minimum(item):'Serment de départ')+'</span></div><h2 class="oath-hero-title" tabindex="-1">'+esc(item.name)+'</h2><p class="oath-hero-tagline">'+esc(data.playstyle||data.pitch||data.tagline||data.fantasy||'Consulte les voies et les capacités de ce serment.')+'</p><p class="oath-weapon-name">Arme : '+esc(data.arme||item.name)+'</p></div><div class="oath-hero-art">'+art+'</div></section>';
+    var html='<section class="oath-hero"><div class="oath-hero-content"><div class="oath-hero-meta"><span>'+esc(getSermCatLabel(category(item)))+'</span><span>'+esc(getSermEvolutionFrom(item.name,data)?'Évolution · niveau '+minimum(item):'Serment de départ')+'</span></div><h2 class="oath-hero-title" tabindex="-1">'+esc(item.name)+'</h2><p class="oath-hero-tagline">'+esc(data.playstyle||data.pitch||data.tagline||data.fantasy||'Consulte les voies et les capacités de ce serment.')+'</p></div></section>';
+    html+='<section class="oath-workbench">'+levelMarkup(branches)+'<div class="oath-workbench-content">'+skillMarkup(item,branches)+'</div></section>';
     html+='<details class="oath-help" data-oath-section="help"><summary>Comment fonctionnent les serments ?</summary><p>Un serment propose plusieurs voies. Ton personnage en suit une seule. À chaque nouveau palier, les règles de ce palier remplacent celles du précédent.</p><p>Cette page sert à consulter les possibilités. L’attribution du serment et de sa voie se fait sur ta fiche, selon les règles du jeu.</p></details>';
-    html+='<section class="oath-branches"><h2>'+esc(branches.length===2?'Deux façons de jouer':branches.length+' voies à découvrir')+'</h2><p class="oath-section-intro">Sélectionne une voie pour lire sa progression et ses actions.</p><div class="oath-branch-switcher">'+branches.map(branchSwitch).join('')+'</div></section>';
-    html+='<section class="oath-workbench"><header class="oath-workbench-head"><h2>Les capacités de cette voie</h2><p class="oath-section-intro">Une seule voie s’applique à ton personnage. Chaque nouveau palier remplace le précédent.</p></header>'+levelMarkup(branches)+'<div class="oath-workbench-content">'+skillMarkup(branch)+'</div></section>';
     html+='<details class="oath-comparison" data-oath-section="compare"><summary>Comparer les actions des voies</summary><div class="oath-comparison-content">'+compareMarkup(branches)+'</div></details>';
     html+='<details class="oath-reading-options" data-oath-section="options"><summary>Options de lecture</summary><label for="oath-hide-future"><input id="oath-hide-future" type="checkbox"'+(state.discovery?' checked':'')+'>Masquer les capacités à venir</label><p>Optionnel : les effets au-delà du niveau de référence restent cachés jusqu’à ce que tu augmentes ce niveau.</p></details>';
     html+=evolutionMarkup(item,items)+loreMarkup(data);
@@ -204,9 +207,8 @@
   }
   function updateWorkbench(){
     var item=selected();if(!item)return;
-    var branches=branchesOf(item),branch=branches[state.branch];
-    mount.querySelector('.oath-workbench-content').innerHTML=skillMarkup(branch);
-    mount.querySelector('.oath-branch-switcher').innerHTML=branches.map(branchSwitch).join('');
+    var branches=branchesOf(item);
+    mount.querySelector('.oath-workbench-content').innerHTML=skillMarkup(item,branches);
     mount.querySelector('.oath-comparison-content').innerHTML=compareMarkup(branches);
     var evolution=mount.querySelector('.oath-evolutions');if(evolution)evolution.outerHTML=evolutionMarkup(item,catalogue());
   }
@@ -228,7 +230,7 @@
   }
   function focusInspector(force){
     if(!force&&!inspectorBelowProgression())return;
-    var heading=mount.querySelector('.oath-inspector h3');if(heading){heading.focus({preventScroll:true});heading.scrollIntoView({behavior:motion(),block:'start'});}
+    var panel=mount.querySelector('.oath-inspector'),heading=panel&&panel.querySelector('h3');if(heading){heading.focus({preventScroll:true});panel.scrollIntoView({behavior:motion(),block:'start'});}
   }
   function inspect(branch,tier,fromComparison){
     var branches=branchesOf(selected());if(!branches[branch])return;

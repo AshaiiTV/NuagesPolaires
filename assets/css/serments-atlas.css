@@ -1,4 +1,4 @@
-/* Forge des serments — choose a vow, read one path, then inspect one ability. */
+/* Forge des serments — an illustrated skill tree with readable rules below. */
 html[data-np-design="polar"] #s-app #p-serments-c:has(> .oath-atlas) {
   max-width: min(1440px, 100%);
 }
@@ -183,32 +183,16 @@ body:is([data-theme-tone="light"], [data-theme-active="light"], .light) #serment
 #serments .oath-list-copy small { display: block; margin-top: 4px; color: var(--oa-muted); font-size: 14px; line-height: 1.4; }
 #serments .oath-list-arrow { color: var(--oa-muted); }
 
-/* A compact illustrated identity, followed by the two actual choices. */
-#serments .oath-hero { display: grid; grid-template-columns: minmax(0, 1fr) 160px; align-items: center; gap: 28px; padding-bottom: 24px; }
+/* The identity is brief; the weapon belongs at the heart of the forge. */
+#serments .oath-hero { padding-bottom: 24px; }
 #serments .oath-hero-content { min-width: 0; }
 #serments .oath-hero-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 10px; color: var(--oa-muted); font-size: 14px; }
 #serments .oath-hero-meta span + span::before { content: '·'; margin-right: 12px; }
 #serments .oath-hero-title { margin: 0 0 12px; font: 500 clamp(32px, 3.5vw, 46px)/1.12 var(--oa-serif); overflow-wrap: anywhere; }
 #serments .oath-hero-tagline { max-width: 65ch; margin: 0 0 12px; color: var(--oa-soft); font-size: 16px; line-height: 1.65; }
 #serments .oath-weapon-name { margin: 0; color: var(--oa-muted); font-size: 14px; }
-#serments .oath-hero-art { width: 160px; max-width: 180px; height: 180px; overflow: hidden; border: 1px solid var(--oa-line); border-radius: 8px; background: var(--oa-panel); }
-#serments .oath-hero-art :is(img, .np-serment-emblem, .np-serment-monogram) {
-  display: grid;
-  place-items: center;
-  width: 100% !important;
-  height: 100% !important;
-  max-width: none !important;
-  max-height: none !important;
-  margin: 0;
-  border: 0;
-  border-radius: 0;
-  object-fit: cover;
-}
-#serments .oath-hero-art .np-serment-monogram { color: var(--oa-accent); font: 500 70px/1 var(--oa-serif); }
-#serments .oath-branches { margin: 28px 0; }
-#serments :is(.oath-branches, .oath-workbench-head, .oath-evolutions) h2 { margin: 0 0 8px; font-size: 22px; font-weight: 650; line-height: 1.3; }
+#serments :is(.oath-workbench-head, .oath-evolutions) h2 { margin: 0 0 8px; font-size: 22px; font-weight: 650; line-height: 1.3; }
 #serments .oath-section-intro { max-width: 75ch; margin: 0 0 18px; color: var(--oa-soft); font-size: 15px; line-height: 1.65; }
-#serments .oath-branch-switcher { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 #serments .oath-path-heading {
   display: flex;
   align-items: flex-start;
@@ -232,7 +216,7 @@ body:is([data-theme-tone="light"], [data-theme-active="light"], .light) #serment
 #serments .oath-path-heading[aria-pressed="true"] .oath-branch-selection { color: var(--oa-accent); font-weight: 650; }
 
 /* One level field and a short guide provide context before the ability. */
-#serments .oath-workbench { padding-top: 28px; border-top: 1px solid var(--oa-line); }
+#serments .oath-workbench { padding-top: 20px; border-top: 1px solid var(--oa-line); }
 #serments .oath-levelbar { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 10px 14px; margin: 0 0 22px; }
 #serments .oath-level-field { display: flex; align-items: center; gap: 12px; max-width: 100%; color: var(--oa-text); font-size: 15px; }
 #serments .oath-level-field > span { font-weight: 600; }
@@ -265,21 +249,53 @@ body:is([data-theme-tone="light"], [data-theme-active="light"], .light) #serment
 #serments .oath-tactical-tip summary::marker { color: var(--oa-muted); }
 #serments .oath-tactical-tip p { max-width: 75ch; margin: 0 0 4px; color: var(--oa-soft); font-size: 15px; line-height: 1.65; }
 
-/* Milestones stay compact. Color identifies a tier; text explains its state. */
-#serments .oath-skill-layout { display: grid; grid-template-columns: 224px minmax(360px, 1fr); align-items: start; gap: 24px; }
-#serments .oath-progression { min-width: 0; }
-#serments .oath-progression h3 { margin: 0 0 7px; font-size: 17px; font-weight: 650; line-height: 1.4; }
-#serments .oath-progression > p { margin: 0 0 14px; color: var(--oa-muted); font-size: 14px; line-height: 1.55; }
+/* Two connected paths flank the weapon. Every milestone remains a text card. */
+#serments .oath-workbench-content { min-width: 0; }
+#serments .oath-forge {
+  position: relative;
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid var(--oa-line-strong);
+  border-radius: 10px;
+  background: radial-gradient(ellipse at 50% 50%, color-mix(in srgb, var(--oa-accent) 7%, transparent), transparent 62%), var(--oa-bg);
+  isolation: isolate;
+}
+#serments .oath-forge-heading { margin-bottom: 24px; }
+#serments .oath-forge-heading h3 { margin: 0 0 8px; color: var(--oa-text); font: 500 26px/1.25 var(--oa-serif); }
+#serments .oath-forge-heading p { max-width: 75ch; margin: 0; color: var(--oa-soft); font-size: 15px; line-height: 1.6; }
+#serments .oath-forge-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 24px 18px; }
+#serments .oath-forge-core { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; grid-column: 1 / -1; width: 100%; min-width: 0; max-width: 320px; padding: 14px 0; margin: 0 auto; align-self: center; isolation: isolate; }
+#serments .oath-forge-core::before { content: ''; position: absolute; z-index: -1; top: 43%; left: 50%; width: 108%; aspect-ratio: 1; border: 1px solid color-mix(in srgb, var(--oa-accent) 28%, transparent); border-radius: 50%; box-shadow: inset 0 0 0 12px color-mix(in srgb, var(--oa-accent) 3%, transparent); transform: translate(-50%, -50%); pointer-events: none; }
+#serments .oath-forge-weapon { position: relative; width: 100%; max-width: 340px; aspect-ratio: .86; }
+#serments .oath-forge-weapon::after { content: ''; position: absolute; left: 12%; right: 12%; bottom: 2%; height: 9px; border: 1px solid color-mix(in srgb, var(--oa-accent) 40%, var(--oa-line)); border-radius: 50%; background: color-mix(in srgb, var(--oa-accent) 8%, var(--oa-bg)); pointer-events: none; }
+#serments .oath-forge-weapon :is(img, .np-serment-emblem, .np-serment-monogram) { display: grid; place-items: center; width: 100% !important; height: 100% !important; max-width: none !important; max-height: none !important; margin: 0; border: 0; border-radius: 0; object-fit: cover; mask-image: radial-gradient(ellipse 49% 46% at 50% 50%, black 65%, transparent 100%); }
+#serments .oath-forge-weapon .np-serment-monogram { color: var(--oa-accent); font: 500 90px/1 var(--oa-serif); }
+#serments .oath-forge-core-label { margin: 12px 0 4px; color: var(--oa-muted); font-size: 14px; line-height: 1.5; text-align: center; }
+#serments .oath-forge-weapon-name { max-width: 100%; color: var(--oa-text); font: 500 22px/1.3 var(--oa-serif); text-align: center; overflow-wrap: anywhere; }
+#serments .oath-forge-path { display: grid; gap: 18px; min-width: 0; }
+#serments .oath-forge-path .oath-path-heading { height: 100%; padding: 16px; }
+#serments .oath-forge-grid[data-branch-count="2"] { grid-template-columns: minmax(0, 1fr) minmax(170px, .82fr) minmax(0, 1fr); grid-template-rows: auto repeat(var(--oa-tier-count, 4), auto); gap: 16px 18px; }
+#serments .oath-forge-grid[data-branch-count="2"] .oath-forge-core { grid-column: 2; grid-row: 1 / span calc(var(--oa-tier-count, 4) + 1); }
+#serments .oath-forge-grid[data-branch-count="2"] .oath-forge-path { grid-row: 1 / span calc(var(--oa-tier-count, 4) + 1); grid-template-rows: subgrid; row-gap: 16px; align-self: stretch; }
+#serments .oath-forge-grid[data-branch-count="2"] .oath-forge-path[data-branch="0"] { grid-column: 1; }
+#serments .oath-forge-grid[data-branch-count="2"] .oath-forge-path[data-branch="1"] { grid-column: 3; }
+#serments .oath-forge-grid[data-branch-count="2"] .oath-path { display: grid; grid-row: 2 / span var(--oa-tier-count, 4); grid-template-rows: subgrid; row-gap: 16px; }
+#serments .oath-forge-grid[data-branch-count="2"] .oath-node-list { grid-row: 1 / span var(--oa-tier-count, 4); grid-template-rows: subgrid; }
+#serments .oath-forge-grid[data-branch-count="1"] { grid-template-columns: minmax(0, 1fr) minmax(170px, .82fr); }
+#serments .oath-forge-grid[data-branch-count="1"] .oath-forge-core { grid-column: 2; grid-row: 1; }
+#serments .oath-forge-grid[data-branch-count="1"] .oath-forge-path { grid-column: 1; grid-row: 1; }
 #serments .oath-path { min-width: 0; }
-#serments .oath-node-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+#serments .oath-node-list { display: grid; gap: 16px; margin: 0; padding: 0; list-style: none; }
 #serments .oath-node-list > li { position: relative; min-width: 0; }
-#serments .oath-node-list > li + li::before { content: ''; position: absolute; top: -10px; left: 34px; width: 1px; height: 10px; background: var(--oa-line-strong); }
+#serments .oath-node-list > li + li::before { content: ''; position: absolute; top: -16px; left: 34px; width: 2px; height: 16px; background: var(--oa-line-strong); }
+#serments .oath-forge-path.is-chosen .oath-node-list > li + li::before { background: color-mix(in srgb, var(--oa-accent) 62%, var(--oa-line)); }
 #serments .oath-node {
   position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
+  height: 100%;
   min-width: 0;
   padding: 13px 12px;
   border: 1px solid var(--oa-line) !important;
@@ -301,8 +317,12 @@ body:is([data-theme-tone="light"], [data-theme-active="light"], .light) #serment
 #serments .oath-node.is-sealed .oath-node-title { color: var(--oa-soft); }
 
 /* The rule card reads as a document: title, named actions, then optional detail. */
-#serments .oath-inspector { min-width: 0; padding: 24px; border: 1px solid var(--oa-line-strong); border-top: 3px solid var(--oa-tier); border-radius: 8px; background: var(--oa-panel); }
-#serments .oath-back-to-levels { display: none; align-items: center; justify-content: center; gap: 8px; max-width: 100%; margin: 0 0 18px; padding: 9px 12px; border: 1px solid var(--oa-line-strong) !important; background: transparent !important; color: var(--oa-text); font-size: 14px; font-weight: 600; line-height: 1.5; text-align: left; }
+#serments .oath-selected-skill { max-width: 900px; margin: 32px auto 0; }
+#serments .oath-selected-heading { margin-bottom: 20px; }
+#serments .oath-selected-heading h3 { margin: 0 0 8px; color: var(--oa-text); font-size: 22px; font-weight: 650; line-height: 1.35; }
+#serments .oath-selected-heading p { max-width: 75ch; margin: 0; color: var(--oa-soft); font-size: 15px; line-height: 1.65; }
+#serments .oath-inspector { min-width: 0; padding: 24px; border: 1px solid var(--oa-line-strong); border-top: 3px solid var(--oa-tier); border-radius: 8px; background: var(--oa-panel); scroll-margin-top: 90px; }
+#serments .oath-back-to-levels { display: inline-flex; align-items: center; justify-content: center; gap: 8px; max-width: 100%; margin: 0 0 18px; padding: 9px 12px; border: 1px solid var(--oa-line-strong) !important; background: transparent !important; color: var(--oa-text); font-size: 14px; font-weight: 600; line-height: 1.5; text-align: left; }
 #serments .oath-back-to-levels:hover { border-color: var(--oa-accent) !important; background: var(--oa-hover) !important; }
 #serments .oath-inspector-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 15px; }
 #serments .oath-eyebrow,
@@ -407,34 +427,49 @@ body:is([data-theme-tone="light"], [data-theme-active="light"], .light) #serment
 #serments .oath-empty { margin: 0; padding: 20px 12px; color: var(--oa-soft); font-size: 15px; line-height: 1.65; }
 #serments .oath-empty-stage { padding: 24px; border: 1px solid var(--oa-line); border-radius: 6px; }
 
-/* Stack before any rule card becomes a narrow column. */
+/* Keep both paths visible; bring the weapon above them before space gets tight. */
 @container oath-stage (max-width: 760px) {
-  #serments .oath-skill-layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
-  #serments .oath-back-to-levels { display: inline-flex; }
-  #serments .oath-node-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  #serments .oath-node-list > li + li::before { display: none; }
+  #serments .oath-forge { padding: 20px; }
+  #serments .oath-forge-grid[data-branch-count="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto repeat(var(--oa-tier-count, 4), auto); gap: 16px; }
+  #serments .oath-forge-grid[data-branch-count="2"] .oath-forge-core { grid-column: 1 / -1; grid-row: 1; max-width: 210px; padding: 0 0 8px; }
+  #serments .oath-forge-grid[data-branch-count="2"] .oath-forge-path { grid-row: 2 / span calc(var(--oa-tier-count, 4) + 1); }
+  #serments .oath-forge-grid[data-branch-count="2"] .oath-forge-path[data-branch="1"] { grid-column: 2; }
+  #serments .oath-forge-core { max-width: 210px; }
+  #serments .oath-forge-core-label { margin-top: 8px; }
+  #serments .oath-forge-weapon-name { font-size: 20px; }
   #serments .oath-compare { grid-template-columns: minmax(0, 1fr); }
 }
 @container oath-stage (max-width: 580px) {
-  #serments .oath-hero { grid-template-columns: minmax(0, 1fr) 105px; gap: 16px; }
-  #serments .oath-hero-art { width: 105px; height: 125px; }
   #serments .oath-hero-title { font-size: 34px; }
-  #serments .oath-branch-switcher { grid-template-columns: minmax(0, 1fr); }
-  #serments .oath-path-heading { padding: 16px; }
+  #serments .oath-forge { padding: 16px; }
+  #serments .oath-forge-heading { margin-bottom: 18px; }
+  #serments .oath-forge-heading h3 { font-size: 24px; }
+  #serments .oath-forge-grid,
+  #serments .oath-forge-grid[data-branch-count="2"] { column-gap: 12px; }
+  #serments .oath-forge-path .oath-path-heading { display: block; padding: 14px; }
+  #serments .oath-path-letter { margin-bottom: 10px; }
+  #serments .oath-branch-copy { display: block; }
+  #serments .oath-branch-copy strong { font-size: 17px; }
+  #serments .oath-branch-pitch { font-size: 14px; }
+  #serments .oath-node { display: block; height: 100%; padding: 12px; }
+  #serments .oath-node-marker { flex-direction: row; gap: 5px; width: fit-content; min-width: 36px; min-height: 32px; margin-bottom: 9px; padding: 4px 8px; }
+  #serments .oath-node-marker b { font-size: 16px; }
+  #serments .oath-node-list > li + li::before { left: 38px; }
   #serments .oath-play-guide dl { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   #serments .oath-play-guide dd + dt { margin-top: 8px; }
   #serments .oath-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 }
 @container oath-stage (max-width: 410px) {
-  #serments .oath-hero { grid-template-columns: minmax(0, 1fr) 76px; gap: 14px; align-items: start; }
-  #serments .oath-hero-content { display: contents; }
-  #serments .oath-hero-meta, #serments .oath-hero-title { grid-column: 1; margin-bottom: 0; }
-  #serments .oath-hero-art { grid-column: 2; grid-row: 1 / span 2; width: 76px; height: 100px; }
-  #serments .oath-hero-tagline, #serments .oath-weapon-name { grid-column: 1 / -1; margin-bottom: 0; }
   #serments .oath-hero-title { font-size: 30px; }
-  #serments .oath-node { display: block; height: 100%; padding: 12px; }
-  #serments .oath-node-marker { flex-direction: row; gap: 5px; width: fit-content; min-width: 36px; min-height: 32px; margin-bottom: 9px; padding: 4px 8px; }
-  #serments .oath-node-marker b { font-size: 16px; }
+  #serments .oath-forge { padding: 14px 10px; }
+  #serments .oath-forge-heading { padding-inline: 2px; }
+  #serments .oath-forge-grid,
+  #serments .oath-forge-grid[data-branch-count="2"] { column-gap: 10px; }
+  #serments .oath-forge-core,
+  #serments .oath-forge-grid[data-branch-count="2"] .oath-forge-core { max-width: 170px; }
+  #serments .oath-forge-path .oath-path-heading { padding: 12px 10px; }
+  #serments .oath-branch-copy strong { font-size: 16px; }
+  #serments .oath-node { padding: 12px 10px; }
   #serments .oath-node-title { font-size: 14px; }
   #serments .oath-node-state { font-size: 14px; }
   #serments .oath-inspector { padding: 20px 16px; }
@@ -443,6 +478,20 @@ body:is([data-theme-tone="light"], [data-theme-active="light"], .light) #serment
   #serments .oath-ability-action-head { display: grid; gap: 8px; }
   #serments .oath-compare { padding-inline: 12px; }
   #serments .oath-compare-card { padding: 15px 12px; }
+}
+@container oath-stage (max-width: 340px) {
+  #serments .oath-forge-grid,
+  #serments .oath-forge-grid[data-branch-count="1"],
+  #serments .oath-forge-grid[data-branch-count="2"] { display: flex; flex-direction: column; gap: 22px; }
+  #serments .oath-forge-grid[data-branch-count] .oath-forge-path[data-branch] { display: grid; width: 100%; grid-column: auto; grid-row: auto; grid-template-rows: auto auto; gap: 14px; }
+  #serments .oath-forge-grid[data-branch-count] .oath-path { display: block; grid-row: auto; }
+  #serments .oath-forge-grid[data-branch-count] .oath-node-list { grid-row: auto; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; gap: 16px; }
+  #serments .oath-forge-path .oath-path-heading { display: flex; height: auto; padding: 14px; }
+  #serments .oath-path-letter { margin-bottom: 0; }
+  #serments .oath-node { display: flex; height: auto; min-height: 76px; }
+  #serments .oath-node-marker { flex-direction: column; gap: 1px; width: 44px; min-height: 48px; margin: 0; padding: 4px; }
+  #serments .oath-node-marker b { font-size: 18px; }
+  #serments .oath-node-list > li + li::before { display: block; top: -16px; left: 32px; height: 16px; }
 }
 @media (max-width: 1100px) and (min-width: 761px) {
   #serments .oath-layout { gap: 20px; }
@@ -460,8 +509,7 @@ body:is([data-theme-tone="light"], [data-theme-active="light"], .light) #serment
   #serments .oath-library.is-open .oath-library-body { display: flex; }
   #serments .oath-list { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 360px; }
   #serments .oath-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  #serments .oath-branches { margin-block: 24px; }
-  #serments .oath-workbench { padding-top: 24px; }
+  #serments .oath-workbench { padding-top: 18px; }
   #serments .oath-play-guide:not(:empty) { padding: 15px 16px; }
   #serments .oath-evo-btn { max-width: none; }
 }

@@ -59,6 +59,7 @@ const expansion = require('../assets/js/serments-reforged-data');
     async function chooseBranch(index) {
       await atlas.locator('[data-choose-branch="' + index + '"]').click();
       assert.equal(await atlas.locator('.oath-path-heading[aria-pressed="true"]').getAttribute('data-choose-branch'), String(index));
+      assert.equal(await page.evaluate(() => document.activeElement?.dataset.chooseBranch), String(index), 'Changer de voie conserve le focus sur son titre.');
     }
     async function assertNoOverflow(label) {
       const widths = await page.evaluate(() => ({
@@ -88,27 +89,37 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.equal(await atlas.locator('#oath-level').getAttribute('type'), 'number');
     assert.equal(await atlas.locator('#oath-level').inputValue(), '1', 'L’ouverture reprend le niveau du personnage lié.');
     assert.equal(await atlas.locator('.oath-list-item').count(), 34, 'Les entrées masquées par le staff restent exclues du catalogue.');
-    assert.equal(await atlas.locator('.oath-path').count(), 1, 'Une seule voie est présentée à la fois.');
-    assert.equal(await atlas.locator('.oath-node').count(), 4);
+    assert.equal(await atlas.locator('nav.oath-progression.oath-forge').count(), 1);
+    assert.equal(await atlas.locator('.oath-forge-grid').getAttribute('data-branch-count'), '2');
+    assert.equal(await atlas.locator('.oath-forge-path').count(), 2, 'Les deux branches restent visibles autour de la forge.');
+    assert.equal(await atlas.locator('.oath-path').count(), 2);
+    assert.equal(await atlas.locator('.oath-node').count(), 8);
     assert.equal(await atlas.locator('.oath-path-heading').count(), 2);
     for (const branch of [0, 1]) {
       await chooseBranch(branch);
+      const branchButton = atlas.locator('[data-choose-branch="' + branch + '"]');
+      const branchName = await branchButton.locator('strong').textContent();
+      assert.equal(await branchButton.getAttribute('aria-controls'), 'oath-selected-ability');
       for (const [tier, color] of ['jade', 'azure', 'violet', 'gold'].entries()) {
-        assert.equal(await node(branch, tier).getAttribute('data-tier-color'), color, 'Chaque étape possède son identité chromatique.');
+        const button = node(branch, tier);
+        assert.equal(await button.getAttribute('data-tier-color'), color, 'Chaque étape possède son identité chromatique.');
+        assert.equal(await button.getAttribute('aria-controls'), 'oath-selected-ability');
+        const label = await button.getAttribute('aria-label');
+        assert.ok(label.startsWith('Voie ' + String.fromCharCode(65 + branch) + ' — ' + branchName + ', niveau ' + pugiliste.branches[branch].paliers[tier].niv + ', '), 'Le nom accessible situe la branche et le niveau de chaque nœud.');
       }
     }
     await chooseBranch(0);
-    assert.equal(await atlas.locator('.oath-node.is-locked').count(), 4);
+    assert.equal(await atlas.locator('.oath-node.is-locked').count(), 8);
     assert.equal(await atlas.locator('.oath-node.is-sealed').count(), 0);
     await node(0, 3).click();
     await assertInspectorActions(pugiliste.branches[0], 3, 1);
     assert.ok(await atlas.locator('.oath-play-guide').count(), 'Le guide est accessible avant le premier niveau en lecture complète.');
     await setDiscovery(true);
     await setLevel(1);
-    assert.equal(await atlas.locator('.oath-node.is-locked').count(), 4);
-    assert.equal(await atlas.locator('.oath-node.is-sealed').count(), 3);
+    assert.equal(await atlas.locator('.oath-node.is-locked').count(), 8);
+    assert.equal(await atlas.locator('.oath-node.is-sealed').count(), 6);
     assert.equal(await atlas.locator('.oath-node.is-current').count(), 0);
-    assert.deepEqual(await atlas.locator('.oath-node.is-sealed .oath-node-title').allTextContents(), Array(3).fill('???'));
+    assert.deepEqual(await atlas.locator('.oath-node.is-sealed .oath-node-title').allTextContents(), Array(6).fill('???'));
     assert.equal(await atlas.locator('.oath-evo-btn[data-evolution="Cestuaire"]').evaluate(element => element.classList.contains('is-locked')), true);
     await node(0, 3).click();
     assert.equal(await inspector().evaluate(element => element.classList.contains('is-locked')), true);
@@ -134,14 +145,15 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.equal(await page.evaluate(() => document.activeElement?.matches('.oath-inspector h3')), true, 'Simuler un palier mène à un titre de capacité ou de voie.');
     await setLevel(1);
     await setDisclosure('.oath-comparison', false);
-    observations.push('Lecture complète par défaut ; option de découverte niveau 1 : un prochain éveil et trois mystères scellés, sans effets ni coûts dans le DOM verrouillé.');
+    observations.push('Lecture complète par défaut ; option de découverte niveau 1 : deux prochains éveils et six mystères scellés, sans effets ni coûts dans le DOM verrouillé.');
 
     await setLevel(5);
-    assert.equal(await atlas.locator('.oath-node.is-unlocked').count(), 2);
-    assert.equal(await atlas.locator('.oath-node.is-sealed').count(), 1);
-    assert.equal(await atlas.locator('.oath-node.is-current').count(), 1);
-    assert.equal(await atlas.locator('.oath-node.is-current').getAttribute('data-required-level'), '5');
+    assert.equal(await atlas.locator('.oath-node.is-unlocked').count(), 4);
+    assert.equal(await atlas.locator('.oath-node.is-sealed').count(), 2);
+    assert.equal(await atlas.locator('.oath-node.is-current').count(), 2);
+    assert.deepEqual(await atlas.locator('.oath-node.is-current').evaluateAll(nodes => nodes.map(node => node.dataset.requiredLevel)), ['5', '5']);
     await node(0, 1).click();
+    assert.equal(await page.evaluate(() => document.activeElement?.matches('.oath-inspector h3')), true, 'Sélectionner un nœud de la forge mène à sa fiche sur ordinateur.');
     assert.equal(await inspector().getAttribute('data-tier-color'), 'azure');
     await assertInspectorActions(pugiliste.branches[0], 1, 5);
     await setDisclosure('.oath-comparison', true);
@@ -162,11 +174,11 @@ const expansion = require('../assets/js/serments-reforged-data');
     await node(0, 3).click();
     await inspector().locator('[data-preview-tier]').click();
     assert.equal(await atlas.locator('#oath-level').inputValue(), '10', 'L’aperçu projette le niveau requis sans attribuer la capacité.');
-    assert.equal(await atlas.locator('.oath-node.is-unlocked').count(), 4);
-    assert.equal(await atlas.locator('.oath-node.is-current').count(), 1);
-    assert.equal(await atlas.locator('.oath-node.is-legacy').count(), 3, 'Les trois paliers antérieurs de la voie sont remplacés.');
+    assert.equal(await atlas.locator('.oath-node.is-unlocked').count(), 8);
+    assert.equal(await atlas.locator('.oath-node.is-current').count(), 2);
+    assert.equal(await atlas.locator('.oath-node.is-legacy').count(), 6, 'Les trois paliers antérieurs de chaque voie sont remplacés.');
     await assertInspectorActions(pugiliste.branches[0], 3, 10);
-    observations.push('Progression 1 → 5 → 10 : couleurs par étape, aperçu au niveau requis et un seul palier applicable ; champ niveau utilisable au clavier sans perte de focus.');
+    observations.push('Progression 1 → 5 → 10 : couleurs par étape, aperçu au niveau requis et un seul palier de référence par voie ; champ niveau utilisable au clavier sans perte de focus.');
 
     await atlas.locator('[data-own-level]').click();
     assert.equal(await atlas.locator('#oath-level').inputValue(), '1', 'Mon niveau reprend le niveau du personnage lié sans le modifier.');
@@ -176,7 +188,7 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.equal(await atlas.locator('#oath-hide-future').isChecked(), false);
     assert.equal(await page.evaluate(() => document.activeElement?.matches('.oath-inspector h3')), true, 'Révéler les règles replace le focus sur la fiche lisible.');
     assert.equal(await atlas.locator('#oath-level').inputValue(), '1', 'Consulter toutes les règles ne simule pas une montée de niveau.');
-    assert.equal(await atlas.locator('.oath-node.is-locked').count(), 4, 'Révéler les informations ne rend pas les capacités applicables.');
+    assert.equal(await atlas.locator('.oath-node.is-locked').count(), 8, 'Révéler les informations ne rend pas les capacités applicables.');
     await assertInspectorActions(pugiliste.branches[1], 3, 1);
     await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -201,7 +213,7 @@ const expansion = require('../assets/js/serments-reforged-data');
     await atlas.locator('.oath-evo-btn[data-evolution="Cestuaire"]').click();
     assert.equal(await atlas.locator('.oath-hero-title').textContent(), 'Cestuaire');
     assert.equal(await atlas.locator('#oath-level').inputValue(), '1');
-    assert.equal(await atlas.locator('.oath-node.is-locked').count(), 4);
+    assert.equal(await atlas.locator('.oath-node.is-locked').count(), 8);
     assert.equal(await atlas.locator('.oath-node').first().getAttribute('data-required-level'), '10');
     await atlas.locator('.oath-evo-btn[data-evolution="Pugiliste"]').click();
     await chooseBranch(0);
@@ -255,13 +267,34 @@ const expansion = require('../assets/js/serments-reforged-data');
     for (const [width, height] of [[1440, 1000], [1024, 900], [390, 844], [320, 740]]) {
       await page.setViewportSize({ width, height });
       await assertNoOverflow('Lecture Arbalétrier ' + width + ' px');
+      const branchGeometry = await atlas.locator('.oath-forge-path').evaluateAll(branches => branches.map(branch => {
+        const header = branch.querySelector('.oath-path-heading').getBoundingClientRect();
+        const copy = branch.querySelector('.oath-branch-copy').getBoundingClientRect();
+        const firstNode = branch.querySelector('.oath-node').getBoundingClientRect();
+        return { branch: branch.dataset.branch, headerTop: header.top, headerBottom: header.bottom, headerHeight: header.height, copyTop: copy.top, copyBottom: copy.bottom, firstNodeTop: firstNode.top };
+      }));
+      assert.equal(branchGeometry.length, 2, 'Les deux branches restent présentes à ' + width + ' px.');
+      for (const geometry of branchGeometry) {
+        const context = 'Voie ' + geometry.branch + ' à ' + width + ' px : ' + JSON.stringify(geometry);
+        assert.ok(geometry.copyTop >= geometry.headerTop + 2, 'Le texte commence dans le bouton de voie. ' + context);
+        assert.ok(geometry.copyBottom <= geometry.headerBottom - 2, 'Le bouton de voie contient tout son titre et son pitch. ' + context);
+        assert.ok(geometry.firstNodeTop >= geometry.headerBottom - 0.5, 'Le premier palier ne recouvre pas le bouton de voie. ' + context);
+      }
       await inspector().screenshot({ path: path.join(inspectorOutput, 'arbaletrier-panel-' + width + '.png'), animations: 'disabled' });
       await atlas.screenshot({ path: path.join(inspectorOutput, 'arbaletrier-page-' + width + '.png'), animations: 'disabled' });
-      placements.push(await atlas.locator('.oath-skill-layout').evaluate(element => {
-        const path = element.querySelector('.oath-progression').getBoundingClientRect();
-        const panel = element.querySelector('.oath-inspector').getBoundingClientRect();
-        return { viewport: innerWidth, progressionWidth: Math.round(path.width), inspectorWidth: Math.round(panel.width), layout: panel.left >= path.right ? 'latéral' : 'vertical' };
-      }));
+      await atlas.locator('.oath-forge').screenshot({ path: path.join(inspectorOutput, 'arbaletrier-forge-' + width + '.png'), animations: 'disabled' });
+      const placement = await atlas.evaluate(element => {
+        const forge = element.querySelector('.oath-forge').getBoundingClientRect();
+        const panel = element.querySelector('.oath-selected-skill .oath-inspector').getBoundingClientRect();
+        return { viewport: innerWidth, forgeWidth: Math.round(forge.width), inspectorWidth: Math.round(panel.width), inspectorBelowForge: panel.top >= forge.bottom - 1 };
+      });
+      assert.equal(placement.inspectorBelowForge, true, 'La fiche lisible se trouve sous la forge à ' + width + ' px.');
+      placements.push(placement);
+      await node(0, 1).click();
+      assert.equal(await page.evaluate(() => document.activeElement?.matches('.oath-inspector h3')), true, 'La sélection mène à la fiche à ' + width + ' px.');
+      await inspector().locator('[data-back-to-levels]').click();
+      assert.equal(await page.evaluate(() => document.activeElement?.matches('.oath-node[data-node-branch="0"][data-node-tier="1"]')), true, 'Le retour aux paliers retrouve exactement le nœud consulté à ' + width + ' px.');
+      await node(0, 1).evaluate(element => element.blur());
     }
     await node(0, 1).click();
     assert.equal(await page.evaluate(() => document.activeElement?.matches('.oath-inspector h3')), true, 'Sur petit écran, sélectionner un palier mène à sa fiche.');
@@ -346,13 +379,15 @@ const expansion = require('../assets/js/serments-reforged-data');
       NPSermentsAtlas.focus('QA parcours personnalisé');
     });
     assert.equal(await atlas.locator('.oath-path-heading').count(), 3, 'Toutes les voies staff restent accessibles.');
-    assert.equal(await atlas.locator('.oath-path').count(), 1);
-    assert.equal(await atlas.locator('.oath-node').count(), 5);
+    assert.equal(await atlas.locator('.oath-forge-grid').getAttribute('data-branch-count'), '3');
+    assert.equal(await atlas.locator('.oath-forge-path').count(), 3);
+    assert.equal(await atlas.locator('.oath-path').count(), 3);
+    assert.equal(await atlas.locator('.oath-node').count(), 15);
     assert.equal(await atlas.locator('#oath-level').getAttribute('max'), null, 'Le champ de niveau ne plafonne pas la progression des personnages.');
     assert.equal(await atlas.locator('.oath-list-item[data-serment="QA serment secret du staff"]').count(), 0);
     await setLevel(5);
-    assert.equal(await atlas.locator('.oath-node.is-unlocked').count(), 2);
-    assert.equal(await atlas.locator('.oath-node.is-sealed').count(), 2);
+    assert.equal(await atlas.locator('.oath-node.is-unlocked').count(), 6);
+    assert.equal(await atlas.locator('.oath-node.is-sealed').count(), 6);
     await chooseBranch(2);
     await node(2, 4).click();
     assert.ok(!(await inspector().textContent()).includes('Effet de test 2/4'));
