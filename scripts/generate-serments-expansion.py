@@ -304,7 +304,7 @@ def build():
     helper = '''/* Local, deterministic emblems. No HTML is stored in serment icon fields. */
 (function (root) {
   "use strict";
-  var legacy = {"Duelliste":"⚔","Bretteur":"⚔","Claymore":"⚔","Lame d'Honneur":"⚔","Sauvageon":"🪓","Croisé":"🛡","Rôdeur":"🗡","Rodeur":"🗡","Traqueur":"🏹","Flécheur":"🏹","Flecheur":"🏹","Elementaliste":"👊","Élémentaliste":"👊","Evocateur":"🪄","Évocateur":"🪄","Conjurateur":"⛓","Arcaniste":"🔮"};
+  var legacy = {"Duelliste":"⚔","Bretteur":"⚔","Claymore":"⚔","Lame d'Honneur":"⚔","Sauvageon":"🪓","Croisé":"🛡","Rôdeur":"🗡","Rodeur":"🗡","Traqueur":"🏹","Archer":"🏹","Elementaliste":"👊","Élémentaliste":"👊","Evocateur":"🪄","Évocateur":"🪄","Conjurateur":"⛓","Arcaniste":"🔮"};
   function attr(value) {
     return String(value == null ? "" : value).replace(/[&<>"']/g, function (character) {
       return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[character];

@@ -20,7 +20,7 @@ L'audit de référence est celui des treize fiches publiées avant l'extension. 
 | Croisé | Provocation et croissance de robustesse. |
 | Rôdeur | Répétition des touches sur une même cible, ou lancer avec retour de la dague. |
 | Traqueur | Épuisement des EP et maîtrise de la distance avec la lance. |
-| Flécheur | Volée de zone ou tir qui concentre les actions sacrifiées. |
+| Archer | Volée de zone ou tir qui concentre les actions sacrifiées. |
 | Elementaliste | Combinaisons élémentaires appliquées au contact. |
 | Evocateur | Compagnon autonome dans ses actions natives, financées par le maître. |
 | Conjurateur | Soin porté par les attaques ou concentré en sacrifiant des actions. |
@@ -34,7 +34,7 @@ Les armes restent immédiatement reconnaissables : arbalète, cestes, fléau, ba
 
 | Base | Arbitrage central | Distance avec l'existant |
 | --- | --- | --- |
-| Arbalétrier | Dépenser une munition prête, investir dans sa tension ou préserver une réserve. | Son chargement existe entre les tours ; l'attente seule ne transforme pas toutes ses actions en une flèche du Flécheur. Une défense peut faire perdre la surtension. |
+| Arbalétrier | Dépenser une munition prête, investir dans sa tension ou préserver une réserve. | Son chargement existe entre les tours ; l'attente seule ne transforme pas toutes ses actions en une flèche de l’Archer. Une défense peut faire perdre la surtension. |
 | Pugiliste | Engager les mains ou amortir un impact pour préparer la réponse, même si la garde arrête tout le choc. | La garde s'épuise sur cet impact. Le coup préparé reste payé ; perdre des PV n'est plus nécessaire pour jouer la voie défensive. |
 | Porte-Fléau | Préparer la retombée ou la libérer tôt ; se défendre peut détruire la rotation. | Le délai et sa rupture sont le cœur du choix. Aucun bris de bouclier de Claymore ni coup collectif du Sauvageon n'est ajouté. |
 | Enchanteur | Confier une rune consommable et faire dépendre son effet du choix du bénéficiaire. | Il ne soigne pas et n'attaque pas à la place de l'allié. Le prochain geste consomme, fait mûrir ou détruit la rune. |

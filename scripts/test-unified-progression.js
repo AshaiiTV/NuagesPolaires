@@ -76,6 +76,53 @@ test('Custom growth, zero growth and a knocked-out character are preserved', () 
   assert.deepEqual(progression.effectiveDefinition('Duelliste', { Duelliste: { pvN: 10 } }), { pvN: 10, epN: 6, emN: 2 });
 });
 
+test('Archer aliases rename unified characters without resetting any progression or branch choices', () => {
+  for (const alias of ['Flécheur', 'Flecheur', 'Flècheur', 'FLÉCHEUR', 'fle\u0301cheur', 'archer']) {
+    const source = legacy({ classe: alias, class: alias, progressionVersion: 1, level: 9, xp: 117, xpMax: 270,
+      branch: 'B', branchChoices: { 5: 'B' }, pvCur: 0, history: [{ text: 'Flécheur au départ' }] });
+    delete source.sLevel; delete source.sXp; delete source.sXpMax;
+    const before = clone(source), player = progression.normalizePlayer(source);
+    assert.deepEqual(player, { ...source, classe: 'Archer', class: 'Archer' }, alias);
+    assert.deepEqual(progression.normalizePlayer(player), player, alias + ': idempotent');
+    assert.deepEqual(source, before, alias + ': source unchanged');
+    assert.deepEqual(progression.effectiveDefinition(alias), { pvN: 3, epN: 5, emN: 4 }, alias);
+  }
+  assert.equal(progression.normalizePlayer({ class: 'Flècheur', level: 1 }).classe, 'Archer');
+  for (const name of ['Flécheur des neiges', 'Mon Archer', ' Rôdeur ', 'Duelliste']) {
+    assert.equal(progression.normalizeSermentName(name), name, 'Other staff names remain exact');
+  }
+});
+
+test('Archer definitions retain old staff fields and give explicit canonical fields priority without mutating imports', () => {
+  const definitions = {
+    Archer: { pvN: 12, branches: [{ nom: 'Branche canonique', paliers: [] }] },
+    Flécheur: { pvN: 9, epN: 0, arme: 'Arc du staff', branches: [{ nom: 'Ancienne branche', paliers: [] }] },
+    Flècheur: { emN: 7 },
+    Sentinelle: { evolvesFrom: 'Flecheur', pvN: 2 }
+  };
+  const before = clone(definitions), normalized = progression.normalizeSermentDefinitions(definitions);
+  assert.deepEqual(Object.keys(normalized).sort(), ['Archer', 'Sentinelle']);
+  assert.deepEqual(normalized.Archer, { pvN: 12, epN: 0, emN: 7, arme: 'Arc du staff', branches: definitions.Archer.branches });
+  assert.equal(normalized.Sentinelle.evolvesFrom, 'Archer');
+  assert.deepEqual(progression.effectiveDefinition('Flecheur', definitions), normalized.Archer);
+  assert.deepEqual(progression.normalizeSermentDefinitions(normalized), normalized);
+  assert.deepEqual(definitions, before);
+  assert.deepEqual(progression.effectiveDefinition('Archer', { Flécheur: { pvN: 9, epN: 0, emN: 7 } }), { pvN: 9, epN: 0, emN: 7 });
+  assert.deepEqual(progression.effectiveDefinition('Archer', { Flécheur: { pvN: 9 }, Archer: null }), { pvN: 3, epN: 5, emN: 4 });
+});
+
+test('Remembered Archer branches migrate old keys and retain an explicit canonical choice', () => {
+  for (const alias of ['Flécheur', 'Flecheur', 'Flècheur']) {
+    const source = legacy({ classe: alias, sermentBranches: { [alias]: 'B', 'Rôdeur': 'A', 'Archer des neiges': 'B' } });
+    const before = clone(source), player = progression.normalizePlayer(source);
+    assert.deepEqual(player.sermentBranches, { Archer: 'B', 'Rôdeur': 'A', 'Archer des neiges': 'B' });
+    assert.deepEqual(progression.normalizePlayer(player), player);
+    assert.deepEqual(source, before);
+    const canonical = progression.normalizePlayer({ ...source, sermentBranches: { Archer: 'A', ...source.sermentBranches } });
+    assert.deepEqual(canonical.sermentBranches, { Archer: 'A', 'Rôdeur': 'A', 'Archer des neiges': 'B' });
+  }
+});
+
 test('Missing and malformed progression fields normalize safely', () => {
   assertUnified(progression.normalizePlayer({}), 1, 0);
   assertUnified(progression.normalizePlayer({ level: 'bad', xp: -2, xpMax: null, sLevel: -4, sXp: Infinity }), 1, 0);
@@ -190,6 +237,56 @@ test('Legacy class aliases and null custom definitions migrate consistently in a
   const empty = await app.call('auth', { action: 'session_bundle' }, alice);
   assert.equal(empty.status, 200);
   assert.deepEqual(empty.data.data.players, []);
+});
+
+test('Archer aliases use old staff growth consistently in API reads and authorized imports without changing raw versions', async () => {
+  const custom = { Flécheur: { pvN: 9, epN: 0, emN: 7, branches: [{ nom: 'Le choix du staff' }] } };
+  await app.seed('serments_custom', custom);
+  for (const alias of ['Flécheur', 'Flecheur', 'Flècheur']) {
+    await app.seed('players', [legacy({ classe: alias, branch: 'B', branchChoices: { 5: 'B' } })]);
+    const raw = await app.read('players');
+    const direct = await app.call('db', { action: 'get', key: 'players' }, alice);
+    const all = await app.call('db', { action: 'get_all' }, admin);
+    const bundle = await app.call('auth', { action: 'session_bundle' }, alice);
+    for (const result of [direct, all, bundle]) assert.equal(result.status, 200, alias);
+    const player = direct.data.value[0];
+    assert.equal(player.classe, 'Archer');
+    assert.equal(player.branch, 'B');
+    assert.deepEqual(player.branchChoices, { 5: 'B' });
+    assertUnified(player, 5, 75);
+    assert.equal(player.pvMax, 68);
+    assert.equal(player.pvCur, 58);
+    assert.equal(player.epMax, 56);
+    assert.equal(player.epCur, 20);
+    assert.equal(player.emMax, 43);
+    assert.equal(player.emCur, 28);
+    assert.deepEqual(all.data.data.players[0], player);
+    assert.deepEqual(bundle.data.data.players[0], player);
+    assert.equal(direct.data.version, raw.version);
+    assert.equal(all.data.versions.players, raw.version);
+    assert.equal(bundle.data.versions.players, raw.version);
+    assert.deepEqual(await app.read('players'), raw, alias + ': read does not persist');
+    const saved = await app.call('db', { action: 'set', key: 'players', value: raw.value, expectedVersion: raw.version }, admin);
+    assert.equal(saved.status, 200);
+    assert.deepEqual((await app.read('players')).value[0], player, alias + ': imports persist canonical identity');
+    assert.deepEqual((await app.call('db', { action: 'get', key: 'players' }, alice)).data.value[0], player, alias + ': no repeated growth');
+  }
+  assert.deepEqual((await app.read('serments_custom')).value, custom, 'Read and character migration do not rewrite staff definitions');
+});
+
+test('MJ can save progress for a renamed Archer but cannot use alias migration to change the class', async () => {
+  await app.seed('players', [legacy({ classe: 'Flécheur', branch: 'B', progressionVersion: 1, level: 9, xp: 117, xpMax: 270 })]);
+  const read = await app.call('db', { action: 'get', key: 'players' }, mj);
+  const next = clone(read.data.value);
+  next[0].xp += 5;
+  const save = await app.call('db', { action: 'set', key: 'players', value: next, expectedVersion: read.data.version }, mj);
+  assert.equal(save.status, 200);
+  assert.equal(save.data.value[0].classe, 'Archer');
+  assert.equal(save.data.value[0].branch, 'B');
+  assertUnified(save.data.value[0], 9, 122);
+  const forbidden = clone(save.data.value);
+  forbidden[0].classe = 'Arcaniste';
+  assert.equal((await app.call('db', { action: 'set', key: 'players', value: forbidden, expectedVersion: save.data.version }, mj)).status, 403);
 });
 
 test('Public gem stock excludes fully consumed and invalid quantities', async () => {

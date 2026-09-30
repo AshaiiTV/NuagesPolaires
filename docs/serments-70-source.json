@@ -223,11 +223,11 @@
         ],
         "comparison": {
           "nearestExisting": [
-            "Flécheur",
+            "Archer",
             "Rôdeur",
             "Sauvageon"
           ],
-          "differenceExisting": "Le Flécheur dépense ses actions pour charger un tir ou frapper une zone ; Rôdeur et Sauvageon projettent leur arme. Le Frondeur engage un projectile dans une opposition à un autre projectile matériel : sa nouveauté est l’interception balistique, sans puissance accumulée.",
+          "differenceExisting": "L’Archer dépense ses actions pour charger un tir ou frapper une zone ; Rôdeur et Sauvageon projettent leur arme. Le Frondeur engage un projectile dans une opposition à un autre projectile matériel : sa nouveauté est l’interception balistique, sans puissance accumulée.",
           "nearestNew": [
             "Piquier",
             "Aéromancien",
@@ -338,7 +338,7 @@
         ],
         "comparison": {
           "nearestExisting": [
-            "Flécheur"
+            "Archer"
           ],
           "differenceExisting": "La préparation restaure une disponibilité binaire ; elle ne fait pas croître les dégâts avec le nombre d’actions sacrifiées.",
           "nearestNew": [
@@ -1127,7 +1127,7 @@
         ],
         "comparison": {
           "nearestExisting": [
-            "Flécheur",
+            "Archer",
             "Claymore"
           ],
           "differenceExisting": "Attendre n’augmente pas les dégâts ; le blocage reste ordinaire. Le choix est une résolution différée visible contre une annulation.",
@@ -1243,7 +1243,7 @@
           "nearestExisting": [
             "Arcaniste",
             "Elementaliste",
-            "Flécheur"
+            "Archer"
           ],
           "differenceExisting": "Il gère la persistance matérielle d’une combustion et son extinction ; il ne choisit pas entre rayon et explosion, et n’enchaîne pas des frappes élémentaires.",
           "nearestNew": [
@@ -2615,7 +2615,7 @@
         ],
         "comparison": {
           "nearestExisting": [
-            "Flécheur",
+            "Archer",
             "Arcaniste"
           ],
           "differenceExisting": "Ne concentre pas des actions en dégâts et ne produit pas une zone ; un projectile emprunte deux segments concrets.",
@@ -2834,7 +2834,7 @@
         ],
         "comparison": {
           "nearestExisting": [
-            "Flécheur",
+            "Archer",
             "Lame d'Honneur"
           ],
           "differenceExisting": "L’observation ne produit aucun bonus croissant ni engagement offensif exclusif envers la cible.",
@@ -6145,7 +6145,7 @@
         ],
         "comparison": {
           "nearestExisting": [
-            "Flécheur",
+            "Archer",
             "Conjurateur"
           ],
           "differenceExisting": "Il ne transforme pas un nombre d’actions en puissance d’attaque ou de soin ; il réduit la portée d’un plan collectif pour le résoudre plus tôt.",
@@ -7707,9 +7707,9 @@
         "comparison": {
           "nearestExisting": [
             "Arcaniste",
-            "Flécheur"
+            "Archer"
           ],
-          "differenceExisting": "Arcaniste choisit la zone de son Domaine ; Flécheur lance une salve ou investit ses actions dans la puissance d'une flèche. Astronome paie pour préparer des options spatiales dont une seule sera retenue et dont les autres sont perdues.",
+          "differenceExisting": "Arcaniste choisit la zone de son Domaine ; Archer lance une salve ou investit ses actions dans la puissance d'une flèche. Astronome paie pour préparer des options spatiales dont une seule sera retenue et dont les autres sont perdues.",
           "nearestNew": [
             "Prismancien",
             "Semeur de Cendres"
@@ -7818,9 +7818,9 @@
         "comparison": {
           "nearestExisting": [
             "Arcaniste",
-            "Flécheur"
+            "Archer"
           ],
-          "differenceExisting": "Arcaniste émet directement un rayon précis ; Flécheur échange ses actions contre de la puissance. Prismancien investit ses actions dans un objet et deux segments de trajectoire, sans augmenter automatiquement les dégâts de l'émission.",
+          "differenceExisting": "Arcaniste émet directement un rayon précis ; Archer échange ses actions contre de la puissance. Prismancien investit ses actions dans un objet et deux segments de trajectoire, sans augmenter automatiquement les dégâts de l'émission.",
           "nearestNew": [
             "Ricocheteur",
             "Verrier",
@@ -7902,11 +7902,11 @@
         "id": "proposal-frondeur",
         "coreDecision": "Dépenser son lancer pour attaquer, ou conserver une possibilité de contre-tir pour protéger une trajectoire exposée, au risque de ne pas pouvoir intervenir ailleurs.",
         "nearestExisting": [
-          "Flécheur",
+          "Archer",
           "Rôdeur",
           "Sauvageon"
         ],
-        "differenceExisting": "Le Flécheur dépense ses actions pour charger un tir ou frapper une zone ; Rôdeur et Sauvageon projettent leur arme. Le Frondeur engage un projectile dans une opposition à un autre projectile matériel : sa nouveauté est l’interception balistique, sans puissance accumulée.",
+        "differenceExisting": "L’Archer dépense ses actions pour charger un tir ou frapper une zone ; Rôdeur et Sauvageon projettent leur arme. Le Frondeur engage un projectile dans une opposition à un autre projectile matériel : sa nouveauté est l’interception balistique, sans puissance accumulée.",
         "nearestNew": [
           "Piquier",
           "Aéromancien",
@@ -7919,7 +7919,7 @@
           "Aucune interception automatique ou gratuite.",
           "Aucun renvoi automatique du projectile sur son auteur."
         ],
-        "auditReason": "Remplace le harcèlement générique puis la simple variation de poids/puissance des munitions par une interception balistique contestée, afin de ne pas reproduire le compromis actions/puissance du Flécheur."
+        "auditReason": "Remplace le harcèlement générique puis la simple variation de poids/puissance des munitions par une interception balistique contestée, afin de ne pas reproduire le compromis actions/puissance de l’Archer."
       },
       {
         "name": "Arbalétrier",
@@ -7935,7 +7935,7 @@
         "id": "proposal-arbaletrier",
         "coreDecision": "Décider quand consommer son unique carreau prêt et quand payer une recharge exposée.",
         "nearestExisting": [
-          "Flécheur"
+          "Archer"
         ],
         "differenceExisting": "La préparation restaure une disponibilité binaire ; elle ne fait pas croître les dégâts avec le nombre d’actions sacrifiées.",
         "nearestNew": [
@@ -7948,7 +7948,7 @@
           "visée accumulant des dégâts",
           "tir de réaction au franchissement"
         ],
-        "auditReason": "Abandon du tir chargé du Flécheur et de l’interception réservée au Piquier."
+        "auditReason": "Abandon du tir chargé de l’Archer et de l’interception réservée au Piquier."
       },
       {
         "name": "Pugiliste",
@@ -8151,7 +8151,7 @@
         "id": "proposal-portefleau",
         "coreDecision": "Après avoir annoncé un coup différé, maintenir son engagement ou l’annuler en payant le retour en garde.",
         "nearestExisting": [
-          "Flécheur",
+          "Archer",
           "Claymore"
         ],
         "differenceExisting": "Attendre n’augmente pas les dégâts ; le blocage reste ordinaire. Le choix est une résolution différée visible contre une annulation.",
@@ -8183,7 +8183,7 @@
         "nearestExisting": [
           "Arcaniste",
           "Elementaliste",
-          "Flécheur"
+          "Archer"
         ],
         "differenceExisting": "Il gère la persistance matérielle d’une combustion et son extinction ; il ne choisit pas entre rayon et explosion, et n’enchaîne pas des frappes élémentaires.",
         "nearestNew": [
@@ -8586,7 +8586,7 @@
         "id": "proposal-ricocheteur",
         "coreDecision": "Choisir entre le trajet direct disponible et un rebond dépendant de la géométrie réelle du décor.",
         "nearestExisting": [
-          "Flécheur",
+          "Archer",
           "Arcaniste"
         ],
         "differenceExisting": "Ne concentre pas des actions en dégâts et ne produit pas une zone ; un projectile emprunte deux segments concrets.",
@@ -8650,7 +8650,7 @@
         "id": "proposal-guetteur",
         "coreDecision": "Choisir quelle préparation réellement visible examiner, puis poursuivre l’observation ou exploiter l’information avec ses actions habituelles.",
         "nearestExisting": [
-          "Flécheur",
+          "Archer",
           "Lame d'Honneur"
         ],
         "differenceExisting": "L’observation ne produit aucun bonus croissant ni engagement offensif exclusif envers la cible.",
@@ -9641,7 +9641,7 @@
         "coreDecision": "Sauver immédiatement le début du plan ou attendre sa réalisation complète au risque de perdre toute la coordination.",
         "evolutionGain": "Le Barde dépend de l’accord et de la préparation de la séquence annoncée ; Carillonneur choisit un résultat incomplet mais exploitable, au prix de détruire les actions de coordination situées après la rupture.",
         "nearestExisting": [
-          "Flécheur",
+          "Archer",
           "Conjurateur"
         ],
         "differenceExisting": "Il ne transforme pas un nombre d’actions en puissance d’attaque ou de soin ; il réduit la portée d’un plan collectif pour le résoudre plus tôt.",
@@ -10110,9 +10110,9 @@
         "evolutionGain": "Ajoute un choix tardif entre plusieurs empreintes concurrentes au Domaine Étoilé. L'annonce, la sortie avant explosion et les dégâts de zone indéfendables étaient déjà présents chez l'Arcaniste.",
         "nearestExisting": [
           "Arcaniste",
-          "Flécheur"
+          "Archer"
         ],
-        "differenceExisting": "Arcaniste choisit la zone de son Domaine ; Flécheur lance une salve ou investit ses actions dans la puissance d'une flèche. Astronome paie pour préparer des options spatiales dont une seule sera retenue et dont les autres sont perdues.",
+        "differenceExisting": "Arcaniste choisit la zone de son Domaine ; Archer lance une salve ou investit ses actions dans la puissance d'une flèche. Astronome paie pour préparer des options spatiales dont une seule sera retenue et dont les autres sont perdues.",
         "nearestNew": [
           "Prismancien",
           "Semeur de Cendres"
@@ -10142,9 +10142,9 @@
         "evolutionGain": "Ajoute une préparation géométrique matérielle au Rayon Étoilé, dont les défenses restent normales. La nouveauté est l'angle construit, pas un rayon plus puissant ou plus long à charger.",
         "nearestExisting": [
           "Arcaniste",
-          "Flécheur"
+          "Archer"
         ],
-        "differenceExisting": "Arcaniste émet directement un rayon précis ; Flécheur échange ses actions contre de la puissance. Prismancien investit ses actions dans un objet et deux segments de trajectoire, sans augmenter automatiquement les dégâts de l'émission.",
+        "differenceExisting": "Arcaniste émet directement un rayon précis ; Archer échange ses actions contre de la puissance. Prismancien investit ses actions dans un objet et deux segments de trajectoire, sans augmenter automatiquement les dégâts de l'émission.",
         "nearestNew": [
           "Ricocheteur",
           "Verrier",

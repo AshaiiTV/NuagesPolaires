@@ -7,7 +7,7 @@
   var VERSION = 1;
   var DEFAULT_GROWTH = {
     "Duelliste": [6, 6, 2], "Sauvageon": [5, 8, 1], "Croisé": [8, 3, 2],
-    "Rôdeur": [2, 5, 3], "Traqueur": [2, 7, 2], "Flécheur": [3, 5, 4],
+    "Rôdeur": [2, 5, 3], "Traqueur": [2, 7, 2], "Archer": [3, 5, 4],
     "Elementaliste": [4, 4, 4], "Evocateur": [2, 3, 6], "Conjurateur": [2, 2, 7],
     "Arcaniste": [1, 1, 8], "Bretteur": [5, 7, 3], "Claymore": [7, 4, 2],
     "Lame d'Honneur": [7, 5, 3],
@@ -89,9 +89,37 @@
   }
   function levelNumber(value) { return Math.max(1, Math.floor(finite(value, 1))); }
   function xpRequired(level) { return levelNumber(level) * 30; }
+  function normalizeSermentName(name) {
+    if (typeof name !== "string") return name;
+    var key = name.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    return key === "flecheur" || key === "archer" ? "Archer" : name;
+  }
+  function normalizeSermentDefinitions(definitions) {
+    if (!definitions || typeof definitions !== "object" || Array.isArray(definitions)) return {};
+    var out = {};
+    // Import old keys first. Explicit Archer fields take precedence while fields
+    // present only on an older staff definition remain available.
+    Object.keys(definitions).sort(function (a, b) {
+      return (a === "Archer" ? 1 : 0) - (b === "Archer" ? 1 : 0);
+    }).forEach(function (name) {
+      var key = normalizeSermentName(name), definition = definitions[name];
+      var isDefinition = definition && typeof definition === "object" && !Array.isArray(definition);
+      if (isDefinition && definition.evolvesFrom !== undefined) {
+        definition = Object.assign({}, definition, { evolvesFrom: normalizeSermentName(definition.evolvesFrom) });
+      }
+      var previous = Object.prototype.hasOwnProperty.call(out, key) ? out[key] : null;
+      if (isDefinition && previous && typeof previous === "object" && !Array.isArray(previous)) {
+        definition = Object.assign({}, previous, definition);
+      }
+      Object.defineProperty(out, key, { value: definition, enumerable: true, configurable: true, writable: true });
+    });
+    return out;
+  }
   function effectiveDefinition(classe, customDefinitions) {
+    classe = normalizeSermentName(classe);
     var growth = DEFAULT_GROWTH[classe] || [0, 0, 0];
-    var custom = customDefinitions && Object.prototype.hasOwnProperty.call(customDefinitions, classe) ? customDefinitions[classe] : null;
+    var definitions = normalizeSermentDefinitions(customDefinitions);
+    var custom = Object.prototype.hasOwnProperty.call(definitions, classe) ? definitions[classe] : null;
     return Object.assign({ pvN: growth[0], epN: growth[1], emN: growth[2] }, custom && typeof custom === "object" ? custom : {});
   }
   function legacyTrack(level, xp, threshold, scale) {
@@ -114,6 +142,11 @@
   }
   function normalizePlayer(player, definition) {
     var out = Object.assign({}, player && typeof player === "object" && !Array.isArray(player) ? player : {});
+    if (out.classe || out.class) out.classe = normalizeSermentName(out.classe || out.class);
+    if (Object.prototype.hasOwnProperty.call(out, "class")) out.class = normalizeSermentName(out.class);
+    if (out.sermentBranches && typeof out.sermentBranches === "object" && !Array.isArray(out.sermentBranches)) {
+      out.sermentBranches = normalizeSermentDefinitions(out.sermentBranches);
+    }
     var oldLevel = levelNumber(out.level);
     var alreadyUnified = finite(out.progressionVersion, 0) >= VERSION;
     var chosen = { level: oldLevel, fraction: 0 };
@@ -148,5 +181,5 @@
     delete out.sXpMax;
     return out;
   }
-  return { VERSION: VERSION, xpRequired: xpRequired, effectiveDefinition: effectiveDefinition, normalizePlayer: normalizePlayer };
+  return { VERSION: VERSION, xpRequired: xpRequired, normalizeSermentName: normalizeSermentName, normalizeSermentDefinitions: normalizeSermentDefinitions, effectiveDefinition: effectiveDefinition, normalizePlayer: normalizePlayer };
 });

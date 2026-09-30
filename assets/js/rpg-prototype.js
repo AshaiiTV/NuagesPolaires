@@ -20,7 +20,7 @@
   var items={potion:{name:"Potion chaude",type:"consumable",price:18,heal:26,desc:"Rend 26 PV."},baies:{name:"Baies polaires",type:"consumable",price:9,heal:12,desc:"Rend 12 PV."},acier:{name:"Lame d'acier froid",slot:"weapon",price:65,atk:5,def:0,desc:"+5 attaque."},manteau:{name:"Manteau de laine noire",slot:"armor",price:55,atk:0,def:4,desc:"+4 défense."},amulette:{name:"Amulette de souffle",slot:"trinket",price:80,atk:2,def:2,desc:"+2 attaque, +2 défense."},cristal:{name:"Cristal de nacre",slot:"trinket",price:120,atk:4,def:3,desc:"+4 attaque, +3 défense."}};
   var fakePlayers=[{name:"Maelia",loc:"camp",level:3,role:"Soigneuse"},{name:"Soren",loc:"ridge",level:4,role:"Éclaireur"},{name:"Ivara",loc:"market",level:2,role:"Marchande"},{name:"Noam",loc:"cave",level:5,role:"Traqueur"}];
   var starterSpawns=[{id:"camp",label:"Camp des Brumes",tag:"Refuge",bonus:"2 potions de départ"},{id:"market",label:"Marché d'Astragivre",tag:"Commerce",bonus:"+20 or de départ"},{id:"harbor",label:"Havre Blanc",tag:"Route maritime",bonus:"1 amulette à équiper"}];
-  var fallbackClasses=["Duelliste","Sauvageon","Croisé","Rôdeur","Traqueur","Flécheur","Elementaliste","Evocateur","Conjurateur","Arcaniste"];
+  var fallbackClasses=["Duelliste","Sauvageon","Croisé","Rôdeur","Traqueur","Archer","Elementaliste","Evocateur","Conjurateur","Arcaniste"];
   var legacyClassMap={duelliste:"Duelliste",veilleur:"Croisé",souffle:"Rôdeur","Souffle-Givre":"Rôdeur"};
 
   injectStyles();
@@ -51,7 +51,7 @@
   function pct(v,max){return max?Math.max(0,Math.min(100,Math.round((v/max)*100))):0;}
   function dangerHtml(n){var out='<span class="rpg-danger" title="Danger '+h(n)+'/4">';for(var i=1;i<=4;i++)out+='<i class="'+(i<=n?'on':'')+'"></i>';return out+'</span>';}
   function allSerments(){var all={};try{if(typeof getAllSD==="function")all=getAllSD()||{};}catch(e){}if(!Object.keys(all).length){try{if(window.SD)all=window.SD;}catch(e){}}return all||{};}
-  function normalizeClass(name){var all=allSerments();if(legacyClassMap[name])return legacyClassMap[name];if(all[name])return name;var found=Object.keys(all).find(function(k){return k.toLowerCase()===String(name||"").toLowerCase();});return found||"Duelliste";}
+  function normalizeClass(name){if(window.NPProgression&&window.NPProgression.normalizeSermentName)name=window.NPProgression.normalizeSermentName(name);var all=allSerments();if(legacyClassMap[name])return legacyClassMap[name];if(all[name])return name;var found=Object.keys(all).find(function(k){return k.toLowerCase()===String(name||"").toLowerCase();});return found||"Duelliste";}
   function classDef(name){var all=allSerments();return all[normalizeClass(name)]||all.Duelliste||{arme:"Arme du serment",pvN:6,epN:6,emN:2,dmg:11,type:"Tranchant"};}
   function starterClasses(){var all=allSerments();var names=Object.keys(all).filter(function(name){return all[name]&&all[name].arme&&(typeof isStarterSerment==='function'?isStarterSerment(name,all[name]):!all[name].hidden&&!all[name].evolvesFrom&&(!all[name].extension||all[name].sermLevel==="basic"));});if(!names.length)names=fallbackClasses.slice();return names.filter(function(name){return !!classDef(name);});}
   function maxPvFor(s){var d=classDef(s.oath);return 30+Math.max(0,s.level-1)*(d.pvN||0);} function maxEpFor(s){var d=classDef(s.oath);return 50+Math.max(0,s.level-1)*(d.epN||0);} function maxEmFor(s){var d=classDef(s.oath);return 20+Math.max(0,s.level-1)*(d.emN||0);}

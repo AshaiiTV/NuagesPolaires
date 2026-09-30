@@ -11,7 +11,7 @@ const clone=value=>JSON.parse(JSON.stringify(value));
 const start=main.indexOf('var SD='),end=main.indexOf('\n};',start);
 assert.ok(start>=0&&end>start,'Historical catalogue can be loaded without starting the app');
 const native=clone(vm.runInNewContext(main.slice(start,end+3)+';SD'));
-const names=['Duelliste','Sauvageon','Croisé','Rôdeur','Traqueur','Flécheur','Elementaliste','Evocateur','Conjurateur','Arcaniste'];
+const names=['Duelliste','Sauvageon','Croisé','Rôdeur','Traqueur','Archer','Elementaliste','Evocateur','Conjurateur','Arcaniste'];
 const levels=[1,2,4,5,7,10,11,20,35];
 const rawBranch=(name,index)=>native[name][index?'bB':'bA'];
 function normalized(name,index,branch=rawBranch(name,index)){
@@ -53,7 +53,7 @@ const expected={
   [{id:'drain',em:5,at:n=>({value:3*n,epDrain:4+2*n})}],
   [{id:'reach',em:5,at:n=>({value:3*n})},{id:'push',em:5,at:n=>({value:6+3*n,repulse:true})}]
  ],
- 'Flécheur':[
+ 'Archer':[
   [{id:'volley',em:6,at:n=>({value:5+2*n,aoe:true,aoeIncludesAllies:true})}],
   [{id:'judge1',em:8,actions:1,at:n=>({value:3+3*n,actsSacr:0,noOverclock:true})},{id:'judge2',em:8,actions:2,at:n=>({value:10+3*n,actsSacr:1,noOverclock:true})},{id:'judge3',em:8,actions:3,at:n=>({value:16+3*n,actsSacr:2,noOverclock:true})}]
  ],
@@ -103,14 +103,14 @@ test('ten public historical oaths have twenty complete stable linear abilities w
 });
 
 test('one-, two- and three-action options obey the remaining budget, including zero',()=>{
-  for(const name of ['Flécheur','Conjurateur']){
+  for(const name of ['Archer','Conjurateur']){
     const ability=normalized(name,1).ability;
     for(const level of levels)for(const remaining of [0,1,2,3]){
       const options=linear.combatOptions(ability,level,remaining);
       assert.deepEqual(options.map(op=>op.consumeActions),[1,2,3].filter(n=>n<=remaining));
       assert.deepEqual(options.map(op=>op.actsSacr),[0,1,2].filter(n=>n<remaining));
       assert.ok(options.every(op=>op.noOverclock===true));
-      assert.ok(options.every(op=>op.emCost===(name==='Flécheur'?8:12)),'Taking longer never discounts the resource cost');
+      assert.ok(options.every(op=>op.emCost===(name==='Archer'?8:12)),'Taking longer never discounts the resource cost');
     }
   }
   assert.equal(linear.combatOptions(normalized('Duelliste',0).ability,20,0).length,0);

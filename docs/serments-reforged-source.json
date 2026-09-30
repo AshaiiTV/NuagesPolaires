@@ -13,7 +13,7 @@
       "weaponDescription": "Une arbalète à étrier, au fût sombre et à l’arc d’acier. Sous la paume, le bois présente un creux lisse ; plus loin, une aspérité accroche encore la manche. La corde, la noix et le rail du carreau restent visibles. À chaque armement, le déclic ramène l’attention du porteur à ce qui repose devant sa détente.",
       "decision": "Dépenser maintenant un carreau sur une cible disponible, ou préserver le chargement en acceptant que l’échange puisse se déplacer ailleurs.",
       "counterplay": "Mettre à profit le rechargement. Face au cran surarmé, obliger le tireur à employer une défense lui fait perdre la surtension ; son carreau reste chargé et son tir demeure défendable.",
-      "distinction": "L’Arbalétrier gère un état chargé ou vide et six carreaux par combat. Il ne concentre pas toutes ses actions en une salve comme le Flécheur et ne gagne aucun bonus simplement en attendant.",
+      "distinction": "L’Arbalétrier gère un état chargé ou vide et six carreaux par combat. Il ne concentre pas toutes ses actions en une salve comme l’Archer et ne gagne aucun bonus simplement en attendant.",
       "id": "proposal-arbaletrier",
       "kind": "base",
       "parent": null,
