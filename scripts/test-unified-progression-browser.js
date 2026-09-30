@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright');
 const { createLocalApp } = require('./helpers/local-app');
+const { assertOperationCards, ruleAtLevel } = require('./helpers/serment-operation-assertions');
 
 // Exercise real browser controls, production handlers and isolated PostgreSQL.
 // The only fabricated API response is the intentional save-failure scenario.
@@ -95,29 +96,60 @@ const { createLocalApp } = require('./helpers/local-app');
       await page.locator(selector).click();
       return response;
     }
-    async function assertPalier(niv, unlocked) {
+    async function assertLinearAbility(level) {
       await openProfile();
       const chosen = page.locator('#p-serm-c .np-sheet-branch.is-chosen');
-      assert.equal(await chosen.locator('.serm-mini-step.is-unlocked').count(), unlocked);
-      assert.equal(await chosen.locator('.serm-mini-step.is-current .serm-mini-level').textContent(), 'Niv. ' + niv);
+      assert.equal(await page.locator('#p-serm-c .serm-mini-step').count(), 0, 'La fiche ne propose plus de rail de paliers.');
       const combat = await page.evaluate(() => {
         const previous = _cs;
         try {
           _cs = { fighters: [{ pid: 'p_alice', level: gpid('p_alice').level }] };
           const serment = cGetFighterSerment(0);
-          return { level: serment.level, palier: serment.palier.niv, paliers: serment.paliers.map(palier => palier.niv) };
+          return { level: serment.level, ability: serment.branch.ability, palier: serment.palier, paliers: serment.paliers, options: cGetAbilityOptions(0, 3) };
         } finally { _cs = previous; }
       });
-      assert.equal(combat.level, (await alice()).level);
-      assert.equal(combat.palier, niv, 'Le combat doit sélectionner le palier du niveau commun.');
-      assert.deepEqual(combat.paliers, [niv], 'Une même capacité conserve sa version débloquée la plus récente.');
+      assert.equal(combat.level, level, 'Le combat utilise le niveau commun réel.');
+      assert.deepEqual(combat.palier, combat.ability);
+      assert.deepEqual(combat.paliers, [combat.ability], 'La compatibilité du combat expose une seule capacité stable.');
+      await assertOperationCards(chosen.locator('.serm-palier-focus'), combat.ability, level);
+      assert.deepEqual(combat.options.map(option => option.value), [2 + 3 * level, 6 + 3 * level], 'Les deux frappes du Duelliste A gagnent exactement 3 dégâts à chaque niveau.');
+      assert.deepEqual(combat.options.map(option => option.descText), combat.ability.combatRules.operations.map(operation => ruleAtLevel(operation, level)));
+    }
+
+    async function assertNativeLinearCombat() {
+      const before = await alice();
+      const matrix = await page.evaluate(() => {
+        const previous = _cs, previousLookup = window.gpid, rows = [];
+        let fixture;
+        try {
+          window.gpid = id => id === 'qa-native-linear' ? fixture : previousLookup(id);
+          _cs = { fighters: [{ pid: 'qa-native-linear', level: 1, type: 'player' }] };
+          const branches = getBranches('Duelliste', getAllSD().Duelliste);
+          branches.forEach((branch, index) => [1, 2, 5, 7, 10, 35].forEach(level => {
+            fixture = { id: 'qa-native-linear', classe: 'Duelliste', branch: branch.nom, level };
+            const serment = cGetFighterSerment(0);
+            rows.push({ index, level, count: serment.paliers.length, ability: serment.palier, options: cGetAbilityOptions(0, 3) });
+          }));
+        } finally { _cs = previous; window.gpid = previousLookup; }
+        return rows;
+      });
+      assert.equal(matrix.length, 12);
+      for (const row of matrix) {
+        assert.equal(row.count, 1, 'La capacité native est accessible dès le niveau 1.');
+        assert.deepEqual(row.options.map(option => option.value), row.index ? [3 + 2 * row.level] : [2 + 3 * row.level, 6 + 3 * row.level]);
+        assert.deepEqual(row.options.map(option => option.descText), row.ability.combatRules.operations.map(operation => ruleAtLevel(operation, row.level)));
+        assert.ok(row.options.every(option => option.consumeActions === 1 && option.epCost === 0 && option.emCost === (row.index ? 5 : 6)), 'Les coûts ne changent pas avec le niveau.');
+        if (row.index) assert.equal(row.options[0].hits, 2, 'Les deux frappes de la voie B restent distinctes.');
+      }
+      assert.deepEqual(await alice(), before, 'La vérification des niveaux ne modifie pas le personnage.');
     }
 
     await page.goto(app.origin, { waitUntil: 'load' });
     await page.waitForFunction(() => typeof window.loginUnified === 'function');
     await login('Alice');
     assertUnified(await alice(), { level: 4, xp: 105, xpMax: 120 });
-    await assertPalier(2, 1);
+    await assertLinearAbility(4);
+    await assertNativeLinearCombat();
     assert.equal(await page.locator('#xp-b').count(), 1);
     assert.equal(await page.locator('#sxp-b, #p-sniv').count(), 0);
     assert.match(await page.locator('#xp-v').textContent(), /105\s*\/\s*120/);
@@ -128,7 +160,7 @@ const { createLocalApp } = require('./helpers/local-app');
     for (const stat of ['pvMax', 'pvCur', 'epMax', 'epCur', 'emMax', 'emCur']) {
       assert.equal((await alice())[stat], migrated[stat], 'La migration ne doit pas appliquer deux fois les gains de ' + stat + '.');
     }
-    observations.push('Ancienne fiche migrée vers le niveau le plus avancé et sa fraction d’XP ; une seule barre, paliers fiche/combat cohérents et aucun second gain au rechargement.');
+    observations.push('Ancienne fiche migrée vers le niveau le plus avancé et sa fraction d’XP ; une seule barre, capacités fiche/combat calculées au niveau réel et aucun second gain au rechargement.');
 
     await page.addScriptTag({ url: app.origin + '/assets/vendor/jspdf/jspdf.umd.min.js' });
     await page.evaluate(() => {
@@ -149,7 +181,10 @@ const { createLocalApp } = require('./helpers/local-app');
     const download = await downloadPromise;
     await download.saveAs(path.join(output, 'Fiche_Alice.pdf'));
     const pdfText = await page.evaluate(() => __progressionPdfText);
-    assert.doesNotMatch(pdfText.join('\n'), /XP Serment|XP Personnage|SERMENT NIV\./i);
+    assert.doesNotMatch(pdfText.join('\n'), /XP Serment|XP Personnage|SERMENT NIV\.|palier (?:actif|de niveau)|débloqu(?:é|er) au niveau/i);
+    const activeAbility = await page.evaluate(() => getPlayerSermentBundle(gpid('p_alice')).branch.ability);
+    assert.ok(pdfText.includes('Capacité active : ' + activeAbility.nom + ' — ' + activeAbility.cout), 'Le PDF synthétique nomme la capacité fixe et son coût.');
+    assert.ok(pdfText.includes('Progression continue'));
     assert.equal(pdfText.filter(text => /105\s*\/\s*120\s*XP/.test(text)).length, 1);
     assert.ok(fs.statSync(path.join(output, 'Fiche_Alice.pdf')).size > 1000);
     observations.push('Vrai PDF téléchargé avec une seule progression 105/120 XP et aucun niveau ou compteur XP Serment.');
@@ -174,9 +209,9 @@ const { createLocalApp } = require('./helpers/local-app');
       assert.equal((await storedAlice())[stat], migrated[stat] + increase, 'La gemme doit donner le gain de statistique commun : ' + stat);
     }
     await page.locator('#m-prog .mclose').click();
-    await assertPalier(5, 2);
+    await assertLinearAbility(5);
     await page.screenshot({ path: path.join(output, 'fiche-progression-unifiee.png'), fullPage: true, animations: 'disabled' });
-    observations.push('Combat +10 XP et gemme +5 XP alimentent le même compteur : niveau 5, statistiques augmentées, palier 5 actif et une gemme consommée.');
+    observations.push('Combat +10 XP et gemme +5 XP alimentent le même compteur : niveau 5, statistiques augmentées, dégâts de capacité augmentés de 3 et une gemme consommée.');
 
     await page.evaluate(() => openProgPanel('p_alice'));
     await page.locator('#gbtn-b').click();

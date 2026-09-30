@@ -3548,13 +3548,13 @@ function _buildStaffModals(){
   +'<div id="m-palier" class="moverlay">'
   +'<div class="modal" style="max-width:440px;">'
   +'<button class="mclose" onclick="closeModal(\'m-palier\')">✕</button>'
-  +'<div class="mtit" id="mpal-title">Palier</div>'
-  +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
-    +'<div class="frow"><label class="flbl">Niveau requis</label><select id="mpal-niv"><option value="2">2</option><option value="5">5</option><option value="7">7</option><option value="10">10</option></select></div>'
+  +'<div class="mtit" id="mpal-title">Capacité</div>'
+  +'<div>'
+    +'<input type="hidden" id="mpal-niv" value="1">'
     +'<div class="frow"><label class="flbl">Nom de la capacité</label><input type="text" id="mpal-nom" placeholder="Nom..."></div>'
   +'</div>'
   +'<div class="frow"><label class="flbl">Coût / conditions</label><input type="text" id="mpal-cout" placeholder="6 EM — 1 action"></div>'
-  +'<div class="frow"><label class="flbl">Description</label><textarea id="mpal-desc" style="min-height:72px;" placeholder="Description mécanique..."></textarea></div>'
+  +'<div class="frow"><label class="flbl">Effets et formules — N désigne le niveau</label><textarea id="mpal-desc" style="min-height:150px;" placeholder="Exemple : 8 + 2 × N dégâts. Une action, mêmes conditions à chaque niveau."></textarea></div>'
   +'<div class="factions">'
     +'<button class="btn btn-sm" onclick="closeModal(\'m-palier\')"><span>Annuler</span></button>'
     +'<button class="btn btn-sm btn-grn" onclick="savePalier()"><span>Enregistrer</span></button>'
@@ -3565,11 +3565,11 @@ function _buildStaffModals(){
   +'<div id="m-palier-list" class="moverlay">'
   +'<div class="modal" style="max-width:760px;">'
   +'<button class="mclose" onclick="closeModal(\'m-palier-list\')">✕</button>'
-  +'<div class="mtit" id="mpallist-title">Gérer les paliers</div>'
+  +'<div class="mtit" id="mpallist-title">Capacités</div>'
   +'<div id="mpallist-c"></div>'
   +'<div class="factions">'
     +'<button class="btn btn-sm" onclick="closeModal(\'m-palier-list\')"><span>Fermer</span></button>'
-    +'<button class="btn btn-sm btn-grn" id="mpallist-add" onclick=""><span>+ Ajouter un palier</span></button>'
+    +'<button class="btn btn-sm btn-grn" id="mpallist-add" onclick=""><span>+ Ajouter une capacité</span></button>'
   +'</div>'
   +'</div></div>'
 
@@ -6132,23 +6132,36 @@ function getSermEmblem(nom,size){
   if(typeof npSermentEmblem==='function') return npSermentEmblem(nom,size||32);
   return esc((getAllSD()[nom]||{}).icon||WEAPON_ICONS[nom]||'✦');
 }
+function formatSermentText(text,level){
+  var n=Math.max(1,Number(level)||1);
+  return String(text||'').replace(/\((-?\d+(?:\.\d+)?)\s*\+\s*(?:(\d+(?:\.\d+)?)\s*[×*]\s*)?N\)/g,function(_,base,gain){return String(Number(base)+(gain==null?1:Number(gain))*n);})
+    .replace(/(-?\d+)\s*\+\s*(?:(\d+)\s*[×*]\s*)?N(?:iv)?\b(?:\s*[×*]\s*(\d+))?/gi,function(_,base,gain,mult){return String(Number(base)+(gain==null?1:Number(gain))*n*(mult==null?1:Number(mult)));})
+    .replace(/\b(\d+)\s*[×*]\s*N\b/g,function(_,gain){return String(Number(gain)*n);});
+}
+function getSermentOperationText(operation,level){
+  if(Array.isArray(operation&&operation.ruleParts))return operation.ruleParts.map(function(part){
+    if(typeof part==='string')return part;
+    var value=(Number(part.base)+Number(part.perLevel||0)*Math.max(1,Number(level)||1))/(Number(part.divisor)||1);
+    return String(part.round==='ceil'?Math.ceil(value):part.round==='floor'?Math.floor(value):value);
+  }).join('');
+  return formatSermentText(operation&&(operation.ruleFormula||operation.rule),level);
+}
 function getSermentTierOperations(tier){
   var rules=tier&&tier.combatRules;
   // An explicit staff edit remains authoritative over the generated operation list.
   if(!rules||tier.desc!==rules.effect||!Array.isArray(rules.operations))return [];
-  var cost=rules.cost||{},costs=[(cost.actions||1)+' action'+(cost.actions>1?'s':'')];
+  var cost=rules.cost||{},costs=[(cost.actions==null?1:cost.actions)+' action'+(cost.actions>1?'s':'')];
   if(cost.ep)costs.push(cost.ep+' EP');if(cost.em)costs.push(cost.em+' EM');if(cost.pv)costs.push(cost.pv+' PV');
   return tier.cout!=null&&tier.cout!==costs.join(' / ')?[]:rules.operations;
 }
 function renderSermentOperations(tier,level){
   var operations=getSermentTierOperations(tier);
-  if(!operations.length) return '<p>'+esc(tier&&tier.desc||'Effet à définir.')+'</p>';
+  if(!operations.length) return '<p>'+esc(formatSermentText(tier&&tier.desc||'Effet à définir.',level))+'</p>';
   var actual=Math.max(Number(tier.niv)||1,Number(level)||1);
   return '<div class="np-oath-operations">'+operations.map(function(op){
-    var cost=op.cost||{},costs=[(cost.actions||1)+' action'+(cost.actions>1?'s':'')];
+    var cost=op.cost||{},costs=[(cost.actions==null?1:cost.actions)+' action'+(cost.actions>1?'s':'')];
     if(cost.ep) costs.push(cost.ep+' EP');if(cost.em) costs.push(cost.em+' EM');if(cost.pv) costs.push(cost.pv+' PV');
-    var rule=String(op.rule||'').replace(/\((-?\d+) \+ N\)/g,function(_,base){return String(Number(base)+actual);});
-    rule=rule.replace(/^\d+ actions?(?:\s*(?:,|et|\/)\s*\d+\s*(?:EP|EM|PV))*/, '').replace(/^[.,;]\s*/, '').trim().replace(/^et\s+/, 'Consomme ');
+    var rule=getSermentOperationText(op,actual).replace(/^\d+ actions?(?:\s*(?:,|et|\/)\s*\d+\s*(?:EP|EM|PV))*\.\s*/, '').trim();
     return '<article class="np-oath-operation"><div><strong>'+esc(op.label)+'</strong><span>'+esc(costs.join(' · '))+'</span></div><p>'+esc(rule)+'</p></article>';
   }).join('')+'</div>';
 }
@@ -6167,12 +6180,11 @@ function getSermLorePreview(text){
   if(clean.length<=260) return clean;
   return clean.slice(0,257).replace(/\s+\S*$/,"")+"...";
 }
-function getPalierStageLabel(level,idx,total){
-  if(idx===0) return "Débloqué";
-  if(total&&idx===total-1) return "Parachevé";
-  if(idx===1) return "Renforcé";
-  if(idx===2) return "Maîtrisé";
-  return "Palier "+(idx+1);
+function getSermentAbilityAtLevel(branch,level){
+  if(branch&&branch.ability)return branch.ability;
+  // Retired definitions keep their historical rules for existing characters.
+  var eligible=(branch&&branch.paliers||[]).filter(function(ability){return (ability.niv||1)<=(level||1);});
+  return eligible.sort(function(a,b){return (b.niv||1)-(a.niv||1);})[0]||null;
 }
 
 function renderAllSerments(tid){
@@ -6311,7 +6323,7 @@ function renderSermentsAdminPage(tid){
   html+='<div class="serm-admin-hero-mark">⚜</div>';
   html+='<div class="serm-admin-hero-copy">';
   html+='<div class="serm-admin-kicker">Atelier admin</div>';
-  html+='<div class="serm-admin-title">Serments, branches & paliers</div>';
+  html+='<div class="serm-admin-title">Serments, voies & capacités</div>';
   html+='<p>Forge de conception réservée aux administrateurs. Ici se préparent les voies, les évolutions et les équilibres avant leur apparition dans la vitrine publique.</p>';
   html+='</div>';
   html+='<div class="serm-admin-hero-actions">';
@@ -6326,7 +6338,7 @@ function renderSermentsAdminPage(tid){
   html+='<div class="serm-admin-metric"><span>Custom</span><strong>'+custom+'</strong><em>éditions locales</em></div>';
   html+='</div>';
   html+='<div class="serm-admin-tools">';
-  html+='<div><span>Lecture rapide</span><strong>Ouvre un serment pour modifier ses branches et ses paliers.</strong></div>';
+  html+='<div><span>Lecture rapide</span><strong>Ouvre un serment pour modifier ses voies et leurs capacités.</strong></div>';
   html+='<div><span>État masqué</span><strong>'+hidden+' serment'+(hidden>1?'s':'')+' invisible'+(hidden>1?'s':'')+' côté joueur.</strong></div>';
   html+='</div>';
   html+='<section class="serm-admin-family-menu">';
@@ -6388,7 +6400,7 @@ function renderSermentsAdminPage(tid){
     html+='<summary>';
     html+='<span class="serm-admin-glyph">'+getSermEmblem(nom,36)+'</span>';
     html+='<span class="serm-admin-row-main"><strong>'+esc(nom)+'</strong><em>'+esc(s.arme||"Arme non définie")+'</em>'+renderSermLineage(nom,s,true)+'</span>';
-    html+='<span class="serm-admin-row-meta"><b class="rank '+escAttr(getSermLevelClass(nom,s))+'">'+esc(level)+'</b>'+(getSermEvolutionFrom(nom,s)?'<b class="evolution">Évolution</b>':'')+'<b>'+esc(cat)+'</b><b>'+branches.length+' branche'+(branches.length>1?'s':'')+'</b><b>'+palierCount+' palier'+(palierCount>1?'s':'')+'</b>'+(s.hidden?'<b class="muted">Masqué</b>':'')+'</span>';
+    html+='<span class="serm-admin-row-meta"><b class="rank '+escAttr(getSermLevelClass(nom,s))+'">'+esc(level)+'</b>'+(getSermEvolutionFrom(nom,s)?'<b class="evolution">Évolution</b>':'')+'<b>'+esc(cat)+'</b><b>'+branches.length+' branche'+(branches.length>1?'s':'')+'</b><b>'+palierCount+' capacité'+(palierCount>1?'s':'')+'</b>'+(s.hidden?'<b class="muted">Masqué</b>':'')+'</span>';
     html+='</summary>';
     html+='<div class="serm-admin-row-body">';
     html+='<div class="serm-admin-lore">'+esc(getSermLorePreview(s.lore||"Aucun lore."))+'</div>';
@@ -6403,11 +6415,11 @@ function renderSermentsAdminPage(tid){
       branches.forEach(function(br,idx){
         var pals=br.paliers||[];
         html+='<article class="serm-admin-branch">';
-        html+='<div class="serm-admin-branch-head"><div><strong>'+esc(br.nom||"Branche")+'</strong><span>'+esc(br.style||"Style non défini")+'</span></div><b>'+pals.length+' palier'+(pals.length>1?'s':'')+'</b></div>';
+        html+='<div class="serm-admin-branch-head"><div><strong>'+esc(br.nom||"Branche")+'</strong><span>'+esc(br.style||"Style non défini")+'</span></div><b>'+pals.length+' capacité'+(pals.length>1?'s':'')+'</b></div>';
         if(br.desc) html+='<p>'+esc(getSermLorePreview(br.desc))+'</p>';
         html+='<div class="serm-admin-row-actions">';
         html+='<button class="btn btn-sm" onclick="openEditBranch(\''+jsesc(enc)+'\','+idx+')"><span>Modifier</span></button>';
-        html+='<button class="btn btn-sm" onclick="openManagePaliers(\''+jsesc(enc)+'\','+idx+')"><span>Paliers</span></button>';
+        html+='<button class="btn btn-sm" onclick="openManagePaliers(\''+jsesc(enc)+'\','+idx+')"><span>Capacité</span></button>';
         html+='<button class="btn btn-sm btn-red" onclick="delBranch(\''+jsesc(enc)+'\','+idx+')"><span>Supprimer</span></button>';
         html+='</div>';
         html+='</article>';
@@ -6581,31 +6593,10 @@ function renderSermCard(nom,s){
       // Description narrative joueur
       if(br.desc&&(!br.combatRules||s.reforged)) h+='<p class="serm-branch-desc" style="border-left-color:'+col+';">'+esc(br.desc)+'</p>';
       h+=renderSermentRules(br);
-      // Paliers : information secondaire, regroupée et repliable.
-      if(pals.length){
-        var palierGroups=[],palierMap={};
-        pals.forEach(function(pal,pi){
-          var key=JSON.stringify([String(pal.nom||""),String(pal.cout||""),String(pal.desc||"")]);
-          if(!palierMap[key]){
-            palierMap[key]={nom:pal.nom||"Palier",cout:pal.cout||"",desc:pal.desc||"",items:[]};
-            palierGroups.push(palierMap[key]);
-          }
-          if(pal.desc&&!palierMap[key].desc) palierMap[key].desc=pal.desc;
-          palierMap[key].items.push({niv:pal.niv,idx:pi});
-        });
-        h+='<details class="serm-branch-progress">';
-        h+='<summary><span>Montée en puissance</span><strong>'+pals.length+' étape'+(pals.length>1?'s':'')+'</strong></summary>';
-        h+='<div class="serm-palier-rail">';
-        palierGroups.forEach(function(group,gi){
-          var levels=group.items.map(function(it){return it.niv;}).join(" / ");
-          h+='<span class="serm-palier-chip">';
-          h+='<b>'+esc(getPalierStageLabel(group.items[0]&&group.items[0].niv,gi,palierGroups.length))+' · Niv. '+esc(levels)+'</b><em>'+esc(group.nom)+'</em>';
-          if(group.cout) h+='<small>'+esc(group.cout)+'</small>';
-          if(group.desc) h+='<span class="serm-palier-description">'+esc(group.desc)+'</span>';
-          h+='</span>';
-        });
-        h+='</div>';
-        h+='</details>';
+      var ability=br.ability||pals[0];
+      if(ability){
+        h+='<div class="serm-palier-focus"><strong>'+esc(ability.nom)+'</strong><p>N désigne le niveau du personnage. Les valeurs augmentent à chaque niveau.</p>';
+        h+='<p>'+esc(ability.desc)+'</p></div>';
       }
       h+='</details>';
     });
@@ -6662,14 +6653,17 @@ function applySermentFilters(){
   var empty=ge('serment-no-results');if(empty) empty.hidden=count>0;
 }
 
-function getBranches(nom,s){
-  var custom=gsd();
+function getRawSermentBranches(nom,s){
+  s=s||{};var custom=gsd();
   if(custom[nom]&&custom[nom].branches&&custom[nom].branches.length) return custom[nom].branches;
   if(s.branches&&s.branches.length) return s.branches;
-  var arr=[];
-  if(s.bA) arr.push(s.bA);
-  if(s.bB) arr.push(s.bB);
-  return arr;
+  return [s.bA,s.bB].filter(Boolean);
+}
+function getBranches(nom,s){
+  var branches=getRawSermentBranches(nom,s);
+  if(!window.NPSermentsLinear)return branches;
+  var native=SD[nom],reference=native?[native.bA,native.bB].filter(Boolean):[];
+  return branches.map(function(branch,index){return NPSermentsLinear.normalizeBranch(nom,branch,index,s,reference[index]);});
 }
 function normalizeBranchLabel(label){
   return String(label||"")
@@ -6904,71 +6898,35 @@ async function delBranch(nomEnc,idx){
 
 var _palierSermNom=null,_palierBrIdx=-1;
 function openManagePaliers(nomEnc,brIdx){
-  if(!CU||!can("manage_beasts")){ return; }
-  if(!can("manage_stats")){notif("Admin uniquement.","err");return;}
-  var nom=decodeURIComponent(nomEnc);
-  var all=getAllSD(); var s=all[nom];
-  var branches=getBranches(nom,s);
-  var br=branches[brIdx]; if(!br){notif("Branche introuvable.","err");return;}
-  var pals=(br.paliers||[]).slice().sort(function(a,b){return (a.niv||0)-(b.niv||0);});
-  var c=ge("mpallist-c"); if(!c) return;
-  ge("mpallist-title").textContent="Paliers — "+br.nom;
-  var h='<div class="serm-admin-palier-list">';
-  if(!pals.length){
-    h+='<p style="color:var(--dim);line-height:1.7;margin:0;">Aucun palier défini pour cette branche.</p>';
-  } else {
-    pals.forEach(function(pal){
-      var originalIdx=(br.paliers||[]).indexOf(pal);
-      h+='<div class="serm-admin-palier-row">';
-      h+='<div class="serm-admin-palier-main">';
-      h+='<span class="serm-admin-palier-level">Niv. '+esc(pal.niv||"")+'</span>';
-      h+='<strong>'+esc(pal.nom||"Palier")+'</strong>';
-      if(pal.cout) h+='<em>'+esc(pal.cout)+'</em>';
-      if(pal.desc) h+='<p>'+esc(pal.desc)+'</p>';
-      h+='</div>';
-      h+='<div class="serm-admin-palier-row-actions">';
-      h+='<button class="btn btn-sm btn-gold" onclick="closeModal(\'m-palier-list\');openEditPalier(this.dataset.n,'+brIdx+','+originalIdx+')" data-n="'+nomEnc+'"><span>Modifier</span></button>';
-      h+='<button class="btn btn-sm btn-red" onclick="closeModal(\'m-palier-list\');delPalier(this.dataset.n,'+brIdx+','+originalIdx+')" data-n="'+nomEnc+'"><span>Supprimer</span></button>';
-      h+='</div>';
-      h+='</div>';
-    });
-  }
-  h+='</div>';
-  c.innerHTML=h;
-  var add=ge("mpallist-add");
-  if(add){
-    add.setAttribute("onclick","closeModal('m-palier-list');openAddPalier(this.dataset.n,"+brIdx+")");
-    add.setAttribute("data-n",nomEnc);
-  }
-  openModal("m-palier-list");
+  if(!CU||!can("manage_beasts")||!can("manage_stats"))return;
+  var name=decodeURIComponent(nomEnc),branch=getBranches(name,getAllSD()[name])[brIdx];
+  if(!branch)return;
+  if(branch.ability||(branch.paliers||[]).length)return openEditPalier(nomEnc,brIdx,0);
+  return openAddPalier(nomEnc,brIdx);
 }
+
 function openAddPalier(nomEnc,brIdx){
   if(!CU||!can("manage_beasts")){ return; }
   if(!can("manage_stats")){notif("Admin uniquement.","err");return;}
   _palierSermNom=decodeURIComponent(nomEnc); _palierBrIdx=brIdx; _palierIdx=-1;
-  ge("mpal-title").textContent="Nouveau palier";
-  ge("mpal-niv").value="2"; ge("mpal-nom").value=""; ge("mpal-cout").value=""; ge("mpal-desc").value="";
+  ge("mpal-title").textContent="Nouvelle capacité";
+  ge("mpal-niv").value="1"; ge("mpal-nom").value=""; ge("mpal-cout").value=""; ge("mpal-desc").value="";
   openModal("m-palier");
 }
 async function savePalier(){
   if(!CU||!can("manage_beasts")){ return; }
-  var niv=parseInt(ge("mpal-niv").value)||2;
+  var niv=1;
   var nom2=ge("mpal-nom").value.trim(); var cout=ge("mpal-cout").value.trim(); var desc=ge("mpal-desc").value.trim();
-  if(!nom2){notif("Nom du palier obligatoire.","err");return;}
+  if(!nom2){notif("Nom de la capacité obligatoire.","err");return;}
   var custom=gsd(); var all=getAllSD(); var s=all[_palierSermNom];
   var branches=getBranches(_palierSermNom,s).map(function(b){return Object.assign({},b,{paliers:(b.paliers||[]).slice()});});
   var br=branches[_palierBrIdx]; if(!br){notif("Branche introuvable.","err");return;}
-  if(_palierIdx>=0){
-    // Edition d'un palier existant
-    br.paliers[_palierIdx]=Object.assign({},br.paliers[_palierIdx],{niv:niv,nom:nom2,cout:cout,desc:desc});
-  } else {
-    // Nouveau palier
-    br.paliers.push({niv:niv,nom:nom2,cout:cout,desc:desc});
-  }
-  br.paliers.sort(function(a,b){return a.niv-b.niv;});
+  niv=s.evolvesFrom?Math.min(Math.max(1,Number(s.minLevel)||10),Math.max(1,Number((br.ability||br.paliers[0]||{}).niv)||10)):1;
+  br.ability=Object.assign({},br.ability||br.paliers[0]||{},{niv:niv,nom:nom2,cout:cout,desc:desc,progression:'linear'});
+  br.paliers=[br.ability];br.progression='linear';
   if(!custom[_palierSermNom]) custom[_palierSermNom]=Object.assign({},s,{branches:branches}); else custom[_palierSermNom].branches=branches;
   if(!await _confirmDbSave(ssd(custom))) return false; closeModal("m-palier");
-  _refreshSermentViews(); notif(_palierIdx>=0?"Palier modifié.":"Palier ajouté.","ok");
+  _refreshSermentViews(); notif("Capacité enregistrée.","ok");
 }
 
 var _palierIdx=-1;
@@ -6980,8 +6938,8 @@ function openEditPalier(nomEnc,brIdx,palIdx){
   var branches=getBranches(_palierSermNom,s);
   var br=branches[brIdx]; if(!br) return;
   var p=br.paliers[palIdx]; if(!p) return;
-  ge("mpal-title").textContent="Modifier palier — "+br.nom;
-  ge("mpal-niv").value=p.niv||2;
+  ge("mpal-title").textContent="Modifier la capacité — "+br.nom;
+  ge("mpal-niv").value=p.niv||1;
   ge("mpal-nom").value=p.nom||"";
   ge("mpal-cout").value=p.cout||"";
   ge("mpal-desc").value=p.desc||"";
@@ -6990,14 +6948,14 @@ function openEditPalier(nomEnc,brIdx,palIdx){
 
 async function delPalier(nomEnc,brIdx,palIdx){
   if(!CU||!can("manage_beasts")){ return; }
-  if(!confirm("Supprimer ce palier ?")) return;
+  if(!confirm("Supprimer cette capacité ?")) return;
   var nom=decodeURIComponent(nomEnc);
   var custom=gsd(); var all=getAllSD(); var s=all[nom];
   var branches=getBranches(nom,s).map(function(b){return Object.assign({},b,{paliers:(b.paliers||[]).slice()});});
   var br=branches[brIdx]; if(!br) return;
-  br.paliers.splice(palIdx,1);
+  br.paliers=[];delete br.ability;
   if(!custom[nom]) custom[nom]=Object.assign({},s,{branches:branches}); else custom[nom].branches=branches;
-  if(!await _confirmDbSave(ssd(custom))) return false; _refreshSermentViews(); notif("Palier supprimé.","inf");
+  if(!await _confirmDbSave(ssd(custom))) return false; _refreshSermentViews(); notif("Capacité supprimée.","inf");
 }
 
 var _changeSermPid=null;
@@ -7175,36 +7133,14 @@ function renderSerm(p){
     else if(br.desc) html+='<p style="font-size:13px;color:var(--dim);font-style:italic;margin-bottom:12px;line-height:1.6;border-left:2px solid '+col+';padding-left:10px;opacity:.8;">'+esc(br.desc)+'</p>';
 
     html+=renderSermentGameGuide(br)+renderSermentRules(br);
-    // Paliers : progression lisible + focus sur l'actuel/prochain
-    var pals=br.paliers||[];
-    if(pals.length){
-      var currentPal=null,nextPal=null;
-      pals.forEach(function(pal){
-        if((p.level||0)>=pal.niv) currentPal=pal;
-        else if(!nextPal) nextPal=pal;
-      });
-      html+='<div class="serm-mini-progress">';
-      pals.forEach(function(pal){
-        var unlocked=p.level>=pal.niv;
-        var isCurrent=currentPal&&currentPal.niv===pal.niv&&isChosen;
-        html+='<div class="serm-mini-step '+(unlocked?'is-unlocked':'is-locked')+(isCurrent?' is-current':'')+'">';
-        html+='<span class="serm-mini-dot"></span>';
-        html+='<span class="serm-mini-level">Niv. '+pal.niv+'</span>';
-        html+='</div>';
-      });
+    var ability=getSermentAbilityAtLevel(br,p.level||1);
+    if(ability){
+      var actual=Math.max(p.level||1,ability.niv||1);
+      html+='<div class="serm-palier-focus"><div class="serm-palier-focus-top"><span>'+esc(isChosen?'Ma capacité':'Capacité de cette voie')+'</span><strong>'+esc(ability.nom)+'</strong>'+(ability.cout&&!getSermentTierOperations(ability).length?'<em>'+esc(ability.cout)+'</em>':'')+'</div>';
+      html+='<p class="np-oath-linear-note">Valeurs au niveau '+actual+(actual>(p.level||1)?' · niveau minimum de cette évolution':'')+'. '+(s.retired?'Règles historiques de ce serment archivé.':'Les mêmes actions à chaque niveau ; leurs valeurs augmentent régulièrement.')+'</p>';
+      html+=renderSermentOperations(ability,actual);
+      if(ability.manifestation)html+='<details class="np-oath-story"><summary>Manifestation de l’arme</summary><p>'+esc(ability.manifestation)+'</p></details>';
       html+='</div>';
-      if(isChosen){
-        html+='<div class="serm-palier-focus">';
-        if(currentPal){
-          html+='<div class="serm-palier-focus-top"><span>Palier actif</span><strong>'+esc(currentPal.nom)+'</strong>'+(currentPal.cout&&!getSermentTierOperations(currentPal).length?'<em>'+esc(currentPal.cout)+'</em>':'')+'</div>';
-          if(currentPal.desc) html+=renderSermentOperations(currentPal,p.level);
-          if(currentPal.manifestation) html+='<p class="np-oath-manifestation">'+esc(currentPal.manifestation)+'</p>';
-        } else {
-          html+='<div class="serm-palier-focus-top"><span>Départ</span><strong>Aucun palier débloqué</strong></div>';
-        }
-        if(nextPal) html+='<div class="serm-palier-next">Prochain : Niv. '+nextPal.niv+' · '+esc(nextPal.nom)+(nextPal.cout?' · '+esc(nextPal.cout):'')+'</div>';
-        html+='</div>';
-      }
     }
     html+='</div>';
   });
@@ -8601,9 +8537,9 @@ function renderRegles(tid){
   var terms=[
     {t:"Dimenséa",d:"Relique aux pouvoirs dimensionnels, autrefois entre les mains de l\'Argonaute. Son changement de mains a déclenché le champ dimensionnel qui a projeté l\'humanité dans le futur. Elle est l\'origine de tout."},
     {t:"Élève du Serment",d:"Terme désignant les survivants qui portent un Serment. Ils forment une minorité parmi les rescapés de la projection dimensionnelle. Le Dimenséa a fait d\'eux ce qu\'ils sont."},
-    {t:"Serment",d:"Lien sacré entre un porteur et son arme liée. Il ne se choisit pas — il reconnaît son porteur. Il se déploie à travers quatre paliers adaptés à son rang à mesure que le porteur s\'en montre digne."},
+    {t:"Serment",d:"Lien sacré entre un porteur et son arme liée. Il ne se choisit pas — il reconnaît son porteur. Chaque voie possède une capacité stable dont les dégâts, soins et protections augmentent avec le niveau du porteur."},
     {t:"Arme du Serment",d:"Manifestation physique du lien entre le porteur et son Serment. Elle peut être invoquée ou renvoyée à volonté (1 EM). Elle ne peut pas être maniée par quelqu\'un d\'autre. À la mort du porteur, elle disparaît instantanément."},
-    {t:"Palier",d:"Seuil de progression d\'un Serment. Les paliers des serments basiques suivent les niveaux du personnage 2, 5, 7 et 10 ; ceux des aguerris suivent les niveaux 10, 13, 16 et 20. Le rang du serment est distinct du niveau du personnage. Chaque palier débloque ou transforme une capacité."},
+    {t:"Progression du serment",d:"Une seule capacité par voie, avec les mêmes actions à tous les niveaux. Les valeurs suivent une formule de type base + gain × niveau. Les coûts et les limites restent fixes. Une évolution est un autre serment, attribué par le staff à partir du niveau requis."},
     {t:"Gemme de Sang",d:"Fragment cristallin extrait des créatures vaincues. Il en existe trois grades : Blanche (+5 XP), Incarnate (+20 XP) et Écarlate (+50 XP). Consommée lors de la fusion, elle apporte de l’expérience au personnage et contribue à débloquer les capacités de son serment."},
     {t:"PV",d:"Points de Vie. Mesure la résistance vitale d\'un personnage. À 0, le personnage est KO (voire mort selon le contexte). Base Niv. 1 : 30 PV."},
     {t:"EP",d:"Énergie Physique. Carburant de toutes les actions physiques (frappes, esquives, déplacements, etc.). À 0, le personnage s\'effondre et est hors combat. Base Niv. 1 : 50 EP."},
@@ -8705,7 +8641,7 @@ function renderCombat(tid){
   h+='<p>Frapper, esquiver, parer, tirer, se déplacer : tout ce qu\'un personnage décide de faire, il le fait. Le système existe pour donner du poids à ces décisions, pas pour les annuler.</p>';
   h+='<div class="hlbox"><strong>Règle fondamentale :</strong> Toute action déclarée est une réussite. Il n\'y a pas d\'échec sur une frappe, une esquive, une parade ou un déplacement. Ce qui varie, c\'est uniquement l\'impact de l\'action choisie.</div>';
   h+='<h3>Les nouveaux Serments et leurs évolutions</h3>';
-  h+='<p>20 nouveaux Serments de base rejoignent les choix de départ. Leurs branches se développent aux niveaux 2, 5, 7 et 10. Les 50 évolutions sont des Serments aguerris : elles demandent leur Serment parent et le niveau 10, puis progressent aux niveaux 10, 13, 16 et 20. Le staff attribue l\'évolution depuis la fiche du personnage. Une seule branche peut être choisie.</p>';
+  h+='<p>Chaque serment propose deux voies exclusives. La voie choisie possède une capacité complète dès son obtention ; ses dégâts, soins et protections augmentent à chaque niveau. Une évolution demande le serment parent et le niveau 10, puis une attribution par le staff.</p>';
   h+='<div class="hlbox"><strong>Préparer puis agir :</strong> une préparation, une visée ou une observation n\'inflige aucun dégât par elle-même. Chaque manipulation, tir et réaction conserve le coût indiqué sur sa fiche et consomme les actions du même budget. Un rappel coûte 1 action et 1 EM : il ramène l\'arme et annule son installation, sans recharger ses munitions ni recréer de matière.</div>';
   h+='<p>Dans le simulateur, les fiches de capacité précisent les coûts, la portée, la durée et les limites. Les positions exactes, obstacles, trajectoires et propriétés des objets sont arbitrés par le MJ à partir de la scène.</p>';
   h+='</div>';
@@ -8859,22 +8795,17 @@ function renderCombat(tid){
   h+='<div class="rsec">';
   h+='<h3>XI. Les Serments &amp; Progression</h3>';
   h+='<p>Chaque Serment confère une arme liée, des statistiques de progression uniques et des valeurs de dégâts propres. La formule s\'applique à tous : <strong>Damage de base + Niveau du porteur.</strong></p>';
-  h+='<p>Le personnage possède un seul niveau et une seule barre d’expérience. Le même niveau détermine ses statistiques et les capacités de son serment. Les rangs Basique, Aguerri et suivants décrivent le serment, pas une seconde progression. Les paliers basiques suivent le niveau du personnage :</p>';
-  h+='<table class="rtbl"><thead><tr><th>Palier</th><th>Niveau du personnage</th><th>Ce qui s\'éveille</th></tr></thead><tbody>';
-  h+='<tr><td><strong>I — Éveil</strong></td><td>Niveau 2</td><td>OUVERTURE — Première capacité. Le Serment s\'ouvre.</td></tr>';
-  h+='<tr><td><strong>II — Densité</strong></td><td>Niveau 5</td><td>APPROFONDISSEMENT — La capacité se renforce. Le lien se densifie.</td></tr>';
-  h+='<tr><td><strong>III — Maîtrise</strong></td><td>Niveau 7</td><td>MAÎTRISE — La capacité se perfectionne. La maîtrise prend forme.</td></tr>';
-  h+='<tr><td><strong>IV — Plénitude</strong></td><td>Niveau 10</td><td>PLÉNITUDE — La capacité atteint son dernier palier basique. Le Serment atteint sa plénitude.</td></tr>';
-  h+='</tbody></table>';
-
-  h+='<h4>Gemmes de Sang</h4>';
-  h+='<p>Les Gemmes de Sang sont des fragments cristallins imprégnés d\'énergie vitale, extraits des créatures vaincues. Leur fusion consomme les gemmes de l’inventaire et alimente la même expérience que les récompenses de combat. Cette expérience fait progresser le personnage et débloque les paliers de son serment.</p>';
+  h+='<p>Le personnage possède un seul niveau et une seule barre d’expérience. Ce niveau détermine ses statistiques et les valeurs de son serment. Les mêmes actions restent disponibles à tous les niveaux.</p>';
+  h+='<div class="hlbox"><strong>Une progression continue</strong><br>Valeur = base + gain par niveau × N.<br>N est le niveau du personnage. Les coûts, le nombre d’actions et les limites d’utilisation restent fixes. Les formules de chaque voie sont consultables dans la Forge.</div>';
+  h+='<p>Les rangs Basique et Aguerri décrivent le serment. Passer à une évolution demande le niveau 10, le serment parent et une attribution par le staff.</p>';
+  h+='<h3>Gemmes de Sang</h3>';
+  h+='<p>Les Gemmes de Sang sont des fragments cristallins imprégnés d\'énergie vitale, extraits des créatures vaincues. Leur fusion consomme les gemmes de l’inventaire et alimente la même expérience que les récompenses de combat. Cette expérience fait progresser le personnage et augmente les valeurs de son serment.</p>';
   h+='<table class="rtbl"><thead><tr><th>Gemme</th><th>XP accordé</th><th>Sources</th></tr></thead><tbody>';
   h+='<tr><td><strong>💎 Gemme Blanche</strong></td><td>+5 XP</td><td>Tout type de mob</td></tr>';
   h+='<tr><td><strong>💎 Gemme Incarnate</strong></td><td>+20 XP</td><td>Mobs moyens ou puissants</td></tr>';
   h+='<tr><td><strong>💎 Gemme Écarlate</strong></td><td>+50 XP</td><td>Mobs puissants / Élites uniquement</td></tr>';
   h+='</tbody></table>';
-  h+='<div class="hlbox">La progression est gérée par le staff. Les récompenses de combat et les fusions de gemmes alimentent une seule barre d’XP. Le prochain niveau demande 30 × le niveau actuel en XP. Les paliers aguerris suivent les niveaux 10, 13, 16 et 20 ; accéder à ce rang reste soumis aux règles d’évolution du serment. En cas de question, ouvre un ticket.</div>';
+  h+='<div class="hlbox">La progression est gérée par le staff. Les récompenses de combat et les fusions de gemmes alimentent une seule barre d’XP. Le prochain niveau demande 30 × le niveau actuel en XP. Les capacités augmentent régulièrement avec le niveau ; accéder à une évolution reste soumis aux règles d’attribution du serment. En cas de question, ouvre un ticket.</div>';
 
   h+='<h4>Quand un autre prend ton Serment</h4>';
   h+='<p><strong>Nul ne peut s\'approprier le Serment d\'un autre.</strong> Celui qui tente de saisir l\'arme d\'un Serment qui ne lui appartient pas ne rencontre pas de résistance ordinaire. Ce n\'est pas un poids mécanique, ni une barrière visible. C\'est le corps entier qui refuse — une impression de lourdeur sourde qui s\'installe dès le premier contact, et qui empire à chaque seconde. L\'arme ne se soulève pas. Elle ne se manie pas. Elle attend, silencieuse, celui qu\'elle a reconnu.</p>';
@@ -9364,12 +9295,6 @@ function switchProgTab(tab){
 // ==========================================
 // LEVEL-UP
 // ==========================================
-var SERM_PALIERS=[{niv:2,nom:"Palier I — Éveil"},{niv:5,nom:"Palier II — Densité"},{niv:7,nom:"Palier III — Maîtrise"},{niv:10,nom:"Palier IV — Plénitude"}];
-var SERM_PALIERS_SEASONED=[{niv:10,nom:"Aguerri I — Éveil"},{niv:13,nom:"Aguerri II — Densité"},{niv:16,nom:"Aguerri III — Maîtrise"},{niv:20,nom:"Aguerri IV — Plénitude"}];
-function getSermPalierDefsFor(classe){
-  var s=(getAllSD()[classe]||SD[classe]||null);
-  return getSermLevelKey(classe,s)==="seasoned"?SERM_PALIERS_SEASONED:SERM_PALIERS;
-}
 function xpReq(l){return NPProgression.xpRequired(l);}
 
 function doLvlUp(p){
@@ -9380,8 +9305,7 @@ function doLvlUp(p){
     p.xp-=p.xpMax;p.level++;p.xpMax=xpReq(p.level);
     if(s){p.pvMax+=s.pvN;p.pvCur=p.pvMax;p.epMax+=s.epN;p.epCur=p.epMax;p.emMax+=s.emN;p.emCur=p.emMax;}
     gained.push(p.level);
-    var pal=getSermPalierDefsFor(p.classe).find(function(pl){return pl.niv===p.level;});
-    p.history.push({ts:Date.now(),type:"level",text:"⬆ Niveau "+p.level+" ! PV:"+p.pvMax+" EP:"+p.epMax+" EM:"+p.emMax+(pal?" — "+pal.nom+" débloqué":""),by:"Système"});
+    p.history.push({ts:Date.now(),type:"level",text:"⬆ Niveau "+p.level+" ! PV:"+p.pvMax+" EP:"+p.epMax+" EM:"+p.emMax,by:"Système"});
   }
   return gained;
 }
@@ -11534,6 +11458,11 @@ function cGetFighterSerment(fi){
   if(!f||!p) return null;
   var bundle=getPlayerSermentBundle(p);
   if(!bundle||!bundle.def||!bundle.branch) return null;
+  var legacyBattle=_cs.active&&_cs.reforgedVersion!==3;
+  if(legacyBattle){
+    var oldBranch=getRawSermentBranches(p.classe,bundle.def).find(function(b){return branchMatchesLabel(b,p.branch);});
+    if(oldBranch)bundle=Object.assign({},bundle,{branch:oldBranch.legacyPaliers?Object.assign({},oldBranch,{paliers:oldBranch.legacyPaliers}):oldBranch});
+  }
   var rawPaliers=(bundle.branch.paliers||[]).filter(function(pl){ return (pl.niv||0)<=((p.level||1)); }).sort(function(a,b){ return (a.niv||0)-(b.niv||0); });
   var latestByName=Object.create(null), order=[];
   rawPaliers.forEach(function(pl){
@@ -11552,10 +11481,10 @@ function cFirstNumber(desc, fallback){
   var m=String(desc||'').match(/(\d+)\s*\+\s*Niv/i) || String(desc||'').match(/(\d+)/);
   return m?parseInt(m[1],10):(fallback||0);
 }
-function cDamageWithLevel(base, level){ return (parseInt(base,10)||0) + (parseInt(level,10)||1); }
+function cDamageWithLevel(base, level){ return (parseInt(base,10)||0) + (Number.isFinite(Number(level))?Number(level):1); }
 function cParseEMCost(cout){
-  var n=cNums(cout||'');
-  return n.length?parseInt(n[0],10):0;
+  var match=String(cout||'').match(/(\d+)\s*EM/i);
+  return match?Number(match[1]):0;
 }
 function cParseDescMechanics(desc){
   desc=String(desc||'');
@@ -11572,7 +11501,8 @@ function cParseDescMechanics(desc){
   };
 }
 function cSerializeOpts(obj){
-  return JSON.stringify(obj||{}).replace(/</g,'\u003c').replace(/>/g,'\u003e').replace(/'/g,'&#39;');
+  // JSON stays raw here; the data attribute is escaped once by its renderer.
+  return JSON.stringify(obj||{});
 }
 function cActiveSummonForOwner(ownerPid){
   return (_cs.fighters||[]).find(function(x){ return x&&x.isSummon&&x.ownerPid===ownerPid&&x.pvCur>0; }) || null;
@@ -11654,6 +11584,21 @@ function cGetMobAbilityOptions(fi, actLeft){
 }
 function cBuildAbilityOptionsForPalier(info, pal, actLeft){
   if(!pal) return [];
+  if(window.NPSermentsLinear){
+    var nativeOptions=NPSermentsLinear.combatOptions(pal,info.level,actLeft);
+    if(nativeOptions){
+      return nativeOptions.filter(function(op){
+        if(op.riposte){op.disabled=cDecl(_cs.fighters.indexOf(info.fighter)).some(function(a){return !!a.riposte;})||info.fighter._linearRiposteRound===_cs.round;}
+        if(op.duel){op.disabled=!!cLinearDuelTarget(info.fighter)||cDecl(_cs.fighters.indexOf(info.fighter)).some(function(a){return !!a.duel;});}
+        if(op.kind!=='summon')return true;
+        op.summon.ownerPid=info.player.id;
+        return !cActiveSummonForOwner(info.player.id)&&!cHasUsedSummon(info.player.id,op.summon.name);
+      });
+    }
+  }
+  if(pal.progression==='linear'&&!getSermentTierOperations(pal).length){
+    pal=Object.assign({},pal,{desc:formatSermentText(pal.desc,info.level)});info=Object.assign({},info,{level:0});
+  }
   var f=info.fighter, p=info.player;
   var desc=String(pal.desc||'');
   var out=[];
@@ -11823,10 +11768,12 @@ function cRenderAbilityButtons(fi, actLeft, accent, accentDim, accentBorder){
     var bg=isHeal?'rgba(90,170,122,0.06)':accentDim;
     var bd=isHeal?'rgba(90,170,122,0.2)':accentBorder;
     var col=isHeal?'var(--green)':accent;
-    if(op.palierNiv) sub.push('Palier '+op.palierNiv);
+    if(info&&info.level) sub.push('Niveau '+info.level);
     if(op.emCost) sub.push('−'+op.emCost+' EM');
     if(op.epCost) sub.push('−'+op.epCost+' EP');
     if(op.consumeActions&&op.consumeActions>1) sub.push(op.consumeActions+' actions');
+    if(op.consumeActions===0) sub.push('Réaction · sans action');
+    if(op.disabled) sub.push('Déjà activé');
     if(op.hits) sub.push(op.hits+' hits');
     if(op.aoe) sub.push('AOE');
     if(op.provoke) sub.push('Aggro');
@@ -11837,7 +11784,7 @@ function cRenderAbilityButtons(fi, actLeft, accent, accentDim, accentBorder){
     if(op.targetType==='ally') guard="var _ht=parseInt((document.getElementById('decl-htgt-"+fi+"')&&document.getElementById('decl-htgt-"+fi+"').value)||csGet('h',"+fi+")||-1);if(isNaN(_ht)||_ht<0){return;}window.__cDeclHealTarget=_ht;";
     if(op.targetType==='enemy'&&op.healTargetType==='ally') guard+="var _hel=document.getElementById('decl-htgt-"+fi+"');var _htv=_hel&&_hel.value?parseInt(_hel.value):-1;if(!isNaN(_htv)&&_htv>=0)window.__cDeclHealTarget=_htv;";
     var onclick=guard+"var _o=JSON.parse(this.getAttribute('data-opts'));if(window.__cDeclTarget!==undefined){_o.target=window.__cDeclTarget;window.__cDeclTarget=undefined;}if(window.__cDeclHealTarget!==undefined){_o.healTarget=window.__cDeclHealTarget;window.__cDeclHealTarget=undefined;}cDeclareAction("+fi+",_o.action||'capacite',_o);";
-    h+='<button data-opts=\''+jsesc(payload)+'\' onclick="'+onclick+'" style="width:100%;padding:8px 8px;background:'+bg+';border:1px solid '+bd+';cursor:pointer;text-align:left;transition:all .15s;margin-bottom:6px;" onmouseover="this.style.opacity=\'0.84\'" onmouseout="this.style.opacity=\'1\'">';
+    h+='<button '+(op.disabled?'disabled aria-disabled="true" ':'')+'data-opts=\''+escAttr(payload)+'\' onclick="'+onclick+'" style="width:100%;padding:8px 8px;background:'+bg+';border:1px solid '+bd+';cursor:pointer;text-align:left;transition:all .15s;margin-bottom:6px;" onmouseover="this.style.opacity=\'0.84\'" onmouseout="this.style.opacity=\'1\'">';
     h+='<div style="font-size:10px;color:'+col+';display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><span>'+esc(op.label||op.palNom||'Capacité')+'</span>'+(op.value?'<span style="color:var(--text);">'+op.value+' dmg</span>':(op.healAmt?'<span style="color:var(--green);">+'+op.healAmt+' PV</span>':''))+'</div>';
     if(op.descText) h+='<div style="font-size:9px;color:rgba(255,255,255,0.45);margin-top:3px;line-height:1.45;">'+esc(op.descText)+'</div>';
     h+='<div style="font-family:var(--fm);font-size:7px;color:rgba(255,255,255,0.22);margin-top:3px;">'+esc(sub.join(' · '))+'</div>';
@@ -11969,7 +11916,7 @@ function cActionsMax(fi){
 
 // Déclarations du combattant actuel
 function cDecl(fi){ return (_cs.decl=_cs.decl||{})[fi]||[]; }
-function cDeclCount(fi){ return cDecl(fi).reduce(function(sum,a){ return sum + (a&&a.consumeActions?a.consumeActions:1); },0); }
+function cDeclCount(fi){ return cDecl(fi).reduce(function(sum,a){ return sum + (a&&typeof a.consumeActions==='number'?a.consumeActions:1); },0); }
 function cActionsLeft(fi){
   return Math.max(0, cActionsMax(fi) - cDeclCount(fi));
 }
@@ -11988,7 +11935,7 @@ function combatStart(){
   _cs.order=[initFi].concat(all.filter(function(i){return i!==initFi;}));
   if(!_cs.id) _cs.id="c"+Date.now();
   if(!_cs.name) _cs.name="Combat du "+new Date().toLocaleDateString("fr-FR");
-  _cs.fighters.forEach(function(f){ f.statuts=f.statuts||[]; cEnsureFighterCid(f); });
+  _cs.fighters.forEach(function(f){ f.statuts=f.statuts||[]; cEnsureFighterCid(f); if(f._linearDuel){f.emMax+=(f._linearDuel.lockedEm||0);delete f._linearDuel;} delete f._linearRiposteRound; });
   cLog("⚔ Combat démarré — Round 1","round");
   _nextDeclarant();
   rCombat("p-combat-mj-c");
@@ -12019,12 +11966,15 @@ function cDeclareAction(fi, action, opts){
   var curFi=_cs.order[_cs.turn];
   if(curFi!==fi){ notif("Ce n'est pas le tour de déclaration de "+f.name+".","err"); return; }
   var left=cActionsLeft(fi);
-  var consume=Math.max(1, parseInt(opts.consumeActions||1,10)||1);
-  if(left<=0 && action!=="passer"){
+  var consume=opts.riposte&&opts.consumeActions===0?0:Math.max(1,parseInt(opts.consumeActions||1,10)||1);
+  if(left<=0 && consume>0 && action!=="passer"){
     notif(f.name+" n'a plus d'actions à déclarer.","inf"); return;
   }
   if(action!=="passer" && consume>left){
     notif("Pas assez d'actions restantes pour cette compétence.","err"); return;
+  }
+  if(opts.noOverclock&&cDeclCount(fi)+consume>cActionsMax(fi)){
+    notif("Cette capacité ne peut pas être utilisée en surcadençage.","err");return;
   }
   if(action==="deplacer" && f.noFreeRepositionRound===_cs.round){
     notif(f.name+" ne peut pas se déplacer ce round.","err"); return;
@@ -12036,6 +11986,16 @@ function cDeclareAction(fi, action, opts){
   var dmgBase=sd?sd.dmg:(f.dmgBase||6);
   var dmg=dmgBase+(f.level||1);
   var claymoreHeavy=f.claymorePosture||null;
+  cDecl(fi).forEach(function(a){if(a.linear&&a.claymorePosture)claymoreHeavy=a.claymorePosture;if(a.consumeClaymorePosture)claymoreHeavy=null;});
+  if(action==="capacite"&&opts.riposte&&(cDecl(fi).some(function(a){return !!a.riposte;})||f._linearRiposteRound===_cs.round)){notif("Riposte déjà activée ce tour.","inf");return;}
+  if(opts.duel||opts.duelOnly){
+    var duelTarget=cLinearDuelTarget(f),pendingDuel=cDecl(fi).find(function(a){return !!a.duel;});
+    var desired=_cs.fighters[parseInt(opts.target,10)];
+    if(opts.duel&&(duelTarget||pendingDuel)){notif("Un adversaire est déjà désigné.","inf");return;}
+    if(opts.duel&&(!desired||desired===f||desired.type===f.type||desired.pvCur<=0)){notif("Choisis un adversaire vivant.","err");return;}
+    if(opts.duelOnly&&desired!==(duelTarget||(pendingDuel&&_cs.fighters[pendingDuel.target]))){notif("La Sentence vise uniquement l’adversaire désigné.","err");return;}
+    if(opts.duelOnly&&!desired){notif("Désigne d’abord un adversaire.","err");return;}
+  }
   if(action==="frappe"&&claymoreHeavy&&claymoreHeavy.damage) dmg=claymoreHeavy.damage;
   var pugDmg=4+(f.level||1);
 
@@ -12044,7 +12004,7 @@ function cDeclareAction(fi, action, opts){
   switch(action){
     case "frappe":
       entry.kind="attack"; entry.value=dmg; entry.label=entry.label||(claymoreHeavy?("🗡 Frappe Haute ("+dmg+")"):("⚔ Frappe ("+dmg+")")); entry.epCost=claymoreHeavy?(claymoreHeavy.epCost||10):6;
-      if(claymoreHeavy){ entry.blockEpDrain=claymoreHeavy.blockEpDrain||0; entry.defenseExtraEp=claymoreHeavy.defenseExtraEp||0; entry.defenseChipPct=claymoreHeavy.defenseChipPct||0; entry.noReposition=!!claymoreHeavy.noReposition; entry.consumeClaymorePosture=true; }
+      if(claymoreHeavy){ entry.blockEpDrain=claymoreHeavy.blockEpDrain||0; entry.defenseExtraEp=claymoreHeavy.defenseExtraEp||0; entry.defenseChipPct=claymoreHeavy.defenseChipPct||0; entry.noReposition=!!claymoreHeavy.noReposition; entry.consumeClaymorePosture=true; entry.linearPosture=!!claymoreHeavy.linear; }
       break;
     case "pugilat":
       entry.kind="attack"; entry.value=pugDmg; entry.label=entry.label||("👊 Pugilat ("+pugDmg+")"); entry.epCost=6; break;
@@ -12078,6 +12038,7 @@ function cDeclareAction(fi, action, opts){
     case "deplacer":
       entry.kind="utility"; entry.value=0; entry.label=entry.label||"🏃 Déplacement"; entry.epCost=10; break;
     case "capacite":
+      entry.linear=!!opts.linear;
       entry.kind=opts.kind||((opts.value||opts.hits||opts.aoe)?"attack":"utility");
       entry.label=entry.label||("✨ "+(opts.palNom||"Capacité"));
       entry.emCost=opts.emCost||0;
@@ -12107,6 +12068,14 @@ function cDeclareAction(fi, action, opts){
       entry.summon=opts.summon||null;
       entry.claymorePosture=opts.claymorePosture||null;
       entry.defenseExtraEp=opts.defenseExtraEp||0;
+      entry.defenseAfterFirstEp=opts.defenseAfterFirstEp||0;
+      entry.undefendedBonus=opts.undefendedBonus||0;
+      entry.duel=opts.duel||null;
+      entry.duelOnly=!!opts.duelOnly;
+      entry.duelBonus=opts.duelBonus||0;
+      entry.duelRecoverableEp=opts.duelRecoverableEp||0;
+      entry.riposte=opts.riposte||null;
+      if(entry.riposte)entry.emCost=0; // The reaction is paid only when an actual dodge triggers it.
       entry.defenseChipPct=opts.defenseChipPct||0;
       entry.guardBonusDmg=opts.guardBonusDmg||0;
       entry.blockBreakLine=!!opts.blockBreakLine;
@@ -12130,6 +12099,10 @@ function cDeclareAction(fi, action, opts){
       entry.tauntLocked=true;
       entry.tauntSourceName=forced.sourceName||forced.source.name;
     }
+  }
+  if(entry.duelOnly){
+    var actualDuel=cLinearDuelTarget(f),queuedDuel=cDecl(fi).find(function(a){return !!a.duel;});
+    if(_cs.fighters[entry.target]!==(actualDuel||(queuedDuel&&_cs.fighters[queuedDuel.target]))){notif("La provocation empêche de viser l’adversaire du duel.","err");return;}
   }
   if(action==="passer"){
     var toFill=left;
@@ -12246,7 +12219,21 @@ function cGetAttackTargets(fi, attacker, atk){
   var target=_cs.fighters[ti];
   return target?[{target:target,ti:ti}]:[];
 }
+function cLinearDuelTarget(f){
+  var duel=f&&f._linearDuel;
+  return duel&&_cs.fighters.find(function(t){return cEnsureFighterCid(t)===duel.targetCid&&t.pvCur>0;})||null;
+}
+function cLinearFinishDuels(){
+  _cs.fighters.forEach(function(f){
+    var duel=f._linearDuel;if(!duel||cLinearDuelTarget(f))return;
+    var old=f.epCur,refund=Math.min(duel.epSpent||0,(duel.refundCap||0)+(duel.sentenceEp||0));
+    if(f.pvCur>0)f.epCur=Math.min(f.epMax||999,(f.epCur||0)+refund);
+    f.emMax+=(duel.lockedEm||0);delete f._linearDuel;
+    cLog("⚖ "+f.name+" : duel terminé, +"+Math.max(0,f.epCur-old)+" EP récupérés.","heal");
+  });
+}
 function cResolveAttackInstance(attacker, fi, atk){
+  if(atk.duelOnly&&_cs.fighters[atk.target]!==cLinearDuelTarget(attacker)){cLog("⚖ Sentence annulée : aucun adversaire désigné valide.","info");return;}
   var targets=cGetAttackTargets(fi, attacker, atk);
   if(!targets.length) return;
   targets.forEach(function(pair){
@@ -12257,10 +12244,12 @@ function cResolveAttackInstance(attacker, fi, atk){
       cLog("🛡 "+redirected.name+" s'interpose pour "+target.name,"info");
       target=redirected; ti=_cs.fighters.indexOf(redirected);
     }
-    var dmg=atk.value||0;
+    var dmg=(atk.value||0)+(atk.duelOnly?(atk.duelBonus||0):0);
+    var duel=attacker._linearDuel;
+    if(duel){var sworn=cEnsureFighterCid(target)===duel.targetCid;dmg=Math.ceil(dmg*(sworn?1+(duel.targetBonusPct||0)/100:1-(duel.otherPenaltyPct||0)/100));}
     var rawDmg=dmg;
     var elem=cApplyElementalLogic(attacker, atk, target, dmg); dmg=elem.dmg;
-    var defDesc="";
+    var defDesc="", defended=false;
     if(!atk.undefendable){
       var tgtDefenses=((_cs.decl||{})[ti]||[]).filter(function(d){ return d.action==="esquive"||d.action==="bloquer"||d.action==="parer"; });
       var usedDefs=_cs._usedDefs=_cs._usedDefs||{};
@@ -12273,11 +12262,14 @@ function cResolveAttackInstance(attacker, fi, atk){
         def=cand; defIdx=di; break;
       }
       if(def){
+        defended=true;
+        var previouslyDefended=usedDefs[defKey]>0;
         usedDefs[defKey]=defIdx+1;
-        var extraDefEp=(atk.defenseExtraEp||0)+(target.defenseTaxNext||0);
+        var extraDefEp=(atk.defenseExtraEp||0)+(previouslyDefended?(atk.defenseAfterFirstEp||0):0)+(target.defenseTaxNext||0);
         if(extraDefEp>0){
           var oldDefEp=target.epCur||0;
           target.epCur=Math.max(0,oldDefEp-extraDefEp);
+          if(target._linearDuel)target._linearDuel.epSpent+=(oldDefEp-target.epCur);
           target.defenseTaxNext=0;
           cLog("⚡ "+target.name+" paie +"+extraDefEp+" EP pour défendre "+(atk.palNom||atk.label||"l'attaque"),"info");
         }
@@ -12288,6 +12280,12 @@ function cResolveAttackInstance(attacker, fi, atk){
           } else {
           combatQueueFx({kind:'dodge',fromCid:cEnsureFighterCid(attacker),toCid:cEnsureFighterCid(target),text:'ESQUIVE'});
           cLog("🛡 "+target.name+" esquive l'attaque de "+attacker.name+" — 0 dégâts","info");
+          var reaction=((_cs.decl||{})[ti]||[]).find(function(a){return a.action!=="annule"&&a.riposte;});
+          if(reaction&&!atk.aoe&&target._linearRiposteRound!==_cs.round&&(target.emCur||0)>=reaction.riposte.emCost){
+            target._linearRiposteRound=_cs.round;target.emCur-=reaction.riposte.emCost;
+            cLog("↪ "+target.name+" déclenche Pas Rompu (−"+reaction.riposte.emCost+" EM).","spell");
+            cResolveAttackInstance(target,ti,{action:"capacite",kind:"attack",label:"Pas Rompu",value:reaction.riposte.damage,target:fi});
+          }
           return;
           }
         } else if(def.action==="bloquer"){
@@ -12321,6 +12319,8 @@ function cResolveAttackInstance(attacker, fi, atk){
         if(atk.nextDefenseTax){ target.defenseTaxNext=(target.defenseTaxNext||0)+atk.nextDefenseTax; cLog("⚡ Prochaine défense de "+target.name+" : +"+atk.nextDefenseTax+" EP","info"); }
       }
     }
+    if(!defended)dmg+=(atk.undefendedBonus||0);
+    if(atk.duelRecoverableEp&&dmg>0&&attacker._linearDuel&&cEnsureFighterCid(target)===attacker._linearDuel.targetCid)attacker._linearDuel.sentenceEp=(attacker._linearDuel.sentenceEp||0)+atk.duelRecoverableEp;
     var res=cApplyRawDamage(target,dmg);
     combatQueueFx({kind:res.ko?'ko':'hit',fromCid:cEnsureFighterCid(attacker),toCid:cEnsureFighterCid(target),text:(res.ko?'KO · ':'−')+res.dmg+' PV'});
     cLog("💥 "+attacker.name+" → "+target.name+" : −"+res.dmg+" PV"+defDesc+" ("+res.old+"→"+res.newPv+")"+(res.ko?" 💀 KO!":""),"damage");
@@ -12331,6 +12331,7 @@ function cResolveAttackInstance(attacker, fi, atk){
     if(atk.repulse) cLog("↔ "+target.name+" est repoussé par "+attacker.name,"info");
     if(atk.disarm) cLog("🪓 "+attacker.name+" a lancé son arme — à récupérer ou réinvoquer IRP","info");
     if(atk.selfPvMaxBonus){ attacker.pvMaxBonus=(attacker.pvMaxBonus||0)+atk.selfPvMaxBonus; attacker.pvMax+=atk.selfPvMaxBonus; attacker.pvCur=Math.min(attacker.pvCur+atk.selfPvMaxBonus, attacker.pvMax); cLog("🛡 "+attacker.name+" gagne +"+atk.selfPvMaxBonus+" PV max","heal"); }
+    if(res.ko&&_cs.fighters.some(function(f){return !!f._linearDuel;}))cLinearFinishDuels();
     if(res.ko&&target.type==="beast") setTimeout(function(){openDropModal(target,ti);},1400);
     if(atk.action==="frappe_dechainees"&&atk.healAmt&&atk.healTarget!==undefined){
       var ht=_cs.fighters[parseInt(atk.healTarget,10)];
@@ -12359,7 +12360,20 @@ function combatResolve(){
     var f=_cs.fighters[fi]; if(!f||f.pvCur<=0) return;
     var actions=decl[fi]||[];
     var epSpent=0, emSpent=0;
-    actions.forEach(function(a){ epSpent+=(a.epCost||0); emSpent+=(a.emCost||0); });
+    var strictSignature=!!f._linearDuel||!!(f.claymorePosture&&f.claymorePosture.linear)||actions.some(function(a){return a.linear&&(a.duel||a.duelOnly||a.claymorePosture||a.riposte||a.undefendedBonus||a.defenseAfterFirstEp);});
+    if(strictSignature){
+      var availableEp=f.epCur||0,availableEm=f.emCur||0,prepared=!!f.claymorePosture,sworn=cLinearDuelTarget(f);
+      actions.forEach(function(a){
+        if(a.action==="annule")return;
+        var target=_cs.fighters[a.target],ep=a.epCost||0,em=a.emCost||0;
+        var invalid=(a.duel&&(!target||target.pvCur<=0||sworn))||(a.duelOnly&&target!==sworn)||(a.linearPosture&&!prepared);
+        if(invalid||ep>availableEp||em>availableEm){a.action="annule";a.label="[Annulé — condition ou ressources]";return;}
+        availableEp-=ep;availableEm-=em;epSpent+=ep;emSpent+=em;
+        if(a.duel)sworn=target;
+        if(a.linear&&a.claymorePosture)prepared=true;
+        if(a.consumeClaymorePosture)prepared=false;
+      });
+    } else actions.forEach(function(a){ epSpent+=(a.epCost||0); emSpent+=(a.emCost||0); });
     if(epSpent>f.epCur){
       cLog("⚡ "+f.name+" : EP insuffisant ("+f.epCur+" dispo, "+epSpent+" requis) — actions réduites","info");
       epSpent=f.epCur;
@@ -12371,6 +12385,8 @@ function combatResolve(){
         if((a.emCost||0)>0){ emAcc+=(a.emCost||0); if(emAcc>f.emCur){ a.action="annule"; a.label="[Annulé — EM]"; } }
       });
     }
+    if(f._linearDuel)f._linearDuel.epSpent=(f._linearDuel.epSpent||0)+epSpent;
+    actions.forEach(function(a,i){if(a.duel)a._linearEpAfter=Math.min(epSpent,actions.slice(i+1).reduce(function(sum,next){return sum+(next.action==="annule"?0:(next.epCost||0));},0));});
     f.epCur=Math.max(0,f.epCur-epSpent);
     f.emCur=Math.max(0,f.emCur-emSpent);
   });
@@ -12380,6 +12396,18 @@ function combatResolve(){
     if(window.NPSermentsCombat) window.NPSermentsCombat.beginTurn(fi);
     (decl[fi]||[]).forEach(function(atk){
       if(atk.action==="annule") return;
+      if(atk.duel){
+        var dt=_cs.fighters[atk.target];
+        if(dt&&dt.pvCur>0&&!cLinearDuelTarget(attacker)){
+          attacker._linearDuel=Object.assign({},atk.duel,{targetCid:cEnsureFighterCid(dt),epSpent:atk._linearEpAfter||0,sentenceEp:0});
+          attacker.emMax=Math.max(0,(attacker.emMax||0)-(atk.duel.lockedEm||0));
+          attacker.emCur=Math.min(attacker.emCur,attacker.emMax);
+          cLog("⚖ "+attacker.name+" désigne "+dt.name+" pour son duel.","spell");
+        }
+        return;
+      }
+      if(atk.linear&&atk.claymorePosture){attacker.claymorePosture=Object.assign({},atk.claymorePosture,{linear:true,expires:_cs.round+1});cLog("🗡 "+attacker.name+" entre en Posture Haute.","spell");return;}
+      if(atk.linearPosture&&!attacker.claymorePosture){cLog("🗡 Frappe Haute annulée : posture indisponible.","info");return;}
       if(!(atk.kind==="attack" || atk.action==="frappe" || atk.action==="pugilat" || atk.action==="frappe_dechainees" || (atk.action==="capacite" && ((atk.value||0)>0 || atk.hits || atk.aoe)))) return;
       var hits=Math.max(1, atk.hits||1);
       for(var h=0; h<hits; h++) cResolveAttackInstance(attacker, fi, atk);
@@ -12404,7 +12432,7 @@ function combatResolve(){
       if(a.action==="capacite"&&a.provoke){
         cApplyShieldCallTaunt(fi, a.perEnemyPvMax||0);
       }
-      if(a.action==="capacite"&&a.claymorePosture){
+      if(a.action==="capacite"&&a.claymorePosture&&!a.linear){
         f.claymorePosture=a.claymorePosture;
         cLog("🗡 "+f.name+" entre en Posture Haute : prochaine Frappe Haute "+(a.claymorePosture.damage||0)+" dégâts.","spell");
       }
@@ -12422,6 +12450,8 @@ function combatResolve(){
 
   order.forEach(function(fi){ var f=_cs.fighters[fi]; if(!f||f.pvCur<=0) return; cTickStatuts(f,fi); });
 
+  if(_cs.fighters.some(function(f){return !!f._linearDuel;}))cLinearFinishDuels();
+  _cs.fighters.forEach(function(f){if(f.claymorePosture&&f.claymorePosture.linear&&f.claymorePosture.expires<=_cs.round)delete f.claymorePosture;});
   _cs._usedDefs={};
   _cs.decl={};
   _cs.round++;
@@ -12436,6 +12466,7 @@ function combatResolve(){
   else if(!aliveB){ cLog("🏆 Tous les monstres sont KO !","round"); _cs.phase="idle"; _cs.active=false; }
   else { cLog("— Round "+_cs.round+" — Déclarations","round"); _nextDeclarant(); }
 
+  if(!_cs.active)_cs.fighters.forEach(function(f){if(f._linearDuel){f.emMax+=(f._linearDuel.lockedEm||0);delete f._linearDuel;}});
   rCombat("p-combat-mj-c");
   setTimeout(combatPlayPendingFx, 80);
 }
@@ -12463,6 +12494,7 @@ async function combatEnd(){
     p.history.push({ts:Date.now(),type:"combat",text:"⚔ "+_cs.name+" — "+_cs.round+"R · PV:"+f.pvCur+"/"+f.pvMax+" EP:"+f.epCur+"/"+f.epMax,by:"MJ "+(CU?CU.name:"Staff"),combatId:_cs.id});
 
   });
+  _cs.fighters.forEach(function(f){if(f._linearDuel){f.emMax+=(f._linearDuel.lockedEm||0);delete f._linearDuel;}});
   _cs.active=false; _cs.phase="idle"; _cs._surc={}; _cs._iv={};
   combatEnd._pending=true;
   var saved=false;
@@ -13421,7 +13453,7 @@ body .nav-group-menu .nav-section-header{
   var koCount=Math.max(0,_cs.fighters.length-aliveCount);
   var playerCount=_cs.fighters.filter(function(f){return f.type==="player";}).length;
   var enemyCount=Math.max(0,_cs.fighters.length-playerCount);
-  var declaredCount=active?_cs.fighters.filter(function(_,fi){ return (((_cs.decl||{})[fi]||[]).length >= cActionsMax(fi)); }).length:0;
+  var declaredCount=active?_cs.fighters.filter(function(_,fi){ return cDeclCount(fi)>=cActionsMax(fi); }).length:0;
   var hud4=active ? (phase==="declaration" ? declaredCount+" / "+_cs.fighters.length : "PRÊT") : (_cs.fighters.length?"SÉLECTION OK":"EN ATTENTE");
   h+='<div class="sim-hud-strip">';
   h+='<div class="sim-hud-cell"><div class="sim-hud-k">COMBATTANTS</div><div class="sim-hud-v">'+_cs.fighters.length+'</div><div class="sim-hud-sub">'+playerCount+' joueurs · '+enemyCount+' adversaires</div></div>';
@@ -13530,7 +13562,7 @@ body .nav-group-menu .nav-section-header{
       // Déclarations faites (petits points)
       h+='<div style="display:flex;justify-content:center;gap:2px;margin-top:4px;">';
       for(var aa=0;aa<maxActs;aa++){
-        var fil=aa<((_cs.decl||{})[fi]||[]).length;
+        var fil=aa<cDeclCount(fi);
         h+='<div style="width:5px;height:5px;border-radius:50%;background:'+(fil?(done?"rgba(90,170,122,0.7)":accent):"rgba(255,255,255,0.08)")+';transition:background .2s;"></div>';
       }
       h+='</div>';
@@ -13548,7 +13580,7 @@ body .nav-group-menu .nav-section-header{
     h+='<div class="sim-fighter-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px;margin-bottom:18px;">';
     _cs.fighters.forEach(function(f,fi){
       var isCurDecl=active&&phase==="declaration"&&_cs.order[_cs.turn]===fi;
-      var isDone=active&&((_cs.decl||{})[fi]||[]).length>=cActionsMax(fi);
+      var isDone=active&&cDeclCount(fi)>=cActionsMax(fi);
       var isJ=f.type==="player";
       var isDead=f.pvCur<=0;
       var pvPct=Math.max(0,Math.min(100,Math.round(f.pvCur/f.pvMax*100)));
@@ -13781,7 +13813,7 @@ body .nav-group-menu .nav-section-header{
               if(op.targetType==='enemy') guard="var _s=document.getElementById('decl-tgt-"+fi+"');var _t=parseInt(((_s&&_s.value)||csGet('t',"+fi+")||-1),10);if(isNaN(_t)||_t<0){if(_s){_s.style.borderColor='var(--red)';_s.style.boxShadow='0 0 0 2px rgba(201,74,74,0.4)';setTimeout(function(){_s.style.borderColor='';_s.style.boxShadow='';},1500);}return;}window.__cDeclTarget=_t;";
               if(op.targetType==='ally') guard="var _hs=document.getElementById('decl-htgt-"+fi+"');var _ht=parseInt(((_hs&&_hs.value)||csGet('h',"+fi+")||-1),10);if(isNaN(_ht)||_ht<0){if(_hs){_hs.style.borderColor='var(--green)';_hs.style.boxShadow='0 0 0 2px rgba(90,170,122,0.35)';setTimeout(function(){_hs.style.borderColor='';_hs.style.boxShadow='';},1500);}return;}window.__cDeclHealTarget=_ht;";
               var onclick=guard+"var _o=JSON.parse(this.getAttribute('data-opts'));if(window.__cDeclTarget!==undefined){_o.target=window.__cDeclTarget;window.__cDeclTarget=undefined;}if(window.__cDeclHealTarget!==undefined){_o.healTarget=window.__cDeclHealTarget;window.__cDeclHealTarget=undefined;}cDeclareAction("+fi+",_o.action||'capacite',_o);";
-              h+='<button data-opts=\''+jsesc(payload)+'\' onclick="'+onclick+'" style="width:100%;padding:8px;background:rgba(201,74,74,0.06);border:1px solid rgba(201,74,74,0.2);cursor:pointer;text-align:left;transition:all .15s;margin-bottom:6px;" onmouseover="this.style.background=\'rgba(201,74,74,0.12)\'" onmouseout="this.style.background=\'rgba(201,74,74,0.06)\'">';
+              h+='<button data-opts=\''+escAttr(payload)+'\' onclick="'+onclick+'" style="width:100%;padding:8px;background:rgba(201,74,74,0.06);border:1px solid rgba(201,74,74,0.2);cursor:pointer;text-align:left;transition:all .15s;margin-bottom:6px;" onmouseover="this.style.background=\'rgba(201,74,74,0.12)\'" onmouseout="this.style.background=\'rgba(201,74,74,0.06)\'">';
               h+='<div style="font-size:10px;color:var(--red);display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><span>'+esc(op.label||'⚡ Compétence')+'</span>'+(op.value?'<span style="color:var(--text);">'+op.value+' dmg</span>':(op.healAmt?'<span style="color:var(--green);">+'+op.healAmt+' PV</span>':''))+'</div>';
               if(op.descText) h+='<div style="font-size:9px;color:rgba(255,255,255,0.45);margin-top:3px;line-height:1.45;">'+esc(op.descText)+'</div>';
               h+='<div style="font-family:var(--fm);font-size:7px;color:rgba(255,255,255,0.22);margin-top:3px;">'+esc(sub.join(' · '))+'</div>';
@@ -16189,7 +16221,7 @@ function _buildPDF(p){
   var branchY=sepY+8;
   var sermBundle=getPlayerSermentBundle(p);
   var br=sermBundle.branch||{};
-  var palier=br.paliers?br.paliers.filter(function(pl){return pl.niv<=(p.level||1);}).pop():null;
+  var palier=getSermentAbilityAtLevel(br,p.level||1);
 
   doc.setFillColor(17,17,32);
   doc.rect(14,branchY,W-28,24,"F");
@@ -16216,10 +16248,10 @@ function _buildPDF(p){
   doc.setFontSize(7);
   doc.setTextColor(GOLD);
   doc.setFont("helvetica","normal");
-  doc.text("PALIER "+_palierNum(p.level||1,p.classe),W-30,branchY+10,{align:"right"});
+  doc.text("NIVEAU "+(p.level||1),W-30,branchY+10,{align:"right"});
   doc.setFontSize(9);
   doc.setTextColor(GOLD);
-  doc.text(_palierLabel(p.level||1,p.classe),W-18,branchY+18,{align:"right"});
+  doc.text(sermBundle.def&&sermBundle.def.retired?"Serment archivé":"Progression continue",W-18,branchY+18,{align:"right"});
 
   // === EXPÉRIENCE COMMUNE ===
   var xpY=branchY+30, xpBarW=W-28;
@@ -16375,25 +16407,7 @@ function _sermColor(classe){
   return cols[classe]||"#7eb8d4";
 }
 
-function _palierNum(level,classe){
-  var defs=getSermPalierDefsFor(classe||"");
-  var idx=-1;
-  defs.forEach(function(pal,i){ if(level>=pal.niv) idx=i; });
-  if(idx>=3) return "IV";
-  if(idx===2) return "III";
-  if(idx===1) return "II";
-  return "I";
-}
 
-function _palierLabel(level,classe){
-  var defs=getSermPalierDefsFor(classe||"");
-  var idx=-1;
-  defs.forEach(function(pal,i){ if(level>=pal.niv) idx=i; });
-  if(idx>=3) return "Plénitude";
-  if(idx===2) return "Maîtrise";
-  if(idx===1) return "Densité";
-  return "Éveil";
-}
 
 
 

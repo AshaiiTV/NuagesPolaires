@@ -2,11 +2,13 @@
 
 La sélection passe de 70 à **24 ajouts** : six bases, deux évolutions pour chacune, puis six évolutions de serments historiques. La réduction porte sur les propositions ajoutées, pas sur les treize serments d'origine. Les 46 propositions retirées restent présentes dans les définitions archivées pour que les personnages existants conservent une référence ; elles ne font plus partie du catalogue proposé à la création.
 
+La progression actuelle utilise une capacité stable par voie : les mêmes actions restent disponibles et leurs valeurs augmentent à chaque niveau. Les quatre anciens paliers servent uniquement à relire les combats déjà commencés. Voir [le contrat de progression linéaire](serments-linear.md).
+
 La refonte remplace les micro-procédures surtout descriptives par des décisions qui modifient réellement un combat : réserves consommées, prises rompues, blessures partagées, coûts engagés avant une attaque, préparations visibles et réponses adverses. Une fiche n'obtient pas son identité en ajoutant une distance ou un bonus à une autre.
 
 ## Les treize signatures préservées
 
-L'audit de référence est celui des treize fiches publiées avant l'extension. Les définitions personnalisées du site priment toujours sur les données natives ; cette sélection ne réécrit aucune de ces treize fiches.
+L'audit de référence est celui des treize fiches publiées avant l'extension. Les définitions personnalisées du site priment toujours sur les données natives ; la progression linéaire adapte leurs valeurs et conserve leurs signatures. Leurs définitions historiques restent disponibles pour les anciens combats.
 
 | Serment historique | Signature à ne pas recopier dans une nouvelle base |
 | --- | --- |
@@ -85,7 +87,7 @@ Exemples de référence au niveau 10, avant les défenses adverses :
 | Distillateur, prélèvement | 1 action, 4 EM pour retirer un effet compatible et conserver son reliquat, **maximum 80** ; le même second geste le restitue. Un effet de 24 ne crée toujours que 24. |
 | Totémiste après destruction | 1 action, 2 EP, 6 EM pour reconstruire une idole de **24 PV, vide** ; 1 action, 4 EM pour charger, puis chaque ordre reste payé. |
 
-Ces valeurs illustrent les opérations du moteur. Les quatre paliers de chaque branche restent générés depuis le contrat, et les exemples narratifs doivent être révisés avec tout changement de ce contrat.
+Ces exemples de la révision v301 constituent un historique de conception. Les valeurs et les actions actuelles proviennent de la capacité linéaire générée depuis le moteur ; les options ajoutées par les anciens paliers ont été retirées.
 
 ## Ce qui a été retiré
 
@@ -100,18 +102,18 @@ Ce retrait ne prétend pas que ces archétypes ne pourront jamais fonctionner. I
 - Chaque fiche sépare une promesse courte, deux paragraphes de récit, la boucle de jeu, un arbitrage et le contre-jeu. Le récit part du réveil et de la vie de survivants ; les évolutions prolongent un geste de leur parent.
 - Chaque branche possède un nom, un résumé, une manifestation de l'arme et un exemple d'échange. Les étapes, coûts et valeurs viennent du contrat du moteur ; le texte narratif ne les invente pas.
 - Les six bases gardent des silhouettes ordinaires. Les peintures des évolutions montrent la transformation matérielle de l'arme : pavois, chambres d'impact, chaînes bifides, filaments, gemmes, double alambic, carillon ou facettes.
-- Les quatre paliers utilisent les niveaux 2/5/7/10 pour les bases et 10/13/16/20 pour les évolutions. Les déblocages qualitatifs et valeurs affichés sont générés depuis les mêmes opérations que le combat.
+- Chaque branche expose une seule capacité. Les bases fonctionnent dès le niveau 1 ; les évolutions gardent leur prérequis de niveau 10. Les valeurs suivent une formule constante en N, le niveau du personnage. Aucun nouveau geste ne se débloque aux anciens seuils 2/5/7/10 ou 10/13/16/20.
 - Les croissances PV/EP/EM et dégâts d'arme historiques des 24 ajouts sont conservés pour ne pas recalculer silencieusement des personnages existants. Les nouveaux coûts et effets appartiennent aux branches refondues.
 
 ## Sources et régénération
 
-Le texte éditorial et les silhouettes sont conservés dans `docs/serments-reforged-source.json`. Les règles exécutables, opérations, coûts et paliers proviennent de `docs/serments-reforged-mechanics.json`. Avant le générateur Python, exécuter `node scripts/generate-serments-reforged-mechanics.js` pour régénérer ce contrat et ses formules en N directement depuis le moteur ; l'option `--check` vérifie sa synchronisation sans écrire. Le générateur Python fusionne ces deux sources, remet le JSON complet à jour et produit `assets/js/serments-reforged-data.js` :
+Le texte éditorial et les silhouettes sont conservés dans `docs/serments-reforged-source.json`. Les règles exécutables, opérations, coûts et formules de progression proviennent de `docs/serments-reforged-mechanics.json`. Avant le générateur Python, exécuter `node scripts/generate-serments-reforged-mechanics.js` pour régénérer ce contrat et ses formules en N directement depuis le moteur ; l'option `--check` vérifie sa synchronisation sans écrire. Le générateur Python fusionne ces deux sources, remet le JSON complet à jour et produit `assets/js/serments-reforged-data.js` :
 
 ```sh
 node scripts/generate-serments-reforged-mechanics.js
 python3 scripts/generate-serments-reforged.py
 ```
 
-Une génération finale refuse les branches sans opérations, coûts ou descriptions de paliers distinctes. L'option `--allow-draft` sert uniquement au travail de mise en page avant finalisation du contrat ; elle ne valide pas une publication.
+Une génération finale refuse les branches sans capacité linéaire, opérations, coûts ou contrat de progression cohérent. L'option `--allow-draft` sert uniquement au travail de mise en page avant finalisation du contrat ; elle ne valide pas une publication.
 
 Le module charge une copie du catalogue v299, conserve `legacyEntries` et `legacyDefinitions`, marque 46 définitions `retired` et expose les 24 noms dans `activeNames`. Il ne modifie pas l'export CommonJS archivé. Les anciens noms de branches sont conservés dans `legacyNames` et `branchAliases` pour résoudre les choix enregistrés avant la refonte.

@@ -74,26 +74,36 @@ const expansion = require('../assets/js/serments-reforged-data');
       return { total: Object.keys(all).length, public: Object.keys(all).filter(name => isSermVisibleInLibrary(name, all[name])).length };
     });
     assert.deepEqual(counts, { total: 83, public: 34 });
-    const tierErrors = await page.evaluate(() => {
+    const abilityErrors = await page.evaluate(() => {
       const failures = [], savedCombat = _cs, savedPlayerLookup = window.gpid;
       let fixture;
       try {
-        window.gpid = id => id === 'qa-tier' ? fixture : savedPlayerLookup(id);
-        _cs = { fighters: [{ pid: 'qa-tier', type: 'player', level: 1 }] };
-        Object.entries(NPSermentsExpansion.definitions).forEach(([name, def]) => def.branches.forEach(branch => {
-          const levels = [1, ...branch.paliers.flatMap(tier => [tier.niv - 1, tier.niv])];
-          levels.forEach(level => {
-            fixture = { id: 'qa-tier', classe: name, branch: branch.nom, level };
+        window.gpid = id => id === 'qa-ability' ? fixture : savedPlayerLookup(id);
+        _cs = { fighters: [{ pid: 'qa-ability', type: 'player', level: 1 }] };
+        Object.entries(NPSermentsExpansion.definitions).forEach(([name, def]) => getBranches(name, def).forEach(branch => {
+          if (def.retired) {
+            for (const level of [1, ...branch.paliers.flatMap(tier => [tier.niv - 1, tier.niv])]) {
+              fixture = { id: 'qa-ability', classe: name, branch: branch.nom, level };
+              const current = cGetFighterSerment(0);
+              const archived = branch.paliers.filter(tier => tier.niv <= level);
+              const expected = archived.length ? archived[archived.length - 1].niv : null;
+              if ((current?.palier?.niv || null) !== expected) failures.push(name + ' / archive niveau ' + level);
+            }
+            return;
+          }
+          const minimum = def.evolvesFrom ? 10 : 1;
+          if (!branch.ability || branch.paliers.length !== 1 || JSON.stringify(branch.paliers[0]) !== JSON.stringify(branch.ability)) failures.push(name + ' / capacité unique');
+          [1, 2, 5, 7, 10, 11, 20, 35].forEach(level => {
+            fixture = { id: 'qa-ability', classe: name, branch: branch.nom, level };
             const current = cGetFighterSerment(0);
-            const unlocked = branch.paliers.filter(tier => tier.niv <= level);
-            const expected = unlocked.length ? unlocked[unlocked.length - 1].niv : null;
-            if ((current?.palier?.niv || null) !== expected) failures.push(name + ' / ' + branch.nom + ' / niv.' + level);
+            const expected = level >= minimum ? branch.ability : null;
+            if (JSON.stringify(current?.palier || null) !== JSON.stringify(expected) || current?.paliers.length !== (expected ? 1 : 0)) failures.push(name + ' / ' + branch.nom + ' / niv.' + level);
           });
         }));
       } finally { _cs = savedCombat; window.gpid = savedPlayerLookup; }
       return failures;
     });
-    assert.deepEqual(tierErrors, [], 'Les 560 paliers se débloquent à leur niveau réel et jamais avant.');
+    assert.deepEqual(abilityErrors, [], 'Chaque voie garde une capacité stable ; seul le niveau minimum d’attribution des évolutions reste requis.');
     await page.evaluate(() => switchDropTab('serments', null, ''));
     const atlas = page.locator('#serments-grid.oath-atlas');
     const oathList = atlas.locator('.oath-list-item[data-serment]');
@@ -131,74 +141,73 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.equal(await page.evaluate(() => document.activeElement?.parentElement?.className), 'oath-codex', 'Le récit reçoit le focus après ouverture.');
     await atlas.locator('.oath-codex > summary').click();
     assert.match(await page.locator('.oath-stage').textContent(), /Pugiliste/);
-    assert.equal(await atlas.locator('.oath-progression .oath-path').count(), 2);
-    assert.equal(await atlas.locator('.oath-progression .oath-node').count(), 8);
+    assert.equal(await atlas.locator('.oath-forge-path').count(), 2);
+    assert.equal(await atlas.locator('.oath-node,.oath-reading-options,#oath-hide-future').count(), 0, 'Les actions ne sont plus réparties en paliers.');
     assert.equal(await page.locator('.oath-forge-core img').count(), 1);
     assert.match(await page.locator('.oath-forge-core img').getAttribute('src'), /\/pugiliste\.jpg$/);
     const levelInput = page.locator('#oath-level');
     assert.equal(await levelInput.getAttribute('type'), 'number');
+    assert.equal(await levelInput.getAttribute('max'), null);
     assert.equal(await levelInput.inputValue(), '2', 'Le niveau initial suit le personnage connecté.');
-    assert.equal(await atlas.locator('#oath-hide-future').isChecked(), false);
-    await levelInput.fill('1');
-    assert.equal(await atlas.locator('.oath-progression .oath-node.is-locked').count(), 8, 'Les paliers de base restent verrouillés au niveau 1.');
-    assert.equal(await atlas.locator('.oath-node.is-current').count(), 0, 'Aucun palier ne s’applique avant son niveau requis.');
+    for (const level of [1, 2, 5, 7, 10, 35]) {
+      await levelInput.fill(String(level));
+      for (const [index, branch] of pugiliste.branches.entries()) {
+        await atlas.locator('[data-choose-branch="' + index + '"]').click();
+        assert.equal(await atlas.locator('.oath-inspector h3').textContent(), branch.ability.nom);
+        await assertOperationCards(atlas.locator('.oath-inspector .oath-inspector-effect'), branch.ability, level);
+      }
+    }
     await levelInput.fill('10');
-    assert.equal(await atlas.locator('.oath-progression .oath-node.is-unlocked').count(), 8, 'Les quatre paliers des deux voies sont atteints au niveau 10.');
-    assert.equal(await atlas.locator('.oath-node.is-current').count(), 2, 'Chaque voie indique un seul palier de référence, sans cumuler ses paliers.');
-    assert.deepEqual(await atlas.locator('.oath-node.is-current').evaluateAll(nodes => nodes.map(node => node.dataset.requiredLevel)), ['10', '10']);
-    assert.equal(await atlas.locator('.oath-node-state').filter({ hasText: /Ancien palier/ }).count(), 6, 'Les paliers précédents sont remplacés et ne se cumulent pas.');
     assert.equal(await atlas.locator('.oath-comparison').getAttribute('open'), null);
     await atlas.locator('.oath-comparison > summary').click();
-    assert.equal(await atlas.locator('.oath-progression').isVisible(), true, 'La comparaison complète la lecture de la voie choisie.');
+    assert.equal(await atlas.locator('.oath-forge').isVisible(), true, 'La comparaison complète les deux choix de voie.');
     assert.equal(await atlas.locator('.oath-compare-card:visible').count(), 2);
     for (const [index, branch] of pugiliste.branches.entries()) {
       const card = atlas.locator('.oath-compare-card').nth(index);
-      assert.equal(await card.locator('.oath-compare-status').textContent(), 'Palier de niveau 10 · référence 10');
-      await assertOperationCards(card.locator('.oath-inspector-effect'), branch.paliers.find(tier => tier.niv === 10), 10);
+      assert.equal(await card.locator('.oath-compare-status').textContent(), 'Valeurs au niveau 10');
+      await assertOperationCards(card.locator('.oath-inspector-effect'), branch.ability, 10);
     }
     await levelInput.fill('5');
     assert.equal(await levelInput.inputValue(), '5');
     for (const [index, branch] of pugiliste.branches.entries()) {
       const card = atlas.locator('.oath-compare-card').nth(index);
-      assert.equal(await card.locator('.oath-compare-status').textContent(), 'Palier de niveau 5 · référence 5');
-      await assertOperationCards(card.locator('.oath-inspector-effect'), branch.paliers.find(tier => tier.niv === 5), 5);
+      assert.equal(await card.locator('.oath-compare-status').textContent(), 'Valeurs au niveau 5');
+      await assertOperationCards(card.locator('.oath-inspector-effect'), branch.ability, 5);
     }
     await atlas.locator('[data-inspect-branch="1"]').click();
-    assert.equal(await atlas.locator('.oath-progression').isVisible(), true);
-    assert.equal(await atlas.locator('.oath-node.is-selected').getAttribute('data-node-branch'), '1');
-    assert.equal(await atlas.locator('.oath-node.is-selected').getAttribute('data-required-level'), '5');
-    assert.deepEqual(await atlas.locator('.oath-node.is-current').evaluateAll(nodes => nodes.map(node => node.dataset.requiredLevel)), ['5', '5']);
+    assert.equal(await atlas.locator('.oath-forge').isVisible(), true);
+    assert.equal(await atlas.locator('[data-choose-branch="1"]').getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('.oath-inspector h3')), true);
     await levelInput.fill('10');
-    const unlockedNodes = atlas.locator('.oath-progression .oath-node.is-unlocked');
-    await unlockedNodes.first().click();
-    const firstPalier = await page.locator('.oath-inspector').textContent();
-    await unlockedNodes.last().click();
-    const lastPalier = await page.locator('.oath-inspector').textContent();
-    assert.notEqual(lastPalier, firstPalier, 'L’inspecteur suit le nœud sélectionné.');
-    assert.equal(await atlas.locator('.oath-inspector h3').textContent(), pugiliste.branches[1].paliers[3].nom);
-    assert.equal(await atlas.locator('.oath-tier-story p').textContent(), pugiliste.branches[1].paliers[3].manifestation);
+    await atlas.locator('[data-choose-branch="0"]').click();
+    const firstAbility = await page.locator('.oath-inspector').textContent();
+    await atlas.locator('[data-choose-branch="1"]').click();
+    const secondAbility = await page.locator('.oath-inspector').textContent();
+    assert.notEqual(secondAbility, firstAbility, 'L’inspecteur suit la voie choisie.');
+    assert.equal(await atlas.locator('.oath-inspector h3').textContent(), pugiliste.branches[1].ability.nom);
+    assert.equal(await atlas.locator('.oath-ability-story p').textContent(), pugiliste.branches[1].ability.manifestation);
     assert.equal(await atlas.locator('details.oath-inspector-flavor').getAttribute('open'), null, 'L’imaginaire est conservé dans un volet replié pour privilégier les règles.');
-    assert.equal(await unlockedNodes.last().locator('.oath-node-title').textContent(), pugiliste.branches[1].paliers[3].nom);
-    assert.ok(await unlockedNodes.last().evaluate(element => element.classList.contains('is-selected')));
     const secondBranch = atlas.locator('.oath-path-heading[data-choose-branch="1"]');
-    await secondBranch.focus();
+    await atlas.locator('[data-back-to-paths]').click();
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-choose-branch')), '1');
     await page.keyboard.press('Enter');
     assert.equal(await secondBranch.getAttribute('aria-pressed'), 'true');
-    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-choose-branch')), '1', 'Le changement de voie conserve le focus clavier.');
+    assert.equal(await page.evaluate(() => document.activeElement === document.querySelector('.oath-inspector h3')), true, 'La voie s’ouvre au clavier et donne le focus à sa capacité.');
     await page.evaluate(() => {
       Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async text => { window.__oathCopiedText = text; } } });
     });
     await atlas.locator('[data-copy-build]').click();
-    await page.waitForFunction(() => document.querySelector('.oath-action-status')?.textContent === 'Parcours copié.');
+    await page.waitForFunction(() => document.querySelector('.oath-action-status')?.textContent === 'Fiche copiée.');
     const copiedPath = await page.evaluate(() => window.__oathCopiedText);
     assert.match(copiedPath, /Pugiliste/);
-    assert.match(copiedPath, /Aperçu au niveau 10 · Palier inspecté : niveau 10/);
-    assert.ok(copiedPath.includes(pugiliste.branches[1].paliers.find(tier => tier.niv === 10).desc));
+    assert.match(copiedPath, /Valeurs au niveau 10/);
+    for (const effect of await atlas.locator('.oath-inspector .oath-action-effect').allTextContents()) assert.ok(copiedPath.includes(effect), 'La copie contient chaque effet numérique validé indépendamment.');
+    assert.doesNotMatch(copiedPath, /palier|\+ N|× N/i);
     assert.match(await atlas.locator('.oath-evolutions').textContent(), /staff/i);
     await atlas.locator('.oath-evo-btn[data-evolution="Cestuaire"]').click();
     assert.match(await page.locator('.oath-hero-title').textContent(), /Cestuaire/);
     assert.equal(await levelInput.inputValue(), '10', 'Le niveau exploré est conservé lors du passage à une évolution.');
-    assert.equal(await atlas.locator('.oath-node').first().getAttribute('data-required-level'), '10');
+    await assertOperationCards(atlas.locator('.oath-inspector .oath-inspector-effect'), expansion.definitions.Cestuaire.branches[0].ability, 10);
     await atlas.locator('.oath-evo-btn[data-evolution="Pugiliste"]').click();
     assert.equal(await levelInput.inputValue(), '10');
     assert.equal(await atlas.locator('.oath-path-heading[aria-pressed="true"]').getAttribute('data-choose-branch'), '1', 'Revenir à l’origine retrouve la voie inspectée.');
@@ -219,10 +228,10 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.equal(await page.evaluate(() => document.activeElement?.className), 'oath-hero-title');
     await atlas.locator('.oath-codex > summary').click();
     assert.ok((await atlas.locator('.oath-world').textContent()).includes(expansion.definitions.Barde.worldRole));
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'Le récit et les titres de paliers tiennent sur mobile.');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'Le récit et les titres de capacités tiennent sur mobile.');
     await page.setViewportSize({ width: 1440, height: 1000 });
     assert.equal(await atlas.locator('.oath-library-body').isVisible(), true);
-    assert.deepEqual(await app.read('players'), playersBeforeAtlas, 'La consultation, la comparaison et la copie du parcours ne modifient pas les personnages.');
+    assert.deepEqual(await app.read('players'), playersBeforeAtlas, 'La consultation, la comparaison et la copie de la fiche ne modifient pas les personnages.');
     await page.locator('#serment-search').fill('');
     const imageResults = await page.evaluate(async () => {
       const urls = Object.values(NPSermentsExpansion.definitions).map(def => def.logo);
@@ -231,7 +240,7 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.ok(imageResults.every(result => result.ok), JSON.stringify(imageResults.filter(result => !result.ok)));
     assert.equal(await page.locator('.oath-forge-core img[src$=".jpg"]').count(), 1);
     await page.screenshot({ path: path.join(output, 'catalogue-desktop.png'), animations: 'disabled' });
-    observations.push('Forge effective : 83 serments, 34 publics, 16 basiques et 18 évolutions ; forge centrale et deux branches visibles, comparaison facultative au niveau réel, paliers remplacés, copie du parcours, mémoire des voies et armurerie mobile ; peintures chargées sans écriture de personnage.');
+    observations.push('Forge effective : 83 serments, 34 publics, 16 basiques et 18 évolutions ; forge centrale et deux branches visibles, comparaison facultative au niveau réel, capacités fixes et valeurs linéaires, copie de la fiche, mémoire des voies et armurerie mobile ; peintures chargées sans écriture de personnage.');
 
     await page.evaluate(() => openEditBranch(encodeURIComponent('Pugiliste'), 0));
     await page.locator('#mbr-desc').fill('Description retouchée pour le test de conservation des règles.');
@@ -241,21 +250,24 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.equal(edited.branches[0].descPhys, pugiliste.branches[0].descPhys);
     assert.equal(edited.branches[0].flavor, pugiliste.branches[0].flavor);
     assert.deepEqual(edited.branches[0].gameplay, pugiliste.branches[0].gameplay, 'Staff branch editing preserves the gameplay guide.');
-    await page.evaluate(() => openEditPalier(encodeURIComponent('Pugiliste'), 0, 0));
-    await page.locator('#mpal-desc').fill(pugiliste.branches[0].paliers[0].desc + ' Note descriptive du test.');
+    await page.evaluate(() => openManagePaliers(encodeURIComponent('Pugiliste'), 0));
+    assert.match(await page.locator('#mpal-title').textContent(), /Modifier la capacité/);
+    assert.equal(await page.locator('#mpal-niv').isVisible(), false);
+    assert.equal(await page.locator('#mpal-niv').inputValue(), '1');
+    await page.locator('#mpal-desc').fill('Règle corrigée par le staff : 17 dégâts et une défense normale. Une seule main engagée.');
     await saveKey('serments_custom', () => page.locator('button[onclick="savePalier()"]').click());
     edited = (await app.read('serments_custom')).value.Pugiliste;
-    assert.deepEqual(edited.branches[0].paliers[0].combatRules, pugiliste.branches[0].paliers[0].combatRules);
-    assert.equal(edited.branches[0].paliers[0].manifestation, pugiliste.branches[0].paliers[0].manifestation);
+    assert.deepEqual(edited.branches[0].ability.combatRules, pugiliste.branches[0].ability.combatRules);
+    assert.equal(edited.branches[0].ability.manifestation, pugiliste.branches[0].ability.manifestation);
     assert.equal(edited.branches[0].roleplay, pugiliste.branches[0].roleplay);
     assert.deepEqual(edited.branches[0].combatRules, pugiliste.branches[0].combatRules);
     assert.equal(Object.hasOwn(edited, 'entry'), false);
     assert.deepEqual(edited.branches[0].gameplay, pugiliste.branches[0].gameplay);
-    await page.evaluate(() => { NPSermentsAtlas.focus('Pugiliste'); document.querySelector('[data-choose-branch="0"]').click(); document.querySelector('[data-node-branch="0"][data-node-tier="0"]').click(); });
+    await page.evaluate(() => { NPSermentsAtlas.focus('Pugiliste'); document.querySelector('[data-choose-branch="0"]').click(); });
     assert.equal(await atlas.locator('.oath-inspector .np-oath-operation,.oath-inspector .oath-ability-action').count(), 0, 'An explicit staff description keeps precedence over generated cards.');
-    assert.equal(await atlas.locator('.oath-inspector-effect > p').textContent(), edited.branches[0].paliers[0].desc);
-    assert.equal(await atlas.locator('.oath-tier-story p').textContent(), pugiliste.branches[0].paliers[0].manifestation);
-    observations.push('Éditions réelles de branche et palier : texte sauvegardé, règles structurées et métadonnées intactes, copie de données superflue retirée.');
+    assert.equal(await atlas.locator('.oath-inspector .oath-inspector-effect > p').textContent(), edited.branches[0].ability.desc);
+    assert.equal(await atlas.locator('.oath-ability-story p').textContent(), pugiliste.branches[0].ability.manifestation);
+    observations.push('Éditions réelles de branche et capacité : texte sauvegardé, règles structurées et métadonnées intactes, copie de données superflue retirée.');
 
     await page.evaluate(() => { popSSelects(); openModal('m-addp'); });
     assert.equal(await page.locator('#np-c option[value]:not([value=""])').count(), 16);
@@ -280,7 +292,7 @@ const expansion = require('../assets/js/serments-reforged-data');
     await page.evaluate(() => loadPlayer('p_alice'));
     await page.locator('#p-serm-c').waitFor({ state: 'visible' });
     assert.equal(await page.locator('#p-serm-c .np-oath-vow').textContent(), '« ' + pugiliste.vow + ' »');
-    assert.equal(await page.locator('#p-serm-c .np-oath-manifestation').textContent(), pugiliste.branches[0].paliers[3].manifestation);
+    assert.equal(await page.locator('#p-serm-c .np-sheet-branch').first().locator('.np-oath-story').filter({ has: page.locator('summary', { hasText: 'Manifestation de l’arme' }) }).locator('p').textContent(), pugiliste.branches[0].ability.manifestation);
     assert.match(await page.locator('#p-serm-c').textContent(), /Pugiliste/);
     assert.equal(await page.locator('#p-serm-c .np-sheet-branch').count(), 2);
     assert.ok(await page.locator('#p-serm-c img[src$=".jpg"]').count());
@@ -290,11 +302,11 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.equal((await storedAlice()).branch, pugiliste.branches[1].nom);
     const combatPalier = await page.evaluate(() => {
       const saved = _cs;
-      try { _cs = { fighters: [{ pid: 'p_alice', level: 10, type: 'player', classe: 'Pugiliste' }] }; const current = cGetFighterSerment(0); return { name: current.branch.nom, current: current.palier.niv }; }
+      try { _cs = { fighters: [{ pid: 'p_alice', level: 10, type: 'player', classe: 'Pugiliste' }] }; const current = cGetFighterSerment(0); return { name: current.branch.nom, ability: current.palier.nom, count: current.paliers.length, level: current.level };  }
       finally { _cs = saved; }
     });
-    assert.deepEqual(combatPalier, { name: pugiliste.branches[1].nom, current: 10 });
-    observations.push('La seconde branche se sélectionne, se sauvegarde et fournit le bon palier niveau 10 au combat.');
+    assert.deepEqual(combatPalier, { name: pugiliste.branches[1].nom, ability: pugiliste.branches[1].ability.nom, count: 1, level: 10 });
+    observations.push('La seconde branche se sélectionne, se sauvegarde et fournit sa capacité unique au niveau réel 10 au combat.');
 
     const beforeEvolution = await storedAlice();
     await page.evaluate(() => openChangeSerm('p_alice'));
@@ -325,7 +337,8 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.equal(await page.evaluate(() => gpid('p_alice').classe), 'Cestuaire');
     assert.equal(await page.evaluate(() => gpid('p_alice').branch), evolvedBranch);
     await page.evaluate(() => loadPlayer('p_alice'));
-    assert.equal(await page.locator('#p-serm-c .np-sheet-branch.is-chosen .serm-mini-step.is-unlocked').count(), 1);
+    assert.equal(await page.locator('#p-serm-c .serm-mini-step').count(), 0);
+    await assertOperationCards(page.locator('#p-serm-c .np-sheet-branch.is-chosen .serm-palier-focus'), expansion.definitions.Cestuaire.branches[0].ability, 11);
     const downloading = page.waitForEvent('download');
     await page.evaluate(() => exportDB());
     const download = await downloading;
@@ -407,7 +420,7 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.equal(await page.evaluate(() => _cs.fighters[0].epCur), initial.ep, 'Declarations reserve, without spending early.');
     assert.equal(await page.evaluate(() => _cs.fighters[0]._rf.loaded), 0, 'La prévision ne devient pas prématurément un chargement résolu.');
     assert.match(await page.locator('.rf-combat-head').textContent(), /Prévu après tes actions/);
-    assert.deepEqual(await page.locator('.rf-combat > .rf-operation button strong').allTextContents(), ['Tirer un carreau'], 'Le tir devient le premier geste jouable après l’armement déclaré.');
+    assert.deepEqual(await page.locator('.rf-combat > .rf-operation button strong').allTextContents(), ['Tirer un carreau', 'Surarmer le cran'], 'Une fois chargée, l’arbalète permet de tirer ou de surarmer dès le niveau 2.');
     assert.equal(await page.locator('#rf-target-0-shoot').inputValue(), '1', 'L’unique adversaire vivant est présélectionné.');
     assert.equal(await page.locator('#rf-target-0-shoot option[value="0"]').count(), 0, 'Le tireur ne peut pas se choisir comme adversaire.');
     await page.evaluate(() => cUndoLastDecl(0));

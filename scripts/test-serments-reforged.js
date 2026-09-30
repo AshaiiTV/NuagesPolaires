@@ -30,16 +30,20 @@ test('24 revised choices replace the public expansion without losing 46 existing
     assert.notEqual(d.branches[0].nom,d.branches[1].nom,name);
     for(const branch of d.branches){
       branches++;tiers+=branch.paliers.length;
-      assert.deepEqual(branch.paliers.map(p=>p.niv),d.evolvesFrom?[10,13,16,20]:[2,5,7,10],name);
+      assert.deepEqual(branch.paliers.map(p=>p.niv),[d.evolvesFrom?10:1],name);
+      assert.equal(branch.ability,branch.paliers[0],name+' uses one compatibility object');
+      assert.equal(branch.linear,true);
+      assert.equal(branch.ability.linear,true);
       assert.ok(branch.legacyNames.length>0,name+' preserves existing branch selection');
-      assert.equal(new Set(branch.paliers.map(p=>p.desc)).size,4,name+' four distinct progression steps');
+      assert.equal(branch.combatRules.tiers,undefined,name+' has no threshold table');
+      assert.deepEqual(branch.ability.scaling,branch.scaling);
       assert.ok(branch.combatRules.operations.length>0,name+' final operation contract required');
     }
     const old=legacy.definitions[name];
     for(const key of ['pvN','epN','emN'])assert.equal(d[key],old[key],name+' character growth unchanged');
     for(const key of ['pvN','epN','emN'])assert.equal(growth.effectiveDefinition(name)[key],d[key],name+' server growth');
   }
-  assert.equal(branches,48);assert.equal(tiers,192);
+  assert.equal(branches,48);assert.equal(tiers,48);
   for(const name of reforged.retiredNames){
     const d=reforged.definitions[name];
     assert.equal(d.retired,true,name);assert.equal(d.hidden,true,name);
@@ -55,7 +59,7 @@ test('Retirement is enforced in selectors even for an old visibility override',(
   assert.equal(visible('Serment du staff',{hidden:true}),false);
 });
 
-test('Authored identities and tier manifestations reach the player catalogue without changing the combat contract',()=>{
+test('Authored identities remain intact and each stable ability matches the linear combat contract',()=>{
   const source=JSON.parse(fs.readFileSync(path.join(root,'docs/serments-reforged-source.json'),'utf8'));
   const contract=JSON.parse(fs.readFileSync(path.join(root,'docs/serments-reforged-mechanics.json'),'utf8'));
   const clean=text=>text.replaceAll('corrosion reforgée','corrosion alchimique').replaceAll('protection reforgée','protection de serment').replaceAll('empoisonnement natif','empoisonnement');
@@ -72,14 +76,14 @@ test('Authored identities and tier manifestations reach the player catalogue wit
       assert.equal(new Set(branch.tierNames).size,4);
       assert.deepEqual(rendered.combatRules.cost,rules.cost);
       assert.equal(rendered.combatRules.model,rules.model);
-      for(const [ti,tier] of rendered.paliers.entries()){
-        assert.equal(tier.nom,branch.tierNames[ti]);
-        assert.equal(tier.manifestation,branch.tierNarratives[ti]);
-        assert.ok(tier.manifestation?.trim());
-        assert.equal(tier.desc,clean(rules.tiers[ti].effectFormula||rules.tiers[ti].effect));
-        assert.deepEqual(tier.combatRules.cost,rules.tiers[ti].cost||rules.cost);
-        assert.deepEqual(tier.combatRules.unlocks,rules.tiers[ti].unlocks||[]);
-      }
+      const ability=rendered.ability;
+      assert.equal(ability.nom,branch.name);
+      assert.equal(ability.manifestation,branch.visual);
+      assert.ok(ability.manifestation?.trim());
+      assert.equal(ability.desc,clean(rules.ability.effectFormula));
+      assert.deepEqual(ability.combatRules.cost,rules.ability.cost);
+      assert.deepEqual(ability.scaling,rules.ability.scaling);
+      assert.equal(ability.combatRules.operations.length,rules.ability.operations.length);
     }
   }
 });
@@ -120,4 +124,29 @@ test('Legacy registry, revised data, painted renderer and both combat engines lo
   const scripts=['serments-expansion-data.js','serments-reforged-data.js','serments-emblems.js','main.js','serments-combat.js','serments-reforged-combat.js'];
   const positions=scripts.map(name=>html.indexOf('assets/js/'+name));
   assert.ok(positions.every((p,i)=>p>=0&&(!i||p>positions[i-1])));
+});
+
+test('generated operation formulas exactly match the executable rules through level 100',()=>{
+  const engine=require('../assets/js/serments-reforged-combat');
+  const clean=text=>text.replaceAll('corrosion reforgée','corrosion alchimique').replaceAll('protection reforgée','protection de serment').replaceAll('empoisonnement natif','empoisonnement');
+  let rounded=0;
+  for(const entry of reforged.entries)for(const branch of reforged.definitions[entry.name].branches){
+    const operations=branch.ability.combatRules.operations;
+    for(const level of [branch.minLevel,branch.minLevel+1,branch.minLevel+2,20,35,36,57,100]){
+      const actual=engine.describe(entry.name,branch.key,level).operations;
+      assert.deepEqual(actual.map(op=>op.id),operations.map(op=>op.id));
+      operations.forEach((operation,index)=>{
+        assert.equal(operation.unlock,undefined);
+        const text=operation.ruleParts.map(part=>{
+          if(typeof part==='string')return part;
+          const value=(part.base+part.perLevel*level)/(part.divisor||1);
+          if(part.round==='ceil'){rounded++;return Math.ceil(value);}
+          return value;
+        }).join('');
+        assert.equal(text,clean(actual[index].rule),entry.name+' '+branch.key+' '+operation.id+' N='+level);
+        assert.deepEqual(operation.cost,actual[index].cost);
+      });
+    }
+  }
+  assert.ok(rounded>0,'Half-values are verified, including odd-number rounding');
 });

@@ -2,6 +2,20 @@
 
 const assert = require('node:assert/strict');
 
+// Evaluate the published arithmetic contract directly: do not call the UI renderer
+// or combat formatter here, since both surfaces could share the same regression.
+function ruleAtLevel(operation, level) {
+  if (Array.isArray(operation.ruleParts)) {
+    return operation.ruleParts.map(part => {
+      if (typeof part === 'string') return part;
+      assert.ok(part && Number.isFinite(part.base) && Number.isFinite(part.perLevel), 'Each numeric rule part declares its affine coefficients.');
+      const value = (part.base + part.perLevel * level) / (part.divisor || 1);
+      return String(part.round === 'ceil' ? Math.ceil(value) : value);
+    }).join('');
+  }
+  return String(operation.ruleFormula || operation.rule || '').replace(/\((-?\d+) \+ N\)/g, (_, base) => String(Number(base) + level));
+}
+
 // Check the public DOM against the independently generated rule contract. A staff
 // description override deliberately falls back to its exact authored paragraph.
 async function assertOperationCards(container, tier, level) {
@@ -14,12 +28,15 @@ async function assertOperationCards(container, tier, level) {
   const staffCost = tier.cout != null && tier.cout !== originalCosts.join(' / ');
   const operations = rules && tier.desc === rules.effect && !staffCost ? rules.operations || [] : [];
   const cards = container.locator('.np-oath-operation,.oath-ability-action');
-  assert.equal(await cards.count(), operations.length, 'One card per unlocked operation.');
+  assert.equal(await cards.count(), operations.length, 'One card per operation, independent of character-level thresholds.');
   if (!operations.length) {
-    assert.equal(await container.locator(':scope > p').textContent(), tier.desc);
+    const expectedText = rules && tier.desc === rules.effect && Array.isArray(rules.operations)
+      ? rules.operations.map(operation => ruleAtLevel(operation, Number(level))).join(' ')
+      : tier.desc;
+    assert.equal(await container.locator(':scope > p').textContent(), expectedText);
     return;
   }
-  const effectiveLevel = Math.max(level, tier.niv);
+  const effectiveLevel = Number(level);
   for (const [index, operation] of operations.entries()) {
     const card = cards.nth(index);
     const isInspector = await card.evaluate(element => element.classList.contains('oath-ability-action'));
@@ -30,21 +47,14 @@ async function assertOperationCards(container, tier, level) {
       if (operation.cost[key]) assert.match(costs, new RegExp('(?:^| · )' + operation.cost[key] + ' ' + unit + '(?: · |$)'));
       else assert.ok(!costs.includes(' ' + unit), 'No absent resource in the cost of ' + operation.label);
     }
-    const effect = await card.locator('p').textContent();
+    const effect = await card.locator(isInspector ? '.oath-action-effect' : ':scope > p').textContent();
     assert.ok(effect.trim(), operation.label + ' has its own effect.');
     assert.ok(!effect.includes('+ N'), operation.label + ' evaluates the character level.');
-    const rule = isInspector ? operation.ruleFormula || operation.rule : operation.rule;
-    for (const match of String(rule).matchAll(/\((-?\d+) \+ N\)/g)) {
-      assert.ok(effect.includes(String(Number(match[1]) + effectiveLevel)), operation.label + ' uses the explored level, not just its unlock level.');
-    }
-    // Apart from the cost now represented above, every part of the operation
-    // remains present, including conditions, durations and counters.
-    const numericalRule = String(rule).replace(/\((-?\d+) \+ N\)/g, (_, base) => String(Number(base) + effectiveLevel));
-    const body = isInspector
-      ? numericalRule.replace(/^\d+ actions?(?:\s*(?:,|et|\/)\s*\d+\s*(?:EP|EM|PV))*\.\s*/, '').trim()
-      : numericalRule.replace(/^\d+ actions?(?:\s*(?:,|et|\/)\s*\d+\s*(?:EP|EM|PV))*/, '').trim().replace(/^[.,;]\s*/, '').replace(/^et\s+/, 'Consomme ');
+    // Preserve all conditions, durations and counters in addition to scaled values.
+    const numericalRule = ruleAtLevel(operation, effectiveLevel);
+    const body = numericalRule.replace(/^\d+ actions?(?:\s*(?:,|et|\/)\s*\d+\s*(?:EP|EM|PV))*\.\s*/, '').trim();
     assert.equal(effect, body, operation.label + ' preserves its complete rule.');
   }
 }
 
-module.exports = { assertOperationCards };
+module.exports = { assertOperationCards, ruleAtLevel };

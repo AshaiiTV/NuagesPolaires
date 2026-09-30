@@ -2,8 +2,9 @@
 """Merge authored serment copy with the combat contract; emit the browser adapter.
 
 The published text and the engine use the same mechanics JSON. This generator
-does not alter the archived v299 catalogue, the original thirteen serments,
-character records, or their growth tables.
+does not alter the archived v299 catalogue, character records, or growth tables.
+One stable ability is published per branch; the one-item paliers list is solely
+an adapter for older readers of the character schema.
 """
 import argparse
 import copy
@@ -57,37 +58,34 @@ def build(allow_draft=False):
             branch['scenario'] = branch['example']
             branch['cycle'] = clean_rule(branch.get('cycle') or branch['rule'])
             branch['limits'] = clean_rule(branch.get('limits') or branch.get('limit'))
-            if not branch.get('tiers'):
-                if not allow_draft:
-                    raise ValueError(f'{name} {branch["key"]}: the combat contract must provide four final tier descriptions')
-                branch['tiers'] = [{'level': level, 'effect': branch['rule']} for level in branch['levels']]
-            assert [t['level'] for t in branch['tiers']] == ([10, 13, 16, 20] if entry['parent'] else [2, 5, 7, 10]), name
-            assert len(branch['tiers']) == 4
-            if not allow_draft:
-                assert branch.get('operations'), f'{name}: missing operation contract'
-                assert branch.get('cost'), f'{name}: missing activation cost'
-                assert len({t['effect'] for t in branch['tiers']}) == 4, f'{name}: repeated progression'
-            for index, tier in enumerate(branch['tiers']):
-                tier['title'] = branch['tierNames'][index]
-                tier['narrative'] = branch['tierNarratives'][index]
-                # A palier remains selected between thresholds; damage must use
-                # N rather than freezing the preview at the threshold's level.
-                tier['effect'] = clean_rule(tier.get('effectFormula') or tier['effect'])
-                for operation in tier.get('operations', []):
-                    operation['rule'] = clean_rule(operation.get('ruleFormula') or operation.get('rule'))
-            for operation in branch.get('operations', []):
-                operation['rule'] = clean_rule(operation.get('ruleFormula') or operation.get('rule'))
-            if not allow_draft:
-                assert len({t['effect'] for t in branch['tiers']}) == 4, f'{name}: repeated progression after formula normalization'
+            ability = branch.get('ability')
+            if not ability:
+                raise ValueError(f'{name} {branch["key"]}: the combat contract must provide one stable ability')
+            assert ability['level'] == (10 if entry['parent'] else 1), name
+            assert ability.get('operations'), f'{name}: missing operation contract'
+            assert ability.get('cost'), f'{name}: missing activation cost'
+            # Keep all authored narrative variants in the source for historical
+            # records; the stable ability uses the branch's complete appearance.
+            ability['title'] = branch['name']
+            ability['narrative'] = branch['visual']
+            ability['effect'] = clean_rule(ability['effectFormula'])
+            for operation in ability['operations']:
+                operation['rule'] = clean_rule(operation['ruleFormula'])
+                operation['ruleFormula'] = clean_rule(operation['ruleFormula'])
+                operation['ruleParts'] = [clean_rule(part) if isinstance(part, str) else part for part in operation['ruleParts']]
+            branch['operations'] = copy.deepcopy(ability['operations'])
             entry['branches'].append(branch)
         entries.append(entry)
+    source['version'] = '2026-09-30.reforged.4'
+    source['schemaVersion'] = 4
+    source['linearAbilities'] = True
     source['entries'] = entries
     source['mechanicsStatus'] = mechanics.get('status', 'ready')
     source['commonRules'] = (
         '# Lire les serments\n\n'
-        'Chaque serment offre deux branches exclusives. Les bases développent leurs capacités aux niveaux 2, 5, 7 et 10 ; '
-        'les évolutions aux niveaux 10, 13, 16 et 20. Seul le palier atteint s\'applique : les quatre descriptions ne se cumulent pas.\n\n'
-        'N désigne le niveau du personnage. Les coûts et les effets de chaque opération figurent dans le combat. '
+        'Chaque serment offre deux voies exclusives. Chaque voie possède une capacité complète dès son obtention : '
+        'ses gestes et leurs conditions ne changent pas avec le niveau. Seules les valeurs numériques suivent les formules indiquées.\n\n'
+        'N désigne le niveau du personnage. Les demi-valeurs sont arrondies au supérieur. Les coûts restent fixes et chaque geste se paie séparément. '
         'Une préparation ne donne jamais une attaque ni une action gratuite ; les réactions du Guetteur ont été payées à l\'avance. '
         'Un tir, une frappe ou un contact suit les défenses indiquées par sa capacité.\n\n'
         'Les charges, protections, corrosions, prises et dispositifs de cette sélection sont suivis par le moteur. '
@@ -117,6 +115,7 @@ def build(allow_draft=False):
   data.retiredNames = Object.keys(data.definitions).filter(function(name) { return data.activeNames.indexOf(name) === -1; });
   data.commonRules = authored.commonRules;
   data.reforged = true;
+  data.linearAbilities = true;
   function costText(cost) {
     if (!cost) return "";
     var parts = [cost.actions + (cost.actions > 1 ? " actions" : " action")];
@@ -135,23 +134,24 @@ def build(allow_draft=False):
     var aliases = {};
     var branches = entry.branches.map(function(branch) {
       (branch.legacyNames || []).forEach(function(name) { aliases[name] = branch.name; });
+      var spec = branch.ability;
+      var ability = {niv:spec.level, nom:spec.title || branch.name, manifestation:spec.narrative || "", cout:costText(spec.cost), desc:spec.effect,
+        scaling:branch.scaling, linear:true,
+        combatRules:{key:branch.key, name:branch.name, model:branch.model, level:spec.level,
+          effect:spec.effect, cost:spec.cost, scaling:branch.scaling, linear:true,
+          operations:spec.operations.map(function(op) { return Object.assign({}, op, {rule:op.ruleFormula || op.rule}); })}};
       return {
         key:branch.key, nom:branch.name, summary:branch.summary,
         legacyNames:branch.legacyNames || [],
         style:branch.style || (former.cat === "melee" ? "Contrôle" : former.cat === "distance" ? "Distance" : "Concentration"),
         descPhys:branch.visual, flavor:branch.example, desc:branch.summary, roleplay:branch.roleplay, gameplay:branch.gameplay,
-        combatRules:branch,
-        paliers:branch.tiers.map(function(tier) {
-          return {niv:tier.level, nom:tier.title || branch.name, manifestation:tier.narrative || "", cout:costText(tier.cost || branch.cost), desc:tier.effect,
-            combatRules:{key:branch.key, name:branch.name, model:branch.model, level:tier.level,
-              effect:tier.effect, cost:tier.cost || branch.cost, unlocks:tier.unlocks || [],
-              operations:tier.operations.map(function(op) { return Object.assign({}, op, {rule:op.ruleFormula || op.rule}); })}};
-        })
+        combatRules:branch, minLevel:branch.minLevel, scaling:branch.scaling, linear:true,
+        ability:ability, paliers:[ability]
       };
     });
     var art = "assets/serments/painted/" + entry.artSlug + ".jpg";
     data.definitions[entry.name] = Object.assign({}, former, {
-      dataVersion:authored.version, reforged:true, retired:false, hidden:false,
+      dataVersion:authored.version, reforged:true, linearAbilities:true, retired:false, hidden:false,
       arme:entry.weapon, weaponDescription:entry.weaponDescription,
       tagline:entry.tagline, fantasy:entry.tagline, lore:entry.lore,
       vow:entry.vow, awakening:entry.awakening, worldRole:entry.worldRole, evolutionMeaning:entry.evolutionMeaning,
@@ -173,7 +173,7 @@ def build(allow_draft=False):
   if (typeof module !== "undefined" && module.exports) module.exports = data;
 '''
     OUTPUT.write_text('/* Generated by scripts/generate-serments-reforged.py from authored copy and the combat contract. */\n(function (root) {\n  "use strict";\n  var authored = ' + encoded + ';\n' + adapter + '})(typeof window !== "undefined" ? window : globalThis);\n')
-    print(f'Generated {len(entries)} serments, 48 branches, 192 tiers; retained 46 archived definitions.')
+    print(f'Generated {len(entries)} serments, 48 stable abilities; retained 46 archived definitions.')
 
 
 if __name__ == '__main__':

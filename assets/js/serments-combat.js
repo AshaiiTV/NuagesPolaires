@@ -513,7 +513,7 @@
     w.cGetAbilityOptions=function(fi,left){if(fight().fighters[fi]&&fight().fighters[fi]._np70Native)return [];return info(fi)?getOptions(fi):originals.cGetAbilityOptions.apply(this,arguments);};
     w.cBuildAbilityOptionsForPalier=function(inf,pal,left){if(inf&&inf.fighter&&entryFor(inf.fighter))return getOptions(fight().fighters.indexOf(inf.fighter));return originals.cBuildAbilityOptionsForPalier.apply(this,arguments);};
     w.cRenderAbilityButtons=function(fi){if(fight().fighters[fi]&&fight().fighters[fi]._np70Native)return '';return info(fi)?render(fi):originals.cRenderAbilityButtons.apply(this,arguments);};
-    w.cDeclCount=function(fi){return ((fight().decl||{})[fi]||[]).reduce(function(v,a){return v+((a.np70||a.np70Free)?a.consumeActions:(a.consumeActions||1));},0);};
+    w.cDeclCount=function(fi){return ((fight().decl||{})[fi]||[]).reduce(function(v,a){return v+(typeof a.consumeActions==='number'?a.consumeActions:1);},0);};
     w.cDeclareAction=function(fi,action,opts){
       var inf=info(fi),cs=fight();opts=opts||{};
       var native=cs.fighters[fi];

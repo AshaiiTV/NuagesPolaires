@@ -9,11 +9,11 @@ const main=fs.readFileSync(path.join(__dirname,'../assets/js/main.js'),'utf8');
 const contract=require('../docs/serments-reforged-mechanics.json');
 const copy=x=>JSON.parse(JSON.stringify(x));
 function realFunction(name){const start=main.indexOf('function '+name+'(');assert.notEqual(start,-1);const end=main.indexOf('\nfunction ',start+1);return main.slice(start,end===-1?undefined:end);}
-function env(name='Arbalétrier',key='A',level=2,realBudgets=false){
- const definitions=Object.fromEntries(contract.entries.map(e=>[e.name,{reforged:true,dmg:20,branches:e.branches.map(b=>({key:b.key,nom:b.name,combatRules:{key:b.key},paliers:b.levels.map(niv=>({niv,nom:b.name}))}))}]));
+function env(name='Arbalétrier',key='A',level=2,realBudgets=false,version=3){
+ const definitions=Object.fromEntries(contract.entries.map(e=>[e.name,{reforged:true,dmg:20,branches:e.branches.map(b=>{const cost=b.ability.cost,parts=[cost.actions+' action'+(cost.actions>1?'s':'')];if(cost.ep)parts.push(cost.ep+' EP');if(cost.em)parts.push(cost.em+' EM');const ability={niv:b.minLevel,nom:b.name,linear:true,desc:b.ability.effectFormula,cout:parts.join(' / '),combatRules:{linear:true,effect:b.ability.effectFormula,cost:copy(cost)}};return {key:b.key,nom:b.name,combatRules:{key:b.key},ability,paliers:[ability]};})}]));
  const players=[{id:'p0',name:'Porteur',classe:name,branch:key,level}];
  const c={console,Math,JSON,Date,Number,String,Object,Array,Infinity,logs:[],attacks:[],CU:{type:'staff'},document:null,STATUT_EFFECTS:{},setTimeout:()=>{},combatSnapshot:()=>{},combatQueueFx:()=>{},combatPlayPendingFx:()=>{},cTickShieldCallTaunts:()=>{},cTickStatuts:()=>{},cFindAutoInterpose:()=>null,cApplyElementalLogic:(f,a,t,d)=>({dmg:d}),cAddOrRefreshStatut:()=>{},openDropModal:()=>{},rCombat:()=>{},notif:x=>c.logs.push(x),cLog:x=>c.logs.push(x),_nextDeclarant:()=>{if(c._cs.turn>=c._cs.order.length)c._cs.phase='resolution';},cEnsureFighterCid:f=>(f.cid||= 'id'+c._cs.fighters.indexOf(f)),cActionsMax:()=>3,cGetAbilityOptions:()=>[{legacy:true}],cBuildAbilityOptionsForPalier:()=>[{legacy:true}],cRenderAbilityButtons:()=>'<legacy>',combatStart:()=>{c._cs.active=true;c._cs.round=1;c._cs.phase='declaration';c._cs.order=c._cs.fighters.map((_,i)=>i);},cGetForcedTargetInfo:()=>null};
- c.window=c;c._cs={active:true,phase:'declaration',round:1,turn:0,order:[0,1,2,3],decl:{},_usedDefs:{},log:[],fighters:[{pid:'p0',name:'Porteur',classe:name,type:'player',level,pvCur:500,pvMax:500,epCur:500,emCur:500,statuts:[]},{name:'Ennemi',type:'beast',pvCur:500,pvMax:500,epCur:500,emCur:500,statuts:[]},{name:'Allié',type:'player',pvCur:500,pvMax:500,epCur:500,emCur:500,statuts:[]},{name:'Autre ennemi',type:'beast',pvCur:500,pvMax:500,epCur:500,emCur:500,statuts:[]}]};
+ c.window=c;c._cs={reforgedVersion:version,active:true,phase:'declaration',round:1,turn:0,order:[0,1,2,3],decl:{},_usedDefs:{},log:[],fighters:[{pid:'p0',name:'Porteur',classe:name,type:'player',level,pvCur:500,pvMax:500,epCur:500,emCur:500,statuts:[]},{name:'Ennemi',type:'beast',pvCur:500,pvMax:500,epCur:500,emCur:500,statuts:[]},{name:'Allié',type:'player',pvCur:500,pvMax:500,epCur:500,emCur:500,statuts:[]},{name:'Autre ennemi',type:'beast',pvCur:500,pvMax:500,epCur:500,emCur:500,statuts:[]}]};
  c.cGetFighterPlayer=fi=>players.find(p=>p.id===c._cs.fighters[fi].pid);c.getPlayerSermentBundle=p=>({branch:definitions[p.classe].branches.find(b=>b.key===p.branch)});c.getAllSD=()=>definitions;c.cDeclCount=fi=>(c._cs.decl[fi]||[]).reduce((n,a)=>n+(a.consumeActions||1),0);c.cActionsLeft=fi=>Math.max(0,c.cActionsMax(fi)-c.cDeclCount(fi));
  c.cDeclareAction=(fi,action,opts={})=>{const a={action,kind:['frappe','pugilat','capacite'].includes(action)?'attack':'utility',consumeActions:1,epCost:action==='frappe'?6:action==='parer'?0:action==='esquive'?8:0,emCost:0,value:20,target:1,...opts};(c._cs.decl[fi]||=[]).push(a);if(c.cActionsLeft(fi)<=0){c._cs.turn++;c._nextDeclarant();}return a;};
  vm.createContext(c);['cGetAttackTargets','cApplyRawDamage','cResolveAttackInstance','combatResolve'].forEach(n=>vm.runInContext(realFunction(n),c));
@@ -33,14 +33,24 @@ function env(name='Arbalétrier',key='A',level=2,realBudgets=false){
  return c;
 }
 
-test('24 distinct identities, 48 distinct models, costs and qualitative unlocks are generated from the engine',()=>{
+test('24 identities expose 48 stable abilities with linear coefficients and constant costs beyond level 35',()=>{
  const c=env();assert.equal(c.api.catalog.length,24);assert.equal(new Set(c.api.catalog.flatMap(e=>e.branches.map(b=>b.model))).size,48);
- let upgrades=0;
- for(const e of c.api.catalog)for(const b of e.branches){const tiers=b.levels.map(n=>c.api.describe(e.name,b.key,n));for(const x of tiers){assert.ok(x.operations.length>=1);for(const o of x.operations){assert.ok(o.rule);assert.ok(o.cost.actions>=1&&o.cost.actions<=2);assert.ok(o.cost.ep>=0&&o.cost.em>=0);assert.ok(!/MJ|constat/.test(o.rule));}}if(tiers[3].operations.length>tiers[0].operations.length)upgrades++;}
- assert.ok(upgrades>=40,'At least 40 branches gain concrete choices beyond number scaling');
+ for(const e of c.api.catalog)for(const b of e.branches){
+  const levels=[b.minLevel,b.minLevel+1,b.minLevel+2,20,35,36,50,100];
+  const reference=c.api.describe(e.name,b.key,b.minLevel);
+  assert.ok(reference.operations.length>=1);assert.equal(b.levels,undefined);
+  for(const level of levels){const result=c.api.describe(e.name,b.key,level);assert.deepEqual(result.operations.map(o=>o.id),reference.operations.map(o=>o.id),e.name+' stable actions');
+   result.operations.forEach((o,i)=>{assert.ok(o.rule);assert.deepEqual(o.cost,reference.operations[i].cost);assert.equal(o.unlock,undefined);assert.ok(!/MJ|constat/.test(o.rule));});
+   const inf=env(e.name,b.key,level).api.info(0);for(const key of ['power','strike','pool'])assert.equal(inf[key],b.scaling[key].base+b.scaling[key].perLevel*level);
+  }
+  const anchor=env(e.name,b.key,b.balanceAnchor.level).api.info(0);for(const key of ['power','strike','pool'])assert.equal(anchor[key],b.balanceAnchor[key],e.name+' preserves first-tier balance anchor');
+  if(e.parent)assert.equal(c.api.describe(e.name,b.key,9).operations.length,0,'Evolution still needs its entry level');
+ }
+ const base=c.api.describe('Arbalétrier','A',1).operations;assert.ok(base.some(o=>o.id==='tension'),'The crossbow keeps its signature choice from acquisition');
+ assert.ok(!c.api.describe('Pugiliste','A',50).operations.some(o=>['commit','sacrifice','sustain'].includes(o.id)),'Mastery extensions are removed from new battles');
 });
 test('all 48 branches expose explicit operations and valid turn/resource checks',()=>{
- for(const e of contract.entries)for(const b of e.branches){const c=env(e.name,b.key,20);const ops=c.api.getOptions(0);assert.ok(ops.length>=2,e.name+' '+b.key);for(const op of ops){assert.equal(op.action,'reforged');assert.equal(op.rf.model,b.model);assert.ok(op.consumeActions>=1);}c._cs.turn=1;assert.equal(c.act(ops[0].rf.id,{target:1,second:3}).ok,false);}
+ for(const e of contract.entries)for(const b of e.branches){const c=env(e.name,b.key,20);const ops=c.api.getOptions(0);assert.ok(ops.length>=1,e.name+' '+b.key);for(const op of ops){assert.equal(op.action,'reforged');assert.equal(op.rf.model,b.model);assert.ok(op.consumeActions>=1);}c._cs.turn=1;assert.equal(c.act(ops[0].rf.id,{target:1,second:3}).ok,false);}
 });
 test('level 1 crossbow has ordinary load/shot even without any branch; a dry shot and ordinary bypass are rejected',()=>{
  const c=env('Arbalétrier',null,1);assert.equal(c.act('shoot',{target:1}).ok,false);assert.equal(c.act('load').ok,true);assert.equal(c.act('shoot',{target:1}).ok,true);c.finish();assert.equal(c._cs.fighters[1].pvCur,479);assert.equal(c._cs.fighters[0].epCur,492);assert.equal(c.api.getState(0).ammo,5);assert.equal(c.cDeclareAction(0,'frappe',{target:1}).ok,false);
@@ -256,7 +266,7 @@ test('Distillateur extraction preserves small real values and caps large ones wi
  const c=env('Distillateur','B',10);c._cs.fighters[2]._rfEffects=[{kind:'shield',owner:'id2',amount:120,expires:4}];c.act('extract',{target:2});c.finish();assert.equal(c.api.getState(0).pool,80);assert.equal(c._cs.fighters[2]._rfEffects[0].spent,true);c.act('release',{target:0});c.finish();assert.equal(c._cs.fighters[0]._rfEffects.find(e=>e.kind==='shield').amount,80);
 });
 test('Totémiste reconstruction and voluntary dismantling never refill the first free charge',()=>{
- const c=env('Totémiste','A',20);c.act('plant');c.finish();assert.equal(c.act('plant').ok,false);c.act('dismantle');assert.equal(c.act('plant').ok,true);assert.equal(c.act('command',{target:1}).ok,false);assert.equal(c.act('charge').ok,true);c.finish();assert.equal(c.api.getState(0).charges,2);assert.equal(c._cs.fighters.filter(f=>f._rfDevice&&f.pvCur>0).length,1);assert.equal(c._cs.fighters[0].emCur,482);assert.equal(c._cs.fighters[0].epCur,494);
+ const c=env('Totémiste','A',20,false,2);c.act('plant');c.finish();assert.equal(c.act('plant').ok,false);c.act('dismantle');assert.equal(c.act('plant').ok,true);assert.equal(c.act('command',{target:1}).ok,false);assert.equal(c.act('charge').ok,true);c.finish();assert.equal(c.api.getState(0).charges,2);assert.equal(c._cs.fighters.filter(f=>f._rfDevice&&f.pvCur>0).length,1);assert.equal(c._cs.fighters[0].emCur,482);assert.equal(c._cs.fighters[0].epCur,494);
  c._cs=copy(c._cs);c.act('dismantle');c.act('plant');c.finish();assert.equal(c.api.getState(0).charges,0);assert.equal(c.api.getState(0).planted,true);
 });
 test('Barde can pay the closing action before allied contributions and it resolves only once',()=>{
@@ -311,4 +321,62 @@ test('first-unlock cycles are affordable with actual progression reserves and na
  use(totemiste,'plant');assert.equal(totemiste.api.getState(0).charges,0);use(totemiste,'charge');use(totemiste,'command',{target:1});assert.equal(totemiste.cActionsLeft(0),0);totemiste.finish();spentExactly(totemiste,4,18);assert.equal(totemiste._cs.fighters[1].pvCur,432);assert.equal(totemiste.api.getState(0).charges,1);
  const barde=env('Barde','A',2,true);assert.equal(barde.initialBudget.epMax,53);assert.equal(barde.initialBudget.emMax,25);use(barde,'sing',{target:2});use(barde,'close');assert.equal(barde.cActionsLeft(0),1);
  barde._cs.decl[2]=[{action:'frappe',kind:'attack',consumeActions:1,epCost:6,value:6,target:1}];barde.defend(2,'parer');barde.enemy(20,2);barde._cs.order=[0,2,1,3];barde.finish();spentExactly(barde,0,6);assert.equal(barde._cs.fighters[2]._rfEffects.find(e=>e.kind==='shield'&&!e.spent).amount,20);assert.equal(barde.api.getState(0).closeQueued,false);
+});
+
+test('newly obtained base abilities fit real level-one reserves and retain their complete core actions',()=>{
+ for(const entry of contract.entries.filter(e=>!e.parent))for(const branch of entry.branches){
+  const c=env(entry.name,branch.key,1,true),options=c.api.getOptions(0);
+  assert.ok(options.length>0,entry.name+' '+branch.key);
+  assert.ok(options.some(op=>!op.disabled),entry.name+' has an affordable opening at level 1');
+  assert.equal(c.api.info(0).version,3);assert.equal(c.api.getState(0).version,3);
+  for(const option of options){assert.ok(option.consumeActions<=3);assert.ok(option.epCost<=c.initialBudget.epMax);assert.ok(option.emCost<=c.initialBudget.emMax);}
+ }
+ const crossbow=env('Arbalétrier','A',1,true);
+ for(const id of ['load','tension','shoot'])assert.equal(crossbow.act(id,id==='shoot'?{target:1}:{}).ok,true);
+ crossbow.finish();assert.equal(crossbow._cs.fighters[1].pvCur,475);assert.equal(crossbow.api.getState(0).ammo,5);assert.equal(crossbow._cs.fighters[0].epCur,crossbow.initialBudget.epMax-14);
+});
+
+test('actual level-35 and level-36 crossbow cycles gain exactly their linear damage increment',()=>{
+ for(const level of [35,36]){
+  const c=env('Arbalétrier','A',level);c.act('load');c.act('tension');c.act('shoot',{target:1});c.finish();
+  assert.equal(500-c._cs.fighters[1].pvCur,20+5*level,'Damage combines strike and tension with N counted once');
+  assert.equal(c._cs.fighters[0].epCur,486);assert.equal(c.api.getState(0).ammo,5);
+ }
+});
+
+test('saved v2 declaration retains its removed mastery action, old numbers, costs and hand state',()=>{
+ const c=env('Pugiliste','A',10,false,2);assert.equal(c.act('commit',{target:1}).ok,true);
+ const snapshot=copy(c._cs);c._cs=copy(snapshot);
+ assert.equal(c.api.info(0).version,2);assert.equal(c.api.getState(0).version,2);
+ c.finish();assert.equal(c._cs.fighters[1].pvCur,420);assert.equal(c._cs.fighters[0].epCur,490);assert.equal(c._cs.fighters[0].emCur,496);assert.equal(c.api.getState(0).hands,2);
+ // Starting a subsequent encounter, rather than loading a save, changes rules.
+ c._cs.active=false;c.combatStart();assert.equal(c._cs.reforgedVersion,3);assert.equal(c.api.info(0).version,3);
+ assert.ok(!c.api.getOptions(0).some(op=>op.rf.id==='commit'));assert.equal(c.api.getState(0).hands,0);
+});
+
+test('saved v2 reserves are not recomputed and unmarked active snapshots keep their legacy rules',()=>{
+ const c=env('Pavoisier','A',13,false,2);c.act('close');c.finish();
+ c._cs=copy(c._cs);delete c._cs.reforgedVersion;
+ assert.equal(c.api.info(0).version,2);assert.equal(c.api.getState(0).pool,34);
+ c.enemy(10);c.finish();assert.equal(c.api.getState(0).pool,24);assert.equal(c._cs.fighters[0].pvCur,500);
+ const unmarked=env('Arbalétrier','A',1,false,2);delete unmarked._cs.reforgedVersion;
+ assert.equal(unmarked.api.info(0).tier,-1);assert.equal(unmarked.api.getOptions(0).find(op=>op.rf.id==='load').epCost,4);
+});
+
+test('legacy descriptions remain available to recognize unchanged imported v2 data',()=>{
+ const c=env(),old=c.api.describeLegacy('Pugiliste','A',10),current=c.api.describe('Pugiliste','A',10);
+ assert.ok(old.operations.some(op=>op.id==='commit'));assert.ok(!current.operations.some(op=>op.id==='commit'));
+ assert.match(old.operations.find(op=>op.id==='punch').rule,/36 dégâts/);
+ assert.match(current.operations.find(op=>op.id==='punch').rule,/40 dégâts/);
+});
+
+test('staff prose and cost overrides use the generic engine without creating native state',()=>{
+ for(const change of [a=>{a.desc='Capacité écrite par le staff.';},a=>{a.cout='2 actions / 9 EP';},a=>{a.cout='';},a=>{a.linear=false;}]){
+  const c=env('Pugiliste','A',10),ability=c.definitions.Pugiliste.branches[0].ability;change(ability);
+  const before=JSON.stringify(c._cs);assert.equal(c.api.info(0),null);assert.equal(c.cGetAbilityOptions(0)[0].legacy,true);
+  assert.equal(c.cBuildAbilityOptionsForPalier({fighter:c._cs.fighters[0]},ability)[0].legacy,true);
+  assert.equal(JSON.stringify(c._cs),before,'No native state is attached to a staff ability');
+ }
+ const legacy=env('Pugiliste','A',10,false,2);legacy.definitions.Pugiliste.branches[0].ability.desc='Nouveau texte staff';
+ assert.equal(legacy.api.info(0).version,2,'An ongoing saved fight keeps the rules with which it began');
 });
