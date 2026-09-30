@@ -40,7 +40,9 @@ async function assertOperationCards(container, tier, level) {
     // Apart from the cost now represented above, every part of the operation
     // remains present, including conditions, durations and counters.
     const numericalRule = String(rule).replace(/\((-?\d+) \+ N\)/g, (_, base) => String(Number(base) + effectiveLevel));
-    const body = numericalRule.replace(/^\d+ actions?(?:\s*(?:,|et|\/)\s*\d+\s*(?:EP|EM|PV))*/, '').trim().replace(/^[.,;]\s*/, '').replace(/^et\s+/, 'Consomme ');
+    const body = isInspector
+      ? numericalRule.replace(/^\d+ actions?(?:\s*(?:,|et|\/)\s*\d+\s*(?:EP|EM|PV))*\.\s*/, '').trim()
+      : numericalRule.replace(/^\d+ actions?(?:\s*(?:,|et|\/)\s*\d+\s*(?:EP|EM|PV))*/, '').trim().replace(/^[.,;]\s*/, '').replace(/^et\s+/, 'Consomme ');
     assert.equal(effect, body, operation.label + ' preserves its complete rule.');
   }
 }

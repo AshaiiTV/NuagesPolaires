@@ -106,7 +106,8 @@
     if(!operations.length) return (tier.cout?'<div class="oath-cost"><span>Coût</span><strong>'+esc(tier.cout)+'</strong></div>':'')+'<div class="oath-inspector-effect"><div class="oath-actions-heading"><h4>Effet de la capacité</h4></div>'+paragraphs(tier.desc||branch.desc||'Effet à définir.','oath-action-effect')+'</div>';
     return '<div class="oath-inspector-effect"><div class="oath-actions-heading"><h4>Actions de ce palier</h4><p>Valeurs au niveau '+level+(state.level<Number(tier.niv)?' · niveau minimum de ce palier':'')+'</p></div><div class="oath-ability-actions">'+operations.map(function(op){
       var costs=inspectorCosts(op.cost);
-      var rule=String(op.ruleFormula||op.rule||'').replace(/\((-?\d+) \+ N\)/g,function(_,base){return String(Number(base)+level);}).replace(/^\d+ actions?(?:\s*(?:,|et|\/)\s*\d+\s*(?:EP|EM|PV))*/,'').replace(/^[.,;]\s*/,'').trim().replace(/^et\s+/,'Consomme ');
+      // Keep a cost sentence intact when it also carries a reservation or a limit.
+      var rule=String(op.ruleFormula||op.rule||'').replace(/\((-?\d+) \+ N\)/g,function(_,base){return String(Number(base)+level);}).replace(/^\d+ actions?(?:\s*(?:,|et|\/)\s*\d+\s*(?:EP|EM|PV))*\.\s*/,'').trim();
       return '<article class="oath-ability-action" data-operation="'+escAttr(op.id||'')+'"><div class="oath-ability-action-head"><h5>'+esc(op.label||'Action')+'</h5><div class="oath-action-cost" aria-label="Coût de l’action">'+costs.map(function(value){return '<span>'+esc(value)+'</span>';}).join('')+'</div></div><p class="oath-action-effect">'+esc(rule)+'</p></article>';
     }).join('')+'</div></div>';
   }

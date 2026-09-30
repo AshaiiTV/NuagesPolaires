@@ -316,12 +316,13 @@ const expansion = require('../assets/js/serments-reforged-data');
       window.getAllSD = window.__originalInspectorCatalogue;
       delete window.__originalInspectorCatalogue;
     });
-    for (const [name, operation, constraint] of [['Alchimiste', 'brew', /1 des 3 fioles du combat/], ['Prismancien', 'shoot', /une facette/], ['Distillateur', 'mother', /Répétable lorsque le flacon est vide/]]) {
+    for (const [name, operation, constraint] of [['Alchimiste', 'brew', /1 des 3 fioles du combat/], ['Prismancien', 'shoot', /une facette/], ['Distillateur', 'mother', /Répétable lorsque le flacon est vide/], ['Guetteur', 'watch', /1 carreau réservés/]]) {
       await page.evaluate(name => NPSermentsAtlas.focus(name), name);
       await setLevel(10);
       await node(0, 0).click();
       await assertInspectorActions(expansion.definitions[name].branches[0], 0, 10);
       assert.match(await inspector().locator('.oath-ability-action[data-operation="' + operation + '"] .oath-action-effect').textContent(), constraint, 'La séparation des coûts conserve les consommables et limites : ' + name);
+      if (name === 'Guetteur') assert.doesNotMatch(await inspector().locator('[data-operation="watch"] .oath-action-effect').textContent(), /Consomme/, 'Une réserve de ressources ne doit pas être reformulée comme une consommation immédiate.');
     }
     observations.push('Inspecteur Arbalétrier niveau 5 : trois actions avec coûts séparés, 29 dégâts calculés, récit replié et accessible au clavier ; aucune ancienne opération ne remplace une description ou un coût staff. Consommables conservés et dose mère répétable explicitée. Captures 1440/1024/390/320 px sans débordement ; placements : ' + JSON.stringify(placements) + '.');
 
