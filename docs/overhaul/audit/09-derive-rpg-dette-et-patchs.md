@@ -561,3 +561,61 @@ Crée `np_store (key TEXT PK, value JSONB, updated_at)` dans PGlite, seed 5 comp
 **Dérive « jeu en ligne » (à supprimer)** : `assets/js/rpg-prototype.js` et tous ses points d'entrée (§1.1) ; actions `rpg_get_character`/`rpg_save_character` et clé `rpg_characters` ; présence simulée (`BroadcastChannel`, `fakePlayers`) ; boutique, or, XP `level×35`, combats solo, quête d'initiation ; carte SVG du RPG ; carte Leaflet dormante du compagnon et sa gestion de lieux (§2) ; promesse « RPG — expérimental » dans la home, la nav, le drawer et Premiers pas.
 
 **Dette structurelle (à ne pas reproduire)** : monolithe global (`main.js` 16 855 l., `index.html` 9 040 l.) ; 20 scripts bloquants ; 16 blocs `<style>` de passes successives + 8 CSS + CSS injecté par 11 modules ; 2 418 `!important` ; 427 `onclick=`, 898 `style=`, CSP `unsafe-inline` ; 11 `MutationObserver` + 11 `setInterval` de re-polish ; monkey-patching en chaîne (`_loadSessionBundle` ×3, `fetch` ×2, `renderBGrid` ×2, `renderStats` ×2, `switchTab`, `applyTheme`, `renderDatabase`, `renderCollection`) ; hacks `[style*="background:rgba(7,8,16"]` ; détection de boutons destructifs par contenu d'`onclick` ; `esc` défini deux fois ; 132 `catch` vides ; `isAdmin`/`escapeHtml` recopiés ; points de rupture mobiles divergents ; trois palettes sombres ; `home-readability-polish.js` mort mais documenté actif ; registre de modules désynchronisé ; versions répétées à la main (`index.html:5` en v3.6.5) ; migrations `localStorage` codées en dur (`np_app_build`, `np_cache_version`) ; polices Google + locales ; dossier `Nuages Polaires/` parasite ; absence de lint, de CI, de hash d'assets.
+
+**Dette de données et de documentation (à solder, pas à reproduire)** : clé `rpg_characters` orpheline après retrait (1 entrée en prod, inaccessible aux actions génériques — §1.4) ; clés `localStorage` `np_rpg_guest_v2` / `np_rpg_proto_v1` sans purge (§1.5) ; clé publique `lieux` sans écran (§2.2) ; archives `np_combat_arc_*` en quarantaine navigateur (§4.3, à récupérer avant de couper l'ancien front) ; `theme_visibility` déclarée « locale uniquement » côté client mais écrite côté serveur (Q8) ; documentation contradictoire sur `home-readability-polish.js` — `docs/PATCHES.md:15` « Actif », `docs/architecture.md:18` idem, alors que `docs/charte-graphique-mystique-polaire.md:62` indique que « le chargement de l'ancienne couche `home-readability-polish.js` a été remplacé par la nouvelle feuille d'identité » et que `index.html` ne le charge pas (aucune balise `<script>` correspondante entre `index.html:7464` et `:9038`) ; `docs/module-registry.json:3-23` omet `progression.js` (chargé `index.html:7464`) et sa liste `cleanup` (`:24-38`) est un journal de versions plutôt qu'un inventaire ; version répétée à la main dans `package.json:3` (`297.0.0`), `docs/module-registry.json:2` (`v297`), `VERSION.txt`, `CHANGELOG.md`, `index.html:5` (`v3.6.5`).
+
+**Dette de pipeline (à remplacer par le socle SvelteKit)** : `scripts/build.js:6-9` copie **tout** `index.html` et `assets/` dans `dist/` sans transformation — le code mort (`home-readability-polish.js`), le prototype RPG et les outils admin/diagnostic sont publiés à tous les visiteurs ; `scripts/check.js:7-9` se limite à `node --check` sur `assets/js`, `netlify/functions`, `scripts` puis exécute `check-api-hardening-wrapper.js`, dont les deux assertions textuelles (`check-api-hardening-wrapper.js:3-8` : présence de `var args = Array.prototype.slice.call(arguments)`, absence de `return fn.apply(this, arguments);`) n'existent que parce que le monkey-patching de `_dbCall`/`_authCall` a cassé le login en v274 — ce garde-fou disparaît avec les wrappers ; `package.json:16` enchaîne 19 suites `node --test` dont `test-rpg-persistence.js`, et `:17` enchaîne 7 parcours Playwright par `&&` (le premier échec masque les suivants) ; `netlify.toml:2` exécute `npm run build` = `check && test && build.js`, donc les `devDependencies` (`@electric-sql/pglite`, `playwright`, `package.json:22-25`) sont requises au build Netlify (`docs/deploy-netlify.md:18`) ; aucune CI, aucun lint, aucun hash d'assets, aucun `Cache-Control` explicite (`netlify.toml:11-24` ne définit que des en-têtes de sécurité). Le socle SvelteKit à la racine apporte déjà `eslint.config.js`, `prettier.config.js`, `tsconfig.json`, `playwright.config.ts`, `vite.config.ts`, `drizzle.config.ts` ; `.gitignore:10` ignore `legacy/dist` et `:27` `test-results`.
+
+### 8.1 Grille de décision par fichier legacy
+
+| Fichier (sous `legacy/`) | Décision | Ce qui survit sous forme d'exigence |
+|---|---|---|
+| `assets/js/rpg-prototype.js` | **Retirer** | Pattern de conflit/brouillon (§1.7) uniquement |
+| `assets/js/main.js:15351-15655` (carte) | **Retirer** | Modèle `lieux` si Q2 tranche « atlas » |
+| `assets/js/home-readability-polish.js` | **Retirer** (mort) | Rien |
+| `assets/js/ui-patches.js` | Retirer | R-UI1..4 |
+| `assets/js/finish-audit.js` | Retirer | R-FA1..4 |
+| `assets/js/theme-max.js` | Retirer (moteur) | R-TM1..4 + `CONFIG` des thèmes comme donnée source |
+| `assets/js/api-hardening.js` | Retirer (wrappers) | R-API1..5 (toutes) |
+| `assets/js/diagnostics.js`, `site-self-test.js` | Retirer | R-DG1 |
+| `assets/js/admin-dashboard.js` | Retirer | R-AD1 |
+| `assets/js/theme-regression.js` | Retirer de l'UI | R-TR1 (déplacé en test Playwright) |
+| `assets/js/staff-navigation.js` | Retirer | R-SN1 |
+| `assets/js/connected-pages-polish.js` | Retirer | R-CP1..4 |
+| `assets/js/mobile-polish.js` | Retirer | R-MO1..5 |
+| `assets/js/visual-audit-polish.js` | Retirer | R-VA1..4 |
+| `assets/js/database-admin-polish.js` | Retirer | R-DB1..2 |
+| `assets/js/beast-admin.js`, `bestiary-admin-pass2.js` | Réécrire | Voir audit bestiaire ; règle `_beastPersist` (§3.15) |
+| `assets/js/progression.js` | **Conserver comme modèle** (règles pures partagées) | §3.16 |
+| `assets/js/first-steps.js`, `adventure-archives.js` | Réécrire à l'identique (rendu sans état, DOM sûr) | §3.16 |
+| `index.html` (16 blocs `<style>`, 8 CSS) | Retirer | Jetons §3.4/§3.10, une feuille par domaine (§3.17) |
+| `netlify/functions/db.js`, `auth.js` | **Conserver les garanties** (§7.1) ; retirer les handlers `rpg_*` | Audit backend (05) |
+| `scripts/helpers/local-app.js`, tests serveur | **Conserver** (R-PL1) ; retirer `test-rpg-*` | Audit tests (06) |
+| `scripts/build.js`, `check.js`, `check-api-hardening-wrapper.js` | Retirer (remplacés par Vite/ESLint/Playwright) | R-PL1..4 |
+| `netlify.toml` en-têtes `:14-21` | **Conserver tels quels** | R-CSP2 ; CSP `:24` à durcir (R-CSP1, R-CSP3, R-CSP4) |
+
+### 8.2 Index des exigences formulées dans ce document
+
+| Préfixe | Portée | Section |
+|---|---|---|
+| R-UI1..4 | Visibilité/collection de thèmes, error boundary | §3.2 |
+| R-FA1..4 | Débordements, cibles tactiles, data-URL cassées, menus bornés | §3.3 |
+| R-TM1..4 | Source unique de thèmes, application par variables, normalisation d'ids, saisonniers | §3.4 |
+| R-API1..5 | Santé API, passivité avant login, génération de session, erreurs normalisées, rechecks | §3.5 |
+| R-DG1 | Panneau de diagnostic admin | §3.6 |
+| R-AD1 | Tableau de bord admin unique | §3.7 |
+| R-TR1 | Test automatisé des thèmes | §3.8 |
+| R-SN1 | Navigation staff par rôle | §3.9 |
+| R-CP1..4 | Jetons dérivés du thème, focus, en-tête, zéro fond inline | §3.10 |
+| R-MO1..5 | Mobile : breakpoint, cibles, pas de scroll horizontal, tables, modales | §3.11 |
+| R-VA1..4 | Compteurs à trois états, sections de fiche, pas de carte imbriquée, un bouton primaire | §3.12 |
+| R-DB1..2 | Écran Administration : avertissement, actions destructives, 4 zones | §3.13 |
+| R-CSP1..4 | CSP stricte, en-têtes conservés, polices locales, `img-src` | §4.2 |
+| R-LS1..4 | Stockage navigateur : clés privées, brouillons, archives héritées, `accounts` | §4.3 |
+| R-PF1..4 | Découpage par rôle, budget, hash + cache, médias | §4.6 |
+| R-A11Y1..5 | Routes réelles, modales, `aria-live`, contraste, mouvement réduit | §4.7 |
+| R-PL1..4 | Pipeline : build = contrôle + tests + génération, pas de test en prod, sauvegarde, `dist/` seul | §5.4 |
+
+---
+
+*Note de relecture (post-déplacement)* : l'ancien site a été déplacé tel quel dans `legacy/` ; toute référence `fichier:ligne` de ce document (ex. `assets/js/main.js:15351`) se lit désormais `legacy/assets/js/main.js:15351`. Les fichiers de configuration du nouveau socle (`package.json`, `.gitignore`, `eslint.config.js`, `vite.config.ts`…) vivent à la racine et ne sont pas ceux décrits en §5 (qui décrit `legacy/package.json`, `legacy/netlify.toml`, `legacy/scripts/`).
