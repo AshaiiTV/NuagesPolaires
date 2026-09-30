@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright');
 const { createLocalApp } = require('./helpers/local-app');
+const { assertOperationCards } = require('./helpers/serment-operation-assertions');
 const expansion = require('../assets/js/serments-reforged-data');
 
 // Real DOM controls and production handlers against isolated PostgreSQL.
@@ -47,6 +48,7 @@ const expansion = require('../assets/js/serments-reforged-data');
     await context.addCookies([{ name: 'np_session', value: session.slice('np_session='.length), url: app.origin, httpOnly: true, sameSite: 'Strict' }]);
     page = await context.newPage();
     page.setDefaultTimeout(15000);
+    page.setDefaultNavigationTimeout(60000);
     page.on('pageerror', error => errors.push(error.stack || error.message));
     await page.route('https://**/*', route => route.abort());
     async function ready() {
@@ -143,14 +145,14 @@ const expansion = require('../assets/js/serments-reforged-data');
     for (const [index, branch] of pugiliste.branches.entries()) {
       const card = atlas.locator('.oath-compare-card').nth(index);
       assert.equal(await card.locator('.oath-compare-status').textContent(), 'Palier applicable · Niv. 10');
-      assert.equal(await card.locator('.oath-inspector-effect p').textContent(), branch.paliers.find(tier => tier.niv === 10).desc);
+      await assertOperationCards(card.locator('.oath-inspector-effect'), branch.paliers.find(tier => tier.niv === 10), 10);
     }
     await atlas.locator('[data-level-stop="5"]').click();
     assert.equal(await levelSlider.inputValue(), '5');
     for (const [index, branch] of pugiliste.branches.entries()) {
       const card = atlas.locator('.oath-compare-card').nth(index);
       assert.equal(await card.locator('.oath-compare-status').textContent(), 'Palier applicable · Niv. 5');
-      assert.equal(await card.locator('.oath-inspector-effect p').textContent(), branch.paliers.find(tier => tier.niv === 5).desc);
+      await assertOperationCards(card.locator('.oath-inspector-effect'), branch.paliers.find(tier => tier.niv === 5), 5);
     }
     await atlas.locator('[data-inspect-branch="1"]').click();
     assert.equal(await atlas.locator('.oath-map').isVisible(), true);
@@ -225,6 +227,7 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.deepEqual(edited.branches[0].combatRules, pugiliste.branches[0].combatRules);
     assert.equal(edited.branches[0].descPhys, pugiliste.branches[0].descPhys);
     assert.equal(edited.branches[0].flavor, pugiliste.branches[0].flavor);
+    assert.deepEqual(edited.branches[0].gameplay, pugiliste.branches[0].gameplay, 'Staff branch editing preserves the gameplay guide.');
     await page.evaluate(() => openEditPalier(encodeURIComponent('Pugiliste'), 0, 0));
     await page.locator('#mpal-desc').fill(pugiliste.branches[0].paliers[0].desc + ' Note descriptive du test.');
     await saveKey('serments_custom', () => page.locator('button[onclick="savePalier()"]').click());
@@ -234,6 +237,11 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.equal(edited.branches[0].roleplay, pugiliste.branches[0].roleplay);
     assert.deepEqual(edited.branches[0].combatRules, pugiliste.branches[0].combatRules);
     assert.equal(Object.hasOwn(edited, 'entry'), false);
+    assert.deepEqual(edited.branches[0].gameplay, pugiliste.branches[0].gameplay);
+    await page.evaluate(() => { NPSermentsAtlas.focus('Pugiliste'); document.querySelector('[data-node-branch="0"][data-node-tier="0"]').click(); });
+    assert.equal(await atlas.locator('.oath-inspector .np-oath-operation').count(), 0, 'An explicit staff description keeps precedence over generated cards.');
+    assert.equal(await atlas.locator('.oath-inspector-effect > p').textContent(), edited.branches[0].paliers[0].desc);
+    assert.equal(await atlas.locator('.oath-tier-story p').textContent(), pugiliste.branches[0].paliers[0].manifestation);
     observations.push('Éditions réelles de branche et palier : texte sauvegardé, règles structurées et métadonnées intactes, copie de données superflue retirée.');
 
     await page.evaluate(() => { popSSelects(); openModal('m-addp'); });
@@ -363,7 +371,7 @@ const expansion = require('../assets/js/serments-reforged-data');
         switchDropTab('combat-mj', null, '');
         combatNewFromArchive();
         ids.forEach(id => combatToggleFighter(id, 'player'));
-        if (addBeast) combatAddBeast('visible');
+        for (let i = 0; i < (typeof addBeast === 'number' ? addBeast : addBeast ? 1 : 0); i++) combatAddBeast('visible');
         _cs.name = 'Audit local des serments';
         rCombat('p-combat-mj-c');
       }, { ids, addBeast });
@@ -377,13 +385,22 @@ const expansion = require('../assets/js/serments-reforged-data');
     const beforeInvalid = await page.evaluate(() => JSON.stringify(_cs.decl));
     assert.equal(await page.evaluate(() => NPSermentsReforgedCombat.perform(0,'shoot',{target:1}).ok), false);
     assert.equal(await page.evaluate(() => JSON.stringify(_cs.decl)), beforeInvalid);
+    assert.deepEqual(await page.locator('.rf-combat > .rf-operation button strong').allTextContents(), ['Armer l’arbalète'], 'Le premier geste utile est isolé des opérations en attente.');
+    assert.equal(await page.locator('.rf-waiting').getAttribute('open'), null);
+    assert.equal(await page.locator('.rf-waiting [data-rf-operation="shoot"]').isVisible(), false, 'Le tir impossible reste replié au départ.');
+    assert.equal(await page.locator('.rf-waiting select').count(), 0, 'Un geste indisponible ne présente pas de cible à choisir.');
     await page.locator('.rf-operation button').filter({hasText:/Armer l’arbalète/}).click();
     assert.equal(await page.evaluate(() => NPSermentsReforgedCombat.getState(0).loaded), 1);
     assert.equal(await page.evaluate(() => _cs.fighters[0].epCur), initial.ep, 'Declarations reserve, without spending early.');
+    assert.equal(await page.evaluate(() => _cs.fighters[0]._rf.loaded), 0, 'La prévision ne devient pas prématurément un chargement résolu.');
+    assert.match(await page.locator('.rf-combat-head').textContent(), /Prévu après tes actions/);
+    assert.deepEqual(await page.locator('.rf-combat > .rf-operation button strong').allTextContents(), ['Tirer un carreau'], 'Le tir devient le premier geste jouable après l’armement déclaré.');
+    assert.equal(await page.locator('#rf-target-0-shoot').inputValue(), '1', 'L’unique adversaire vivant est présélectionné.');
+    assert.equal(await page.locator('#rf-target-0-shoot option[value="0"]').count(), 0, 'Le tireur ne peut pas se choisir comme adversaire.');
     await page.evaluate(() => cUndoLastDecl(0));
     assert.equal(await page.evaluate(() => NPSermentsReforgedCombat.getState(0).loaded), 0, 'Undo removes projected loading.');
     await page.locator('.rf-operation button').filter({hasText:/Armer l’arbalète/}).click();
-    await page.locator('#rf-target-0-shoot').selectOption('1');
+    assert.equal(await page.locator('#rf-target-0-shoot').inputValue(), '1');
     await page.locator('.rf-operation button').filter({hasText:/Tirer un carreau/}).click();
     const reserved = await page.evaluate(() => (_cs.decl[0]||[]).reduce((n,a)=>n+(a.epCost||0),0));
     assert.equal(await page.evaluate(() => NPSermentsReforgedCombat.getState(0).ammo), 5);
@@ -413,8 +430,8 @@ const expansion = require('../assets/js/serments-reforged-data');
 
     // Devices and deferred damage must also work inside the complete browser lifecycle.
     await page.setViewportSize({width:1440,height:1000});
-    async function assignLocalCombatOath(name){
-      await page.evaluate(name=>{const p=gpid('p_bob'),d=getAllSD()[name];Object.assign(p,{classe:name,branch:d.branches[0].nom,level:10,pvCur:100,pvMax:100,epCur:100,epMax:100,emCur:100,emMax:100});},name);
+    async function assignLocalCombatOath(name, branch = 0){
+      await page.evaluate(({name,branch})=>{const p=gpid('p_bob'),d=getAllSD()[name];Object.assign(p,{classe:name,branch:d.branches[branch].nom,level:10,pvCur:100,pvMax:100,epCur:100,epMax:100,emCur:100,emMax:100});},{name,branch});
     }
     async function finishDeclarations(){
       await page.evaluate(()=>{let safety=0;while(_cs.phase==='declaration'&&safety++<12)cDeclareAction(_cs.order[_cs.turn],'passer');if(_cs.phase!=='resolution')throw new Error('Declaration stalled');combatResolve();});
@@ -446,6 +463,64 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.equal(await page.evaluate(()=>_cs.fighters[0].pvCur),78);
     assert.equal(await page.evaluate(()=>NPSermentsReforgedCombat.getState(0).debt),0);
     observations.push('Bastion réel : impact partiellement différé, dette réduite par une action puis reliquat payé une seule fois.');
+
+    // Decisions remain usable without pretending that incompatible targets exist.
+    await assignLocalCombatOath('Distillateur', 1);
+    await prepareCombat(['p_bob'], true);
+    const extractCard = page.locator('[data-rf-operation="extract"]');
+    assert.equal(await extractCard.locator('button').isDisabled(), true);
+    assert.equal(await extractCard.locator('select').count(), 0);
+    assert.match(await extractCard.locator('small').textContent(), /Aucun allié.*compatible/);
+    assert.equal(await page.locator('[data-rf-operation="mother"] button').isEnabled(), true, 'La dose mère fournit un départ jouable sans protection à extraire.');
+    await page.locator('[data-rf-operation="mother"] button').click();
+    assert.equal(await page.locator('[data-rf-operation="release"] button').isEnabled(), true);
+    assert.equal(await page.locator('#rf-target-0-release').inputValue(), '0', 'Le seul bénéficiaire compatible est présélectionné, y compris le porteur autorisé.');
+    await page.locator('.rf-combat').scrollIntoViewIfNeeded();
+    await page.screenshot({ path: path.join(output, 'gameplay-distillateur-desktop.png'), animations: 'disabled' });
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);
+    await page.locator('[data-rf-operation="release"]').scrollIntoViewIfNeeded();
+    await page.screenshot({ path: path.join(output, 'gameplay-distillateur-mobile.png'), animations: 'disabled' });
+    observations.push('Distillateur : extraction sans cible compatible repliée, dose mère disponible, restitution à l’unique bénéficiaire présélectionnée, lecture mobile sans débordement.');
+
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await prepareCombat(['p_bob', 'p_alice'], true);
+    await page.evaluate(() => {
+      // Isolated effect fixture: only Alice carries a living owner's protection.
+      _cs.fighters[1]._rfEffects = [{ kind: 'shield', owner: cEnsureFighterCid(_cs.fighters[0]), amount: 24, expires: _cs.round + 2 }];
+      rCombat('p-combat-mj-c');
+    });
+    assert.deepEqual(await page.locator('#rf-target-0-extract option[value]:not([value=""])').evaluateAll(options => options.map(option => option.value)), ['1'], 'Le prélèvement propose seulement les bénéficiaires porteurs d’un effet compatible.');
+    assert.equal(await page.locator('#rf-target-0-extract').inputValue(), '1');
+    await page.locator('[data-rf-operation="extract"] button').click();
+    assert.equal(await page.evaluate(() => NPSermentsReforgedCombat.getState(0).pool), 24);
+
+    await assignLocalCombatOath('Entraveur');
+    await prepareCombat(['p_bob'], 2);
+    await page.locator('#rf-target-0-link').selectOption('1');
+    assert.equal(await page.locator('#rf-second-0-link option[value="1"]').count(), 0, 'La seconde cible ne peut pas répéter la première.');
+    assert.equal(await page.locator('#rf-second-0-link').inputValue(), '2', 'La seconde cible unique restante est présélectionnée.');
+    await page.locator('[data-rf-operation="link"] button').click();
+    assert.equal(await page.evaluate(() => NPSermentsReforgedCombat.getState(0).targets.length), 2);
+    observations.push('Sélection compatible : extraction proposée seulement sur l’allié réellement protégé ; deux ennemis distincts imposés et seconde cible unique présélectionnée.');
+
+    await assignLocalCombatOath('Ravageur', 1);
+    await prepareCombat(['p_bob'], true);
+    const bloodCard = page.locator('[data-rf-operation="strike"]');
+    assert.match(await bloodCard.locator('button > span').textContent(), /4 PV/);
+    await bloodCard.locator('button').click();
+    assert.match(await bloodCard.locator('button > span').textContent(), /8 PV/, 'Le prochain prix de sang reflète la mise déjà déclarée.');
+    assert.equal(await page.evaluate(() => _cs.fighters[0].pvCur), 100, 'La mise reste une réservation avant résolution.');
+    assert.match(await page.locator('.rf-combat-head').textContent(), /Prévu après tes actions/);
+    await page.locator('.rf-combat').scrollIntoViewIfNeeded();
+    await page.screenshot({ path: path.join(output, 'gameplay-ravageur-desktop.png'), animations: 'disabled' });
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);
+    await page.locator('.rf-combat').scrollIntoViewIfNeeded();
+    await page.screenshot({ path: path.join(output, 'gameplay-ravageur-mobile.png'), animations: 'disabled' });
+    await finishDeclarations();
+    assert.equal(await page.evaluate(() => _cs.fighters[0].pvCur), 96, 'La mise affichée est effectivement payée une seule fois à la résolution.');
+    observations.push('Ravageur : coût en PV visible et croissant dès les déclarations, état prévu explicitement nommé, paiement réel une seule fois, captures ordinateur et mobile.');
 
     await inspectHandlers(guest, 'RPG local');
     await inspectHandlers(page, 'Fiche');

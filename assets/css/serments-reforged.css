@@ -65,3 +65,16 @@ html[data-np-design="polar"] #s-app #serments .serm-forged .serm-branch-progress
 .np-oath-story p { margin: 12px 0; }
 .np-oath-story strong { display: block; margin-bottom: 3px; }
 .np-oath-manifestation { padding-left: 12px; border-left: 1px solid var(--tm-link, var(--glacier)); }
+
+/* One gesture, one cost and one result; shared by the Forge and player sheet. */
+.np-oath-operations { display: grid; gap: 12px; }
+.np-oath-operation { padding: 12px 0; border-top: 1px solid var(--tm-border, var(--border)); }
+.np-oath-operation:first-child { border-top: 0; padding-top: 0; }
+.np-oath-operation > div { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 5px 12px; }
+.np-oath-operation strong { color: var(--tm-text, var(--text)); font: 650 12px/1.5 var(--fb); }
+.np-oath-operation span { color: var(--tm-link, var(--glacier)); font: 550 11px/1.5 var(--fb); }
+.np-oath-operation p { margin: 7px 0 0; color: var(--tm-text-soft, var(--dim)); font: 400 12px/1.7 var(--fb); }
+.np-oath-game-guide { color: var(--tm-text, var(--text)); font: 400 12px/1.7 var(--fb); }
+.np-oath-game-guide > strong { display: block; margin-bottom: 8px; font-size: 14px; }
+.np-oath-game-guide p { margin: 7px 0; }
+.np-oath-game-guide b { color: var(--tm-link, var(--glacier)); }

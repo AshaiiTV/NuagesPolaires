@@ -47,7 +47,7 @@ def build(allow_draft=False):
         for authored_branch, spec, old_branch in zip(authored['branches'], contract['branches'], old['branches']):
             assert authored_branch['key'] == spec['key'] == old_branch['key']
             branch = copy.deepcopy(spec)
-            for key in ('summary', 'visual', 'example', 'roleplay', 'tierNames', 'tierNarratives'):
+            for key in ('summary', 'visual', 'example', 'roleplay', 'tierNames', 'tierNarratives', 'gameplay'):
                 branch[key] = authored_branch[key]
             assert len(branch['tierNames']) == len(branch['tierNarratives']) == 4, name
             assert len(set(branch['tierNames'])) == 4, f'{name}: repeated tier title'
@@ -139,12 +139,13 @@ def build(allow_draft=False):
         key:branch.key, nom:branch.name, summary:branch.summary,
         legacyNames:branch.legacyNames || [],
         style:branch.style || (former.cat === "melee" ? "Contrôle" : former.cat === "distance" ? "Distance" : "Concentration"),
-        descPhys:branch.visual, flavor:branch.example, desc:branch.summary, roleplay:branch.roleplay,
+        descPhys:branch.visual, flavor:branch.example, desc:branch.summary, roleplay:branch.roleplay, gameplay:branch.gameplay,
         combatRules:branch,
         paliers:branch.tiers.map(function(tier) {
           return {niv:tier.level, nom:tier.title || branch.name, manifestation:tier.narrative || "", cout:costText(tier.cost || branch.cost), desc:tier.effect,
             combatRules:{key:branch.key, name:branch.name, model:branch.model, level:tier.level,
-              effect:tier.effect, cost:tier.cost || branch.cost, unlocks:tier.unlocks || []}};
+              effect:tier.effect, cost:tier.cost || branch.cost, unlocks:tier.unlocks || [],
+              operations:tier.operations.map(function(op) { return Object.assign({}, op, {rule:op.ruleFormula || op.rule}); })}};
         })
       };
     });

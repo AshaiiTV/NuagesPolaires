@@ -6132,6 +6132,30 @@ function getSermEmblem(nom,size){
   if(typeof npSermentEmblem==='function') return npSermentEmblem(nom,size||32);
   return esc((getAllSD()[nom]||{}).icon||WEAPON_ICONS[nom]||'✦');
 }
+function getSermentTierOperations(tier){
+  var rules=tier&&tier.combatRules;
+  // An explicit staff edit remains authoritative over the generated operation list.
+  if(!rules||tier.desc!==rules.effect||!Array.isArray(rules.operations))return [];
+  var cost=rules.cost||{},costs=[(cost.actions||1)+' action'+(cost.actions>1?'s':'')];
+  if(cost.ep)costs.push(cost.ep+' EP');if(cost.em)costs.push(cost.em+' EM');if(cost.pv)costs.push(cost.pv+' PV');
+  return tier.cout&&tier.cout!==costs.join(' / ')?[]:rules.operations;
+}
+function renderSermentOperations(tier,level){
+  var operations=getSermentTierOperations(tier);
+  if(!operations.length) return '<p>'+esc(tier&&tier.desc||'Effet à définir.')+'</p>';
+  var actual=Math.max(Number(tier.niv)||1,Number(level)||1);
+  return '<div class="np-oath-operations">'+operations.map(function(op){
+    var cost=op.cost||{},costs=[(cost.actions||1)+' action'+(cost.actions>1?'s':'')];
+    if(cost.ep) costs.push(cost.ep+' EP');if(cost.em) costs.push(cost.em+' EM');if(cost.pv) costs.push(cost.pv+' PV');
+    var rule=String(op.rule||'').replace(/\((-?\d+) \+ N\)/g,function(_,base){return String(Number(base)+actual);});
+    rule=rule.replace(/^\d+ actions?(?:\s*(?:,|et|\/)\s*\d+\s*(?:EP|EM|PV))*/, '').replace(/^[.,;]\s*/, '').trim().replace(/^et\s+/, 'Consomme ');
+    return '<article class="np-oath-operation"><div><strong>'+esc(op.label)+'</strong><span>'+esc(costs.join(' · '))+'</span></div><p>'+esc(rule)+'</p></article>';
+  }).join('')+'</div>';
+}
+function renderSermentGameGuide(branch){
+  var guide=branch&&branch.gameplay;if(!guide)return '';
+  return '<section class="np-oath-game-guide" aria-label="Comment jouer cette voie"><strong>'+esc(guide.pitch)+'</strong><p><b>Pour commencer</b> '+esc(guide.opening)+'</p><p><b>Ton choix</b> '+esc(guide.choice)+'</p></section>';
+}
 function renderSermentRules(br){
   var rules=br&&br.combatRules;
   if(!rules) return '';
@@ -7150,7 +7174,7 @@ function renderSerm(p){
     else if(br.flavor) html+='<p style="font-size:13px;color:var(--dim);font-style:italic;margin-bottom:12px;line-height:1.6;border-left:2px solid '+col+';padding-left:10px;opacity:.85;">'+esc(br.flavor)+'</p>';
     else if(br.desc) html+='<p style="font-size:13px;color:var(--dim);font-style:italic;margin-bottom:12px;line-height:1.6;border-left:2px solid '+col+';padding-left:10px;opacity:.8;">'+esc(br.desc)+'</p>';
 
-    html+=renderSermentRules(br);
+    html+=renderSermentGameGuide(br)+renderSermentRules(br);
     // Paliers : progression lisible + focus sur l'actuel/prochain
     var pals=br.paliers||[];
     if(pals.length){
@@ -7172,8 +7196,8 @@ function renderSerm(p){
       if(isChosen){
         html+='<div class="serm-palier-focus">';
         if(currentPal){
-          html+='<div class="serm-palier-focus-top"><span>Palier actif</span><strong>'+esc(currentPal.nom)+'</strong>'+(currentPal.cout?'<em>'+esc(currentPal.cout)+'</em>':'')+'</div>';
-          if(currentPal.desc) html+='<p>'+esc(currentPal.desc)+'</p>';
+          html+='<div class="serm-palier-focus-top"><span>Palier actif</span><strong>'+esc(currentPal.nom)+'</strong>'+(currentPal.cout&&!getSermentTierOperations(currentPal).length?'<em>'+esc(currentPal.cout)+'</em>':'')+'</div>';
+          if(currentPal.desc) html+=renderSermentOperations(currentPal,p.level);
           if(currentPal.manifestation) html+='<p class="np-oath-manifestation">'+esc(currentPal.manifestation)+'</p>';
         } else {
           html+='<div class="serm-palier-focus-top"><span>Départ</span><strong>Aucun palier débloqué</strong></div>';
@@ -13711,6 +13735,9 @@ body .nav-group-menu .nav-section-header{
           {a:"deplacer", l:"Déplacement",sub:(f.noFreeRepositionRound===_cs.round?"bloqué":""), col:"rgba(255,255,255", disabled:f.noFreeRepositionRound===_cs.round, disabledReason:"Déplacement bloqué par Posture Haute"},
         );
         declBtns.forEach(function(btn){
+          var oathEngine=window.NPSermentsReforgedCombat;
+          var oathReason=oathEngine&&oathEngine.nativeReason&&oathEngine.nativeReason(fi,btn.a,{});
+          if(oathReason){btn.disabled=true;btn.disabledReason=oathReason;btn.sub=oathReason;}
           var needsTgt=btn.a==="frappe"||btn.a==="pugilat";
           var val=btn.a==="frappe"?dmg:btn.a==="pugilat"?pugDmg:0;
           var isDisabled=!!btn.disabled;

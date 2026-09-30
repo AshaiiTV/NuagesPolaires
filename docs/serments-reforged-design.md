@@ -33,7 +33,7 @@ Les armes restent immédiatement reconnaissables : arbalète, cestes, fléau, ba
 | Base | Arbitrage central | Distance avec l'existant |
 | --- | --- | --- |
 | Arbalétrier | Dépenser une munition prête, investir dans sa tension ou préserver une réserve. | Son chargement existe entre les tours ; l'attente seule ne transforme pas toutes ses actions en une flèche du Flécheur. Une défense peut faire perdre la surtension. |
-| Pugiliste | Engager les mains ou reconstruire sa garde ; recevoir un impact avant de préparer la réponse. | Le coût touche sa propre exposition et la disponibilité de ses mains, pas un compteur de touches du Rôdeur. Aucune riposte n'est gratuite. |
+| Pugiliste | Engager les mains ou amortir un impact pour préparer la réponse, même si la garde arrête tout le choc. | La garde s'épuise sur cet impact. Le coup préparé reste payé ; perdre des PV n'est plus nécessaire pour jouer la voie défensive. |
 | Porte-Fléau | Préparer la retombée ou la libérer tôt ; se défendre peut détruire la rotation. | Le délai et sa rupture sont le cœur du choix. Aucun bris de bouclier de Claymore ni coup collectif du Sauvageon n'est ajouté. |
 | Enchanteur | Confier une rune consommable et faire dépendre son effet du choix du bénéficiaire. | Il ne soigne pas et n'attaque pas à la place de l'allié. Le prochain geste consomme, fait mûrir ou détruit la rune. |
 | Alchimiste | Engager une dose finie dans une corrosion différée ou un couvert qui laisse attaquer mais ne protège que du physique. | La préparation et la consommation d'une fiole remplacent les combos de contact de l'Elementaliste. Se rincer répond à la corrosion ; employer la magie traverse la fumée. L'allié peut continuer à attaquer, contrairement à la rune de patience. |
@@ -43,26 +43,49 @@ Les armes restent immédiatement reconnaissables : arbalète, cestes, fléau, ba
 
 | Évolution | Ce qui change réellement | Réponse adverse ou prix du choix |
 | --- | --- | --- |
-| Guetteur | Le carreau est réservé contre une attaque ou une défense annoncée de la cible. | L'adversaire peut ne pas offrir le déclencheur ; l'action de réaction est payée à l'avance. |
+| Guetteur | Un tir direct reste disponible ; une réservation plus puissante attend une attaque ou une défense de la cible. | L'adversaire peut ne pas offrir le déclencheur. La réserve coûte aussi des EM et engage son carreau dès la préparation. |
 | Pavoisier | L'arbalète devient un couvert personnel ou confié à un allié. | Tirer ouvre le pavois et détruit son reliquat. Protéger et attaquer s'opposent. |
 | Lutteur | Le contact crée une restriction réciproque d'arme ou une prise qui engage les mains contre la magie. | Se dégager coûte une action ; les conditions de rupture restent visibles. Le porteur n'immobilise pas depuis une position sans risque. |
 | Cestuaire | Une blessure réellement reçue peut devenir une charge à rendre ou à transmettre. | La perte de PV reste réelle. Une charge ne naît pas d'un impact nul et n'efface jamais la blessure qui l'a créée. |
 | Entraveur | Les chaînes redistribuent les dégâts existants entre deux ennemis ou deux alliés. | Le total n'augmente pas. Le lien peut être rompu ; le secours allié se consume au premier transfert. |
 | Pendulier | Une orbite récompense les changements de cible ; l'autre se nourrit des défenses réellement employées. | Le cercle fermé peut gagner un cran même sur une esquive réussie, mais pas sur une simple touche sans défense. Il ne recopie donc pas le Rôdeur. Changer de cible fait perdre cette réserve. |
-| Tisserand | Deux alliés se partagent une charge offensive en relais ou une réserve défensive commune. | Le premier usage réduit ce qui reste au second. Réattribuer ne remplit pas la réserve. |
-| Orfèvre | L'investissement précède le choix attaque/protection ; une autre voie fait mûrir une gemme fragile. | Un usage détruit l'autre possibilité. Subir une blessure peut faire perdre la maturation. |
-| Distillateur | Un poison, une corrosion ou une protection active est extrait puis conservé pour un autre usage. Une dose mère bornée autorise un départ autonome une fois par combat. | Le prélèvement ne copie rien et ne rend aucun PV perdu. La valeur reste plafonnée ; l'intervalle avant restitution expose le choix du porteur. |
+| Tisserand | Une personne reçoit la charge ou la protection ; une seconde attache facultative ajoute un relais offensif ou partage la réserve défensive. | Le premier usage réduit ce qui reste au second. Une cible unique ne reçoit pas deux charges ; réattribuer ne remplit pas la réserve. |
+| Orfèvre | Une gemme stable offre un effet fort après deux gestes ; une gemme fragile commence plus bas mais dépasse cette force après maturation. | Un usage détruit l'autre possibilité. Attendre deux rounds porte la voie risquée à trois facettes ; toute blessure avant la taille les détruit. |
+| Distillateur | Une dose mère répétable donne une boucle autonome dans les deux voies ; prélever un effet actif permet une réserve plus importante lorsqu'elle existe. | Un seul flacon préparé. Le prélèvement retire l'effet d'origine, ne rend aucun PV et conserve seulement sa valeur restante dans la limite de contenance. |
 | Essayeur | Un réactif mise sur une défense annoncée, ou observe les répétitions entre arme et capacité. | Changer de réponse déjoue la lecture. Une prédiction exacte n'annule pas la défense utilisée. |
 | Carillonneur | Les gestes d'un type choisi remplissent des cloches que le porteur consomme ensuite. | La réserve est bornée ; attendre une cloche de plus laisse aussi une occasion à l'ennemi. |
-| Chef de Chœur | Deux alliés distincts doivent participer à une séquence pour obtenir la coda. | Le même combattant ne peut pas accomplir les deux voix. L'ordre et la participation empêchent un simple bonus de groupe permanent. |
+| Chef de Chœur | Deux alliés distincts participent à une séquence ; la clôture peut être payée et réservée à l'avance, puis se déclenche à la dernière contribution. | Le même combattant ne peut pas accomplir les deux voix. Une clôture réservée ne remplace aucun geste requis ; l'expiration perd les ressources déjà engagées. |
 | Ravageur — Sauvageon | Le porteur engage une exposition croissante ou des PV réels avant ses assauts. | Les ennemis peuvent exploiter la mise ; freiner ne rembourse pas les blessures. |
-| Bastion — Croisé | Le pavois transforme un choc en dette à étayer, ou protège les alliés au prix d'une réserve liée à ses propres blessures. | La dette a une échéance. Attaquer le Bastion affaiblit aussi le mur commun. |
-| Veneur — Traqueur | La proie avantageuse dépend du dernier attaquant ou d'une blessure qu'un ennemi marqué a réellement infligée à un autre allié. | L'ennemi peut varier l'ordre des assauts ou blesser le Veneur pour effacer son ouverture de secours. Cette lecture ne reprend ni le bonus fixe de la Lame d'Honneur ni l'étude des répétitions de l'Essayeur. |
-| Totémiste — Evocateur | Une idole possède ses propres PV, garde des charges et reçoit des ordres payés par le porteur. | Elle ne joue aucune action autonome. Sa destruction emporte les réserves qui dépendent d'elle. |
-| Astronome — Arcaniste | La menace est annoncée un round avant sa résolution, avec un choix différé ou une maturation. | Une cible annoncée peut s'éclipser par une action. L'évolution ne transforme pas la zone d'origine en dégâts inévitables. |
+| Bastion — Croisé | Le pavois transforme un choc en dette à étayer, ou protège un ou deux alliés avec une réserve liée aux blessures du porteur. | La dette a une échéance. Une seconde cible ne multiplie pas le mur ; attaquer le Bastion affaiblit aussi cette réserve. |
+| Veneur — Traqueur | La Piste vive marque un ou deux ennemis et favorise le dernier qui attaque ; la Piste de secours répond à la blessure réelle d'un autre allié. | En duel aussi, le bonus de Piste vive exige une attaque adverse. L'ennemi peut varier l'ordre des assauts ou blesser le Veneur pour effacer son ouverture de secours. |
+| Totémiste — Evocateur | Une idole active garde des charges et reçoit les ordres payés du porteur. Une reconstruction est possible après sa destruction ou son démontage. | La première idole reçoit une charge ; toute reconstruction arrive vide et exige une recharge. Charges et protections anciennes disparaissent avec leur support. |
+| Astronome — Arcaniste | La menace est annoncée un round avant sa résolution : choisir entre un ou deux ennemis annoncés, ou faire mûrir une seule orbite. | La seconde cible est facultative et ne donne jamais un second rayon. Chaque cible annoncée peut s'éclipser ; le rayon final reste défendable. |
 | Prismancien — Arcaniste | Les rayons puisent dans des facettes, ou récupèrent un reliquat après une défense réelle. | Chaque rayon ultérieur coûte encore une action ; le reliquat offensif exige une autre cible et peut être sacrifié en garde. |
 
 Le Tisserand, le Bastion, le Pavoisier et le Totémiste peuvent tous protéger. Ils n'obtiennent pas pour autant la même boucle : le Tisserand partage ou déplace une réserve, le Bastion l'expose à ses propres blessures, le Pavoisier la détruit en tirant et le Totémiste la lie à un objet destructible. Les règles de perte et les décisions du joueur doivent conserver ces différences.
+
+## Jouabilité de la révision v301
+
+Un serment doit proposer une décision utilisable avant de demander une situation idéale. Les changements visent les préparations sans issue, les évolutions moins fortes que leur parent et les rounds supplémentaires imposés seulement par la déclaration de commandes.
+
+- **Garde de passage** : le choc absorbé par sa propre garde suffit à ouvrir le coup. La protection se dissipe entièrement après cet impact ; elle ne devient pas une réserve pour plusieurs coups.
+- **Cibles facultatives** : Tisserand, Mur de relève, Piste vive et Conjonction promise fonctionnent avec une cible. Une deuxième cible donne le partage ou le choix prévu, jamais une copie de la réserve. Le Mur de relève reste réservé à d'autres alliés que le Bastion ; le Chœur conserve ses deux participants distincts.
+- **Soutien musical** : Barde A et Chœur A/B peuvent payer la clôture après l'ouverture, avant les contributions. Elle attend ensuite la séquence réelle. Aucune action ni aucun paiement supplémentaire n'est requis au dernier geste ; une préparation abandonnée ou expirée reste perdue.
+- **Reconstruction du Totémiste** : une seule idole active. La nouvelle plantation et la recharge sont payées après toute perte, y compris un démontage volontaire. La charge de départ n'est offerte qu'à la première idole du combat.
+
+Exemples de référence au niveau 10, avant les défenses adverses :
+
+| Choix | Coût et résultat attendu |
+| --- | --- |
+| Guetteur, après chargement | Direct : 1 action, 4 EP, **42 dégâts**. Réservé : 1 action, 4 EP, 4 EM, **52 dégâts** seulement si le déclencheur arrive. |
+| Tisserand | 1 action, 7 EM : **+28**, puis **+14** au second bénéficiaire s'il existe ; ou **52 de protection au total**, répartis entre une ou deux personnes. |
+| Orfèvre stable | 2 actions, 8 EM au total : **+40 attaque** ou **60 protection**. |
+| Orfèvre impatient | Même coût : **+18 / 28** à une facette, **+54 / 84** à trois après deux rounds sans blessure. |
+| Distillateur, dose mère | 1 action, 5 EM pour préparer **32** ; 1 action, 2 EP pour projeter ou protéger. Nouvelle dose possible lorsque le flacon est vide. |
+| Distillateur, prélèvement | 1 action, 4 EM pour retirer un effet compatible et conserver son reliquat, **maximum 80** ; le même second geste le restitue. Un effet de 24 ne crée toujours que 24. |
+| Totémiste après destruction | 1 action, 2 EP, 6 EM pour reconstruire une idole de **24 PV, vide** ; 1 action, 4 EM pour charger, puis chaque ordre reste payé. |
+
+Ces valeurs illustrent les opérations du moteur. Les quatre paliers de chaque branche restent générés depuis le contrat, et les exemples narratifs doivent être révisés avec tout changement de ce contrat.
 
 ## Ce qui a été retiré
 
@@ -74,7 +97,7 @@ Ce retrait ne prétend pas que ces archétypes ne pourront jamais fonctionner. I
 
 ## Texte, armes et progression
 
-- Chaque fiche sépare une promesse courte, deux phrases de lore, la boucle de jeu, un arbitrage et le contre-jeu.
+- Chaque fiche sépare une promesse courte, deux paragraphes de récit, la boucle de jeu, un arbitrage et le contre-jeu. Le récit part du réveil et de la vie de survivants ; les évolutions prolongent un geste de leur parent.
 - Chaque branche possède un nom, un résumé, une manifestation de l'arme et un exemple d'échange. Les étapes, coûts et valeurs viennent du contrat du moteur ; le texte narratif ne les invente pas.
 - Les six bases gardent des silhouettes ordinaires. Les peintures des évolutions montrent la transformation matérielle de l'arme : pavois, chambres d'impact, chaînes bifides, filaments, gemmes, double alambic, carillon ou facettes.
 - Les quatre paliers utilisent les niveaux 2/5/7/10 pour les bases et 10/13/16/20 pour les évolutions. Les déblocages qualitatifs et valeurs affichés sont générés depuis les mêmes opérations que le combat.

@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright');
 const { createLocalApp } = require('./helpers/local-app');
+const { assertOperationCards } = require('./helpers/serment-operation-assertions');
 const expansion = require('../assets/js/serments-reforged-data');
 
 // Browser exploration against isolated PostgreSQL. This scenario never connects
@@ -23,6 +24,7 @@ const expansion = require('../assets/js/serments-reforged-data');
     await context.addCookies([{ name: 'np_session', value: session.slice('np_session='.length), url: app.origin, httpOnly: true, sameSite: 'Strict' }]);
     page = await context.newPage();
     page.setDefaultTimeout(15000);
+    page.setDefaultNavigationTimeout(60000);
     page.on('pageerror', error => errors.push(error.stack || error.message));
     await page.route('https://**/*', route => route.abort());
     await page.goto(app.origin, { waitUntil: 'load' });
@@ -83,6 +85,8 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.equal(await inspector().locator('.oath-gate').count(), 1);
     assertEffectHidden(await inspector().textContent(), pugiliste.branches[0].paliers[3], 'Apogée scellée');
     assert.equal(await inspector().locator('.oath-inspector-effect').count(), 0, 'Une capacité scellée ne laisse pas son effet dans le DOM de l’inspecteur.');
+    assert.equal(await inspector().locator('.np-oath-operation,.oath-tier-story,.oath-inspector-flavor').count(), 0, 'Cartes, manifestation et narration de voie restent absentes du DOM verrouillé.');
+    assert.equal(await atlas.locator('.np-oath-game-guide').count(), 0, 'Un guide ne révèle pas les gestes d’une branche dont aucun palier n’est débloqué.');
     await node(0, 0).click();
     assert.equal(await node(0, 0).locator('.oath-node-title').textContent(), pugiliste.branches[0].paliers[0].manifestation ? pugiliste.branches[0].paliers[0].nom : 'Éveil');
     assertEffectHidden(await inspector().textContent(), pugiliste.branches[0].paliers[0], 'Prochain éveil');
@@ -92,6 +96,7 @@ const expansion = require('../assets/js/serments-reforged-data');
       const card = atlas.locator('.oath-compare-card').nth(index);
       assertEffectHidden(await card.textContent(), branch.paliers[0], 'Comparaison verrouillée ' + index, branch.paliers[0].nom !== branch.nom);
       assert.equal(await card.locator('.oath-inspector-effect').count(), 0);
+      assert.equal(await card.locator('.np-oath-game-guide,.np-oath-operation').count(), 0, 'La comparaison verrouillée ne révèle ni guide ni geste.');
     }
     await atlas.locator('.oath-compare-card').first().locator('[data-preview-tier]').click();
     assert.equal(await atlas.locator('#oath-level').inputValue(), '2');
@@ -111,10 +116,10 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.ok((await toast.textContent()).trim(), 'Le franchissement de paliers annonce la progression.');
     await node(0, 1).click();
     assert.equal(await inspector().getAttribute('data-tier-color'), 'azure');
-    assert.equal(await inspector().locator('.oath-inspector-effect p').textContent(), pugiliste.branches[0].paliers[1].desc);
+    await assertOperationCards(inspector().locator('.oath-inspector-effect'), pugiliste.branches[0].paliers[1], 5);
     await atlas.locator('[data-oath-view="compare"]').click();
     for (const [index, branch] of pugiliste.branches.entries()) {
-      assert.equal(await atlas.locator('.oath-compare-card').nth(index).locator('.oath-inspector-effect p').textContent(), branch.paliers[1].desc);
+      await assertOperationCards(atlas.locator('.oath-compare-card').nth(index).locator('.oath-inspector-effect'), branch.paliers[1], 5);
     }
     await atlas.locator('[data-oath-view="tree"]').click();
     const slider = atlas.locator('#oath-level');
@@ -122,6 +127,8 @@ const expansion = require('../assets/js/serments-reforged-data');
     await page.keyboard.press('ArrowRight');
     assert.equal(await slider.inputValue(), '6');
     assert.equal(await page.evaluate(() => document.activeElement?.id), 'oath-level', 'La progression conserve le focus du curseur.');
+    await assertOperationCards(inspector().locator('.oath-inspector-effect'), pugiliste.branches[0].paliers[1], 6);
+    assert.ok((await inspector().locator('.np-oath-operation').first().textContent()).includes('24 dégâts'), 'Le palier de niveau 5 affiche bien 18 + 6 au niveau intermédiaire 6.');
     await setLevel(5);
     await node(0, 3).click();
     await inspector().locator('[data-preview-tier]').click();
@@ -129,7 +136,7 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.equal(await atlas.locator('.oath-node.is-unlocked').count(), 8);
     assert.equal(await atlas.locator('.oath-node.is-current').count(), 1);
     assert.equal(await atlas.locator('.oath-node.is-legacy').count(), 6, 'Les six paliers antérieurs sont remplacés.');
-    assert.equal(await inspector().locator('.oath-inspector-effect p').textContent(), pugiliste.branches[0].paliers[3].desc);
+    await assertOperationCards(inspector().locator('.oath-inspector-effect'), pugiliste.branches[0].paliers[3], 10);
     observations.push('Progression 1 → 5 → 10 : couleurs par étape, annonce de déblocage, aperçu au niveau requis et un seul palier applicable.');
 
     await atlas.locator('[data-own-level]').click();
@@ -139,7 +146,7 @@ const expansion = require('../assets/js/serments-reforged-data');
     assert.equal(await atlas.locator('[data-discovery="off"]').getAttribute('aria-pressed'), 'true');
     assert.equal(await atlas.locator('#oath-level').inputValue(), '1', 'Consulter le Codex ne simule pas une montée de niveau.');
     assert.equal(await atlas.locator('.oath-node.is-locked').count(), 8, 'Le Codex révèle les informations sans rendre les capacités applicables.');
-    assert.equal(await inspector().locator('.oath-inspector-effect p').textContent(), pugiliste.branches[1].paliers[3].desc);
+    await assertOperationCards(inspector().locator('.oath-inspector-effect'), pugiliste.branches[1].paliers[3], 1);
     await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
       value: { writeText: async text => { window.__discoveryCopiedText = text; } }

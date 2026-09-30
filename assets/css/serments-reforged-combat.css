@@ -24,3 +24,16 @@
   html[data-np-design="polar"] #s-app #p-combat-mj-c .sim-ui{padding:0!important;border:0!important}
   html[data-np-design="polar"] #s-app #p-combat-mj-c .sim-fighter-card{padding:12px!important}
 }
+
+#p-combat-mj-c .rf-combat-head > b { font-size: 11px; font-weight: 600; color: var(--tm-text, var(--text)); }
+#p-combat-mj-c .rf-combat-head em { font-style: normal; font-weight: 650; }
+#p-combat-mj-c :is(.rf-group-title,.rf-operation-group,.rf-quick-guide,.rf-next-step) { grid-column: 1 / -1; margin: 0; }
+#p-combat-mj-c .rf-group-title { color: var(--tm-link, var(--glacier)); font: 650 12px/1.6 var(--fb); }
+#p-combat-mj-c .rf-operation-group { padding: 10px 0; border-top: 1px solid var(--border2); }
+#p-combat-mj-c :is(.rf-operation-group,.rf-quick-guide) > summary { min-height: 40px; padding: 8px 0; color: var(--tm-text, var(--text)); cursor: pointer; font: 550 12px/1.6 var(--fb); }
+#p-combat-mj-c .rf-operation-group > div { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; margin-top: 8px; }
+#p-combat-mj-c .rf-quick-guide p { margin: 8px 0; color: var(--tm-text-soft, var(--dim)); }
+#p-combat-mj-c .rf-target-label { display: grid; gap: 5px; color: var(--tm-text-soft, var(--dim)); font: 400 11px/1.5 var(--fb); }
+#p-combat-mj-c .rf-target-label select { width: 100%; min-width: 0; min-height: 40px; padding: 8px; color: var(--tm-text, var(--text)); background: var(--tm-control-bg, var(--bg)); border: 1px solid var(--border2); border-radius: 2px; font: 400 12px/1.5 var(--fb); }
+#p-combat-mj-c .rf-target-label select:focus-visible { outline: 2px solid var(--tm-link, var(--glacier)); outline-offset: 3px; }
+@media(max-width:760px) { #p-combat-mj-c .rf-operation-group > div { grid-template-columns: 1fr; } }
