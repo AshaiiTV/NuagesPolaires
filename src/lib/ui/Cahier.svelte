@@ -21,15 +21,17 @@
 		bande?: Onglet[];
 		ruban?: { href: string; libelle?: string; corne?: boolean } | null;
 		compte?: { pseudo: string; portrait?: string | null; role?: string } | null;
+		/** Régime de la page : `carnet` (défaut), `serre` (outils denses), `scene` (feuillet, Table du joueur). */
+		regime?: 'carnet' | 'serre' | 'scene';
 		children: Snippet;
 	}
-	let { cahiers, bande, ruban = null, compte = null, children }: Props = $props();
+	let { cahiers, bande, ruban = null, compte = null, regime = 'carnet', children }: Props = $props();
 	const basse = $derived((bande ?? cahiers).slice(0, 5));
 </script>
 
 <a class="evitement" href="#page">Aller à la page</a>
 
-<div class="bureau">
+<div class="bureau" data-regime={regime}>
 	<div class="cahier">
 		<div class="feuille" id="page" tabindex="-1">
 			{#if ruban}
@@ -217,12 +219,12 @@
 		display: none;
 	}
 
-	:global(html[data-regime='scene']) .tranche,
-	:global(html[data-regime='scene']) .bande-basse,
-	:global(html[data-regime='scene']) .ruban {
+	:global([data-regime='scene']) .tranche,
+	:global([data-regime='scene']) .bande-basse,
+	:global([data-regime='scene']) .ruban {
 		display: none;
 	}
-	:global(html[data-regime='scene']) .cahier {
+	:global([data-regime='scene']) .cahier {
 		grid-template-columns: minmax(0, 1fr);
 		max-width: 640px;
 	}

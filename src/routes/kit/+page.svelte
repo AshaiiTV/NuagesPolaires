@@ -18,11 +18,7 @@
 	import Vide from '$lib/ui/Vide.svelte';
 	import Portrait from '$lib/ui/Portrait.svelte';
 
-	const regime = $derived(page.url.searchParams.get('regime') ?? 'carnet');
-	$effect(() => {
-		document.documentElement.dataset.regime = regime;
-		return () => (document.documentElement.dataset.regime = 'carnet');
-	});
+	const regime = $derived((page.url.searchParams.get('regime') ?? 'carnet') as 'carnet' | 'serre' | 'scene');
 
 	const cahiers = [
 		{ id: 'carnet', libelle: 'Mon carnet', court: 'Carnet', href: '/kit', courant: true, corne: true },
@@ -36,7 +32,7 @@
 
 <svelte:head><title>Planche — Carnet d'encre</title><meta name="robots" content="noindex" /></svelte:head>
 
-<Cahier {cahiers} ruban={{ href: '/kit?regime=scene', corne: true }} compte={{ pseudo: 'Ashaii', role: 'joueur' }}>
+<Cahier {cahiers} {regime} ruban={{ href: '/kit?regime=scene', corne: true }} compte={{ pseudo: 'Ashaii', role: 'joueur' }}>
 	<Page repere="NP / 02 — Mon carnet" titre="Dernières" titreVoix="pages." grain>
 		{#snippet marge()}
 			<div class="identite">

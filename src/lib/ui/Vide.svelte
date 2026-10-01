@@ -25,8 +25,8 @@
 	.action {
 		margin-top: calc(var(--ligne) / 2);
 	}
-	:global(html[data-regime='serre']) p,
-	:global(html[data-regime='scene']) p {
+	:global([data-regime='serre']) p,
+	:global([data-regime='scene']) p {
 		font: var(--t-corps);
 		font-style: normal;
 	}

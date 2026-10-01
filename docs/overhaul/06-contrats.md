@@ -81,7 +81,8 @@ Groupes : `(public)` (masthead + colophon, accessible à tous), `(carnet)` (enve
 | `/agenda` | carnet | `listAgenda` | `participer` |
 | `/agenda/organiser`, `/agenda/organiser/[id]` | serre | `listAgenda` (staff) | `creer`, `modifier`, `masquer`, `rayer`, `prevenir` |
 | `/table` | serre | `listTables` | `ouvrir` |
-| `/table/combat/[id]` | serre (MJ) ou scene (joueur) | `getTable` ou `getPlayerTable` selon le rôle | `sauver`, `terminer`, `montrerChiffres`, `reporter` |
+| `/table/combat/[id]` | serre (MJ, admin) | `getTable` | `sauver`, `terminer`, `montrerChiffres`, `reporter` |
+| `/carnet/table/[id]` | scene (joueur participant) | `getPlayerTable` ; sondage de `/api/table/[id]/etat` toutes les 4 s, arrêté hors onglet visible | — |
 | `/table/apparitions` | serre | `spawnHistory`, `spawnTotals`, `listZones` | `tirer`, `envoyer` |
 | `/table/archives` | serre | `listRecits` (tous) | `publier`, `rayerPublication` |
 | `/table/personnages`, `/table/personnages/[id]` | serre | `listCharacters`, `getSheet`, `listConsequences`, `listPendingFor`, `listFacts` | `creer`, `corriger`, `xp`, `gemmes`, `objet`, `statut`, `reporter`, `rayerDeclaration`, `fait`, `identite`, `rayerPersonnage` |
@@ -99,4 +100,4 @@ Groupes : `(public)` (masthead + colophon, accessible à tous), `(carnet)` (enve
 
 `Cahier` (enveloppe : tranche, bande basse, ruban) · `Page` (marge + corps, `grain`, `reglure`) · `Chapitre` (numéro, titre, repliable) · `LigneEtat` · `Corne` · `Rature` · `Tampon` · `Consequence` · `Feuillet` · `Bouton` (`ruban`, `trait`, `texte`, `tampon`, `rouille`) · `Champ` · `Encre` + `creerEcriture()` · `NoteDeMarge` · `Losange` · `Vide` · `Portrait` · `Boussole` · `Masthead` · `Colophon`. Planche : `/kit`.
 
-Règles : les composants ne lisent que les tokens de `styles/tokens.css` ; aucune couleur en dur hors accueil ; le laiton (`--tampon`, `Bouton variante="tampon"`, `Tampon`) est réservé aux décisions des MJ et des administrateurs ; un état vide est un `Vide` avec une phrase de `03-vision.md` §8 ; aucun texte sous 12 px ; cibles ≥ 44 px ; sélecteurs de régime écrits `:global(html[data-regime='serre']) .x`. Un nouveau composant partagé se crée dans `src/lib/ui/` avec un commentaire d'en-tête disant à quoi il sert dans le carnet ; un composant propre à une page reste dans le dossier de la route.
+Règles : les composants ne lisent que les tokens de `styles/tokens.css` ; aucune couleur en dur hors accueil ; le laiton (`--tampon`, `Bouton variante="tampon"`, `Tampon`) est réservé aux décisions des MJ et des administrateurs ; un état vide est un `Vide` avec une phrase de `03-vision.md` §8 ; aucun texte sous 12 px ; cibles ≥ 44 px ; le régime se pose sur l'enveloppe (`<Enveloppe regime="serre">`, attribut `data-regime` sur son conteneur, pas sur `html`) ; sélecteurs de régime écrits `:global([data-regime='serre']) .x`. Un nouveau composant partagé se crée dans `src/lib/ui/` avec un commentaire d'en-tête disant à quoi il sert dans le carnet ; un composant propre à une page reste dans le dossier de la route.

@@ -104,15 +104,15 @@
 		border-top: 1px solid var(--reglure);
 	}
 
-	:global(html[data-regime='serre']) .page {
+	:global([data-regime='serre']) .page {
 		grid-template-columns: 1fr;
 		padding: var(--ligne);
 	}
-	:global(html[data-regime='serre']) .marge {
+	:global([data-regime='serre']) .marge {
 		position: static;
 		padding: 0 0 var(--ligne);
 	}
-	:global(html[data-regime='serre']) .corps {
+	:global([data-regime='serre']) .corps {
 		max-width: none;
 	}
 

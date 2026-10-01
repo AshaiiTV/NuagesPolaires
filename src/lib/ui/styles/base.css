@@ -89,8 +89,8 @@ a:hover {
 
 /* Chiffres tabulaires partout où une valeur peut changer. */
 .chiffres,
-html[data-regime='serre'] body,
-html[data-regime='scene'] body {
+[data-regime='serre'],
+[data-regime='scene'] {
 	font-variant-numeric: tabular-nums;
 }
 

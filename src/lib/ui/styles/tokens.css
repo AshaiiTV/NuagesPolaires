@@ -64,7 +64,7 @@
 }
 
 /* Régime serré : outils denses (Table du MJ, Personnages, Registre, ateliers) */
-html[data-regime='serre'] {
+[data-regime='serre'] {
 	--ligne: 24px;
 	--gouttiere: 16px;
 	--page-max: 1440px;
@@ -73,7 +73,7 @@ html[data-regime='serre'] {
 }
 
 /* Régime scène : feuillet volant et Table vue par un joueur */
-html[data-regime='scene'] {
+[data-regime='scene'] {
 	--ligne: 24px;
 	--gouttiere: 12px;
 	--t-corps: 500 14px/24px var(--corps);
@@ -86,7 +86,7 @@ html[data-regime='scene'] {
 		--gouttiere: 16px;
 		--t-titre: 500 34px/38px var(--voix);
 	}
-	html[data-regime='scene'] {
+	[data-regime='scene'] {
 		--gouttiere: 12px;
 	}
 }

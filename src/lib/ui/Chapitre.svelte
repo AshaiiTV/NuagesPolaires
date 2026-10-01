@@ -92,14 +92,14 @@
 		font-style: italic;
 		color: var(--encre-2);
 	}
-	:global(html[data-regime='serre']) h2,
-	:global(html[data-regime='scene']) h2 {
+	:global([data-regime='serre']) h2,
+	:global([data-regime='scene']) h2 {
 		font: 600 14px/48px var(--corps);
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
 	}
-	:global(html[data-regime='serre']) .chapitre,
-	:global(html[data-regime='scene']) .chapitre {
+	:global([data-regime='serre']) .chapitre,
+	:global([data-regime='scene']) .chapitre {
 		margin-top: var(--ligne);
 	}
 </style>

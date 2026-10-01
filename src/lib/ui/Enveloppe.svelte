@@ -11,9 +11,10 @@
 	interface Props {
 		compte: CompteNav | null;
 		discord?: string | null;
+		regime?: 'carnet' | 'serre' | 'scene';
 		children: Snippet;
 	}
-	let { compte, discord = null, children }: Props = $props();
+	let { compte, discord = null, regime = 'carnet', children }: Props = $props();
 	const chemin = $derived(page.url.pathname);
 </script>
 
@@ -22,13 +23,14 @@
 		cahiers={cahiersPour(compte, chemin)}
 		bande={bandePour(compte, chemin)}
 		ruban={rubanPour(compte)}
+		{regime}
 		compte={{ pseudo: compte.pseudo, portrait: compte.portrait, role: LIBELLES_ROLE[compte.role] }}
 	>
 		{@render children()}
 	</Cahier>
 {:else}
 	<a class="evitement" href="#page">Aller à la page</a>
-	<div class="visiteur">
+	<div class="visiteur" data-regime={regime}>
 		<Masthead />
 		<main class="bureau" id="page" tabindex="-1">
 			{@render children()}
