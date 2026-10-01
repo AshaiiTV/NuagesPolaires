@@ -7,6 +7,7 @@
 	import Choix from './Choix.svelte';
 	import Champ from '$lib/ui/Champ.svelte';
 	import Bouton from '$lib/ui/Bouton.svelte';
+	import Encre from '$lib/ui/Encre.svelte';
 	let {
 		sheet,
 		oaths,
@@ -102,7 +103,7 @@
 			min={-99}
 			max={99}
 			value={initial('levelDelta', '')}
-			aide="Vide : niveau conservé. La valeur saisie s’ajoute au niveau du relevé."
+			aide="Vide : niveau conservé. La valeur saisie s’ajoute au niveau du relevé."
 		/>
 		{#snippet note()}{@render afficherNote('identite')}{/snippet}
 	</SaisieTampon>
@@ -116,7 +117,7 @@
 		{values}
 	>
 		<p>
-			La fiche sort des pages du carnet. Elle reste exportable dans les Données ; le compte est
+			La fiche sort des pages du carnet. Elle reste exportable dans les Données ; le compte est
 			délié.
 		</p>
 		<Champ
@@ -129,7 +130,7 @@
 			autocomplete="off"
 		/>
 		{#snippet gestes()}<Bouton variante="rouille" type="submit" disabled={humide}
-				>Rayer ce personnage</Bouton
+				><Encre {etat}>Rayer ce personnage</Encre></Bouton
 			>{/snippet}
 		{#snippet note()}{@render afficherNote('rayerPersonnage')}{/snippet}
 	</SaisieTampon>

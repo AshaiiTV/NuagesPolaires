@@ -11,6 +11,7 @@
 	import SaisieTampon from '../SaisieTampon.svelte';
 	import Chapitre from '$lib/ui/Chapitre.svelte';
 	import Bouton from '$lib/ui/Bouton.svelte';
+	import Encre from '$lib/ui/Encre.svelte';
 	import Portrait from '$lib/ui/Portrait.svelte';
 	import Consequence from '$lib/ui/Consequence.svelte';
 	import Tampon from '$lib/ui/Tampon.svelte';
@@ -203,11 +204,12 @@
 			</NoteDeMarge>
 			{#if conflit && lastStamp?.stamp}<p class="dernier-tampon">
 					Écrit entre-temps : <Tampon cle={lastStamp.id}
-						>{lastStamp.stamp.role} {lastStamp.stamp.name} · {dateHeure(lastStamp.at)}</Tampon
+						>tamponné par {lastStamp.stamp.role}
+						{lastStamp.stamp.name} le {dateHeure(lastStamp.at)}</Tampon
 					><span>{lastStamp.text} — motif : {lastStamp.motif}</span>
 				</p>{/if}
 			{#if conflit && reviewed}<p class="aide">
-					Le relevé est relu. Ta saisie reste ici ; relis-la avant de tamponner.
+					Le relevé est relu. Ta saisie reste ici ; relis-la avant de tamponner.
 				</p>{/if}
 		</div>
 	{:else if !ecriture.note && values.operation === id && failure}<NoteDeMarge ton="refus"
@@ -410,7 +412,7 @@
 						enhancement={enhancer('reporter-' + d.id)}
 						etat={ecriture.etat}
 						humide={ecriture.enCours}
-						motifInitial={'Report de déclaration : ' + d.word + '.'}
+						motifInitial={'Report de déclaration : ' + d.word + '.'}
 						{values}
 					>
 						<input type="hidden" name="id" value={d.id} />
@@ -419,12 +421,12 @@
 								· pendant une Table{/if}.
 						</p>
 						{#snippet gestes()}<Bouton variante="tampon" type="submit" disabled={ecriture.enCours}
-								>Reporter</Bouton
+								><Encre etat={ecriture.etat}>Reporter</Encre></Bouton
 							><Bouton
 								variante="rouille"
 								type="submit"
 								formaction="?/rayerDeclaration"
-								disabled={ecriture.enCours}>Rayer</Bouton
+								disabled={ecriture.enCours}><Encre etat={ecriture.etat}>Rayer</Encre></Bouton
 							>{/snippet}
 						{#snippet note()}{@render afficherNote('reporter-' + d.id)}{/snippet}
 					</SaisieTampon>
@@ -460,7 +462,9 @@
 						{#if f.witness}<p class="aide">Témoin : {f.witness}</p>{/if}{#if f.stamp}<div
 								class="signature-fait"
 							>
-								<Tampon cle={f.id}>{f.stamp.role} {f.stamp.name} · {dateHeure(f.stamp.at)}</Tampon>
+								<Tampon cle={f.id}
+									>tamponné par {f.stamp.role} {f.stamp.name} le {dateHeure(f.stamp.at)}</Tampon
+								>
 								<p class="aide">motif : {f.stamp.motif}</p>
 							</div>{/if}{#if data.canValidate && (f.status === 'proposed' || f.status === 'validated')}<SaisieTampon
 								titre={f.status === 'proposed' ? 'Tamponner ou refuser ce fait' : 'Régler ce fait'}
@@ -479,19 +483,21 @@
 											type="submit"
 											name="geste"
 											value="tamponner"
-											disabled={ecriture.enCours}>Tamponner</Bouton
+											disabled={ecriture.enCours}
+											><Encre etat={ecriture.etat}>Tamponner</Encre></Bouton
 										><Bouton
 											variante="rouille"
 											type="submit"
 											name="geste"
 											value="refuser"
-											disabled={ecriture.enCours}>Refuser</Bouton
+											disabled={ecriture.enCours}
+											><Encre etat={ecriture.etat}>Refuser</Encre></Bouton
 										>{:else}<Bouton
 											variante="tampon"
 											type="submit"
 											name="geste"
 											value="regler"
-											disabled={ecriture.enCours}>Régler</Bouton
+											disabled={ecriture.enCours}><Encre etat={ecriture.etat}>Régler</Encre></Bouton
 										>{/if}{/snippet}{#snippet note()}{@render afficherNote(
 										'fait-' + f.id
 									)}{/snippet}</SaisieTampon

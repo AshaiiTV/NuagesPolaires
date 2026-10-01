@@ -12,6 +12,17 @@ import { NpError } from '$lib/server/http';
 
 export const RATE_LIMIT_MAX = 10;
 export const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+
+/**
+ * Plafond effectif. En développement et en test (jamais en production), `NP_RATE_LIMIT_MAX` le relève :
+ * les captures et les parcours Playwright se connectent tous depuis la même adresse locale.
+ */
+export function rateLimitMax(env: Record<string, string | undefined> = process.env): number {
+	const production = env.NETLIFY === 'true' || env.NODE_ENV === 'production';
+	const override = Number(env.NP_RATE_LIMIT_MAX);
+	if (!production && Number.isInteger(override) && override > 0) return override;
+	return RATE_LIMIT_MAX;
+}
 /** Message exact (audit 05 §4.3). */
 export const RATE_LIMITED_MESSAGE = 'Trop de tentatives. Réessaie dans 15 minutes.';
 
@@ -65,9 +76,10 @@ export async function consumeRateLimit(
 	now: Date = new Date()
 ): Promise<void> {
 	let exceeded = false;
+	const max = rateLimitMax();
 	for (const key of keys) {
 		const count = await hitRateLimit(db, key, now);
-		if (count > RATE_LIMIT_MAX) exceeded = true;
+		if (count > max) exceeded = true;
 	}
 	if (exceeded) throw new NpError('RATE_LIMITED', RATE_LIMITED_MESSAGE, 429);
 }

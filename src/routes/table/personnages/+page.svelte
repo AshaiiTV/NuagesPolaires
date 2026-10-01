@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { untrack } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import PagePersonnages from './PagePersonnages.svelte';
 	import Choix from './Choix.svelte';
 	import Chapitre from '$lib/ui/Chapitre.svelte';
@@ -22,6 +22,15 @@
 	let portrait = $state(untrack(() => String(form?.values?.portraitUrl ?? '')));
 	let motif = $state(untrack(() => String(form?.values?.motif ?? 'Nouveau personnage.')));
 	let createOpen = $state(untrack(() => !!form));
+	onMount(() => {
+		const chapter = document.getElementById('nouveau');
+		if (!(chapter instanceof HTMLDetailsElement)) return;
+		const remember = () => {
+			createOpen = chapter.open;
+		};
+		chapter.addEventListener('toggle', remember);
+		return () => chapter.removeEventListener('toggle', remember);
+	});
 	$effect(() => {
 		search = data.search;
 		oathFilter = data.oathId;

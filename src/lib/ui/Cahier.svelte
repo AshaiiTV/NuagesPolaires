@@ -66,7 +66,7 @@
 	</div>
 </div>
 
-<nav class="bande-basse" aria-label="Cahiers">
+<nav class="bande-basse" data-regime={regime} aria-label="Cahiers">
 	{#each basse as onglet (onglet.id)}
 		<a class:courant={onglet.courant} href={onglet.href} aria-current={onglet.courant ? 'page' : undefined}>
 			{onglet.court ?? onglet.libelle}
@@ -226,7 +226,7 @@
 	}
 
 	:global([data-regime='scene']) .tranche,
-	:global([data-regime='scene']) .bande-basse,
+	.bande-basse[data-regime='scene'],
 	:global([data-regime='scene']) .ruban {
 		display: none;
 	}
