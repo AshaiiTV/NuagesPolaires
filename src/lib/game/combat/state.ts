@@ -17,6 +17,7 @@ import type {
 	Rng
 } from './types';
 import { CombatError } from './types';
+import { findOath } from '../oaths';
 
 /** Dégâts de base par défaut quand le Serment ou la frappe ne donnent rien (legacy `sd.dmg||6`, `||6`). */
 export const DEFAULT_DMG_BASE = 6;
@@ -125,6 +126,8 @@ export function createCombat(opts: CreateCombatOptions): CombatState {
 	if (!opts.id || typeof opts.id !== 'string') throw new CombatError('COMBAT_INVALID_INPUT', 'Identifiant de combat requis.');
 	return {
 		version: 2,
+		schemaVersion: 2,
+		history: [],
 		id: opts.id,
 		name: opts.name ?? '',
 		notes: opts.notes ?? '',
@@ -205,7 +208,7 @@ export function makePlayerFighter(draft: CombatState, input: PlayerFighterInput)
 	f.epMax = toInt(input.epMax, 0);
 	f.emCur = toInt(input.emCur, 0);
 	f.emMax = toInt(input.emMax, 0);
-	f.dmgBase = toInt(input.dmgBase, DEFAULT_DMG_BASE) || DEFAULT_DMG_BASE;
+	f.dmgBase = toInt(input.dmgBase, findOath(input.oathName)?.baseDamage ?? DEFAULT_DMG_BASE);
 	f.imageUrl = input.imageUrl ?? null;
 	f.branch = input.branch ? structuredClone(input.branch) : null;
 	// legacy : statuts:[] à l'ajout (les statuts de la fiche ne sont pas importés)
@@ -269,7 +272,7 @@ export function addFighter(state: CombatState, input: FighterInput): CombatState
 
 /**
  * Retire un combattant (legacy combatRemoveFighter) : toutes les déclarations sont vidées.
- * Écart assumé : l'ordre d'initiative est conservé (le legacy le réinitialisait à l'ordre d'ajout)
+	 * L'ordre est réinitialisé à l'ordre d'ajout, comme le simulateur.
  * et, en combat actif, la déclaration reprend au premier de l'ordre.
  */
 export function removeFighter(state: CombatState, fighterId: string): CombatState {
@@ -278,7 +281,7 @@ export function removeFighter(state: CombatState, fighterId: string): CombatStat
 	if (idx < 0) throw new CombatError('COMBAT_UNKNOWN_FIGHTER', 'Combattant introuvable.');
 	draft.fighters.splice(idx, 1);
 	draft.declarations = {};
-	draft.order = draft.order.filter((id) => id !== fighterId);
+	draft.order = draft.fighters.map((f) => f.id);
 	if (draft.initiative === fighterId) draft.initiative = null;
 	for (const f of draft.fighters) if (f.taunt && f.taunt.sourceId === fighterId) f.taunt = null;
 	if (draft.active && draft.phase !== 'idle') {
@@ -309,7 +312,7 @@ export function startCombat(state: CombatState, _rng?: Rng, opts: { now?: number
 	if (state.ended) throw new CombatError('COMBAT_ALREADY_ENDED', 'Ce combat est clos.');
 	if (!state.fighters.length) throw new CombatError('COMBAT_NO_FIGHTERS', 'Ajoute des combattants.');
 	const draft = cloneState(state);
-	const now = opts.now ?? Date.now();
+	const now = opts.now ?? 0;
 	draft.active = true;
 	draft.round = 1;
 	draft.log = [];
@@ -355,10 +358,16 @@ export function moveFighterPosition(state: CombatState, fighterId: string, posit
  * Ajustement manuel ±N (legacy cAdj) : un retrait de PV consomme d'abord le bouclier pvMaxBonus ;
  * sinon clamp [0, max || 999].
  */
-export function adjustResource(state: CombatState, fighterId: string, stat: ResourceKey, delta: number): CombatState {
+export function adjustResource(state: CombatState, fighterId: string, stat: ResourceKey, delta: number, motif = 'Ajustement MJ'): CombatState {
 	if (!Number.isFinite(delta)) throw new CombatError('COMBAT_INVALID_INPUT', 'Ajustement invalide.');
+	if (!['pv', 'ep', 'em'].includes(stat) || !motif.trim()) throw new CombatError('COMBAT_INVALID_INPUT', 'Ressource et motif requis.');
 	const draft = cloneState(state);
 	const f = findFighterOrThrow(draft, fighterId);
+	const old = f[`${stat}Cur`];
+	const journal = () => {
+		const entry = pushLog(draft, 'info', `${f.name} : ${stat.toUpperCase()} ${old} → ${f[`${stat}Cur`]} — ${motif}`, f.id);
+		entry.field = stat; entry.oldValue = old; entry.newValue = f[`${stat}Cur`];
+	};
 	const d = Math.trunc(delta);
 	if (stat === 'pv' && d < 0 && f.pvMaxBonus > 0) {
 		const dmg = Math.abs(d);
@@ -368,21 +377,20 @@ export function adjustResource(state: CombatState, fighterId: string, stat: Reso
 		f.pvMax -= sa;
 		f.pvCur = Math.max(0, f.pvCur - sa);
 		if (rd > 0) f.pvCur = Math.max(0, f.pvCur - rd);
+		journal();
 		return draft;
 	}
 	if (stat === 'pv') f.pvCur = Math.max(0, Math.min(f.pvMax || 999, f.pvCur + d));
 	else if (stat === 'ep') f.epCur = Math.max(0, Math.min(f.epMax || 999, f.epCur + d));
 	else f.emCur = Math.max(0, Math.min(f.emMax || 999, f.emCur + d));
+	journal();
 	return draft;
 }
 
 /** Bouton « ↺ » : EP et EM au maximum (audit 03 §7.2). */
 export function restoreEnergy(state: CombatState, fighterId: string): CombatState {
-	const draft = cloneState(state);
-	const f = findFighterOrThrow(draft, fighterId);
-	f.epCur = f.epMax;
-	f.emCur = f.emMax;
-	return draft;
+	const f = findFighterOrThrow(state, fighterId);
+	return adjustResource(adjustResource(state, fighterId, 'ep', f.epMax - f.epCur, 'Restauration'), fighterId, 'em', f.emMax - f.emCur, 'Restauration');
 }
 
 /** Notes privées du MJ (jamais projetées vers les joueurs). */

@@ -350,7 +350,8 @@ describe('Gemmes de Sang', () => {
 describe('legacyTrack', () => {
 	it('résout les seuils déjà atteints (progression.js:27-44)', () => {
 		expect(legacyTrack(1, 30, 30, 30)).toEqual({ level: 2, fraction: 0 });
-		expect(legacyTrack(1, 65, 10, 10)).toEqual({ level: 4, fraction: 0.5 });
+		// Seuil enregistré 10, puis 20 et 30 : reste 5 XP sur le seuil 40 du niveau 4.
+		expect(legacyTrack(1, 65, 10, 10)).toEqual({ level: 4, fraction: 0.125 });
 		expect(legacyTrack(5, 25, 50, 10)).toEqual({ level: 5, fraction: 0.5 });
 		expect(legacyTrack(2, 15, undefined, 30)).toEqual({ level: 2, fraction: 0.25 });
 		expect(legacyTrack('bad', -2, null, 30)).toEqual({ level: 1, fraction: 0 });

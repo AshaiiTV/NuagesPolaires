@@ -12,21 +12,8 @@ import { forcedTargetInfo } from './resolve';
 /** Actions de base par tour (audit 03 §4.1). */
 export const BASE_ACTIONS = 3;
 
-/** Coûts en EP des actions de base (legacy cDeclareAction, audit 03 §4.3). */
-export const ACTION_COSTS = Object.freeze({
-	frappe: 6,
-	pugilat: 6,
-	esquive: 8,
-	/** Joueur « Bloquer −50% ». */
-	bloquerPlayer: 5,
-	/** Créature « Bloquer (corps) −25% » (aussi utilisé pour « parer » côté créature). */
-	bloquerBeast: 2,
-	/** Joueur « Parer −25% ». */
-	parer: 0,
-	deplacer: 10,
-	/** Frappe Haute si la posture ne précise pas de coût. */
-	frappeHauteDefault: 10
-});
+export { ACTION_COSTS } from '../rules';
+import { ACTION_COSTS, actionRule } from '../rules';
 
 /** Pugilat : 4 + niveau (legacy main.js:11955 ; la page règles et le bouton disent 3 + Niv : divergence, audit 03 §4.3). */
 export const PUGILAT_BASE = 4;
@@ -163,7 +150,7 @@ export function buildDeclaration(f: Fighter, action: DeclarableAction, opts: Dec
 			e.epCost = posture ? posture.epCost || ACTION_COSTS.frappeHauteDefault : ACTION_COSTS.frappe;
 			if (posture) {
 				e.blockEpDrain = posture.blockEpDrain || 0;
-				e.defenseExtraEp = 0; // legacy : claymoreHeavy.defenseExtraEp n'existe pas sur la posture → 0
+				e.defenseExtraEp = posture.defenseExtraEp ?? 0;
 				e.defenseChipPct = posture.defenseChipPct || 0;
 				e.noReposition = !!posture.noReposition;
 				e.consumeClaymorePosture = true;
@@ -265,7 +252,7 @@ export function buildDeclaration(f: Fighter, action: DeclarableAction, opts: Dec
 			e.kind = 'attack';
 			e.value = num(opts.value) || dmg;
 			e.label = e.label || `⚔💚 Frappe Déchaînée (${num(opts.value) || dmg})`;
-			e.emCost = num(opts.emCost);
+			e.emCost = num(opts.emCost, actionRule('frappe_dechainees').cost!);
 			e.healAmt = num(opts.healAmt);
 			e.abilityName = opts.abilityName ?? null;
 			break;
@@ -287,9 +274,16 @@ export function buildDeclaration(f: Fighter, action: DeclarableAction, opts: Dec
 export function declareAction(
 	state: CombatState,
 	fighterId: string,
-	action: DeclarableAction,
+	declaration: ActionId | (DeclareOptions & { action: ActionId }),
 	opts: DeclareOptions = {}
 ): CombatState {
+	const action = typeof declaration === 'string' ? declaration : declaration.action;
+	if (action === 'annule') throw new CombatError('COMBAT_INVALID_INPUT', 'Une annulation ne se déclare pas.');
+	if (typeof declaration !== 'string') opts = declaration;
+	for (const [key, value] of Object.entries(opts)) {
+		if (typeof value === 'number' && (!Number.isFinite(value) || value < 0))
+			throw new CombatError('COMBAT_INVALID_INPUT', `Valeur invalide : ${key}`);
+	}
 	const f0 = findFighterOrThrow(state, fighterId);
 	if (state.phase !== 'declaration') throw new CombatError('COMBAT_NOT_DECLARATION_PHASE', 'Phase de déclaration terminée.');
 	if (state.order[state.turn] !== fighterId)
@@ -298,7 +292,7 @@ export function declareAction(
 	const consume = Math.max(1, Math.trunc(num(opts.consumeActions, 1)) || 1);
 	if (left <= 0 && action !== 'passer') throw new CombatError('COMBAT_NO_ACTIONS_LEFT', `${f0.name} n'a plus d'actions à déclarer.`);
 	if (action !== 'passer' && consume > left)
-		throw new CombatError('COMBAT_NOT_ENOUGH_ACTIONS', 'Pas assez d’actions restantes pour cette compétence.');
+		throw new CombatError('COMBAT_NOT_ENOUGH_ACTIONS', "Pas assez d'actions restantes pour cette compétence.");
 	if (action === 'deplacer' && f0.noFreeRepositionRound === state.round)
 		throw new CombatError('COMBAT_MOVE_LOCKED', `${f0.name} ne peut pas se déplacer ce round.`);
 	if (opts.target != null && !findFighter(state, opts.target)) throw new CombatError('COMBAT_INVALID_INPUT', 'Cible inconnue.');

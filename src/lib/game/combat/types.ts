@@ -3,6 +3,8 @@
 // invocations, élémentaire), §8 (drops, fin de combat) ; legacy main.js:10968-10983, 11957-12038.
 // Tout ce qui est ici doit rester sérialisable en JSON (pas d'undefined, pas de fonction) :
 // c'est le contenu de la colonne combats.state (04 §3.6).
+import type { Resources } from '../types';
+export type { OathTier } from '../types';
 
 export type FighterType = 'player' | 'beast';
 
@@ -76,6 +78,7 @@ export interface ClaymorePosture {
 	noReposition: boolean;
 	defenseChipPct: number;
 	desc: string;
+	defenseExtraEp?: number;
 }
 
 /** Invocation déclarée (legacy `summon`, audit 03 §4.4 Evocateur). */
@@ -90,12 +93,7 @@ export interface SummonSpec {
 }
 
 /** Palier de branche de Serment (structure éditoriale conservée telle quelle, 04 §3.3). */
-export interface OathTier {
-	niv: number;
-	nom: string;
-	cout: string;
-	desc: string;
-}
+type OathTier = import('../types').OathTier;
 
 /** Branche choisie par le joueur, figée à l'ajout du combattant. */
 export interface FighterBranch {
@@ -113,10 +111,11 @@ export interface ElementalState {
  * Combattant (audit 03 §2.2 joueur, §2.3 créature, §2.4 invocation).
  * Une seule forme pour les trois cas : les champs non pertinents valent null / 0 / false.
  */
-export interface Fighter {
+export interface Fighter extends Resources {
 	id: string;
 	type: FighterType;
 	name: string;
+	baseName: string;
 	level: number;
 	/** legacy `pid` : personnage du joueur (l'invocation porte le pid de son porteur). */
 	characterId: string | null;
@@ -133,12 +132,6 @@ export interface Fighter {
 	actionsMax: number | null;
 	autoInterpose: boolean;
 	rangeType: RangeType | null;
-	pvCur: number;
-	pvMax: number;
-	epCur: number;
-	epMax: number;
-	emCur: number;
-	emMax: number;
 	/** Dégâts de base : SD[classe].dmg (joueur) ou 1er nombre de `frappe` (créature). */
 	dmgBase: number;
 	/** legacy `frappe` (texte libre de la créature). */
@@ -258,6 +251,11 @@ export interface CombatLogEntry {
 	text: string;
 	actorId: string | null;
 	targetId: string | null;
+	field?: ResourceKey;
+	oldValue?: number;
+	newValue?: number;
+	/** Entrée réservée au MJ (migration des journaux libres). */
+	private?: boolean;
 }
 
 /**
@@ -279,6 +277,9 @@ export interface DropRecord {
 /** État complet du simulateur (legacy `_cs`, audit 03 §2.1 ; format v2 décrit dans index.ts). */
 export interface CombatState {
 	version: 2;
+	schemaVersion: 2;
+	/** Snapshots sans historique imbriqué, maximum 30 rounds. */
+	history: Array<Omit<CombatState, 'history'>>;
 	id: string;
 	name: string;
 	notes: string;

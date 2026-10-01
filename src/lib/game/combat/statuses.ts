@@ -14,22 +14,24 @@ export interface StatusEffect {
 	icon: string;
 	/** Effet mécanique (les autres statuts sont narratifs). */
 	mechanic: 'bleed' | 'poison' | 'stun' | 'entangle' | null;
+	/** Définition à afficher sur la carte de règle. Durée par défaut : 2 rounds. */
+	description: string;
 }
 
 /** Les 12 statuts, libellés/couleurs/icônes verbatim (legacy main.js:12474-12488). */
 export const STATUS_EFFECTS: Readonly<Record<StatusId, StatusEffect>> = {
-	saignement: { id: 'saignement', label: 'Saignement', color: '#c94a4a', icon: '🩸', mechanic: 'bleed' },
-	empoisonne: { id: 'empoisonne', label: 'Empoisonné', color: '#77b36b', icon: '☠', mechanic: 'poison' },
-	brulure: { id: 'brulure', label: 'Brûlure', color: '#d88a3d', icon: '🔥', mechanic: null },
-	gel: { id: 'gel', label: 'Gel', color: '#7eb8d4', icon: '❄', mechanic: null },
-	etourdi: { id: 'etourdi', label: 'Étourdi', color: '#d7b56d', icon: '💫', mechanic: 'stun' },
-	entrave: { id: 'entrave', label: 'Entravé', color: '#8aa0b6', icon: '⛓', mechanic: 'entangle' },
-	aveugle: { id: 'aveugle', label: 'Aveuglé', color: '#c7c4b8', icon: '◌', mechanic: null },
-	silence: { id: 'silence', label: 'Silence', color: '#8f8aa8', icon: '🔇', mechanic: null },
-	peur: { id: 'peur', label: 'Peur', color: '#9e7bc2', icon: '😨', mechanic: null },
-	fragilise: { id: 'fragilise', label: 'Fragilisé', color: '#d77c7c', icon: '🩹', mechanic: null },
-	renforce: { id: 'renforce', label: 'Renforcé', color: '#77b38f', icon: '🛡', mechanic: null },
-	inspire: { id: 'inspire', label: 'Inspiré', color: '#d8c27a', icon: '✦', mechanic: null }
+	saignement: { id: 'saignement', label: 'Saignement', color: '#c94a4a', icon: '🩸', mechanic: 'bleed', description: '−3 PV en fin de round, puis durée −1 ; dissipation à 0.' },
+	empoisonne: { id: 'empoisonne', label: 'Empoisonné', color: '#77b36b', icon: '☠', mechanic: 'poison', description: '−max(1, ceil(PV max × 5 %)) en fin de round, puis durée −1 ; dissipation à 0.' },
+	brulure: { id: 'brulure', label: 'Brûlure', color: '#d88a3d', icon: '🔥', mechanic: null, description: 'Statut narratif sans effet mécanique ; durée −1 en fin de round ; dissipation à 0.' },
+	gel: { id: 'gel', label: 'Gel', color: '#7eb8d4', icon: '❄', mechanic: null, description: 'Statut narratif sans effet mécanique ; durée −1 en fin de round ; dissipation à 0.' },
+	etourdi: { id: 'etourdi', label: 'Étourdi', color: '#d7b56d', icon: '💫', mechanic: 'stun', description: '−2 actions (minimum 1), sans cumul avec Entravé ; durée −1 par round.' },
+	entrave: { id: 'entrave', label: 'Entravé', color: '#8aa0b6', icon: '⛓', mechanic: 'entangle', description: '−1 action, sans cumul avec Étourdi ; durée −1 par round.' },
+	aveugle: { id: 'aveugle', label: 'Aveuglé', color: '#c7c4b8', icon: '◌', mechanic: null, description: 'Statut narratif sans effet mécanique ; durée −1 en fin de round ; dissipation à 0.' },
+	silence: { id: 'silence', label: 'Silence', color: '#8f8aa8', icon: '🔇', mechanic: null, description: 'Statut narratif sans effet mécanique ; durée −1 en fin de round ; dissipation à 0.' },
+	peur: { id: 'peur', label: 'Peur', color: '#9e7bc2', icon: '😨', mechanic: null, description: 'Statut narratif sans effet mécanique ; durée −1 en fin de round ; dissipation à 0.' },
+	fragilise: { id: 'fragilise', label: 'Fragilisé', color: '#d77c7c', icon: '🩹', mechanic: null, description: 'Statut narratif sans effet mécanique ; durée −1 en fin de round ; dissipation à 0.' },
+	renforce: { id: 'renforce', label: 'Renforcé', color: '#77b38f', icon: '🛡', mechanic: null, description: 'Statut narratif sans effet mécanique ; durée −1 en fin de round ; dissipation à 0.' },
+	inspire: { id: 'inspire', label: 'Inspiré', color: '#d8c27a', icon: '✦', mechanic: null, description: 'Statut narratif sans effet mécanique ; durée −1 en fin de round ; dissipation à 0.' }
 };
 
 export const STATUS_IDS: readonly StatusId[] = Object.keys(STATUS_EFFECTS) as StatusId[];
