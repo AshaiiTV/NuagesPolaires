@@ -3,7 +3,8 @@
 //
 // - `state` aléatoire à usage unique et vérificateur PKCE (S256), conservés dans un cookie signé
 //   HMAC (NP_SESSION_SECRET), valable 10 minutes ; la route l'efface dès le retour.
-// - Redirection exacte `NP_SITE_URL/connexion/discord/retour`.
+// - Redirection exacte `NP_SITE_URL/entrer/discord/retour` (arbre `/entrer` de 06-contrats §C ;
+//   décision INT-1, 04 §4 corrigé).
 // - Liaison à un compte EXISTANT et CONNECTÉ uniquement (« Lier mon compte Discord ») ; ensuite
 //   connexion par `discord_id`. Aucun rôle ni liaison de personnage par Discord.
 // - Le réseau est injecté (`fetch` en paramètre) pour les tests.
@@ -25,7 +26,7 @@ export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>
 
 export const DISCORD_STATE_COOKIE = 'np_discord_state';
 export const DISCORD_STATE_TTL_MS = 10 * 60 * 1000;
-export const DISCORD_CALLBACK_PATH = '/connexion/discord/retour';
+export const DISCORD_CALLBACK_PATH = '/entrer/discord/retour';
 const DISCORD_AUTHORIZE_URL = 'https://discord.com/oauth2/authorize';
 const DISCORD_TOKEN_URL = 'https://discord.com/api/oauth2/token';
 const DISCORD_ME_URL = 'https://discord.com/api/users/@me';

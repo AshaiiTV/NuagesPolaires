@@ -17,6 +17,7 @@ import {
 import type { Actor } from '$lib/server/permissions';
 import { bindRequestContext } from '$lib/server/auth/context';
 import { hashPassword } from '$lib/server/auth/password';
+import { THEMES } from '$lib/ui/themes';
 import { countSessions, readSession } from '$lib/server/auth/session';
 import {
 	actorFor,
@@ -668,6 +669,10 @@ describe('thèmes (audit 07 §3.3 ; audit 06 §3.J, A16)', () => {
 		};
 		const view = await createTheme(t.db, admin, { id: 'veillee', name: 'Veillée', description: 'Un feu bas.', tokens });
 		expect(view).toMatchObject({ id: 'veillee', isBuiltin: false, tone: 'sombre', tokens });
+		// INT-1 : les huit tokens vivent dans `themes.tokens` ; l'aperçu ne garde que trois couleurs.
+		const [row] = await t.db.select().from(themes).where(eq(themes.id, 'veillee'));
+		expect(row.tokens).toEqual(tokens);
+		expect(row.preview.colors).toEqual(['#0b0b10', '#f5f1e8', '#c9a86a']);
 		await expect(createTheme(t.db, admin, { id: 'veillee', name: 'Bis', tokens })).rejects.toMatchObject({ status: 409 });
 		await expect(
 			createTheme(t.db, admin, { id: 'pale', name: 'Pâle', tokens: { ...tokens, '--encre': '#2a2a33', '--encre-2': '#202028' } })
@@ -678,6 +683,21 @@ describe('thèmes (audit 07 §3.3 ; audit 06 §3.J, A16)', () => {
 		await selectTheme(t.db, admin, { themeId: 'veillee' });
 		const active = await resolveActiveTheme(t.db, await accountRow(A.admin));
 		expect(active).toMatchObject({ id: 'veillee', ton: 'sombre', custom: true, tokens });
+	});
+
+	it('tokens lus dans la colonne `themes.tokens` (INT-1), plus dans `preview.colors`', async () => {
+		const custom = { ...THEMES[0].tokens, '--ruban': '#123456' };
+		await t.db.update(themes).set({ tokens: custom }).where(eq(themes.id, 'violet'));
+		expect((await listThemes(t.db, admin)).find((v) => v.id === 'violet')?.tokens).toEqual(custom);
+		// Colonne vide ou incomplète : repli sur le catalogue de l'interface.
+		await t.db.update(themes).set({ tokens: null }).where(eq(themes.id, 'violet'));
+		expect((await listThemes(t.db, admin)).find((v) => v.id === 'violet')?.tokens).toEqual(
+			THEMES.find((x) => x.id === 'violet')?.tokens
+		);
+		await t.db
+			.update(themes)
+			.set({ tokens: THEMES.find((x) => x.id === 'violet')?.tokens })
+			.where(eq(themes.id, 'violet'));
 	});
 
 	it('thème actif bloqué ou retiré ⇒ rendu en dark', async () => {

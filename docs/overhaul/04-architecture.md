@@ -68,7 +68,7 @@ Principes : une table par entité ; identifiants texte stables (ceux de l'ancien
 
 ### 3.2 Personnages
 
-- `characters` : `id`, `name` (≤ 80), `oath_id` (FK `oaths`), `branch` (texte, `'Aucune'` par défaut), `level`, `xp`, `pv_cur`, `pv_max`, `ep_cur`, `ep_max`, `em_cur`, `em_max`, `weapon`, `avatar_url`, `journal` (texte, ≤ 20 000), `progression_version` (1), `equipment jsonb` (`{helmet, chest, legs}`), `statuses jsonb` (≤ 64), `revision`.
+- `characters` : `id`, `name` (≤ 80), `oath_id` (FK `oaths`), `branch` (texte, `'Aucune'` par défaut), `level`, `xp`, `pv_cur`, `pv_max`, `ep_cur`, `ep_max`, `em_cur`, `em_max`, `weapon`, `avatar_url`, `journal` (texte, ≤ 20 000), `progression_version` (1), `equipment jsonb` (`{helmet, chest, legs}`), `statuses jsonb` (≤ 64), `struck_at` / `struck_by` (FK `accounts`, SET NULL) / `struck_motif` (rature du personnage, INT-1), `revision`.
 - `character_items` : `id`, `character_id`, `name`, `category` (dont `Gemme`), `qty` (≥ 0), `description`, `extra jsonb` (champs inconnus hérités conservés), `position`.
 - `character_history` : `id bigserial`, `character_id`, `ts`, `type` (`xp | gemme | item | level | stat | serment | combat | add | event | scene`), `text` (**brut**, échappé au rendu ; les textes hérités déjà échappés sont dés-échappés à la migration), `actor_name`, `actor_account_id`, `combat_id` (FK nullable), `dismissed` (bool : remplace `notifDeleted`). Pas de plafond à 200 : l'historique complet est conservé, paginé à la lecture.
 
@@ -81,11 +81,11 @@ Principes : une table par entité ; identifiants texte stables (ceux de l'ancien
 
 - `beasts` : `id`, `name`, `subtitle`, `behavior`, `level`, `pv`, `ep`, `strike`, `skill`, `drops`, `gem`, `description`, `image_url`, `style`, `quote`, `hidden`, `archived`, `qty_min`, `qty_max`, `spawn_weight`, `tags text[]`, `zones text[]`, `statuses jsonb`, `admin_note` (jamais servi hors staff), `extra jsonb`, `revision`. Les alias hérités (`nom/name`, `beh/behavior/comportement`, `niv/level`, `pv/hp`, `ep/energy`, `frappe/attack`, `comp/skill/ability`, `drops/loot`, `gem/gemme`, `desc/description`, `img/image`, `sub/subtitle`, `catalog`) sont **fusionnés à la migration** avec une règle de priorité documentée dans `legacy/`.
 - `zones` : `id` (slug), `name`, `emoji`, `is_default`, `position`.
-- `beast_observations` (nouveau, vision) : `id`, `beast_id`, `text`, `author_account_id`, `status` (`proposed | validated | rejected`), `validated_by`, `validated_at`, `combat_id` nullable. Sert le Codex qui se révèle : seules les observations `validated` sont publiques.
+- `beast_observations` (nouveau, vision) : `id`, `beast_id`, `text`, `author_account_id`, `status` (`proposed | validated | rejected`), `validated_by`, `validated_at`, `motif` (texte, `''` par défaut : motif de la validation ou du refus, INT-1), `combat_id` nullable. Sert le Codex qui se révèle : seules les observations `validated` sont publiques.
 
 ### 3.5 Événements
 
-- `events` : `id`, `title`, `type` (enum `combat | exploration | social | evenement | autre`), `description`, `starts_at timestamptz` (nullable), `capacity` (0 = illimité), `hidden`, `discord_url`, `created_by`, `revision`.
+- `events` : `id`, `title`, `type` (enum `combat | exploration | social | evenement | autre`), `description`, `starts_at timestamptz` (nullable), `capacity` (0 = illimité), `hidden`, `discord_url`, `created_by`, `announced_at` / `announced_by` (FK `accounts`, SET NULL : « Prévenir les joueurs »), `recit_combat_id` (FK `combats`, SET NULL : « Lire le récit »), `revision` (colonnes d'annonce et de récit : INT-1).
 - `event_participants` : `(event_id, character_id)` PK, `registered_at`. Les inscriptions héritées par nom sont résolues à la migration ; les homonymes non résolus sont consignés dans le rapport de migration.
 
 ### 3.6 Combats (simulateur, Table, archives)
@@ -100,7 +100,7 @@ Principes : une table par entité ; identifiants texte stables (ceux de l'ancien
 
 ### 3.8 Thèmes
 
-- `themes` : `id`, `name`, `css_class`, `description`, `is_event`, `available_until`, `visible`, `auto_grant_all`, `rarity`, `category`, `is_builtin`, `preview jsonb`. Semés depuis l'audit 07 (catalogue complet) ; `dark` et `light` toujours accordés.
+- `themes` : `id`, `name`, `css_class`, `description`, `is_event`, `available_until`, `visible`, `auto_grant_all`, `rarity`, `category`, `is_builtin`, `preview jsonb`, `tokens jsonb` (les huit tokens du thème, INT-1 : semés pour les neuf thèmes natifs depuis `src/lib/ui/themes.ts`, écrits par `createTheme`). Semés depuis l'audit 07 (catalogue complet) ; `dark` et `light` toujours accordés.
 
 ### 3.9 Scènes (nouveau, vision « ce qui est encore ouvert »)
 
@@ -141,7 +141,7 @@ Principes : une table par entité ; identifiants texte stables (ceux de l'ancien
 - **CSP** : `kit.csp` en mode `auto` (nonces en SSR, hashes en prerender) : `default-src 'self'; script-src 'self' 'nonce-…'; style-src 'self' 'unsafe-inline'` (les styles inline restent nécessaires aux transitions Svelte ; à retirer si possible en fin de chantier) ; `img-src 'self' data: blob: https://i.imgur.com https://cdn.discordapp.com`; `connect-src 'self'`; `frame-ancestors 'none'`. Aucun gestionnaire inline, aucun `{@html}` sans passage par le sanitiseur maison (`lib/server/html.ts`, liste blanche : `b i em strong br p`).
 - **Filtrage par rôle côté serveur** avant tout envoi (créatures masquées/archivées, notes staff, événements masqués, journaux, observations non validées, état complet du simulateur). Un composant ne reçoit jamais plus que ce que le rôle peut voir.
 - **En-têtes** : `Cache-Control: private, no-store` sur toute réponse authentifiée ; HSTS ; `X-Content-Type-Options` ; `Referrer-Policy: strict-origin-when-cross-origin` ; `Permissions-Policy` ; COOP.
-- **Discord OAuth** (optionnel, activé si `DISCORD_CLIENT_ID` défini) : `state` aléatoire à usage unique (cookie signé, 10 minutes), PKCE, redirection exacte `NP_SITE_URL/connexion/discord/retour`. Liaison à un compte **existant et connecté** uniquement (« Lier mon compte Discord ») ; connexion ensuite par `discord_id`. Aucun rôle ni liaison de personnage par Discord.
+- **Discord OAuth** (optionnel, activé si `DISCORD_CLIENT_ID` défini) : `state` aléatoire à usage unique (cookie signé, 10 minutes), PKCE, redirection exacte `NP_SITE_URL/entrer/discord/retour` (route de l'arbre `/entrer`, 06-contrats §C ; décision INT-1). Liaison à un compte **existant et connecté** uniquement (« Lier mon compte Discord ») ; connexion ensuite par `discord_id`. Aucun rôle ni liaison de personnage par Discord.
 
 ## 5. Permissions (source unique : `lib/server/permissions.ts`)
 
@@ -149,23 +149,25 @@ Principes : une table par entité ; identifiants texte stables (ceux de l'ancien
 |---|---|---|---|---|
 | Lire références publiques (Serments visibles, bestiaire filtré, règles, événements visibles) | oui (aussi visiteur) | oui | oui | oui |
 | Lire sa fiche, son journal, son historique, ses combats, ses scènes | oui | — | — | — |
-| Modifier journal, avatar, consommer un objet, masquer une notification, participer à un événement, marque-page de scène, épingles | oui (son personnage) | — | — | — |
+| Lire le journal d'un personnage (lecture seule) | — | oui | — | oui |
+| Modifier journal, avatar, consommer un objet, masquer une notification, participer à un événement, marque-page de scène, épingles | oui (son personnage ; le journal s'écrit par son propriétaire SEULEMENT) | — | — | — |
 | Proposer une observation de créature | oui | oui | oui | oui |
 | Lire tous les personnages ; modifier ressources, XP, niveau, inventaire, équipement, statuts, historique ; créer un personnage | — | oui | — | oui |
-| Modifier identité, Serment, branche, arme, journal d'un personnage ; supprimer un personnage | — | — | — | oui |
+| Modifier identité, Serment, branche, arme d'un personnage ; rayer un personnage | — | — | — | oui |
 | Simulation, apparitions, archives (toutes), clôture de combat, récompenses | — | oui | — | oui |
 | Événements : créer, modifier, masquer, supprimer, notifier | — | oui | oui (sans notifier) | oui |
-| Bestiaire : créer, modifier, publier, masquer, archiver ; valider une observation | — | — | oui | oui |
+| Bestiaire : créer, modifier, publier, masquer, archiver | — | — | oui | oui |
+| Valider ou refuser une observation de créature | — | oui | oui | oui |
 | Atelier serments | — | — | — | oui |
 | Journal staff (lecture, écriture) | — | oui | — | oui |
 | Comptes, rôles, liaisons, mots de passe, thèmes, journaux d'audit, diagnostics, migration | — | — | — | oui |
 | Scènes : ouvrir, clore, résumé « où nous en sommes » | participant (ouvrir, marque-page) | oui | — | oui |
 
-Décisions tranchées par rapport aux incohérences de l'audit (§11 de 05) : le MJ **n'édite pas** le bestiaire ; le designer **n'édite pas** les Serments ; la réinitialisation de mot de passe est admin ; le journal d'un personnage est lisible par son propriétaire, les MJ et les admins, et l'interface le dit ; le journal staff est lisible et archivable par MJ et admin.
+Décisions tranchées par rapport aux incohérences de l'audit (§11 de 05) : le MJ **n'édite pas** le bestiaire ; le designer **n'édite pas** les Serments ; la réinitialisation de mot de passe est admin ; le journal d'un personnage est lisible par son propriétaire, les MJ et les admins, et l'interface le dit — il ne s'écrit que par son propriétaire (le staff le lit, ne l'écrit pas) ; le journal staff est lisible et archivable par MJ et admin. Décisions d'intégration INT-1 : le MJ valide aussi les observations de créature (cohérent avec `permissions.ts` et `03-vision.md` §9.3, l'observation est un extrait tamponné par un MJ) ; un personnage rayé garde sa ligne (colonnes `struck_at`, `struck_by`, `struck_motif`) mais sort de toutes les pages, seul l'export administrateur le lit encore.
 
 ## 6. Concurrence
 
-- Chaque agrégat porte `revision`. Toute mutation reçoit `expectedRevision` (champ caché du formulaire) ; absent ⇒ **428** `VERSION_REQUIRED` ; `UPDATE … WHERE id = $1 AND revision = $2 RETURNING revision` ; zéro ligne ⇒ **409** `VERSION_CONFLICT` avec le message officiel (« Ces données ont été modifiées par une autre session. Recharge-les avant de réessayer. »). Jamais de relance automatique.
+- Chaque agrégat porte `revision`. Toute mutation reçoit `expectedRevision` (champ caché du formulaire) ; absent ⇒ **428** `VERSION_REQUIRED` ; `UPDATE … WHERE id = $1 AND revision = $2 RETURNING revision` ; zéro ligne ⇒ **409** `VERSION_CONFLICT` avec le message officiel (« Quelqu’un a écrit sur cette page entre-temps. Relis avant d’écrire par-dessus. », micro-texte 9 de `03-vision.md` §8 — décision d'intégration INT-1, remplace la phrase héritée de l'audit 05). Jamais de relance automatique.
 - Les actions joueur (consommer, participer, masquer, marque-page) sont des **commandes** serveur : l'identité vient de la session, le corps ne contient que l'identifiant ciblé et `expectedRevision`.
 - Transactions (`db.transaction`) obligatoires pour : clôture de combat, consommation (item + historique), participation (capacité + insertion), suppression de compte (+ personnage), réinitialisation (+ révocation), migration héritée, changement de rôle du dernier admin (verrou `SELECT … FOR UPDATE` sur les admins).
 - La Table : les participants sondent `GET /api/combats/[id]/etat` toutes les 4 s avec `If-None-Match: "<revision>"` ; 304 si inchangé ; l'état renvoyé est la **projection joueur** (ressources visibles, tour en cours, dernières lignes du récit), jamais l'état complet.

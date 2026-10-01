@@ -1,15 +1,10 @@
 import { z } from 'zod';
+import { MEANING_COLORS } from '$lib/game/colors';
 import type { ObservationView } from './observations';
 
-// Audit 04 §1.3 : BHC, legacy/assets/js/main.js:7413-7426 (clé française).
-export const BEHAVIOR_COLORS = {
-	Gibier: '#7bcf9b',
-	Passif: '#7eb8d4',
-	Neutre: '#c9a84c',
-	Agressif: '#c45858',
-	'Très agressif': '#c94a4a',
-	Boss: '#b98cff'
-} as const;
+// Audit 04 §1.3 : BHC, legacy/assets/js/main.js:7413-7426 (clé française) — table unique des couleurs
+// de sens `$lib/game/colors` (décision INT-1).
+export const BEHAVIOR_COLORS = MEANING_COLORS.behavior;
 export const behaviorSchema = z.enum([
 	'Gibier',
 	'Passif',

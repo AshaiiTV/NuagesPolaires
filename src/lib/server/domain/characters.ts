@@ -8,7 +8,8 @@
 //   - Texte d'historique BRUT (04 §10.15) : jamais de HTML, jamais d'échappement à l'écriture.
 //   - Les calculs de progression viennent de `$lib/game/progression` (audit 02 §2, §6) avec la
 //     définition de Serment COURANTE de la base (audit 06 F1).
-//   - Un personnage rayé (`extra.struckAt`) sort de toutes les pages (03-vision §5.10).
+//   - Un personnage rayé (colonne `struck_at`, décision INT-1) sort de toutes les pages (03-vision §5.10) ;
+//     seul l'export administrateur (sheetForExport) le lit encore.
 import {
 	and,
 	asc,
@@ -159,8 +160,11 @@ export function requireRevision(input: unknown): void {
 	if (value === undefined || value === null || value === '') throw NpError.versionRequired();
 }
 
-/** Condition SQL : personnage non rayé (la rature d'un personnage vit dans `extra.struckAt`). */
-export const characterIsActive: SQL = sql`(${characters.extra} ->> 'struckAt') IS NULL`;
+/**
+ * Condition SQL : personnage non rayé (`characters.struck_at IS NULL`, décision INT-1). Tous les domaines
+ * qui lisent ou écrivent un personnage l'appliquent (comptes, rendez-vous, Table, ruban, scènes, liste).
+ */
+export const characterIsActive: SQL = isNull(characters.struckAt);
 
 /** Auteur d'une ligne d'historique. */
 export type HistoryAuthor = {
@@ -1420,7 +1424,8 @@ export async function updateIdentity(
 
 /**
  * Rayer un personnage (admin, saisie dactylographiée du nom, 03-vision §5.10) : il sort de toutes
- * les pages (marque `extra.struckAt`), son compte est délié ; rien n'est supprimé.
+ * les pages (colonnes `struck_at`, `struck_by`, `struck_motif`), son compte est délié ; rien n'est
+ * supprimé.
  */
 export async function strikeCharacter(
 	db: Db,
@@ -1435,10 +1440,13 @@ export async function strikeCharacter(
 		if (data.typedName !== c.name.trim()) {
 			throw new NpError('INVALID', 'Le nom saisi ne correspond pas au personnage.', 400);
 		}
-		const struckAt = new Date().toISOString();
+		const struck = new Date();
+		const struckAt = struck.toISOString();
 		const motif = data.motif || 'Personnage rayé.';
 		await updateCharacterChecked(tx, c.id, data.expectedRevision, {
-			extra: { ...(c.extra ?? {}), struckAt, struckBy: who.pseudo, struckMotif: motif }
+			struckAt: struck,
+			struckBy: who.accountId,
+			struckMotif: motif
 		});
 		await tx
 			.update(accounts)

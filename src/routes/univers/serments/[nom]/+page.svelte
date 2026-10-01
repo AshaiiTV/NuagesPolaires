@@ -350,8 +350,18 @@
 		font: 500 22px / var(--ligne) var(--voix);
 		color: var(--encre);
 	}
+	.tete h3 {
+		flex: none;
+		max-width: 100%;
+	}
+	/* Un coût long (« 12 EM — coûte toutes les actions restantes du tour ») passe à la ligne,
+	   calé à droite comme les autres. */
 	.cout {
-		white-space: nowrap;
+		flex: 1 1 0;
+		min-width: 0;
+		white-space: normal;
+		text-wrap: balance;
+		text-align: right;
 	}
 	.effet {
 		max-width: var(--lecture);
@@ -412,6 +422,10 @@
 		}
 		.palier {
 			grid-template-columns: minmax(0, 1fr);
+		}
+		.cout {
+			flex-basis: 100%;
+			text-align: left;
 		}
 		.jalon {
 			display: flex;

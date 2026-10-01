@@ -7,6 +7,13 @@ import type { StatusId } from './combat/types';
 
 export interface ActionRule {
 	id: string;
+	/**
+	 * Nom affiché par l'interface (décision INT-1) : sans émoji ni suffixe « (N) » — « Frappe »,
+	 * « Esquive », « Se déplacer »… C'est aussi le mot d'une déclaration (« Kael déclare −8 EP
+	 * (Esquive). », 03-vision §8 micro-texte 10).
+	 */
+	name: string;
+	/** Libellé hérité du simulateur (legacy main.js:11950-12038), conservé pour la migration des archives. */
 	label: string;
 	resource: 'ep' | 'em' | null;
 	cost: number | null;
@@ -16,24 +23,24 @@ export interface ActionRule {
 }
 const anchor = '/univers/systeme#actions';
 export const ACTION_RULES: readonly ActionRule[] = [
-	{ id: 'frappe', label: '⚔ Frappe (N)', resource: 'ep', cost: 6, conditions: 'Tous', effect: 'Dégâts du Serment + niveau', anchor },
-	{ id: 'frappe_haute', label: '🗡 Frappe Haute (N)', resource: 'ep', cost: 10, conditions: 'Posture Haute active', effect: 'Dégâts et malus de la posture ; posture consommée', anchor },
-	{ id: 'pugilat', label: '👊 Pugilat (N)', resource: 'ep', cost: 6, conditions: 'Joueur', effect: '4 + niveau dégâts', anchor },
-	{ id: 'esquive', label: '🛡 Esquive', resource: 'ep', cost: 8, conditions: 'Tous', effect: 'Annule une attaque sauf impact traversant ou indéfendable', anchor },
-	{ id: 'bloquer', label: '🛡 Bloquer −50%', resource: 'ep', cost: 5, conditions: 'Joueur', effect: 'Dégâts × 0,5, arrondi supérieur', anchor },
-	{ id: 'bloquer_corps', label: '🛡 Bloquer (corps) −25%', resource: 'ep', cost: 2, conditions: 'Créature (Bloquer ou Parer)', effect: 'Dégâts × 0,75, arrondi supérieur', anchor },
-	{ id: 'parer', label: '🤜 Parer −25%', resource: 'ep', cost: 0, conditions: 'Joueur', effect: 'Dégâts × 0,75, arrondi supérieur', anchor },
-	{ id: 'subit', label: '🩸 Subit', resource: null, cost: 0, conditions: 'Tous', effect: 'Narratif, ne consomme aucune défense', anchor },
-	{ id: 'deplacer', label: '🏃 Déplacement', resource: 'ep', cost: 10, conditions: 'Déplacement non verrouillé ce round', effect: 'Narratif, aucune modification de portée', anchor },
-	{ id: 'passer', label: '⏭ Passer', resource: null, cost: 0, conditions: 'Tous', effect: 'Remplit toutes les actions restantes par —', anchor },
-	{ id: 'capacite', label: '✨ <palNom>', resource: 'em', cost: null, conditions: 'Palier accessible ou compétence de créature', effect: 'Effets et coût structurés du palier', anchor },
-	{ id: 'soin', label: '💚 Soin (N PV)', resource: 'em', cost: null, conditions: 'Capacité de soin', effect: 'Soin plafonné aux PV max', anchor },
-	{ id: 'frappe_dechainees', label: '⚔💚 Frappe Déchaînée (N)', resource: 'em', cost: 5, conditions: 'Conjurateur branche A', effect: 'Attaque et soin automatique', anchor },
-	{ id: 'posture_haute', label: '🗡 Posture Haute', resource: 'em', cost: 6, conditions: 'Claymore', effect: 'Prépare la prochaine Frappe Haute', anchor },
-	{ id: 'poing_ardent', label: '🔥 Poing Ardent', resource: 'em', cost: 6, conditions: 'Elementaliste Feu / Glace', effect: 'Feu, Brûlure, combo élémentaire', anchor },
-	{ id: 'poing_polaire', label: '❄ Poing Polaire', resource: 'em', cost: 4, conditions: 'Elementaliste Feu / Glace', effect: 'Glace, Gel, combo élémentaire', anchor },
-	{ id: 'poing_foudre', label: '⚡ Poing Foudre', resource: 'em', cost: 6, conditions: 'Elementaliste Foudre / Eau', effect: 'Foudre, combo élémentaire', anchor },
-	{ id: 'poing_aquatique', label: '💧 Poing Aquatique', resource: 'em', cost: 4, conditions: 'Elementaliste Foudre / Eau', effect: 'Eau, combo élémentaire', anchor }
+	{ id: 'frappe', name: 'Frappe', label: '⚔ Frappe (N)', resource: 'ep', cost: 6, conditions: 'Tous', effect: 'Dégâts du Serment + niveau', anchor },
+	{ id: 'frappe_haute', name: 'Frappe Haute', label: '🗡 Frappe Haute (N)', resource: 'ep', cost: 10, conditions: 'Posture Haute active', effect: 'Dégâts et malus de la posture ; posture consommée', anchor },
+	{ id: 'pugilat', name: 'Pugilat', label: '👊 Pugilat (N)', resource: 'ep', cost: 6, conditions: 'Joueur', effect: '4 + niveau dégâts', anchor },
+	{ id: 'esquive', name: 'Esquive', label: '🛡 Esquive', resource: 'ep', cost: 8, conditions: 'Tous', effect: 'Annule une attaque sauf impact traversant ou indéfendable', anchor },
+	{ id: 'bloquer', name: 'Bloquer', label: '🛡 Bloquer −50%', resource: 'ep', cost: 5, conditions: 'Joueur', effect: 'Dégâts × 0,5, arrondi supérieur', anchor },
+	{ id: 'bloquer_corps', name: 'Bloquer (corps)', label: '🛡 Bloquer (corps) −25%', resource: 'ep', cost: 2, conditions: 'Créature (Bloquer ou Parer)', effect: 'Dégâts × 0,75, arrondi supérieur', anchor },
+	{ id: 'parer', name: 'Parer', label: '🤜 Parer −25%', resource: 'ep', cost: 0, conditions: 'Joueur', effect: 'Dégâts × 0,75, arrondi supérieur', anchor },
+	{ id: 'subit', name: 'Subit', label: '🩸 Subit', resource: null, cost: 0, conditions: 'Tous', effect: 'Narratif, ne consomme aucune défense', anchor },
+	{ id: 'deplacer', name: 'Se déplacer', label: '🏃 Déplacement', resource: 'ep', cost: 10, conditions: 'Déplacement non verrouillé ce round', effect: 'Narratif, aucune modification de portée', anchor },
+	{ id: 'passer', name: 'Passer', label: '⏭ Passer', resource: null, cost: 0, conditions: 'Tous', effect: 'Remplit toutes les actions restantes par —', anchor },
+	{ id: 'capacite', name: 'Capacité', label: '✨ <palNom>', resource: 'em', cost: null, conditions: 'Palier accessible ou compétence de créature', effect: 'Effets et coût structurés du palier', anchor },
+	{ id: 'soin', name: 'Soin', label: '💚 Soin (N PV)', resource: 'em', cost: null, conditions: 'Capacité de soin', effect: 'Soin plafonné aux PV max', anchor },
+	{ id: 'frappe_dechainees', name: 'Frappe Déchaînée', label: '⚔💚 Frappe Déchaînée (N)', resource: 'em', cost: 5, conditions: 'Conjurateur branche A', effect: 'Attaque et soin automatique', anchor },
+	{ id: 'posture_haute', name: 'Posture Haute', label: '🗡 Posture Haute', resource: 'em', cost: 6, conditions: 'Claymore', effect: 'Prépare la prochaine Frappe Haute', anchor },
+	{ id: 'poing_ardent', name: 'Poing Ardent', label: '🔥 Poing Ardent', resource: 'em', cost: 6, conditions: 'Elementaliste Feu / Glace', effect: 'Feu, Brûlure, combo élémentaire', anchor },
+	{ id: 'poing_polaire', name: 'Poing Polaire', label: '❄ Poing Polaire', resource: 'em', cost: 4, conditions: 'Elementaliste Feu / Glace', effect: 'Glace, Gel, combo élémentaire', anchor },
+	{ id: 'poing_foudre', name: 'Poing Foudre', label: '⚡ Poing Foudre', resource: 'em', cost: 6, conditions: 'Elementaliste Foudre / Eau', effect: 'Foudre, combo élémentaire', anchor },
+	{ id: 'poing_aquatique', name: 'Poing Aquatique', label: '💧 Poing Aquatique', resource: 'em', cost: 4, conditions: 'Elementaliste Foudre / Eau', effect: 'Eau, combo élémentaire', anchor }
 ];
 export function actionRule(id: string): ActionRule {
 	const rule = ACTION_RULES.find((r) => r.id === id);

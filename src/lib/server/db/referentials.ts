@@ -11,8 +11,12 @@
 //
 // Module PUR (aucune E/S, aucun import du paquet jeu, aucun jeu de démonstration) : le code applicatif
 // importe d'ici les identifiants de thèmes, alias et clés de réglages sans tirer seed.ts dans le bundle.
+// Les huit tokens des thèmes natifs viennent du catalogue de l'interface (`THEMES` de
+// src/lib/ui/themes.ts, données pures) : décision INT-1, colonne `themes.tokens`.
 
 import { getTableColumns, getTableName, type Table } from 'drizzle-orm';
+// Import relatif (et non `$lib`) : ce module est aussi exécuté par tsx hors de Vite.
+import { THEMES } from '../../ui/themes';
 import {
 	oaths,
 	settings,
@@ -33,7 +37,7 @@ import {
 // `availableUntil 0` legacy = sans limite → null. Aucun thème n'a de prix (audit 07 §0).
 // ---------------------------------------------------------------------------
 
-export const THEME_SEED: readonly NewTheme[] = [
+const THEME_BASE: readonly Omit<NewTheme, 'tokens'>[] = [
 	{
 		id: 'dark',
 		name: 'Nuages Polaires',
@@ -204,6 +208,18 @@ export const THEME_SEED: readonly NewTheme[] = [
 		}
 	}
 ];
+
+/** Tokens d'un thème natif dans le catalogue de l'interface ; `null` s'il n'y figure pas. */
+function nativeTokens(id: string): Record<string, string> | null {
+	const found = THEMES.find((t) => t.id === id);
+	return found ? { ...found.tokens } : null;
+}
+
+/** Les neuf thèmes natifs, avec leurs huit tokens (colonne `themes.tokens`, décision INT-1). */
+export const THEME_SEED: readonly NewTheme[] = THEME_BASE.map((t) => ({
+	...t,
+	tokens: nativeTokens(t.id)
+}));
 
 /** Thèmes toujours accordés, quel que soit le compte (audit 07 §3.3, `ALWAYS_GRANTED_THEME_IDS`). */
 export const ALWAYS_GRANTED_THEME_IDS: readonly string[] = ['dark', 'light'];
@@ -457,8 +473,11 @@ export function buildReferentialsSql(oathDefinitions: readonly OathSeedDefinitio
 		'-- BUILTIN_OATHS de src/lib/game/oaths.ts (Serments natifs, parents avant évolutions).',
 		'-- ON CONFLICT DO NOTHING : une ligne déjà présente n’est jamais écrasée.'
 	].join('\n');
+	// Les tokens ne figurent pas dans 0001 : la colonne `themes.tokens` naît en 0002 ; ils sont
+	// écrits par la migration de données 0003 (buildThemeTokensSql).
+	const themeRows = THEME_SEED.map(({ tokens: _tokens, ...row }) => row);
 	const statements = [
-		renderInsert(themes, THEME_SEED as readonly Record<string, unknown>[]),
+		renderInsert(themes, themeRows as readonly Record<string, unknown>[]),
 		renderInsert(zones, ZONE_SEED as readonly Record<string, unknown>[]),
 		renderInsert(settings, SETTING_SEED as readonly Record<string, unknown>[]),
 		renderInsert(spawnSettings, SPAWN_SETTINGS_SEED as readonly Record<string, unknown>[]),
@@ -467,4 +486,38 @@ export function buildReferentialsSql(oathDefinitions: readonly OathSeedDefinitio
 			: [])
 	];
 	return `${header}\n${statements.join(`\n${BREAKPOINT}\n`)}\n`;
+}
+
+// ---------------------------------------------------------------------------
+// Migration de données `0003_theme_tokens` (décision INT-1)
+// ---------------------------------------------------------------------------
+
+/** Nom du fichier de la migration de données des tokens de thèmes, dans `drizzle/`. */
+export const THEME_TOKENS_MIGRATION_FILE = '0003_theme_tokens.sql';
+
+/**
+ * Contenu exact de `drizzle/0003_theme_tokens.sql` : les huit tokens de chaque thème natif (colonne
+ * `themes.tokens`, créée par 0002), sans jamais écraser un thème déjà renseigné ; puis la reprise des
+ * marques que les domaines rangeaient dans `extra` avant INT-1 (`characters.extra.struckAt`,
+ * `events.extra.announcedAt`, `events.extra.recitId`) vers leurs colonnes, pour une base de
+ * développement déjà remplie. Rendu déterministe, fins de ligne `\n`.
+ */
+export function buildThemeTokensSql(): string {
+	const header = [
+		'-- Migration de DONNÉES 0003 — tokens des thèmes natifs et reprise des marques `extra` (décision INT-1).',
+		'-- GÉNÉRÉE : npx tsx src/lib/server/db/generate-referentials.ts — ne pas éditer à la main.',
+		'-- Source : THEMES de src/lib/ui/themes.ts (via THEME_SEED de referentials.ts).',
+		'-- Une ligne déjà renseignée (tokens non nuls, colonne déjà posée) n’est jamais écrasée.'
+	].join('\n');
+	const tokenStatements = THEME_SEED.filter((t) => t.tokens).map(
+		(t) =>
+			`UPDATE ${quoteIdent(getTableName(themes))} SET "tokens" = ${sqlLiteral(JSON.stringify(t.tokens))} WHERE "id" = ${sqlLiteral(t.id)} AND "tokens" IS NULL;`
+	);
+	const iso = `'^\\d{4}-\\d{2}-\\d{2}T'`;
+	const backfill = [
+		`UPDATE "characters" SET "struck_at" = ("extra" ->> 'struckAt')::timestamptz, "struck_motif" = "extra" ->> 'struckMotif', "extra" = "extra" - 'struckAt' - 'struckBy' - 'struckMotif' WHERE "struck_at" IS NULL AND ("extra" ->> 'struckAt') ~ ${iso};`,
+		`UPDATE "events" SET "announced_at" = ("extra" ->> 'announcedAt')::timestamptz, "extra" = "extra" - 'announcedAt' - 'announcedBy' WHERE "announced_at" IS NULL AND ("extra" ->> 'announcedAt') ~ ${iso};`,
+		`UPDATE "events" SET "recit_combat_id" = "extra" ->> 'recitId', "extra" = "extra" - 'recitId' WHERE "recit_combat_id" IS NULL AND EXISTS (SELECT 1 FROM "combats" WHERE "combats"."id" = "events"."extra" ->> 'recitId');`
+	];
+	return `${header}\n${[...tokenStatements, ...backfill].join(`\n${BREAKPOINT}\n`)}\n`;
 }

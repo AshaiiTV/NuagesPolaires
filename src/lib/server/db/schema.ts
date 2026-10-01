@@ -18,7 +18,8 @@
 //              spawn_counters).
 //   SET NULL : liens d'auteur ou de contexte (events.created_by, combats.owner_account_id,
 //              accounts.character_id, *.actor_account_id, beast_observations.author_account_id,
-//              oaths.evolves_from, staff_log.archive_id, …).
+//              oaths.evolves_from, staff_log.archive_id, characters.struck_by,
+//              events.announced_by, events.recit_combat_id, …).
 //   RESTRICT : characters.oath_id, accounts.selected_theme, spawn_runs.zone_id.
 
 import { relations, sql, type SQL } from 'drizzle-orm';
@@ -92,6 +93,13 @@ export type ThemePreview = {
 	tone: 'dark' | 'light';
 	tagline: string;
 };
+
+/**
+ * Les huit tokens d'un thème (`--bureau`, `--page`, `--page-2`, `--reglure`, `--encre`, `--encre-2`,
+ * `--encre-grise`, `--ruban` → hex), forme de `ThemeTokens` de `src/lib/ui/themes.ts` (décision INT-1 :
+ * colonne `themes.tokens`, semée pour les thèmes natifs, écrite par `createTheme`).
+ */
+export type ThemeTokenMap = Record<string, string>;
 
 /** Résultat d'un participant à la clôture d'un combat (04 §3.6 : PV finaux, récompenses appliquées). */
 export type CombatOutcome = {
@@ -267,6 +275,8 @@ export const themes = pgTable(
 		category: text('category').notNull().default('Base'),
 		isBuiltin: boolean('is_builtin').notNull().default(false),
 		preview: jsonb('preview').$type<ThemePreview>().notNull(),
+		/** Les huit tokens du thème (INT-1) ; NULL ⇒ le domaine retombe sur le catalogue de l'interface. */
+		tokens: jsonb('tokens').$type<ThemeTokenMap>(),
 		revision: revision(),
 		createdAt: createdAt(),
 		updatedAt: updatedAt()
@@ -370,6 +380,16 @@ export const characters = pgTable(
 			.default({ helmet: null, chest: null, legs: null }),
 		/** ≤ 64 statuts (04 §3.2), borne appliquée par Zod. */
 		statuses: jsonb('statuses').$type<CharacterStatus[]>().notNull().default([]),
+		/**
+		 * Rature du personnage (03-vision §5.10, décision INT-1) : non nul ⇒ le personnage sort de toutes
+		 * les pages ; seul l'export administrateur (`sheetForExport`) le lit encore. Rien n'est supprimé.
+		 */
+		struckAt: timestamp('struck_at', { withTimezone: true }),
+		/** Administrateur qui a rayé (SET NULL : la rature survit au compte). */
+		struckBy: text('struck_by').references((): AnyPgColumn => accounts.id, {
+			onDelete: 'set null'
+		}),
+		struckMotif: text('struck_motif'),
 		extra: extra(),
 		revision: revision(),
 		createdAt: createdAt(),
@@ -377,6 +397,7 @@ export const characters = pgTable(
 	},
 	(t) => [
 		index('characters_name_idx').on(t.name),
+		index('characters_struck_at_idx').on(t.struckAt),
 		index('characters_oath_id_idx').on(t.oathId),
 		/** 04 §10.4 : `level >= 1`, `xp >= 0`, `*_cur >= 0`, `*_max >= 1`. */
 		check('characters_level_check', sql`${t.level} >= 1`),
@@ -667,6 +688,16 @@ export const events = pgTable(
 		createdBy: text('created_by').references(() => accounts.id, { onDelete: 'set null' }),
 		/** Auteur textuel hérité ou conservé après suppression du compte (04 §10.12). */
 		createdByLabel: text('created_by_label').notNull().default(''),
+		/**
+		 * « Prévenir les joueurs » (03-vision §5.6, décision INT-1) : instant de la dernière annonce ; la
+		 * corne est calculée par `reading.ts` chez chaque compte relié. NULL = jamais annoncé.
+		 */
+		announcedAt: timestamp('announced_at', { withTimezone: true }),
+		announcedBy: text('announced_by').references(() => accounts.id, { onDelete: 'set null' }),
+		/** Récit (combat archivé) rattaché au rendez-vous (« Lire le récit », décision INT-1). */
+		recitCombatId: text('recit_combat_id').references((): AnyPgColumn => combats.id, {
+			onDelete: 'set null'
+		}),
 		extra: extra(),
 		revision: revision(),
 		createdAt: createdAt(),
@@ -674,6 +705,7 @@ export const events = pgTable(
 	},
 	(t) => [
 		index('events_starts_at_idx').on(t.startsAt),
+		index('events_announced_at_idx').on(t.announcedAt),
 		index('events_hidden_idx').on(t.hidden),
 		check('events_capacity_check', sql`${t.capacity} >= 0`),
 		revisionCheck('events', t.revision)
@@ -905,6 +937,8 @@ export const beastObservations = pgTable(
 		publicationId: text('publication_id').references(() => publications.id, {
 			onDelete: 'set null'
 		}),
+		/** Motif du tampon de validation ou du refus (décision INT-1). */
+		motif: text('motif').notNull().default(''),
 		revision: revision(),
 		createdAt: createdAt(),
 		updatedAt: updatedAt()

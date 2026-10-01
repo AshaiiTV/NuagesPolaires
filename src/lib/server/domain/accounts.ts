@@ -577,7 +577,8 @@ export async function listPending(db: Db, actor: Actor | null): Promise<PendingV
 		.from(characters)
 		.innerJoin(oaths, eq(oaths.id, characters.oathId))
 		.leftJoin(accounts, eq(accounts.characterId, characters.id))
-		.where(isNull(accounts.id))
+		// Un personnage rayé n'attend plus de compte (décision INT-1 : seul l'export le lit encore).
+		.where(and(isNull(accounts.id), isNull(characters.struckAt)))
 		.orderBy(asc(characters.name));
 	return {
 		pendingAccounts: all.filter((a) => a.role === 'joueur' && a.characterId === null),
@@ -608,7 +609,8 @@ export async function linkCharacter(db: Db, actor: Actor | null, input: LinkChar
 			const [character] = await tx
 				.select({ id: characters.id, name: characters.name })
 				.from(characters)
-				.where(eq(characters.id, data.characterId))
+				// Un personnage rayé ne se relie plus (décision INT-1).
+				.where(and(eq(characters.id, data.characterId), isNull(characters.struckAt)))
 				.for('update');
 			if (!character) throw NpError.notFound('Personnage introuvable.');
 			const holder = await tx
@@ -894,15 +896,25 @@ export function normalizeThemeId(value: unknown): string {
 	return THEME_ID_ALIASES[loose] ?? (loose || 'dark');
 }
 
-/** Les huit tokens d'un thème : catalogue de l'interface, sinon les couleurs stockées (thème créé). */
-export function themeTokens(theme: Pick<Theme, 'id' | 'preview'>): ThemeTokens {
-	const known = TOKENS_BY_ID.get(theme.id);
-	if (known) return known;
-	const colors = theme.preview?.colors ?? [];
-	if (colors.length === THEME_TOKEN_KEYS.length) {
-		return Object.fromEntries(THEME_TOKEN_KEYS.map((k, i) => [k, colors[i]])) as ThemeTokens;
+/** Vrai si alue porte les huit tokens, chacun en hexadécimal. */
+function isCompleteTokens(value: unknown): value is ThemeTokens {
+	if (!value || typeof value !== 'object') return false;
+	const record = value as Record<string, unknown>;
+	return THEME_TOKEN_KEYS.every(
+		(k) => typeof record[k] === 'string' && /^#([\da-f]{3}|[\da-f]{6})$/i.test(record[k] as string)
+	);
+}
+
+/**
+ * Les huit tokens d'un thème (décision INT-1) : colonne `themes.tokens` (semée pour les neuf thèmes
+ * natifs, écrite par createTheme) ; à défaut le catalogue de l'interface ; à défaut `dark`.
+ * `preview` ne sert plus qu'à l'aperçu de la carte.
+ */
+export function themeTokens(theme: Pick<Theme, 'id' | 'tokens'>): ThemeTokens {
+	if (isCompleteTokens(theme.tokens)) {
+		return Object.fromEntries(THEME_TOKEN_KEYS.map((k) => [k, theme.tokens![k]])) as ThemeTokens;
 	}
-	return TOKENS_BY_ID.get('dark') as ThemeTokens;
+	return TOKENS_BY_ID.get(theme.id) ?? (TOKENS_BY_ID.get('dark') as ThemeTokens);
 }
 
 /** Vrai si un thème doit recevoir ses tokens en ligne (pas de règle CSS dans themes.css). */
@@ -1238,7 +1250,8 @@ export async function setThemeAutoGrant(
 
 /**
  * Créer un thème (03-vision §5.11 : huit couleurs vérifiées à 4,5:1 par `validateTheme`, sinon refus).
- * Les huit tokens sont conservés dans `preview.colors`, dans l'ordre de THEME_TOKEN_KEYS.
+ * Les huit tokens sont écrits dans `themes.tokens` (décision INT-1) ; `preview.colors` ne garde que
+ * l'aperçu de la carte (bureau, encre, ruban), comme les thèmes natifs.
  */
 export async function createTheme(db: Db, actor: Actor | null, input: CreateThemeInput): Promise<ThemeView> {
 	const present = assertCan(actor, 'admin.themes');
@@ -1270,7 +1283,12 @@ export async function createTheme(db: Db, actor: Actor | null, input: CreateThem
 					rarity: 'Classique',
 					category: 'Classiques',
 					isBuiltin: false,
-					preview: { colors: THEME_TOKEN_KEYS.map((k) => tokens[k]), tone: ton === 'clair' ? 'light' : 'dark', tagline: '' }
+					tokens: Object.fromEntries(THEME_TOKEN_KEYS.map((k) => [k, tokens[k]])),
+					preview: {
+						colors: [tokens['--bureau'], tokens['--encre'], tokens['--ruban']],
+						tone: ton === 'clair' ? 'light' : 'dark',
+						tagline: ''
+					}
 				})
 				.returning();
 			await recordAudit(tx, {

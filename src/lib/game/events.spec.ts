@@ -30,11 +30,11 @@ function event(over: Partial<RegistrableEvent> = {}): RegistrableEvent {
 describe('EV_TYPES (legacy main.js:15013-15019, audit 05 §3.5)', () => {
 	it('expose les cinq types avec libellés et icônes exacts', () => {
 		expect(EVENT_TYPES).toEqual(['combat', 'exploration', 'social', 'evenement', 'autre']);
-		expect(EV_TYPES.combat).toEqual({ icon: '⚔', color: '--red', label: 'Combat / Chasse' });
-		expect(EV_TYPES.exploration).toEqual({ icon: '🗺', color: '--gold', label: 'Exploration' });
-		expect(EV_TYPES.social).toEqual({ icon: '💬', color: '--glacier', label: 'Social / Roleplay' });
-		expect(EV_TYPES.evenement).toEqual({ icon: '🌟', color: '--purple', label: 'Événement majeur' });
-		expect(EV_TYPES.autre).toEqual({ icon: '☁️', color: '--faint', label: 'Autre' });
+		expect(EV_TYPES.combat).toEqual({ icon: '⚔', color: '#c94a4a', label: 'Combat / Chasse' });
+		expect(EV_TYPES.exploration).toEqual({ icon: '🗺', color: '#c9a84c', label: 'Exploration' });
+		expect(EV_TYPES.social).toEqual({ icon: '💬', color: '#95cdbb', label: 'Social / Roleplay' });
+		expect(EV_TYPES.evenement).toEqual({ icon: '🌟', color: '#9a74c4', label: 'Événement majeur' });
+		expect(EV_TYPES.autre).toEqual({ icon: '☁️', color: '#92aaa3', label: 'Autre' });
 	});
 
 	it('type inconnu ⇒ autre', () => {

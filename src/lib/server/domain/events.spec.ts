@@ -102,7 +102,7 @@ describe('listAgenda — lecture filtrée', () => {
 		expect(chasse).toMatchObject({
 			type: 'combat',
 			typeLabel: 'Combat / Chasse',
-			typeColor: '--red',
+			typeColor: '#c94a4a',
 			capacity: 4,
 			count: 1,
 			participants: [{ name: 'Aria Lunval', me: false }],

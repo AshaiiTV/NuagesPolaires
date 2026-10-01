@@ -186,7 +186,7 @@ describe('migrations', () => {
 				handle.db,
 				sql`select count(*)::int as n from drizzle.__drizzle_migrations`
 			);
-			expect(rows[0]?.n).toBe(2); // 0000 (DDL) + 0001 (référentiels)
+			expect(rows[0]?.n).toBe(4); // 0000 (DDL) + 0001 (référentiels) + 0002 (DDL INT-1) + 0003 (tokens)
 			const themes = await executeRows<{ n: number }>(
 				handle.db,
 				sql`select count(*)::int as n from themes`
@@ -207,7 +207,7 @@ describe('NpError', () => {
 		expect(e.toJSON()).toEqual({ code: 'EVENT_FULL', message: 'Événement complet.', status: 409 });
 		expect(NpError.versionRequired().status).toBe(428);
 		expect(NpError.versionConflict().message).toBe(
-			'Ces données ont été modifiées par une autre session. Recharge-les avant de réessayer.'
+			'Quelqu’un a écrit sur cette page entre-temps. Relis avant d’écrire par-dessus.'
 		);
 		expect(isNpError(new Error('x'))).toBe(false);
 		expect(toErrorPayload(new Error('secret interne'))).toEqual({

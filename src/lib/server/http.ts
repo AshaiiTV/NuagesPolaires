@@ -1,9 +1,12 @@
 // Erreurs typées du serveur (04-architecture §10 : `throw new NpError('EVENT_FULL', 'Événement complet.', 409)`).
 // Les form actions traduisent une NpError en `fail(status, { code, message })` ; les endpoints api/ en JSON.
 
-/** Message officiel du conflit de version (04-architecture §6). */
+/**
+ * Message officiel du conflit de version : micro-texte 9 de 03-vision §8 (06-contrats §A), décision
+ * du lead INT-1 (remplace la phrase héritée de l'audit 05 §5.4).
+ */
 export const VERSION_CONFLICT_MESSAGE =
-	'Ces données ont été modifiées par une autre session. Recharge-les avant de réessayer.';
+	'Quelqu’un a écrit sur cette page entre-temps. Relis avant d’écrire par-dessus.';
 
 /** Message officiel quand `expectedRevision` manque (04-architecture §6, statut 428). */
 export const VERSION_REQUIRED_MESSAGE =

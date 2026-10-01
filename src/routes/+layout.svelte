@@ -4,7 +4,17 @@
 	import '$lib/ui/styles/themes.css';
 	import '$lib/ui/styles/base.css';
 
-	let { children } = $props();
+	let { data, children } = $props();
+
+	// Le thème du compte sur <html> : le hook serveur le pose au premier rendu ; côté client, il suit
+	// chaque navigation et chaque écriture confirmée (Ma collection, connexion, sortie du carnet).
+	$effect(() => {
+		const theme = data.theme;
+		if (!theme) return;
+		const racine = document.documentElement;
+		if (racine.dataset.theme !== theme.id) racine.dataset.theme = theme.id;
+		if (racine.dataset.ton !== theme.ton) racine.dataset.ton = theme.ton;
+	});
 </script>
 
 <!-- Filtres d'encre partagés : bord irrégulier du tampon, grain de la page. -->

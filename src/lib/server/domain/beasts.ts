@@ -7,7 +7,6 @@ import { beasts, beastZones, zones, combats, type Beast } from '../db/schema';
 import { assertCan, can, type Actor } from '../permissions';
 import { NpError } from '../http';
 import {
-	BEHAVIOR_COLORS,
 	createBeastSchema,
 	updateBeastSchema,
 	beastCommandSchema,
@@ -25,6 +24,7 @@ import {
 import { appendStaffLog } from './staff-log';
 import { recordAudit } from './audit';
 import { listObservations } from './observations';
+import { behaviorColor } from '$lib/game/colors';
 
 function parse<T>(schema: z.ZodType<T>, input: unknown): T {
 	const result = schema.safeParse(input);
@@ -63,7 +63,8 @@ function rowView(row: Beast): BeastRowView {
 		name: row.name,
 		subtitle: row.subtitle,
 		behavior: row.behavior,
-		behaviorColor: BEHAVIOR_COLORS[row.behavior as keyof typeof BEHAVIOR_COLORS] ?? '#c9a84c',
+		// Couleur hex de la table unique (INT-1) ; comportement inconnu ⇒ Neutre.
+		behaviorColor: behaviorColor(row.behavior),
 		level: row.level,
 		revision: row.revision
 	};

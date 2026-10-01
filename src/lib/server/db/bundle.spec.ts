@@ -14,11 +14,16 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 
 /**
  * Modules embarqués : index.ts et la fermeture de ses imports statiques relatifs (vérifiée plus bas),
- * plus referentials.ts, que le code applicatif importe pour les constantes de thèmes et de réglages.
+ * plus referentials.ts, que le code applicatif importe pour les constantes de thèmes et de réglages,
+ * et le catalogue des thèmes de l'interface qu'il lit (tokens natifs, décision INT-1).
  */
-const BUNDLED = ['index.ts', 'schema.ts', 'migrations-folder.ts', 'referentials.ts'].map((f) =>
-	path.join(here, f)
-);
+const BUNDLED = [
+	'index.ts',
+	'schema.ts',
+	'migrations-folder.ts',
+	'referentials.ts',
+	'../../ui/themes.ts'
+].map((f) => path.join(here, f));
 
 /** Compilation TypeScript → JavaScript, commentaires CONSERVÉS (pire cas pour la garde). */
 function compile(file: string): string {

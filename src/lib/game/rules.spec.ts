@@ -7,6 +7,16 @@ describe('table unique de règles', () => {
 		expect(new Set(ACTION_RULES.map((a) => a.id)).size).toBe(ACTION_RULES.length);
 		for (const a of ACTION_RULES) { expect(a.label).not.toBe(''); expect(a.conditions).not.toBe(''); expect(a.effect).not.toBe(''); expect(a.anchor).toMatch(/^\/univers\/systeme#/); }
 	});
+	it('chaque action porte un nom d’interface sans émoji ni « (N) » (INT-1) ; le libellé hérité reste', () => {
+		const names = Object.fromEntries(ACTION_RULES.map((a) => [a.id, a.name]));
+		expect(names).toMatchObject({ frappe: 'Frappe', esquive: 'Esquive', bloquer: 'Bloquer', parer: 'Parer', deplacer: 'Se déplacer' });
+		for (const a of ACTION_RULES) {
+			expect(a.name).toMatch(/^[\p{L}][\p{L} ()'’-]*$/u);
+			expect(a.name).not.toMatch(/\(N\)|\p{Extended_Pictographic}/u);
+			expect(a.label).not.toBe('');
+		}
+		expect(new Set(ACTION_RULES.map((a) => a.name)).size).toBe(ACTION_RULES.length);
+	});
 	it('carte de déclaration et priorité', () => {
 		expect(ruleCardFor({ phase: 'declaration', lowEp: true })).toMatchObject({ id: 'actions', actions: ACTION_RULES });
 		expect(ruleCardFor({ kind: 'declaration' })).toMatchObject({ id: 'actions' });

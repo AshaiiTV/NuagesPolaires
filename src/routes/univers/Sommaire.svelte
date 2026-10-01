@@ -54,16 +54,34 @@
 		};
 	});
 
+	/** Le sommaire dépasse la marge : de quel côté il continue (« haut », « bas »). */
+	let suite = $state('');
+	function mesurer() {
+		if (!nav) return;
+		const reste = nav.scrollHeight - nav.clientHeight - nav.scrollTop;
+		suite = [nav.scrollTop > 1 ? 'haut' : '', reste > 1 ? 'bas' : ''].join(' ').trim();
+	}
+
 	// La ligne courante reste visible dans un sommaire plus haut que la marge.
 	$effect(() => {
 		const ligne = courante?.ligne;
-		if (!nav || !ligne || nav.scrollHeight <= nav.clientHeight) return;
-		const lien = nav.querySelector<HTMLElement>(`a[href="#${CSS.escape(ligne)}"]`);
-		if (!lien) return;
-		const haut = lien.offsetTop;
-		const bas = haut + lien.offsetHeight;
-		if (haut < nav.scrollTop) nav.scrollTop = haut;
-		else if (bas > nav.scrollTop + nav.clientHeight) nav.scrollTop = bas - nav.clientHeight;
+		if (!nav) return;
+		if (ligne && nav.scrollHeight > nav.clientHeight) {
+			const lien = nav.querySelector<HTMLElement>(`a[href="#${CSS.escape(ligne)}"]`);
+			if (lien) {
+				const haut = lien.offsetTop;
+				const bas = haut + lien.offsetHeight;
+				if (haut < nav.scrollTop) nav.scrollTop = haut;
+				else if (bas > nav.scrollTop + nav.clientHeight) nav.scrollTop = bas - nav.clientHeight;
+			}
+		}
+		mesurer();
+	});
+	$effect(() => {
+		if (!nav) return;
+		const observateur = new ResizeObserver(mesurer);
+		observateur.observe(nav);
+		return () => observateur.disconnect();
 	});
 
 	function ouvrir(event: MouseEvent, id: string) {
@@ -76,7 +94,7 @@
 	}
 </script>
 
-<nav bind:this={nav} aria-label={libelle}>
+<nav bind:this={nav} aria-label={libelle} data-suite={suite || undefined} onscroll={mesurer}>
 	<ol>
 		{#each lignes as s (s.id)}
 			{@const sous = s.level > sommet}
@@ -111,6 +129,23 @@
 		overscroll-behavior: contain;
 		scrollbar-width: thin;
 		scrollbar-color: var(--reglure) transparent;
+	}
+	/* Le sommaire continue hors de la marge : il s'estompe du côté où il reste à lire. */
+	nav[data-suite] {
+		--fondu: calc(var(--ligne) * 1.5);
+		mask-image: linear-gradient(
+			to bottom,
+			transparent,
+			#000 var(--fondu-haut, 0px),
+			#000 calc(100% - var(--fondu-bas, 0px)),
+			transparent
+		);
+	}
+	nav[data-suite~='haut'] {
+		--fondu-haut: var(--fondu);
+	}
+	nav[data-suite~='bas'] {
+		--fondu-bas: var(--fondu);
 	}
 	ol {
 		display: grid;
@@ -163,9 +198,9 @@
 		grid-column: 3;
 		text-wrap: balance;
 	}
-	/* Sans numéro, l'intitulé d'un chapitre part de la colonne des numéros. */
+	/* Sans numéro, l'intitulé d'un chapitre reste sur l'axe des autres intitulés. */
 	.marque + .titre {
-		grid-column: 2 / -1;
+		grid-column: 3;
 	}
 	.sous .titre {
 		grid-column: 3;

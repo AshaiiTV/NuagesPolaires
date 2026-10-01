@@ -14,16 +14,31 @@ import { pathToFileURL } from 'node:url';
 // Import relatif (et non `$lib`) : ce module est exécuté par tsx hors de Vite.
 import { BUILTIN_OATHS } from '../../game/oaths';
 import { resolveMigrationsFolder } from './migrations-folder';
-import { REFERENTIALS_MIGRATION_FILE, buildReferentialsSql } from './referentials';
+import {
+	REFERENTIALS_MIGRATION_FILE,
+	THEME_TOKENS_MIGRATION_FILE,
+	buildReferentialsSql,
+	buildThemeTokensSql
+} from './referentials';
 
 /** Contenu attendu de la migration de données pour le catalogue natif courant. */
 export function renderReferentialsMigration(): string {
 	return buildReferentialsSql(BUILTIN_OATHS);
 }
 
+/** Contenu attendu de la migration de données 0003 (tokens des thèmes, décision INT-1). */
+export function renderThemeTokensMigration(): string {
+	return buildThemeTokensSql();
+}
+
 /** Chemin du fichier de migration de données dans le dossier `drizzle/` résolu. */
 export function referentialsMigrationPath(migrationsFolder = resolveMigrationsFolder()): string {
 	return path.join(migrationsFolder, REFERENTIALS_MIGRATION_FILE);
+}
+
+/** Chemin de la migration de données 0003 dans le dossier `drizzle/` résolu. */
+export function themeTokensMigrationPath(migrationsFolder = resolveMigrationsFolder()): string {
+	return path.join(migrationsFolder, THEME_TOKENS_MIGRATION_FILE);
 }
 
 /** Lit le fichier présent (fins de ligne normalisées en `\n`), `null` s'il n'existe pas. */
@@ -40,12 +55,16 @@ const isDirectRun =
 	import.meta.url === pathToFileURL(path.resolve(process.argv[1] ?? '')).href;
 
 if (isDirectRun) {
-	const file = referentialsMigrationPath();
-	const next = renderReferentialsMigration();
-	if (readReferentialsMigration(file) === next) {
-		console.log(`${REFERENTIALS_MIGRATION_FILE} : déjà à jour.`);
-	} else {
-		writeFileSync(file, next, 'utf8');
-		console.log(`${REFERENTIALS_MIGRATION_FILE} : écrit (${next.length} caractères).`);
+	const targets = [
+		{ name: REFERENTIALS_MIGRATION_FILE, file: referentialsMigrationPath(), next: renderReferentialsMigration() },
+		{ name: THEME_TOKENS_MIGRATION_FILE, file: themeTokensMigrationPath(), next: renderThemeTokensMigration() }
+	];
+	for (const { name, file, next } of targets) {
+		if (readReferentialsMigration(file) === next) {
+			console.log(`${name} : déjà à jour.`);
+		} else {
+			writeFileSync(file, next, 'utf8');
+			console.log(`${name} : écrit (${next.length} caractères).`);
+		}
 	}
 }

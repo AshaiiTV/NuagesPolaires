@@ -19,10 +19,13 @@ import {
 import {
 	readReferentialsMigration,
 	referentialsMigrationPath,
-	renderReferentialsMigration
+	renderReferentialsMigration,
+	renderThemeTokensMigration,
+	themeTokensMigrationPath
 } from './generate-referentials';
 import { seedDatabase } from './seed';
 import * as schema from './schema';
+import { THEMES } from '../../ui/themes';
 
 const PRIMARY_KEY: Record<(typeof REFERENTIAL_TABLES)[number], string> = {
 	themes: 'id',
@@ -59,6 +62,41 @@ describe('migration de données 0001_referentiels', () => {
 	it('le fichier SQL est à jour (sinon : npx tsx src/lib/server/db/generate-referentials.ts)', () => {
 		expect(referentialsMigrationPath().endsWith(REFERENTIALS_MIGRATION_FILE)).toBe(true);
 		expect(readReferentialsMigration()).toBe(renderReferentialsMigration());
+	});
+
+	it('la migration 0003 (tokens des thèmes, INT-1) est à jour et semée pour les neuf thèmes natifs', async () => {
+		expect(readReferentialsMigration(themeTokensMigrationPath())).toBe(
+			renderThemeTokensMigration()
+		);
+		const rows = await migrated.db
+			.select({ id: schema.themes.id, tokens: schema.themes.tokens })
+			.from(schema.themes);
+		expect(rows).toHaveLength(THEMES.length);
+		for (const row of rows) {
+			expect(row.tokens, row.id).toEqual(THEMES.find((t) => t.id === row.id)?.tokens);
+		}
+	});
+
+	it('la migration 0003 reprend les marques `extra` héritées sans écraser une colonne posée', async () => {
+		const t = await createTestDb({ demo: true });
+		try {
+			await t.db
+				.update(schema.characters)
+				.set({ extra: { struckAt: '2026-09-01T10:00:00.000Z', struckMotif: 'Doublon', autre: 1 } })
+				.where(eq(schema.characters.id, 'p_demo_seren'));
+			for (const statement of renderThemeTokensMigration().split('--> statement-breakpoint')) {
+				await t.db.execute(sql.raw(statement));
+			}
+			const [seren] = await t.db
+				.select()
+				.from(schema.characters)
+				.where(eq(schema.characters.id, 'p_demo_seren'));
+			expect(seren.struckAt?.toISOString()).toBe('2026-09-01T10:00:00.000Z');
+			expect(seren.struckMotif).toBe('Doublon');
+			expect(seren.extra).toEqual({ autre: 1 });
+		} finally {
+			await t.close();
+		}
 	});
 
 	it('le rendu est déterministe et sépare les instructions pour le migrateur', () => {

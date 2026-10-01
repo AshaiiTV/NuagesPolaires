@@ -66,7 +66,7 @@ describe('Discord (04 §4 ; 03-vision §12.6)', () => {
 		const start = discordAuthUrl(alice, ENV);
 		const url = new URL(start.url);
 		expect(url.origin + url.pathname).toBe('https://discord.com/oauth2/authorize');
-		expect(url.searchParams.get('redirect_uri')).toBe('https://np.test/connexion/discord/retour');
+		expect(url.searchParams.get('redirect_uri')).toBe('https://np.test/entrer/discord/retour');
 		expect(url.searchParams.get('code_challenge_method')).toBe('S256');
 		expect(url.searchParams.get('scope')).toBe('identify');
 		expect(start.maxAge).toBe(600);

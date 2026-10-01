@@ -927,7 +927,7 @@ describe('rayer un personnage', () => {
 			'VERSION_REQUIRED',
 			428
 		);
-		expect((await character(t.db, P.kael)).extra).not.toHaveProperty('struckAt');
+		expect((await character(t.db, P.kael)).struckAt).toBeNull();
 	});
 
 	it('le personnage rayé sort des pages, son compte est délié, rien n’est supprimé', async () => {
@@ -943,7 +943,12 @@ describe('rayer un personnage', () => {
 		expect(await getOwnSheet(t.db, bob)).toBeNull();
 		const [account] = await t.db.select().from(accounts).where(eq(accounts.id, A.bob));
 		expect(account.characterId).toBeNull();
-		expect(await character(t.db, P.kael)).toBeDefined();
+		const struck = await character(t.db, P.kael);
+		// Colonnes dédiées (INT-1), plus aucune marque dans `extra`.
+		expect(struck.struckAt?.toISOString()).toBe(res.struckAt);
+		expect(struck.struckBy).toBe(A.admin);
+		expect(struck.struckMotif).toBe('Personnage rayé.');
+		expect(struck.extra).not.toHaveProperty('struckAt');
 		// L'administrateur peut encore l'exporter (Registre › Données).
 		expect((await sheetForExport(t.db, admin, P.kael)).sheet.id).toBe(P.kael);
 		const [log] = await t.db.select().from(staffLog).orderBy(desc(staffLog.id)).limit(1);

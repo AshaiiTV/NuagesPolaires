@@ -9,6 +9,8 @@
  * Aucun import de `$lib/server` : ce fichier est partagé client/serveur.
  */
 
+import { MEANING_COLORS } from './colors';
+
 // ─── Types d'événement ───────────────────────────────────────────────────────
 
 export type EventType = 'combat' | 'exploration' | 'social' | 'evenement' | 'autre';
@@ -17,18 +19,18 @@ export const EVENT_TYPES: readonly EventType[] = ['combat', 'exploration', 'soci
 
 export interface EventTypeMeta {
 	icon: string;
-	/** Token de couleur (nom de custom property CSS, sans `var()`). */
+	/** Couleur de sens en hexadécimal (table unique $lib/game/colors, décision INT-1). */
 	color: string;
 	label: string;
 }
 
 /** Libellés et icônes des types (`EV_TYPES`, legacy main.js:15013-15019). */
 export const EV_TYPES: Readonly<Record<EventType, EventTypeMeta>> = {
-	combat: { icon: '⚔', color: '--red', label: 'Combat / Chasse' },
-	exploration: { icon: '🗺', color: '--gold', label: 'Exploration' },
-	social: { icon: '💬', color: '--glacier', label: 'Social / Roleplay' },
-	evenement: { icon: '🌟', color: '--purple', label: 'Événement majeur' },
-	autre: { icon: '☁️', color: '--faint', label: 'Autre' }
+	combat: { icon: '⚔', color: MEANING_COLORS.eventType.combat, label: 'Combat / Chasse' },
+	exploration: { icon: '🗺', color: MEANING_COLORS.eventType.exploration, label: 'Exploration' },
+	social: { icon: '💬', color: MEANING_COLORS.eventType.social, label: 'Social / Roleplay' },
+	evenement: { icon: '🌟', color: MEANING_COLORS.eventType.evenement, label: 'Événement majeur' },
+	autre: { icon: '☁️', color: MEANING_COLORS.eventType.autre, label: 'Autre' }
 };
 
 /** Type inconnu ⇒ `autre` (legacy main.js:15124). */

@@ -5,21 +5,31 @@
 	import Depliant from './Depliant.svelte';
 	import Sommaire from './Sommaire.svelte';
 	import Tourner from './Tourner.svelte';
-	import { preparer } from './lecture';
 	import { titreEnVoix, typo } from './typo';
-	import type { Content } from '$lib/content';
+	import type { Lecture } from './lecture';
 
 	type Voisine = { href: string; title: string };
 	let {
-		content,
-		html,
+		slug,
+		titre: titrePage,
+		resume: resumeSource,
+		lecture,
 		previous,
 		next
-	}: { content: Content; html: string; previous: Voisine | null; next: Voisine | null } = $props();
+	}: {
+		slug: string;
+		titre: string;
+		resume: string;
+		/** Texte déjà mis en page côté serveur (`charger.ts`). */
+		lecture: Lecture;
+		previous: Voisine | null;
+		next: Voisine | null;
+	} = $props();
 
-	const titre = $derived(titreEnVoix(content.title));
-	const resume = $derived(typo(content.resume));
-	const lecture = $derived(preparer(html, content.title, content.resume));
+	const titre = $derived(titreEnVoix(titrePage));
+	const resume = $derived(typo(resumeSource));
+	// Le résumé se lit en marge, sauf s'il ouvre déjà le texte.
+	const enMarge = $derived(!lecture.resumeDansCorps);
 
 	// Un tableau plus large que la page défile dans son cadre : l'ombre de bord dit de quel côté
 	// il continue, et le cadre devient atteignable au clavier.
@@ -61,24 +71,24 @@
 </script>
 
 <svelte:head>
-	<title>{typo(content.title)} — Nuages Polaires</title>
-	<meta name="description" content={content.resume} />
+	<title>{typo(titrePage).replace(/\.$/, '')} — Nuages Polaires</title>
+	<meta name="description" content={resume} />
 </svelte:head>
 
 <Page repere="NP / 05 — L’univers" titre={titre.debut} titreVoix={titre.voix} grain>
 	{#snippet marge()}
-		<p class="voix">{resume}</p>
+		{#if enMarge}<p class="voix">{resume}</p>{/if}
 		{#if lecture.entrees.length}
-			<div class="sommaire"><Sommaire sections={lecture.entrees} /></div>
+			<div class="sommaire" class:seul={!enMarge}><Sommaire sections={lecture.entrees} /></div>
 		{/if}
 	{/snippet}
 	{#snippet bande()}
-		<p class="voix chapeau">{resume}</p>
+		{#if enMarge}<p class="voix chapeau">{resume}</p>{/if}
 		{#if lecture.entrees.length}
 			<Depliant libelle="Sommaire"><Sommaire sections={lecture.entrees} /></Depliant>
 		{/if}
 	{/snippet}
-	<div class="lecture" bind:this={corps} class:recit={content.slug === 'synopsis'}>
+	<div class="lecture" bind:this={corps} class:recit={slug === 'synopsis'}>
 		<!-- eslint-disable-next-line svelte/no-at-html-tags -- HTML issu de renderMarkdown : les balises brutes de la source y sont échappées -->
 		{@html lecture.html}
 	</div>
@@ -86,11 +96,16 @@
 </Page>
 
 <style>
+	/* Le sommaire collant commence vers 200 px du haut de la fenêtre : huit lignes de réserve
+	   lui laissent toute la hauteur restante, moins une ligne de marge basse. */
 	.sommaire {
-		--sommaire-reserve: calc(var(--ligne) * 12);
+		--sommaire-reserve: calc(var(--ligne) * 8);
 		margin-top: var(--ligne);
 		padding-top: calc(var(--ligne) / 2);
 		border-top: 1px solid var(--reglure);
+	}
+	.sommaire.seul {
+		margin-top: 0;
 	}
 	.chapeau {
 		width: 100%;
@@ -111,6 +126,19 @@
 	}
 	.lecture > :global(:first-child) {
 		margin-top: 0;
+	}
+	/* Un chapitre qui ouvre la page garde deux lignes de réglure sous le titre. */
+	.lecture > :global(h2:first-child) {
+		margin-top: var(--ligne);
+	}
+	/* Avis de la source (« ⚠ ») : un filet rouille en marge, sans pictogramme. */
+	.lecture :global(.avis) {
+		padding-left: 20px;
+		border-left: 1px solid var(--rouille);
+		color: var(--encre-2);
+	}
+	.lecture :global(.avis + .avis) {
+		margin-top: calc(var(--ligne) / -2);
 	}
 	.lecture :global(p),
 	.lecture :global(ul),
@@ -222,15 +250,23 @@
 		white-space: nowrap;
 		color: var(--encre-2);
 	}
-	/* Signe de la source (⚔, 🔥…) : une case fixe, alignée sur la ligne du titre. */
+	/* Là où la source posait un pictogramme : un losange, à sa couleur de sens s'il en a une. */
 	.lecture :global(.signe) {
 		flex: none;
-		width: var(--ligne);
-		font: 400 16px / var(--ligne) var(--corps);
-		text-align: center;
+		display: inline-block;
+		width: 5px;
+		height: 5px;
+		rotate: 45deg;
+		background: var(--teinte, var(--encre-grise));
 	}
-	.lecture :global(h3.signee) {
-		gap: 8px;
+	.lecture :global(h3 .signe),
+	.lecture :global(h4 .signe) {
+		align-self: center;
+		margin-left: 2px;
+	}
+	.lecture :global(td .signe) {
+		margin: 0 10px 3px 2px;
+		vertical-align: middle;
 	}
 
 	/* Listes : losange de 4 px en puce. */
@@ -330,6 +366,17 @@
 		color: var(--encre);
 	}
 
+	/* Première colonne courte : sa largeur naturelle, pour que des tableaux frères partagent
+	   le même axe et qu'une fourchette (« 66–100 % ») ne se coupe pas. */
+	@media (min-width: 761px) {
+		.lecture :global(.tableau.axe thead th:first-child),
+		.lecture :global(.tableau.axe td:first-child) {
+			width: 1%;
+			padding-right: 24px;
+			white-space: nowrap;
+		}
+	}
+
 	@media (max-width: 760px) {
 		/* Numéro en laiton au-dessus du titre. */
 		.lecture :global(h2) {
@@ -339,14 +386,89 @@
 			display: block;
 			line-height: var(--ligne);
 		}
-		.lecture :global(table) {
-			min-width: calc(var(--colonnes, 2) * 148px);
+		/* Trois colonnes et moins tiennent dans la page : les en-têtes passent à la ligne. */
+		.lecture :global(th),
+		.lecture :global(td) {
+			padding-right: 12px;
 		}
-		/* Le tableau défile jusqu'au bord de l'écran. */
-		.lecture :global(.tableau) {
-			max-width: none;
-			margin-right: calc(var(--gouttiere) * -1);
-			padding-right: var(--gouttiere);
+		.lecture :global(thead th) {
+			height: calc(var(--ligne) * 2);
+			padding-top: 0;
+			line-height: calc(var(--ligne) / 2);
+			white-space: normal;
+			vertical-align: bottom;
+		}
+
+		/* Quatre colonnes et plus : chaque ligne du tableau devient une ligne de carnet. */
+		.lecture :global(.tableau[data-pile]) {
+			border-top: 1px solid var(--reglure);
+		}
+		.lecture :global([data-pile] table),
+		.lecture :global([data-pile] tbody),
+		.lecture :global([data-pile] td) {
+			display: block;
+		}
+		.lecture :global([data-pile] thead) {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+			clip: rect(0 0 0 0);
+		}
+		.lecture :global([data-pile] tr) {
+			display: grid;
+			column-gap: 12px;
+			padding: calc(var(--ligne) / 2 - 1px) 0 calc(var(--ligne) / 2);
+			border-bottom: 1px solid var(--reglure);
+		}
+		.lecture :global([data-pile] td),
+		.lecture :global([data-pile] tr.rubrique th) {
+			padding: 0;
+			border: 0;
+		}
+		.lecture :global([data-pile] tr.rubrique) {
+			display: block;
+			padding-top: var(--ligne);
+		}
+		.lecture :global([data-pile] tr.rubrique th) {
+			display: block;
+		}
+		/* Fiche : le nom et ses deux valeurs sur une ligne, la description dessous. */
+		.lecture :global([data-pile='fiche'] tr) {
+			grid-template-columns: minmax(0, 1fr) auto auto;
+		}
+		.lecture :global([data-pile='fiche'] td:first-child) {
+			font-weight: 500;
+		}
+		.lecture :global([data-pile='fiche'] td:last-child) {
+			grid-column: 1 / -1;
+		}
+		/* Liste : chaque valeur précédée du libellé de sa colonne, deux par ligne. */
+		.lecture :global([data-pile='liste'] tr) {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			column-gap: var(--ligne);
+		}
+		.lecture :global([data-pile='liste'] td) {
+			display: flex;
+			align-items: baseline;
+			justify-content: space-between;
+			gap: 8px;
+			color: var(--encre);
+		}
+		.lecture :global([data-pile='liste'] td)::before {
+			content: attr(data-label);
+			font: var(--t-repere);
+			line-height: var(--ligne);
+			letter-spacing: 0.1em;
+			text-transform: uppercase;
+			color: var(--encre-2);
+		}
+		.lecture :global([data-pile='liste'] td:first-child),
+		.lecture :global([data-pile='liste'] td.long) {
+			grid-column: 1 / -1;
+		}
+		.lecture :global([data-pile='liste'] td:first-child) {
+			font-weight: 500;
 		}
 	}
 </style>

@@ -3,44 +3,49 @@
 // Sources : audit 02 (fiche, XP, gemmes, inventaire, équipement, statuts, paliers), audit 05 §3.2,
 // §5.3, §5.5 (consume_own_item, patch_own_player, validateAvatar), 03-vision §5.4 et §5.10.
 import { z } from 'zod';
+import { MEANING_COLORS, UNKNOWN_STATUS_COLOR } from '$lib/game/colors';
 
 // ---------------------------------------------------------------------------
-// Référentiels d'affichage
+// Référentiels d'affichage — couleurs : table unique `$lib/game/colors` (décision INT-1)
 // ---------------------------------------------------------------------------
+
+const S = MEANING_COLORS.status;
 
 /** Les 12 statuts IRP (`STATUT_EFFECTS`, legacy main.js:12474-12487 ; audit 02 §10). */
 export const STATUS_CATALOG = [
-	{ id: 'saignement', label: 'Saignement', color: '#c94a4a' },
-	{ id: 'empoisonne', label: 'Empoisonné', color: '#77b36b' },
-	{ id: 'brulure', label: 'Brûlure', color: '#d88a3d' },
-	{ id: 'gel', label: 'Gel', color: '#7eb8d4' },
-	{ id: 'etourdi', label: 'Étourdi', color: '#d7b56d' },
-	{ id: 'entrave', label: 'Entravé', color: '#8aa0b6' },
-	{ id: 'aveugle', label: 'Aveuglé', color: '#c7c4b8' },
-	{ id: 'silence', label: 'Silence', color: '#8f8aa8' },
-	{ id: 'peur', label: 'Peur', color: '#9e7bc2' },
-	{ id: 'fragilise', label: 'Fragilisé', color: '#d77c7c' },
-	{ id: 'renforce', label: 'Renforcé', color: '#77b38f' },
-	{ id: 'inspire', label: 'Inspiré', color: '#d8c27a' }
+	{ id: 'saignement', label: 'Saignement', color: S.saignement },
+	{ id: 'empoisonne', label: 'Empoisonné', color: S.empoisonne },
+	{ id: 'brulure', label: 'Brûlure', color: S.brulure },
+	{ id: 'gel', label: 'Gel', color: S.gel },
+	{ id: 'etourdi', label: 'Étourdi', color: S.etourdi },
+	{ id: 'entrave', label: 'Entravé', color: S.entrave },
+	{ id: 'aveugle', label: 'Aveuglé', color: S.aveugle },
+	{ id: 'silence', label: 'Silence', color: S.silence },
+	{ id: 'peur', label: 'Peur', color: S.peur },
+	{ id: 'fragilise', label: 'Fragilisé', color: S.fragilise },
+	{ id: 'renforce', label: 'Renforcé', color: S.renforce },
+	{ id: 'inspire', label: 'Inspiré', color: S.inspire }
 ] as const;
 
 export type StatusId = (typeof STATUS_CATALOG)[number]['id'];
 export const STATUS_IDS = STATUS_CATALOG.map((s) => s.id) as [StatusId, ...StatusId[]];
 
-/** Libellé et couleur d'un statut ; un identifiant hérité inconnu garde son id comme libellé. */
+/** Libellé et couleur (hex) d'un statut ; un identifiant hérité inconnu garde son id comme libellé. */
 export function statusMeta(id: string): { label: string; color: string } {
 	const found = STATUS_CATALOG.find((s) => s.id === id);
-	return found ? { label: found.label, color: found.color } : { label: id, color: '#c7c4b8' };
+	return found
+		? { label: found.label, color: found.color }
+		: { label: id, color: UNKNOWN_STATUS_COLOR };
 }
 
 /**
- * Gemmes de Sang : libellés et couleurs (audit 02 §6 : « Blanche », « Incarnate », « Écarlate » ;
- * audit 07 §2 : `.gb #e8e8f8`, `.gi var(--purple) #9a74c4`, `.ge var(--red) #c94a4a`).
+ * Gemmes de Sang : libellés (audit 02 §6 : « Blanche », « Incarnate », « Écarlate ») et couleurs
+ * hex de la table unique (audit 07 §2).
  */
 export const GEM_META = {
-	blanche: { label: 'Blanche', color: '#e8e8f8' },
-	incarnate: { label: 'Incarnate', color: '#9a74c4' },
-	ecarlate: { label: 'Écarlate', color: '#c94a4a' }
+	blanche: { label: 'Blanche', color: MEANING_COLORS.gem.blanche },
+	incarnate: { label: 'Incarnate', color: MEANING_COLORS.gem.incarnate },
+	ecarlate: { label: 'Écarlate', color: MEANING_COLORS.gem.ecarlate }
 } as const;
 export const GEM_KINDS = ['blanche', 'incarnate', 'ecarlate'] as const;
 

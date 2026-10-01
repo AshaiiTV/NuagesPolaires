@@ -158,7 +158,7 @@ describe('migration 0000_fondation', () => {
 		);
 	});
 
-	it('contient deux migrations : 0000 (DDL) et 0001 (données de référence)', async () => {
+	it('contient quatre migrations : 0000 (DDL), 0001 (référentiels), 0002 (DDL INT-1), 0003 (tokens INT-1)', async () => {
 		expect(
 			(
 				await executeRows<{ n: number }>(
@@ -166,7 +166,57 @@ describe('migration 0000_fondation', () => {
 					sql`select count(*)::int as n from drizzle.__drizzle_migrations`
 				)
 			)[0]?.n
-		).toBe(2);
+		).toBe(4);
+	});
+
+	it('colonnes INT-1 : rature du personnage, annonce et récit du rendez-vous, tokens, motif d’observation', async () => {
+		const rows = await executeRows<{ table_name: string; column_name: string; is_nullable: string }>(
+			t.db,
+			sql`select table_name, column_name, is_nullable from information_schema.columns
+				where (table_name, column_name) in (
+					('characters','struck_at'), ('characters','struck_by'), ('characters','struck_motif'),
+					('events','announced_at'), ('events','announced_by'), ('events','recit_combat_id'),
+					('themes','tokens'), ('beast_observations','motif'))
+				order by table_name, column_name`
+		);
+		expect(rows.map((r) => `${r.table_name}.${r.column_name}:${r.is_nullable}`)).toEqual([
+			'beast_observations.motif:NO',
+			'characters.struck_at:YES',
+			'characters.struck_by:YES',
+			'characters.struck_motif:YES',
+			'events.announced_at:YES',
+			'events.announced_by:YES',
+			'events.recit_combat_id:YES',
+			'themes.tokens:YES'
+		]);
+	});
+
+	it('FK INT-1 en SET NULL : auteur d’une rature ou d’une annonce, récit d’un rendez-vous', async () => {
+		await t.db.insert(schema.accounts).values({ id: 'a_int1', pseudo: 'int1', passwordHash: 'x' });
+		await t.db.insert(schema.combats).values({ id: 'c_int1' });
+		await t.db.insert(schema.characters).values({
+			id: 'p_int1',
+			name: 'Rayé',
+			oathId: 'duelliste',
+			struckAt: new Date(),
+			struckBy: 'a_int1',
+			struckMotif: 'Doublon'
+		});
+		await t.db.insert(schema.events).values({
+			id: 'e_int1',
+			title: 'Annonce',
+			announcedAt: new Date(),
+			announcedBy: 'a_int1',
+			recitCombatId: 'c_int1'
+		});
+		await t.db.delete(schema.accounts).where(eq(schema.accounts.id, 'a_int1'));
+		await t.db.delete(schema.combats).where(eq(schema.combats.id, 'c_int1'));
+		const [c] = await t.db.select().from(schema.characters).where(eq(schema.characters.id, 'p_int1'));
+		const [e] = await t.db.select().from(schema.events).where(eq(schema.events.id, 'e_int1'));
+		expect([c.struckBy, c.struckMotif, c.struckAt !== null]).toEqual([null, 'Doublon', true]);
+		expect([e.announcedBy, e.recitCombatId, e.announcedAt !== null]).toEqual([null, null, true]);
+		await t.db.delete(schema.events).where(eq(schema.events.id, 'e_int1'));
+		await t.db.delete(schema.characters).where(eq(schema.characters.id, 'p_int1'));
 	});
 
 	it('pose les index de 04 §10.4', async () => {
