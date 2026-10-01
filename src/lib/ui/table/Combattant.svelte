@@ -196,7 +196,7 @@
 					<div class="gestes">
 						<Bouton variante="trait" type="submit" disabled={apercu === cur(ressource) || !motif.trim()}>Noter</Bouton>
 						{#if f.epMax}
-							<button type="button" class="raccourci" onclick={() => preremplir('ep', f.epCur - Math.ceil(f.epMax * 0.5), 'repos court (−50 % EP max, règle du simulateur)')}>Repos court</button>
+							<button type="button" class="raccourci" onclick={() => preremplir('ep', f.epCur - Math.ceil(f.epMax * 0.5), 'repos court (−50 % EP max)')}>Repos court</button>
 						{/if}
 						<button type="button" class="raccourci" onclick={fermer}>Fermer</button>
 					</div>

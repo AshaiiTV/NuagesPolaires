@@ -175,7 +175,7 @@
 						{/each}
 					</ul>
 				{:else}
-					<span></span>
+					<span class="actions" aria-hidden="true"></span>
 				{/if}
 				{#if fait && !ko(f) && table.revue === null && etat.active}
 					<button type="button" class="geste" onclick={() => table.reprendreDeclaration(f.id)} aria-label="Modifier la déclaration de {f.name}">Modifier</button>
@@ -425,5 +425,24 @@
 		flex-basis: 100%;
 		font: var(--t-libelle);
 		color: var(--encre-2);
+	}
+	@media (max-width: 760px) {
+		.tete {
+			grid-template-columns: 20px minmax(0, 1fr) auto;
+			grid-template-areas: 'rang qui geste' '. actions actions';
+		}
+		.rang {
+			grid-area: rang;
+		}
+		.qui {
+			grid-area: qui;
+		}
+		.actions {
+			grid-area: actions;
+			padding-bottom: 4px;
+		}
+		.tete .geste {
+			grid-area: geste;
+		}
 	}
 </style>

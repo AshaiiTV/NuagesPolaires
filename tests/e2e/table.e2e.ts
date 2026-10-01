@@ -199,7 +199,9 @@ test.describe('Apparitions et archives', () => {
 
 	test('publier un extrait a posteriori puis le rayer avec motif', async ({ page }) => {
 		await connecter(page, 'mj');
-		await page.goto('/table/archives/c_demo_lisiere');
+		await page.goto('/table/archives');
+		await page.locator('.recits li a.titre').first().click();
+		await expect(page).toHaveURL(/\/table\/archives\/c_/);
 		await page.fill('textarea[name="extrait"]', 'La lisière a tenu.\nLe vouivre est reparti vers le canyon.');
 		await page.getByRole('button', { name: 'Publier l’extrait' }).click();
 		await expect(page.getByText(/Publié · \d\d:\d\d/).first()).toBeVisible();

@@ -19,7 +19,7 @@
 
 	const compte = $derived(data.moi);
 	const role = $derived(LIBELLES_ROLE[compte.role]);
-	const depuis = $derived(dateLongue(compte.createdAt));
+	const depuis = $derived(dateLongue(compte.createdAt).replace(/^1 /, '1er '));
 	const admin = $derived(compte.role === 'admin');
 
 	// ── Mot de passe ──

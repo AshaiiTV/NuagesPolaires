@@ -52,7 +52,7 @@
 			<span class="nom">
 				<span class="pseudo">{compte.pseudo}</span>
 				<span class="detail">
-					{LIBELLES_ROLE[compte.role]}{#if data.personnage} · {data.personnage.name}{:else if compte.role === 'joueur'} · en attente de liaison{/if}
+					{LIBELLES_ROLE[compte.role]}{#if data.personnage}{' · ' + data.personnage.name}{:else if compte.role === 'joueur'}{' · en attente de liaison'}{/if}
 				</span>
 			</span>
 		</a>

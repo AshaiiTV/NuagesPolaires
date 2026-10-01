@@ -20,6 +20,7 @@ export const load: PageServerLoad = async (event) => {
 		[recit, table] = await Promise.all([getRecit(db, actor, id), getTable(db, actor, id)]);
 	} catch (e) {
 		if (isNpError(e) && e.status === 404) error(404, { message: 'Ce récit n’existe pas, ou la Table n’est pas repliée.', code: 'NOT_FOUND' });
+		if (isNpError(e)) error(e.status, { message: 'Ce récit n’a pas pu s’ouvrir : son état enregistré est illisible.', code: e.code });
 		throw e;
 	}
 	// Lecture des extraits publiés de ce récit. Écart assumé : le domaine publications.ts n'expose pas

@@ -3,8 +3,12 @@ import { expect, test, type Page, type BrowserContext } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 
 const PASSWORDS: Record<string, string> = {
-	mj: 'Maitre-audit-123!', admin: 'Admin-audit-123!', alice: 'Alice-audit-123!',
-	bob: 'Bob-audit-123!', designer: 'Designer-audit-123!', nova: 'Nova-audit-123!'
+	mj: 'Maitre-audit-123!',
+	admin: 'Admin-audit-123!',
+	alice: 'Alice-audit-123!',
+	bob: 'Bob-audit-123!',
+	designer: 'Designer-audit-123!',
+	nova: 'Nova-audit-123!'
 };
 const LIST = '/table/personnages';
 const ARIA = `${LIST}/p_demo_aria`;
@@ -17,13 +21,26 @@ async function capturerEtat(page: Page, name: string, chapterId?: string) {
 	await mkdir('test-results/captures/u6-etats', { recursive: true });
 	for (const width of [1440, 390]) {
 		await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+		await page.waitForTimeout(100); // Le media query pose les chapitres avant la capture.
 		for (const theme of ['dark', 'light']) {
-			await page.evaluate((theme) => { document.documentElement.dataset.theme = theme; document.documentElement.dataset.ton = theme === 'light' ? 'clair' : 'sombre'; }, theme);
+			await page.evaluate((theme) => {
+				document.documentElement.dataset.theme = theme;
+				document.documentElement.dataset.ton = theme === 'light' ? 'clair' : 'sombre';
+			}, theme);
 			if (chapterId) {
 				const chapter = page.locator(`#${chapterId}`);
-				await chapter.evaluate((el) => { for (let p: Element | null = el; p; p = p.parentElement) if (p instanceof HTMLDetailsElement) p.open = true; });
-				await chapter.screenshot({ path: `test-results/captures/u6-etats/${name}-${width}-${theme}.png` });
-			} else await page.screenshot({ path: `test-results/captures/u6-etats/${name}-${width}-${theme}.png`, fullPage: true });
+				await chapter.evaluate((el) => {
+					for (let p: Element | null = el; p; p = p.parentElement)
+						if (p instanceof HTMLDetailsElement) p.open = true;
+				});
+				await chapter.screenshot({
+					path: `test-results/captures/u6-etats/${name}-${width}-${theme}.png`
+				});
+			} else
+				await page.screenshot({
+					path: `test-results/captures/u6-etats/${name}-${width}-${theme}.png`,
+					fullPage: true
+				});
 			await tenue(page);
 		}
 	}
@@ -32,7 +49,11 @@ async function capturerEtat(page: Page, name: string, chapterId?: string) {
 
 async function connecter(page: Page, pseudo: string) {
 	const cookies = sessions.get(pseudo);
-	if (cookies) { await page.context().addCookies(cookies); await page.goto('/univers', { waitUntil: 'networkidle' }); return; }
+	if (cookies) {
+		await page.context().addCookies(cookies);
+		await page.goto('/univers', { waitUntil: 'networkidle' });
+		return;
+	}
 	await page.goto('/entrer', { waitUntil: 'networkidle' });
 	await page.locator('input[name="pseudo"]').fill(pseudo);
 	await page.locator('input[name="password"]').fill(PASSWORDS[pseudo]);
@@ -44,14 +65,17 @@ async function connecter(page: Page, pseudo: string) {
 
 async function ouvrir(page: Page, id: string) {
 	const details = page.locator(`#${id}`);
-	if (await details.getAttribute('open') === null) await details.locator(':scope > summary').click();
+	if ((await details.getAttribute('open')) === null)
+		await details.locator(':scope > summary').click();
 	return details;
 }
 
 async function tamponner(page: Page, id: string, motif: string) {
 	const details = await ouvrir(page, id);
 	await details.locator('input[name="motif"]').fill(motif);
-	const response = page.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('?/'));
+	const response = page.waitForResponse(
+		(r) => r.request().method() === 'POST' && r.url().includes('?/')
+	);
 	await details.getByRole('button', { name: 'Tamponner', exact: true }).click();
 	expect((await response).status()).toBe(200);
 	await expect(page.locator('#consequences')).toContainText(motif);
@@ -72,10 +96,26 @@ async function creer(page: Page, name: string) {
 
 async function tenue(page: Page) {
 	const result = await page.evaluate(() => {
-		const visible = [...document.querySelectorAll<HTMLElement>('body *')].filter((e) => e.getClientRects().length && e.children.length === 0 && e.textContent?.trim() && !e.closest('.sr-only'));
-		return { scroll: document.documentElement.scrollWidth, width: document.documentElement.clientWidth,
-			petits: visible.filter((e) => parseFloat(getComputedStyle(e).fontSize) < 12).map((e) => e.textContent),
-			petitesCibles: [...document.querySelectorAll<HTMLElement>('button, summary, input:not([type="hidden"]), select')].filter((e) => e.getClientRects().length && e.getBoundingClientRect().height < 44).map((e) => e.tagName)
+		const visible = [...document.querySelectorAll<HTMLElement>('body *')].filter(
+			(e) =>
+				e.getClientRects().length &&
+				e.children.length === 0 &&
+				e.textContent?.trim() &&
+				!e.closest('.sr-only')
+		);
+		return {
+			scroll: document.documentElement.scrollWidth,
+			width: document.documentElement.clientWidth,
+			petits: visible
+				.filter((e) => parseFloat(getComputedStyle(e).fontSize) < 12)
+				.map((e) => e.textContent),
+			petitesCibles: [
+				...document.querySelectorAll<HTMLElement>(
+					'button, summary, input:not([type="hidden"]), select'
+				)
+			]
+				.filter((e) => e.getClientRects().length && e.getBoundingClientRect().height < 44)
+				.map((e) => e.tagName)
 		};
 	});
 	expect(result.scroll).toBeLessThanOrEqual(result.width);
@@ -96,9 +136,18 @@ test.describe('Personnages — lectures et droits', () => {
 				expect(response?.status()).toBe(404);
 				if (pseudo === 'nova' && path === LIST) await capturerEtat(page, 'compte-en-attente-refus');
 				await expect(page.locator('#attribuer')).toHaveCount(0);
-				await expect(page.getByText('La brume ne se lève pas. Kael dit qu’elle écoute.')).toHaveCount(0);
+				await expect(
+					page.getByText('La brume ne se lève pas. Kael dit qu’elle écoute.')
+				).toHaveCount(0);
 			}
-			const denied = await page.request.post(`${ARIA}?/corriger`, { form: { resource: 'pv', newValue: '20', expectedRevision: '1', motif: 'Écriture interdite.' } });
+			const denied = await page.request.post(`${ARIA}?/corriger`, {
+				form: {
+					resource: 'pv',
+					newValue: '20',
+					expectedRevision: '1',
+					motif: 'Écriture interdite.'
+				}
+			});
 			expect(denied.status()).toBe(404);
 		});
 	}
@@ -126,7 +175,9 @@ test.describe('Personnages — lectures et droits', () => {
 });
 
 test.describe('Personnages — tampons', () => {
-	test('création, objets, gemmes, statuts, équipement et correction laissent une trace', async ({ page }) => {
+	test('création, objets, gemmes, statuts, équipement et correction laissent une trace', async ({
+		page
+	}) => {
 		await connecter(page, 'mj');
 		await creer(page, `Élève des brumes ${Date.now()}`);
 		await expect(page.locator('#inventaire')).toContainText('Rien dans les poches.');
@@ -171,11 +222,17 @@ test.describe('Personnages — tampons', () => {
 		await expect(page.locator('#consequences ins').filter({ hasText: '24' })).toBeVisible();
 	});
 
-	test('P4 — XP proposée, attente du serveur, même tampon lu par Alice', async ({ page, browser }) => {
+	test('P4 — XP proposée, attente du serveur, même tampon lu par Alice', async ({
+		page,
+		browser
+	}) => {
 		await connecter(page, 'mj');
 		await page.goto(ARIA, { waitUntil: 'networkidle' });
 		const editor = await ouvrir(page, 'xp');
-		const choice = editor.locator('select[name="beastId"] option').filter({ hasText: /niveau 3$/ }).first();
+		const choice = editor
+			.locator('select[name="beastId"] option')
+			.filter({ hasText: /niveau 3$/ })
+			.first();
 		await editor.locator('[name="beastId"]').selectOption((await choice.getAttribute('value'))!);
 		await editor.locator('[name="participationPct"]').fill('60');
 		await expect(editor).toContainText('+18 XP proposés');
@@ -198,7 +255,9 @@ test.describe('Personnages — tampons', () => {
 		await alice.goto('/carnet');
 		await expect(alice.getByText(/Un MJ a tamponné/).first()).toBeVisible();
 		await alice.goto('/carnet/fiche');
-		await alice.locator('#consequences').evaluate((el) => { if (el instanceof HTMLDetailsElement) el.open = true; });
+		await alice.locator('#consequences').evaluate((el) => {
+			if (el instanceof HTMLDetailsElement) el.open = true;
+		});
 		await expect(alice.locator('#consequences')).toContainText(motif);
 		await context.close();
 	});
@@ -217,7 +276,9 @@ test.describe('Personnages — tampons', () => {
 		await editor.locator('[name="newValue"]').fill('29');
 		await page.route('**/*?/corriger', (route) => route.abort('internetdisconnected'));
 		await editor.getByRole('button', { name: 'Tamponner' }).click();
-		await expect(editor.getByRole('alert')).toContainText('Le registre n’a pas pu se mettre à jour depuis');
+		await expect(editor.getByRole('alert')).toContainText(
+			'Le registre n’a pas pu se mettre à jour depuis'
+		);
 		await expect(editor.locator('[name="newValue"]')).toHaveValue('29');
 		await expect(page.locator('#ressources')).toContainText(/30\s*\/\s*30/);
 		await capturerEtat(page, 'reseau-interrompu', 'corriger');
@@ -251,7 +312,10 @@ test.describe('Personnages — tampons', () => {
 		await context.close();
 	});
 
-	test('report et rature des déclarations ; fait tamponné puis réglé', async ({ page, browser }) => {
+	test('report et rature des déclarations ; faits tamponnés, réglés ou refusés', async ({
+		page,
+		browser
+	}) => {
 		const ownerContext = await browser.newContext();
 		const owner = await ownerContext.newPage();
 		await connecter(owner, 'alice');
@@ -260,7 +324,9 @@ test.describe('Personnages — tampons', () => {
 		await owner.getByRole('button', { name: 'Déclarer', exact: true }).nth(1).click();
 		const declaration = owner.locator('#ligne-ep');
 		await declaration.locator('[name="choix"]').selectOption('regle:esquive');
+		const declared = owner.waitForResponse((r) => r.request().method() === 'POST');
 		await declaration.locator('button[type="submit"]').click();
+		expect((await declared).status()).toBe(200);
 		await connecter(page, 'mj');
 		await page.goto(ARIA, { waitUntil: 'networkidle' });
 		const pending = page.locator('#declarations details').first();
@@ -268,14 +334,36 @@ test.describe('Personnages — tampons', () => {
 		await pending.locator('[name="motif"]').fill('Report depuis le salon.');
 		await pending.getByRole('button', { name: 'Reporter', exact: true }).click();
 		await expect(page.locator('#consequences')).toContainText('Report depuis le salon.');
-		await expect(page.locator('#declarations')).toContainText('Aucune déclaration n’attend de report.');
+		await expect(page.locator('#declarations')).toContainText(
+			'Aucune déclaration n’attend de report.'
+		);
+		const beforeStrike = await page.locator('#ressources').innerText();
+		await owner.goto('/carnet/scene', { waitUntil: 'networkidle' });
+		await owner.getByRole('button', { name: 'Déclarer', exact: true }).nth(1).click();
+		await declaration.locator('[name="choix"]').selectOption('regle:esquive');
+		const secondDeclaration = owner.waitForResponse((r) => r.request().method() === 'POST');
+		await declaration.locator('button[type="submit"]').click();
+		expect((await secondDeclaration).status()).toBe(200);
+		await page.reload({ waitUntil: 'networkidle' });
+		await pending.locator('summary').click();
+		await pending.locator('[name="motif"]').fill('Déclaration doublée, gardée en rature.');
+		await pending.getByRole('button', { name: 'Rayer', exact: true }).click();
+		await expect(page.locator('#declarations')).toContainText(
+			'Aucune déclaration n’attend de report.'
+		);
+		expect(await page.locator('#ressources').innerText()).toBe(beforeStrike);
 		await owner.goto('/carnet/journal?voix=faits', { waitUntil: 'networkidle' });
 		const proposed = owner.locator('form[action="?/proposerFait"]');
-		await proposed.evaluate((el) => { for (let p = el.parentElement; p; p = p.parentElement) if (p instanceof HTMLDetailsElement) p.open = true; });
+		await proposed.evaluate((el) => {
+			for (let p = el.parentElement; p; p = p.parentElement)
+				if (p instanceof HTMLDetailsElement) p.open = true;
+		});
 		await proposed.locator('[name="kind"]').selectOption('promesse');
 		await proposed.locator('[name="counterpart"]').fill('Kael');
 		await proposed.locator('[name="text"]').fill('Revenir au gué ensemble.');
+		const proposedResponse = owner.waitForResponse((r) => r.request().method() === 'POST');
 		await proposed.locator('button[type="submit"]').click();
+		expect((await proposedResponse).status()).toBe(200);
 		await page.reload({ waitUntil: 'networkidle' });
 		let fact = page.locator('#faits > .faits > li').filter({ hasText: 'Revenir au gué ensemble.' });
 		await ouvrir(page, (await fact.locator('details').getAttribute('id'))!);
@@ -286,6 +374,25 @@ test.describe('Personnages — tampons', () => {
 		await fact.locator('[name="motif"]').fill('Retour au gué écrit.');
 		await fact.getByRole('button', { name: 'Régler', exact: true }).click();
 		await expect(fact).toContainText('réglé');
+		await owner.reload({ waitUntil: 'networkidle' });
+		await proposed.evaluate((el) => {
+			for (let p = el.parentElement; p; p = p.parentElement)
+				if (p instanceof HTMLDetailsElement) p.open = true;
+		});
+		await proposed.locator('[name="kind"]').selectOption('observation');
+		await proposed.locator('[name="text"]').fill('Observation proposée sans témoin.');
+		const refusedProposal = owner.waitForResponse((r) => r.request().method() === 'POST');
+		await proposed.locator('button[type="submit"]').click();
+		expect((await refusedProposal).status()).toBe(200);
+		await page.reload({ waitUntil: 'networkidle' });
+		fact = page
+			.locator('#faits > .faits > li')
+			.filter({ hasText: 'Observation proposée sans témoin.' });
+		await ouvrir(page, (await fact.locator('details').getAttribute('id'))!);
+		await fact.locator('[name="motif"]').fill('Le salon ne porte pas ce récit.');
+		await fact.getByRole('button', { name: 'Refuser', exact: true }).click();
+		await expect(fact).toContainText('refusé');
+		await expect(fact).toContainText('Le salon ne porte pas ce récit.');
 		await ownerContext.close();
 	});
 
@@ -322,18 +429,44 @@ for (const pseudo of ['mj', 'admin']) {
 				page.on('pageerror', (e) => errors.push(e.message));
 				await mkdir('test-results/captures/u6-etats', { recursive: true });
 				await page.goto(LIST);
-				await page.evaluate((theme) => { document.documentElement.dataset.theme = theme; document.documentElement.dataset.ton = theme === 'light' ? 'clair' : 'sombre'; }, theme);
+				await page.evaluate((theme) => {
+					document.documentElement.dataset.theme = theme;
+					document.documentElement.dataset.ton = theme === 'light' ? 'clair' : 'sombre';
+				}, theme);
 				await tenue(page);
-				await page.screenshot({ path: `test-results/captures/u6-etats/liste-${pseudo}-${width}-${theme}.png`, fullPage: true });
-				await page.goto(ARIA);
-				await page.evaluate((theme) => { document.documentElement.dataset.theme = theme; document.documentElement.dataset.ton = theme === 'light' ? 'clair' : 'sombre'; }, theme);
-				for (const id of ['ressources', 'inventaire', 'serment', 'consequences', 'attribuer', 'declarations', 'faits', 'journal', ...(pseudo === 'admin' ? ['sensible'] : [])]) {
+				await page.screenshot({
+					path: `test-results/captures/u6-etats/liste-${pseudo}-${width}-${theme}.png`,
+					fullPage: true
+				});
+				await page.goto(ARIA, { waitUntil: 'networkidle' });
+				await page.evaluate((theme) => {
+					document.documentElement.dataset.theme = theme;
+					document.documentElement.dataset.ton = theme === 'light' ? 'clair' : 'sombre';
+				}, theme);
+				for (const id of [
+					'ressources',
+					'inventaire',
+					'serment',
+					'consequences',
+					'attribuer',
+					'declarations',
+					'faits',
+					'journal',
+					...(pseudo === 'admin' ? ['sensible'] : [])
+				]) {
 					const chapter = await ouvrir(page, id);
-					if (id === 'attribuer') { const xp = await ouvrir(page, 'xp'); await xp.locator('[name="beastId"]').selectOption('b_demo_vouivre'); }
+					if (id === 'attribuer') {
+						const xp = await ouvrir(page, 'xp');
+						await xp.locator('[name="beastId"]').selectOption('b_demo_vouivre');
+					}
 					await tenue(page);
-					await chapter.screenshot({ path: `test-results/captures/u6-etats/${id}-${pseudo}-${width}-${theme}.png` });
+					await chapter.screenshot({
+						path: `test-results/captures/u6-etats/${id}-${pseudo}-${width}-${theme}.png`
+					});
 				}
-				await expect(page.locator('#sensible .sur-ordinateur')).toBeVisible({ visible: pseudo === 'admin' && width === 390 });
+				await expect(page.locator('#sensible .sur-ordinateur')).toBeVisible({
+					visible: pseudo === 'admin' && width === 390
+				});
 				expect(errors).toEqual([]);
 			});
 		}

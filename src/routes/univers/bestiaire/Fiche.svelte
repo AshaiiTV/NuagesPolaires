@@ -2,6 +2,8 @@
 	// La fiche publique est aussi la référence de l’aperçu dans l’Atelier.
 	import Losange from '$lib/ui/Losange.svelte';
 	import Vide from '$lib/ui/Vide.svelte';
+	import Portrait from '$lib/ui/Portrait.svelte';
+	import { nomZone } from './affichage';
 	import type { BeastView } from '$lib/schemas/beasts';
 	let { beast, portrait = true }: { beast: BeastView; portrait?: boolean } = $props();
 	const lignes = $derived([
@@ -13,19 +15,15 @@
 </script>
 
 <div class="fiche">
-	{#if portrait && beast.imageUrl}<img
-			class="portrait"
-			src={beast.imageUrl}
-			width="320"
-			height="320"
-			alt="Portrait de {beast.name}"
-		/>{/if}
+	{#if portrait && beast.imageUrl}<div class="image-publiee">
+			<Portrait nom={beast.name} src={beast.imageUrl} taille={320} />
+		</div>{/if}
 	{#if beast.subtitle}<p class="sous-titre">{beast.subtitle}</p>{/if}
 	<div class="reperes">
 		<Losange
 			couleur={beast.behaviorColor}
 			libelle={beast.behavior}
-		/>{#each beast.zones as zone}<span>{zone.name}</span>{/each}
+		/>{#each beast.zones as zone}<span>{nomZone(zone.name)}</span>{/each}
 	</div>
 	{#if beast.quote}<blockquote class="voix">« {beast.quote} »</blockquote>{/if}
 	{#if beast.description}<p class="description">{beast.description}</p>{:else}<Vide
@@ -47,12 +45,14 @@
 	.fiche {
 		overflow-wrap: anywhere;
 	}
-	.portrait {
+	.image-publiee {
 		width: min(100%, 320px);
 		aspect-ratio: 1;
-		object-fit: cover;
 		margin-bottom: var(--ligne);
-		border-radius: var(--rayon);
+	}
+	.image-publiee :global(.portrait) {
+		width: 100%;
+		height: 100%;
 	}
 	.sous-titre {
 		font: var(--t-recit);

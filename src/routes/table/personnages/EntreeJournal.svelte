@@ -7,14 +7,32 @@
 </script>
 
 <article class="entree" class:rayee={entry.struck || ancienne}>
-	<p class="date">{entry.label ?? dateLongue(entry.at)} · {heure(entry.at)}{#if entry.inScene} · notée en scène{/if}{#if ancienne} · ancienne version{/if}</p>
+	<p class="date">
+		{entry.label ?? dateLongue(entry.at)} · {heure(entry.at)}{#if entry.inScene}
+			· notée en scène{/if}{#if ancienne}
+			· ancienne version{/if}
+	</p>
 	<p class="texte">{entry.text}</p>
 	{#if entry.previous}<EntreeJournal entry={entry.previous} ancienne />{/if}
 </article>
 
 <style>
-	.entree { padding: var(--ligne) 0; border-bottom: 1px solid var(--reglure); }
-	.date { font: var(--t-repere); line-height: var(--ligne); color: var(--encre-2); }
-	.texte { font: var(--t-recit); white-space: pre-wrap; overflow-wrap: anywhere; }
-	.rayee > .texte { text-decoration: line-through; color: var(--encre-grise); }
+	.entree {
+		padding: var(--ligne) 0;
+		border-bottom: 1px solid var(--reglure);
+	}
+	.date {
+		font: var(--t-repere);
+		line-height: var(--ligne);
+		color: var(--encre-2);
+	}
+	.texte {
+		font: var(--t-recit);
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
+	.rayee > .texte {
+		text-decoration: line-through;
+		color: var(--encre-grise);
+	}
 </style>

@@ -2,6 +2,7 @@
 	import Champ from '$lib/ui/Champ.svelte';
 	import Bouton from '$lib/ui/Bouton.svelte';
 	import Losange from '$lib/ui/Losange.svelte';
+	import { nomZone } from './affichage';
 	import { BEHAVIOR_COLORS, type ListBeastsInput, type ZoneView } from '$lib/schemas/beasts';
 	let {
 		filters,
@@ -40,7 +41,7 @@
 	<label class="choix"
 		>Zone<select name="zone" value={filters.zoneId ?? ''}
 			><option value="">Toutes les zones</option>{#each zones as zone}<option value={zone.id}
-					>{zone.name}</option
+					>{nomZone(zone.name)}</option
 				>{/each}</select
 		></label
 	>

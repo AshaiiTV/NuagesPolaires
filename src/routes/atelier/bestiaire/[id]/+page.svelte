@@ -9,6 +9,7 @@
 	import Encre from '$lib/ui/Encre.svelte';
 	import NoteDeMarge from '$lib/ui/NoteDeMarge.svelte';
 	import Fiche from '../../../univers/bestiaire/Fiche.svelte';
+	import { nomZone } from '../../../univers/bestiaire/affichage';
 	import { creerEcriture } from '$lib/ui/ecriture.svelte';
 	import { BEHAVIOR_COLORS, behaviorSchema, type BeastView } from '$lib/schemas/beasts';
 	import type { PageProps } from './$types';
@@ -201,7 +202,7 @@
 										name="zones"
 										value={zone.id}
 										bind:group={zones}
-									/>{zone.name}</label
+									/>{nomZone(zone.name)}</label
 								>{/each}
 						</fieldset>
 						{#if data.beast}<p class="rappel">

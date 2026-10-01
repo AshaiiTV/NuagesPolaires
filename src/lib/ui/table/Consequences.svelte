@@ -300,7 +300,7 @@
 									/>
 								</label>
 								{#if archive}
-									<Tampon cle={archive.id + o.characterId}>{signatureTampon} — motif : {motifDe(o.characterId)}</Tampon>
+									<Tampon cle={archive.id + o.characterId}>{signatureTampon}</Tampon>
 								{:else if pose}
 									<span class="en-attente"><Encre etat="humide">Tamponnée · s’imprime à l’archivage</Encre></span>
 									<button type="button" class="geste" onclick={() => reprendreLigne(o.characterId)}>Reprendre la ligne</button>
@@ -349,7 +349,7 @@
 					<textarea name="extrait" bind:value={extrait} rows="4" maxlength={4000} disabled={!!archive}></textarea>
 				</label>
 				<p class="detail chiffres" class:refus={publier && extrait.trim() && !extraitValide} aria-live="polite">
-					{lignesExtrait} ligne{lignesExtrait > 1 ? 's' : ''} · aucun nom de participant sur l’accueil.
+					{lignesExtrait ? `${lignesExtrait} ligne${lignesExtrait > 1 ? 's' : ''}` : 'Va à la ligne entre deux phrases'} · aucun nom de participant sur l’accueil.
 				</p>
 				<fieldset>
 					<legend>Destinations</legend>

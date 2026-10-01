@@ -175,7 +175,7 @@
 				<textarea name="extrait" bind:value={extrait} rows="4" maxlength={4000} required></textarea>
 			</label>
 			<p class="detail chiffres" class:refus={extrait.trim() && (lignes < 2 || lignes > 4)} aria-live="polite">
-				{lignes} ligne{lignes > 1 ? 's' : ''}
+				{lignes ? `${lignes} ligne${lignes > 1 ? 's' : ''}` : 'Va à la ligne entre deux phrases.'}
 			</p>
 			<fieldset>
 				<legend>Destinations</legend>

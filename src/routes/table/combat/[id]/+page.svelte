@@ -325,7 +325,7 @@
 							{f}
 							ouvert={ouvert === f.id}
 							basculer={() => (ouvert = ouvert === f.id ? null : f.id)}
-							declare={table.declarant === f.id}
+							declare={!fini && table.declarant === f.id}
 							initiative={initiative === f.id}
 						/>
 					{/each}
@@ -391,7 +391,7 @@
 
 <style>
 	.table-mj {
-		--colonnes-combattants: minmax(0, 1.3fr) 54px 54px 54px minmax(0, 1fr) 36px 44px;
+		--colonnes-combattants: minmax(0, 1.6fr) 52px 52px 52px minmax(0, 1fr) 36px 44px;
 		width: 100%;
 		max-width: var(--page-max);
 		margin: 0 auto;
@@ -625,21 +625,29 @@
 			border-inline: 0;
 			box-shadow: none;
 		}
+		/* Téléphone : seule la bande d'état (nom, ligne d'état, relevé) reste ancrée en haut. */
 		.tete {
+			display: contents;
+		}
+		.identite {
 			position: sticky;
 			top: 0;
 			z-index: 2;
-			padding-top: 12px;
+			padding: 8px 0 4px;
 			background: var(--page);
+			border-bottom: 1px solid var(--reglure);
+		}
+		.gestes {
+			padding: 12px 0;
 		}
 		.haut {
 			display: none;
 		}
 		.nom {
 			width: 100%;
-			font-size: 26px;
-			line-height: 40px;
-			min-height: 40px;
+			font-size: 24px;
+			line-height: 32px;
+			min-height: 44px;
 		}
 		.etat {
 			gap: 0 12px;

@@ -158,7 +158,7 @@
 		{/if}
 	</Chapitre>
 
-	<Chapitre numero="03" titre="Totaux par créature" chapeau="Sorties cumulées depuis la reprise du simulateur ; elles pondèrent les tirages suivants.">
+	<Chapitre numero="03" titre="Totaux par créature" chapeau="Sorties cumulées par créature ; elles pondèrent les tirages suivants.">
 		{#if data.totaux.length}
 			<ul class="totaux">
 				{#each data.totaux as t (t.id)}
