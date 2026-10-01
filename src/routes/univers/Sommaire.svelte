@@ -1,26 +1,184 @@
 <script lang="ts">
- import type { ContentSection } from '$lib/content';
- let { sections }: { sections: ContentSection[] } = $props();
- let active = $state('');
- $effect(() => {
-  active = sections[0]?.id ?? '';
-  const visible = new Set<string>();
-  const observer = new IntersectionObserver(entries => {
-   for (const entry of entries) { if (entry.isIntersecting) visible.add(entry.target.id); else visible.delete(entry.target.id); }
-   const first = sections.find(section => visible.has(section.id));
-   if (first) active = first.id;
-  }, { rootMargin: '-10% 0px -55% 0px', threshold: 0 });
-  for (const section of sections) { const heading = document.getElementById(section.id); if (heading) { heading.tabIndex = -1; observer.observe(heading); } }
-  return () => observer.disconnect();
- });
- function follow(event: MouseEvent, id: string) {
-  if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-  const heading = document.getElementById(id);
-  if (heading) { active = id; heading.focus({ preventScroll: true }); }
- }
+	// Sommaire de marge : les chapitres de la page, celui qu'on lit marqué d'un losange aurore.
+	// Les sous-chapitres ne se déplient que sous le chapitre en cours de lecture.
+	type Entree = { id: string; title: string; level: number; numero?: string };
+	let { sections, libelle = 'Sommaire' }: { sections: Entree[]; libelle?: string } = $props();
+
+	const sommet = $derived(sections.reduce((haut, s) => Math.min(haut, s.level), 6));
+	const lignes = $derived(sections.filter((s) => s.level <= sommet + 1));
+	/** Pour chaque section de la page : son chapitre, et la ligne du sommaire qui la représente. */
+	const attaches = $derived.by(() => {
+		const liens: Record<string, { chapitre: string; ligne: string }> = {};
+		let chapitre = '';
+		let ligne = '';
+		for (const s of sections) {
+			if (s.level === sommet) chapitre = s.id;
+			if (s.level <= sommet + 1) ligne = s.id;
+			liens[s.id] = { chapitre, ligne };
+		}
+		return liens;
+	});
+
+	let lue = $state('');
+	const courante = $derived(attaches[lue] ?? attaches[sections[0]?.id ?? '']);
+	let nav: HTMLElement | undefined = $state();
+
+	$effect(() => {
+		const cibles = sections
+			.map((s) => document.getElementById(s.id))
+			.filter((e): e is HTMLElement => e !== null);
+		for (const cible of cibles) cible.tabIndex = -1;
+		let attente = 0;
+		const relever = () => {
+			attente = 0;
+			const seuil = window.innerHeight * 0.3;
+			let trouvee = cibles[0]?.id ?? '';
+			for (const cible of cibles) {
+				if (cible.getBoundingClientRect().top <= seuil) trouvee = cible.id;
+				else break;
+			}
+			// En bas de page, la dernière section ne remonte plus jusqu'au seuil.
+			const fond = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+			lue = fond && window.scrollY > 0 ? (cibles.at(-1)?.id ?? trouvee) : trouvee;
+		};
+		const suivre = () => {
+			if (!attente) attente = requestAnimationFrame(relever);
+		};
+		relever();
+		window.addEventListener('scroll', suivre, { passive: true });
+		window.addEventListener('resize', suivre);
+		return () => {
+			cancelAnimationFrame(attente);
+			window.removeEventListener('scroll', suivre);
+			window.removeEventListener('resize', suivre);
+		};
+	});
+
+	// La ligne courante reste visible dans un sommaire plus haut que la marge.
+	$effect(() => {
+		const ligne = courante?.ligne;
+		if (!nav || !ligne || nav.scrollHeight <= nav.clientHeight) return;
+		const lien = nav.querySelector<HTMLElement>(`a[href="#${CSS.escape(ligne)}"]`);
+		if (!lien) return;
+		const haut = lien.offsetTop;
+		const bas = haut + lien.offsetHeight;
+		if (haut < nav.scrollTop) nav.scrollTop = haut;
+		else if (bas > nav.scrollTop + nav.clientHeight) nav.scrollTop = bas - nav.clientHeight;
+	});
+
+	function ouvrir(event: MouseEvent, id: string) {
+		if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+		const cible = document.getElementById(id);
+		if (cible) {
+			lue = id;
+			cible.focus({ preventScroll: true });
+		}
+	}
 </script>
-<nav aria-label="Sommaire des sections"><ul>{#each sections as section}<li><a class:active={active === section.id} aria-current={active === section.id ? 'location' : undefined} href={'#' + section.id} onclick={(event) => follow(event, section.id)}>{section.title}</a></li>{/each}</ul></nav>
+
+<nav bind:this={nav} aria-label={libelle}>
+	<ol>
+		{#each lignes as s (s.id)}
+			{@const sous = s.level > sommet}
+			{@const ici = courante?.ligne === s.id}
+			<li class:sous class:replie={sous && attaches[s.id]?.chapitre !== courante?.chapitre}>
+				<a
+					class:ici
+					aria-current={ici ? 'location' : undefined}
+					href={'#' + s.id}
+					onclick={(event) => ouvrir(event, s.id)}
+				>
+					<span class="marque" aria-hidden="true"></span>
+					{#if sous}
+						<span class="titre"
+							>{#if s.numero}<span class="indice chiffres">{s.numero}</span>{/if}{s.title}</span
+						>
+					{:else}
+						{#if s.numero}<span class="numero chiffres">{s.numero}</span>{/if}
+						<span class="titre">{s.title}</span>
+					{/if}
+				</a>
+			</li>
+		{/each}
+	</ol>
+</nav>
+
 <style>
- nav { max-height: 65svh; overflow-y: auto; } a { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 8px 4px; font: var(--t-libelle); text-decoration: none; }
- a::before { content: ''; width: 4px; height: 4px; rotate: 45deg; flex: none; background: var(--reglure); } a.active::before { background: var(--encre-humide); } a.active { color: var(--encre-humide); }
+	nav {
+		position: relative;
+		max-height: calc(100svh - var(--sommaire-reserve, 224px));
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		scrollbar-width: thin;
+		scrollbar-color: var(--reglure) transparent;
+	}
+	ol {
+		display: grid;
+		grid-template-columns: 5px max-content minmax(0, 1fr);
+		column-gap: 12px;
+	}
+	li,
+	a {
+		display: grid;
+		grid-template-columns: subgrid;
+		grid-column: 1 / -1;
+	}
+	li.replie {
+		display: none;
+	}
+	a {
+		align-items: start;
+		min-height: var(--cible);
+		padding: 12px 4px 12px 0;
+		font: var(--t-libelle);
+		color: var(--encre-2);
+		text-decoration: none;
+		transition: color 160ms;
+	}
+	a:hover,
+	a.ici {
+		color: var(--encre);
+	}
+	.marque {
+		grid-column: 1;
+		width: 5px;
+		height: 5px;
+		margin-top: 8px;
+		rotate: 45deg;
+		background: transparent;
+		transition: background 160ms;
+	}
+	a.ici .marque {
+		background: var(--encre-humide);
+	}
+	.numero {
+		grid-column: 2;
+		font: var(--t-repere);
+		line-height: 20px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--tampon);
+	}
+	.titre {
+		grid-column: 3;
+		text-wrap: balance;
+	}
+	/* Sans numéro, l'intitulé d'un chapitre part de la colonne des numéros. */
+	.marque + .titre {
+		grid-column: 2 / -1;
+	}
+	.sous .titre {
+		grid-column: 3;
+		padding-left: 12px;
+		font-weight: 400;
+	}
+	.indice {
+		margin-right: 8px;
+		color: var(--encre-2);
+	}
+	@media (max-width: 760px) {
+		nav {
+			max-height: none;
+		}
+	}
 </style>

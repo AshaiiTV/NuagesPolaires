@@ -1,35 +1,430 @@
 <script lang="ts">
- import Page from '$lib/ui/Page.svelte';
- import Sommaire from '../../Sommaire.svelte';
- import Tourner from '../../Tourner.svelte';
- import { OATH_CATEGORY_LABELS, OATH_RANK_LABELS } from '$lib/game/oaths';
- import type { PageProps } from './$types';
- let { data }: PageProps = $props();
- const sections = $derived([{ id: 'lore', title: 'Lore', level: 2 }, ...data.branches.map((branch, i) => ({ id: 'branche-' + i, title: branch.nom, level: 2 }))]);
- const reached = $derived(data.tuEsIci === null ? -1 : data.levels.reduce((last, level, i) => level <= data.tuEsIci! ? i : last, -1));
+	// La page d'un Serment : cartouche d'identité en marge (catégorie, rang, arme, croissance),
+	// lore en Cormorant sous le titre, deux branches lues comme des chapitres (A, B), quatre paliers en lignes de carnet.
+	import Page from '$lib/ui/Page.svelte';
+	import Losange from '$lib/ui/Losange.svelte';
+	import Vide from '$lib/ui/Vide.svelte';
+	import Depliant from '../../Depliant.svelte';
+	import Sommaire from '../../Sommaire.svelte';
+	import Tourner from '../../Tourner.svelte';
+	import { typo } from '../../typo';
+	import { OATH_CATEGORY_LABELS, STYLE_COLORS } from '$lib/game/oaths';
+	import type { PageProps } from './$types';
+	let { data }: PageProps = $props();
+
+	// STYLE_COLORS donne des clés héritées (« red », « glacier »…), pas des couleurs : seules celles
+	// qui ont une teinte de sens dans les tokens sont rendues ; les autres gardent un losange neutre.
+	const TEINTES: Record<string, string> = {
+		red: 'var(--rouille)',
+		glacier: 'var(--encre-humide)',
+		green: 'var(--ruban)'
+	};
+
+	const branches = $derived(
+		data.oath.branches.map((branch, i) => {
+			const lu = /^Branche\s+(\S+)\s+[—–-]\s+(.+)$/.exec(branch.label);
+			// Dernier palier atteint par le lecteur relié, s'il suit cette branche.
+			const atteint =
+				data.tuEsIci !== null && data.readerBranch === branch.label
+					? branch.tiers.reduce(
+							(dernier, tier, t) => (tier.level <= data.tuEsIci! ? t : dernier),
+							-1
+						)
+					: -1;
+			return {
+				id: 'branche-' + i,
+				lettre: lu?.[1] ?? String.fromCharCode(65 + i),
+				titre: typo(lu?.[2] ?? branch.label),
+				style: branch.style,
+				teinte: TEINTES[STYLE_COLORS[branch.style] ?? ''] ?? 'var(--encre-2)',
+				corps: branch.physical,
+				recit: branch.flavor,
+				atteint,
+				// Étape d'un palier : « I Éveil » se lit « I · Éveil ».
+				paliers: branch.tiers.map((tier) => {
+					const etape = /^([IVX]+)\s+(.+)$/.exec(tier.stage);
+					return { ...tier, chiffre: etape?.[1] ?? tier.stage, libelle: etape?.[2] ?? '' };
+				})
+			};
+		})
+	);
+
+	const sections = $derived([
+		...(data.oath.lore ? [{ id: 'lore', title: 'Lore', level: 2 }] : []),
+		...branches.map((branch) => ({
+			id: branch.id,
+			numero: branch.lettre,
+			title: branch.titre,
+			level: 2
+		}))
+	]);
 </script>
-<svelte:head><title>{data.oath.name} — Nuages Polaires</title><meta name="description" content={data.oath.lore} /></svelte:head>
+
+<svelte:head>
+	<title>{typo(data.oath.name)} — Nuages Polaires</title>
+	<meta name="description" content={typo(data.oath.lore)} />
+</svelte:head>
+
 {#snippet identite()}
- <p>{OATH_CATEGORY_LABELS[data.oath.category]}</p><p class="rang">{OATH_RANK_LABELS[data.oath.rank]}</p><p>{data.oath.weapon}</p>
- {#if data.oath.evolvesFrom}<p>Évolution de {data.oath.evolvesFrom}</p>{/if}
- <p class="croissance">+{data.oath.growth.pvN} PV · +{data.oath.growth.epN} EP · +{data.oath.growth.emN} EM par niveau · frappe {data.oath.baseDamage}</p>
+	<dl class="cartouche">
+		<div class="entete">
+			<dt class="sr-only">Catégorie</dt>
+			<dd class="repere">{OATH_CATEGORY_LABELS[data.oath.category]}</dd>
+			<dt class="sr-only">Rang</dt>
+			<dd class="rang">{data.oath.rankLabel}</dd>
+		</div>
+		<div class="ligne">
+			<dt class="repere">Arme</dt>
+			<dd class="arme">{typo(data.oath.weapon)}</dd>
+		</div>
+		{#if data.oath.lineage}
+			<div class="ligne">
+				<dt class="repere">Lignée</dt>
+				<dd class="valeur">Évolution de {typo(data.oath.lineage)}</dd>
+			</div>
+		{/if}
+		<div class="ligne">
+			<dt class="repere">Croissance</dt>
+			<dd class="valeur croissance chiffres">
+				<span>+{data.oath.growth.pvN} PV</span><span>+{data.oath.growth.epN} EP</span><span
+					>+{data.oath.growth.emN} EM par niveau</span
+				><span>frappe {data.oath.baseDamage}</span>
+			</dd>
+		</div>
+	</dl>
 {/snippet}
-<Page repere="NP / 05 — L’univers" titre={data.oath.name} grain>
- {#snippet marge()}{@render identite()}<Sommaire {sections} />{/snippet}
- {#snippet bande()}<div>{@render identite()}<details><summary>Sommaire</summary><Sommaire {sections} /></details></div>{/snippet}
- <section id="lore"><h2>Lore</h2><p class="lore">{data.oath.lore}</p></section>
- {#each data.branches as branch, b}<section id={'branche-' + b}>
- <h2>{branch.nom}</h2><p class="style">{branch.style}</p>
- {#if branch.descPhys || branch.desc}<p>{branch.descPhys ?? branch.desc}</p>{/if}
- {#if branch.flavor}<p class="flavor">{branch.flavor}</p>{/if}
- <ol>{#each branch.paliers as tier, i}<li class="palier"><span class="niveau">Niv. {data.levels[i] ?? tier.niv}</span><div><h3>{tier.nom}</h3><p class="cout">{tier.cout}</p>{#if data.readerBranch === branch.nom && reached === i}<p class="ici"><span aria-hidden="true">◆</span> tu es ici</p>{/if}<p>{tier.desc}</p></div></li>{/each}</ol>
- </section>{/each}
- {#snippet pied()}<Tourner previous={data.previous} next={data.next} serments />{/snippet}
+
+<Page repere="NP / 05 — L’univers" titre={typo(data.oath.name)} grain>
+	{#snippet marge()}
+		{@render identite()}
+		<div class="sommaire"><Sommaire {sections} /></div>
+	{/snippet}
+	{#snippet bande()}
+		<div class="bande">
+			{@render identite()}
+			<Depliant libelle="Sommaire"><Sommaire {sections} /></Depliant>
+		</div>
+	{/snippet}
+
+	{#if data.oath.lore}
+		<!-- Le lore ouvre la page, entier, sous le titre : il tient lieu de chapeau. -->
+		<section class="ouverture" id="lore">
+			<h2 class="sr-only">Lore</h2>
+			<p class="lore">{typo(data.oath.lore)}</p>
+		</section>
+	{/if}
+
+	{#if !branches.length}<Vide>Aucune branche définie.</Vide>{/if}
+	{#each branches as branch (branch.id)}
+		<section class="chapitre branche" id={branch.id}>
+			<header>
+				<span class="numero"><span class="mot">Branche </span>{branch.lettre}</span>
+				<h2>{branch.titre}</h2>
+				{#if branch.style}<span class="style"
+						><Losange couleur={branch.teinte} libelle={branch.style} /></span
+					>{/if}
+			</header>
+			{#if branch.corps}<p class="physique">{typo(branch.corps)}</p>{/if}
+			{#if branch.recit}<p class="recit">{typo(branch.recit)}</p>{/if}
+			<ol class="paliers">
+				{#each branch.paliers as tier, i (i)}
+					{@const ici = branch.atteint === i}
+					<li class="palier" class:ici>
+						<div class="jalon">
+							<p class="niveau chiffres">niv. <b>{tier.level}</b></p>
+							<p class="etape">
+								{tier.chiffre}{#if tier.libelle}<span class="point" aria-hidden="true">·</span><span
+										class="sr-only">,</span
+									>
+									{tier.libelle}{/if}
+							</p>
+							{#if ici}
+								<p class="marque-ici"><span class="losange" aria-hidden="true"></span>tu es ici</p>
+							{/if}
+						</div>
+						<div class="ecrit">
+							<div class="tete">
+								<h3>{typo(tier.name)}</h3>
+								{#if tier.cost}<p class="cout chiffres">{typo(tier.cost)}</p>{/if}
+							</div>
+							<p class="effet">{typo(tier.description)}</p>
+						</div>
+					</li>
+				{/each}
+			</ol>
+		</section>
+	{/each}
+
+	{#snippet pied()}<Tourner previous={data.previous} next={data.next} serments />{/snippet}
 </Page>
+
 <style>
- section { max-width: 62ch; margin-bottom: 28px; scroll-margin-top: 84px; overflow-wrap: anywhere; } h2 { font: var(--t-chapitre); margin-bottom: 28px; } p { margin-bottom: 28px; font: var(--t-corps); white-space: pre-line; }
- .lore { font: var(--t-recit); } .flavor { font: italic 400 18px/28px var(--voix); } .style { font: var(--t-libelle); color: var(--encre-2); }
- .rang { color: var(--tampon); font: var(--t-repere); font-variant-caps: small-caps; } .croissance { font: var(--t-libelle); font-variant-numeric: tabular-nums; }
- .palier { display: grid; grid-template-columns: 64px minmax(0,1fr); gap: 16px; border-top: 1px solid var(--reglure); padding-top: 28px; } .niveau { font: var(--t-libelle); font-variant-numeric: tabular-nums; padding-top: 6px; } h3 { font: 500 22px/28px var(--voix); } .cout { font: var(--t-repere); font-variant-caps: small-caps; color: var(--encre-2); margin: 8px 0 28px; } .ici { color: var(--encre-humide); font: var(--t-libelle); }
- summary { min-height: 44px; padding: 12px 0; cursor: pointer; }
+	/* ── Cartouche d'identité ─────────────────────────────────────────── */
+	.cartouche {
+		border-top: 1px solid var(--reglure);
+	}
+	.entete,
+	.ligne {
+		padding: calc(var(--ligne) / 2) 0 calc(var(--ligne) / 2 - 1px);
+		border-bottom: 1px solid var(--reglure);
+	}
+	.entete {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0 16px;
+	}
+	.cartouche .repere {
+		line-height: var(--ligne);
+	}
+	.entete .repere {
+		color: var(--encre);
+	}
+	.rang {
+		font: var(--t-repere);
+		line-height: var(--ligne);
+		letter-spacing: var(--approche-repere);
+		text-transform: uppercase;
+		color: var(--tampon);
+	}
+	.arme {
+		font: 500 22px / var(--ligne) var(--voix);
+		color: var(--encre);
+	}
+	.valeur {
+		font: var(--t-libelle);
+		line-height: var(--ligne);
+		color: var(--encre);
+	}
+	.croissance {
+		display: flex;
+		flex-wrap: wrap;
+	}
+	.croissance span {
+		white-space: nowrap;
+	}
+	.croissance span:not(:last-child)::after {
+		content: '·';
+		margin: 0 0.45em;
+		color: var(--encre-2);
+	}
+	.sommaire {
+		margin-top: calc(var(--ligne) / 2);
+	}
+	.bande {
+		width: 100%;
+	}
+
+	/* ── Chapitres ────────────────────────────────────────────────────── */
+	.chapitre {
+		margin-top: calc(var(--ligne) * 2);
+		scroll-margin-top: calc(var(--ligne) * 3);
+		overflow-wrap: break-word;
+		outline: none;
+	}
+	.ouverture {
+		scroll-margin-top: calc(var(--ligne) * 3);
+		overflow-wrap: break-word;
+		outline: none;
+	}
+	header {
+		display: flex;
+		align-items: baseline;
+		gap: 14px;
+		min-height: calc(var(--ligne) * 2);
+		padding: calc(var(--ligne) / 2) 0 calc(var(--ligne) / 2 - 1px);
+		border-bottom: 1px solid var(--reglure);
+	}
+	h2 {
+		font: 500 28px / var(--ligne) var(--voix);
+		letter-spacing: -0.01em;
+		color: var(--encre);
+	}
+	/* La lettre de la branche tient lieu de numéro de chapitre : laiton, Cormorant pour un signe seul. */
+	.numero {
+		flex: none;
+		font: 500 22px / var(--ligne) var(--voix);
+		letter-spacing: 0.04em;
+		color: var(--tampon);
+	}
+	.mot {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect(0 0 0 0);
+		white-space: nowrap;
+	}
+	.style {
+		margin-left: auto;
+		align-self: center;
+	}
+
+	/* Lore : la première ligne en capitales espacées, comme une attaque de chapitre. */
+	.lore {
+		max-width: var(--lecture);
+		font: var(--t-recit);
+		color: var(--encre);
+		white-space: pre-line;
+	}
+	.lore::first-line {
+		font-size: 14px;
+		font-weight: 500;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+	}
+	.physique {
+		max-width: var(--lecture);
+		margin-top: var(--ligne);
+		font: var(--t-corps);
+		color: var(--encre);
+		white-space: pre-line;
+	}
+	/* Texte narratif : la voix du carnet, un filet de marge. */
+	.recit {
+		max-width: var(--lecture);
+		margin-top: var(--ligne);
+		padding-left: 20px;
+		border-left: 1px solid color-mix(in srgb, var(--encre-2) 40%, transparent);
+		font: var(--t-recit);
+		font-style: italic;
+		color: var(--encre-2);
+		white-space: pre-line;
+	}
+
+	/* ── Paliers : quatre lignes de carnet ────────────────────────────── */
+	.paliers {
+		margin-top: var(--ligne);
+		border-top: 1px solid var(--reglure);
+	}
+	.palier {
+		display: grid;
+		grid-template-columns: 132px minmax(0, 1fr);
+		column-gap: var(--gouttiere);
+		padding: calc(var(--ligne) / 2) 0 calc(var(--ligne) / 2 - 1px);
+		border-bottom: 1px solid var(--reglure);
+	}
+	.niveau {
+		font: var(--t-libelle);
+		line-height: var(--ligne);
+		color: var(--encre-2);
+	}
+	.niveau b {
+		font-weight: 600;
+		color: var(--encre);
+	}
+	.etape,
+	.cout {
+		font: var(--t-repere);
+		line-height: var(--ligne);
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--encre-2);
+	}
+	.point {
+		margin: 0 0.1em 0 0.35em;
+	}
+	.marque-ici {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font: var(--t-libelle);
+		line-height: var(--ligne);
+		color: var(--encre-humide);
+	}
+	.losange {
+		width: 5px;
+		height: 5px;
+		rotate: 45deg;
+		background: var(--encre-humide);
+	}
+	.tete {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0 16px;
+	}
+	h3 {
+		font: 500 22px / var(--ligne) var(--voix);
+		color: var(--encre);
+	}
+	.cout {
+		white-space: nowrap;
+	}
+	.effet {
+		max-width: var(--lecture);
+		font: var(--t-corps);
+		color: var(--encre);
+		white-space: pre-line;
+	}
+
+	@media (max-width: 760px) {
+		/* La bande : catégorie et rang, arme, croissance — sans libellés. */
+		.cartouche {
+			border-top: 0;
+		}
+		.entete {
+			padding-top: 0;
+			justify-content: flex-start;
+		}
+		.ligne {
+			padding: calc(var(--ligne) / 2) 0 0;
+			border-bottom: 0;
+		}
+		.ligne:last-child {
+			padding-top: 0;
+			padding-bottom: calc(var(--ligne) / 2);
+		}
+		.ligne dt {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+			clip: rect(0 0 0 0);
+			white-space: nowrap;
+		}
+		.valeur {
+			color: var(--encre-2);
+		}
+		/* Branche : la lettre en laiton au-dessus du nom, le style dessous. */
+		.branche header {
+			display: block;
+		}
+		.numero {
+			display: block;
+			font: var(--t-repere);
+			line-height: var(--ligne);
+			letter-spacing: var(--approche-repere);
+			text-transform: uppercase;
+		}
+		.mot {
+			position: static;
+			width: auto;
+			height: auto;
+			margin-right: 0.5em;
+			clip: auto;
+		}
+		.style {
+			display: block;
+			line-height: var(--ligne);
+		}
+		.palier {
+			grid-template-columns: minmax(0, 1fr);
+		}
+		.jalon {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: baseline;
+			gap: 0 16px;
+		}
+		.etape {
+			margin-left: auto;
+		}
+		.marque-ici {
+			order: 3;
+			width: 100%;
+		}
+	}
 </style>

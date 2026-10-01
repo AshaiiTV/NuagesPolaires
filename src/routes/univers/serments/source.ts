@@ -1,4 +1,8 @@
-import { visibleOaths, findOath } from '$lib/game/oaths';
-// Point de raccordement au domaine serveur. Ne jamais envoyer un Serment masqué.
-export async function loadOaths(_locals: App.Locals) { return visibleOaths(); }
-export async function loadOath(locals: App.Locals, idOrSlug: string) { return findOath(idOrSlug, await loadOaths(locals)); }
+import { getOath, listOaths } from '$lib/server/domain/oaths';
+// 06-contrats §B.7 : références administrables en base et vues déjà filtrées.
+export async function loadOaths(locals: App.Locals) {
+	return listOaths(locals.db, locals.actor);
+}
+export async function loadOath(locals: App.Locals, idOrSlug: string) {
+	return getOath(locals.db, locals.actor, idOrSlug);
+}

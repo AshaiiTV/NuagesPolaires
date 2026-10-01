@@ -47,9 +47,10 @@ for (const largeur of tailles) {
 		// Connexion par le formulaire public, avec un compte fictif de la base de démonstration.
 		const motDePasse = COMPTES_DEMO[compte] ?? option('mot-de-passe', '');
 		await page.goto(base + '/entrer', { waitUntil: 'networkidle' });
-		await page.fill('input[name="pseudo"]', compte === 'mj' ? 'Maitre' : compte[0].toUpperCase() + compte.slice(1));
+		await page.fill('input[name="pseudo"]', compte);
 		await page.fill('input[name="password"]', motDePasse);
-		await Promise.all([page.waitForLoadState('networkidle'), page.click('form[action*="entrer"] button[type="submit"], form button[type="submit"]')]);
+		await page.click('form button[type="submit"]');
+		await page.waitForURL((u) => !u.pathname.startsWith('/entrer'), { timeout: 10000 }).catch(() => {});
 		if (new URL(page.url()).pathname.startsWith('/entrer')) console.log(`CONNEXION REFUSÉE pour ${compte} (toujours sur ${page.url()})`);
 	}
 	const erreurs = [];

@@ -1,17 +1,87 @@
 <script lang="ts">
- import Page from '$lib/ui/Page.svelte';
- import type { PageProps } from './$types';
- let { data }: PageProps = $props();
+	// Sommaire du cahier « L'univers » : une ligne par chapitre, numéro en laiton, résumé, flèche.
+	import Page from '$lib/ui/Page.svelte';
+	import { typo } from './typo';
+	import type { PageProps } from './$types';
+	let { data }: PageProps = $props();
+	const intro = 'Ouvre un chapitre. Le carnet garde les repères à portée de main.';
 </script>
-<svelte:head><title>L’univers — Nuages Polaires</title><meta name="description" content="Les textes et les repères de L’univers de Nuages Polaires." /></svelte:head>
+
+<svelte:head
+	><title>L’univers — Nuages Polaires</title><meta
+		name="description"
+		content="Les textes et les repères de L’univers de Nuages Polaires."
+	/></svelte:head
+>
+
 <Page repere="NP / 05 — L’univers" titre="L’univers" grain>
- {#snippet marge()}<p class="voix">Ouvre un chapitre. Le carnet garde les repères à portée de main.</p>{/snippet}
- <ol>{#each data.chapters as chapter, i}<li><a href={chapter.href}><span class="numero">{String(i + 1).padStart(2, '0')}</span><span><span class="titre">{chapter.title}</span><span class="resume">{chapter.resume}</span></span><span aria-hidden="true">→</span></a></li>{/each}</ol>
+	{#snippet marge()}
+		<p class="voix">{intro}</p>
+	{/snippet}
+	{#snippet bande()}<p class="voix">{intro}</p>{/snippet}
+	<ol class="sommaire">
+		{#each data.chapters as chapter, i (chapter.href)}
+			<li>
+				<a href={chapter.href}>
+					<span class="numero chiffres">{String(i + 1).padStart(2, '0')}</span>
+					<span class="titre">{chapter.title}</span>
+					<span class="fleche" aria-hidden="true">→</span>
+					<span class="resume">{typo(chapter.resume ?? '')}</span>
+				</a>
+			</li>
+		{/each}
+	</ol>
 </Page>
+
 <style>
- ol { border-top: 1px solid var(--reglure); } li { border-bottom: 1px solid var(--reglure); }
- a { display: grid; grid-template-columns: 28px minmax(0,1fr) 20px; gap: 16px; padding: 28px 0; min-height: 44px; text-decoration: none; align-items: baseline; }
- .numero { color: var(--tampon); font: var(--t-repere); font-variant-numeric: tabular-nums; }
- .titre { display: block; font: var(--t-chapitre); } .resume { display: block; font: var(--t-corps); color: var(--encre-2); }
- a:hover .titre { color: var(--encre-humide); }
+	.sommaire {
+		border-top: 1px solid var(--reglure);
+	}
+	li {
+		border-bottom: 1px solid var(--reglure);
+	}
+	a {
+		display: grid;
+		grid-template-columns: calc(var(--ligne) * 2) minmax(0, 1fr) var(--ligne);
+		align-items: baseline;
+		padding: var(--ligne) 0 calc(var(--ligne) - 1px);
+		text-decoration: none;
+	}
+	.numero {
+		font: var(--t-repere);
+		letter-spacing: var(--approche-repere);
+		color: var(--tampon);
+	}
+	.titre {
+		font: 500 28px / var(--ligne) var(--voix);
+		letter-spacing: -0.01em;
+		color: var(--encre);
+		transition: color 160ms;
+	}
+	.fleche {
+		justify-self: end;
+		font: 400 18px / var(--ligne) var(--corps);
+		color: var(--encre-2);
+		transition:
+			translate 200ms,
+			color 160ms;
+	}
+	.resume {
+		grid-column: 2;
+		max-width: 46ch;
+		font: var(--t-corps);
+		color: var(--encre-2);
+	}
+	a:hover .titre,
+	a:hover .fleche {
+		color: var(--encre-humide);
+	}
+	a:hover .fleche {
+		translate: 4px 0;
+	}
+	@media (max-width: 760px) {
+		a {
+			grid-template-columns: calc(var(--ligne) + 12px) minmax(0, 1fr) var(--ligne);
+		}
+	}
 </style>
