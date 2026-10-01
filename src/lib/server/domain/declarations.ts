@@ -1,3 +1,4 @@
+import { assertFreshAccount } from '$lib/server/auth/context';
 // Déclarations du joueur : « Kael déclare −8 EP (Esquive). » (06-contrats §B.3 ; 04 §3.12 ;
 // 03-vision §5.3, §6.6, §9.6, §12.4).
 //
@@ -22,6 +23,7 @@ import { assertCan, requireOwnCharacter, type Actor } from '$lib/server/permissi
 import { appendStaffLog } from './staff-log';
 import { recordAudit } from './audit';
 import {
+	characterIsActive,
 	buildSheet,
 	insertHistory,
 	loadCharacter,
@@ -68,7 +70,7 @@ async function listWith(db: Db, where: SQL | undefined): Promise<DeclarationView
 		.select({ d: declarations, name: characters.name })
 		.from(declarations)
 		.innerJoin(characters, eq(characters.id, declarations.characterId))
-		.where(where)
+		.where(and(where, characterIsActive))
 		.orderBy(asc(declarations.createdAt), asc(declarations.id));
 	return rows.map((r) => declarationView(r.d, r.name));
 }
@@ -88,48 +90,51 @@ export async function declare(
 	actor: Actor | null,
 	input: DeclareInput
 ): Promise<DeclarationView> {
-	const { characterId } = requireOwnCharacter(actor);
+	const { actor: who, characterId } = requireOwnCharacter(actor);
 	const data = parseInput(declareSchema, input);
-	const c = await loadCharacter(db, characterId);
-	if (data.sceneId) {
-		const [scene] = await db
-			.select({ status: scenes.status })
-			.from(sceneParticipants)
-			.innerJoin(scenes, eq(scenes.id, sceneParticipants.sceneId))
-			.where(
-				and(eq(sceneParticipants.sceneId, data.sceneId), eq(sceneParticipants.characterId, c.id))
-			);
-		if (!scene) throw NpError.notFound("Cette scène n'est pas la tienne.");
-		if (scene.status !== 'ouverte') throw new NpError('SCENE_CLOSED', 'La scène est close.', 409);
-	}
-	if (data.combatId) {
-		const [table] = await db
-			.select({ closedAt: combats.closedAt })
-			.from(combatParticipants)
-			.innerJoin(combats, eq(combats.id, combatParticipants.combatId))
-			.where(
-				and(
-					eq(combatParticipants.combatId, data.combatId),
-					eq(combatParticipants.characterId, c.id)
-				)
-			);
-		if (!table) throw NpError.notFound("Cette Table n'est pas la tienne.");
-		if (table.closedAt) throw new NpError('TABLE_CLOSED', 'La Table est repliée.', 409);
-	}
-	const [row] = await db
-		.insert(declarations)
-		.values({
-			id: `d_${nanoid(16)}`,
-			characterId: c.id,
-			sceneId: data.sceneId ?? null,
-			combatId: data.combatId ?? null,
-			resource: data.resource,
-			delta: data.delta,
-			word: data.word,
-			status: 'proposee'
-		})
-		.returning();
-	return declarationView(row, c.name);
+	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
+		const c = await loadCharacter(tx, characterId, { lock: true });
+		if (data.sceneId) {
+			const [scene] = await tx
+				.select({ status: scenes.status })
+				.from(sceneParticipants)
+				.innerJoin(scenes, eq(scenes.id, sceneParticipants.sceneId))
+				.where(
+					and(eq(sceneParticipants.sceneId, data.sceneId), eq(sceneParticipants.characterId, c.id))
+				);
+			if (!scene) throw NpError.notFound("Cette scène n'est pas la tienne.");
+			if (scene.status !== 'ouverte') throw new NpError('SCENE_CLOSED', 'La scène est close.', 409);
+		}
+		if (data.combatId) {
+			const [table] = await tx
+				.select({ closedAt: combats.closedAt })
+				.from(combatParticipants)
+				.innerJoin(combats, eq(combats.id, combatParticipants.combatId))
+				.where(
+					and(
+						eq(combatParticipants.combatId, data.combatId),
+						eq(combatParticipants.characterId, c.id)
+					)
+				);
+			if (!table) throw NpError.notFound("Cette Table n'est pas la tienne.");
+			if (table.closedAt) throw new NpError('TABLE_CLOSED', 'La Table est repliée.', 409);
+		}
+		const [row] = await tx
+			.insert(declarations)
+			.values({
+				id: `d_${nanoid(16)}`,
+				characterId: c.id,
+				sceneId: data.sceneId ?? null,
+				combatId: data.combatId ?? null,
+				resource: data.resource,
+				delta: data.delta,
+				word: data.word,
+				status: 'proposee'
+			})
+			.returning();
+		return declarationView(row, c.name);
+	});
 }
 
 /**
@@ -158,22 +163,26 @@ export async function cancelDeclaration(
 	actor: Actor | null,
 	input: DeclarationIdInput
 ): Promise<DeclarationView> {
-	const { characterId } = requireOwnCharacter(actor);
+	const { actor: who, characterId } = requireOwnCharacter(actor);
 	const data = parseInput(declarationIdSchema, input);
-	const updated = await db
-		.update(declarations)
-		.set({ status: 'annulee' })
-		.where(
-			and(
-				eq(declarations.id, data.id),
-				eq(declarations.characterId, characterId),
-				eq(declarations.status, 'proposee'),
-				sql`${declarations.cancelUntil} >= now()`
+	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
+		await loadCharacter(tx, characterId, { lock: true });
+		const updated = await tx
+			.update(declarations)
+			.set({ status: 'annulee' })
+			.where(
+				and(
+					eq(declarations.id, data.id),
+					eq(declarations.characterId, characterId),
+					eq(declarations.status, 'proposee'),
+					sql`${declarations.cancelUntil} >= now()`
+				)
 			)
-		)
-		.returning({ id: declarations.id });
-	if (updated.length === 0) return ownRefusal(db, data.id, characterId);
-	return viewById(db, data.id);
+			.returning({ id: declarations.id });
+		if (updated.length === 0) return ownRefusal(tx, data.id, characterId);
+		return viewById(tx, data.id);
+	});
 }
 
 /** Rayer sa déclaration encore en attente (après la fenêtre d'annulation) ; la rature reste lisible. */
@@ -182,28 +191,32 @@ export async function strikeOwnDeclaration(
 	actor: Actor | null,
 	input: DeclarationIdInput
 ): Promise<DeclarationView> {
-	const { characterId } = requireOwnCharacter(actor);
+	const { actor: who, characterId } = requireOwnCharacter(actor);
 	const data = parseInput(declarationIdSchema, input);
-	const updated = await db
-		.update(declarations)
-		.set({ status: 'rayee' })
-		.where(
-			and(
-				eq(declarations.id, data.id),
-				eq(declarations.characterId, characterId),
-				eq(declarations.status, 'proposee')
+	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
+		await loadCharacter(tx, characterId, { lock: true });
+		const updated = await tx
+			.update(declarations)
+			.set({ status: 'rayee' })
+			.where(
+				and(
+					eq(declarations.id, data.id),
+					eq(declarations.characterId, characterId),
+					eq(declarations.status, 'proposee')
+				)
 			)
-		)
-		.returning({ id: declarations.id });
-	if (updated.length === 0) {
-		const [row] = await db
-			.select({ id: declarations.id })
-			.from(declarations)
-			.where(and(eq(declarations.id, data.id), eq(declarations.characterId, characterId)));
-		if (!row) throw NpError.notFound('Déclaration introuvable.');
-		throw new NpError('DECLARATION_CLOSED', "Cette déclaration n'est plus en attente.", 409);
-	}
-	return viewById(db, data.id);
+			.returning({ id: declarations.id });
+		if (updated.length === 0) {
+			const [row] = await tx
+				.select({ id: declarations.id })
+				.from(declarations)
+				.where(and(eq(declarations.id, data.id), eq(declarations.characterId, characterId)));
+			if (!row) throw NpError.notFound('Déclaration introuvable.');
+			throw new NpError('DECLARATION_CLOSED', "Cette déclaration n'est plus en attente.", 409);
+		}
+		return viewById(tx, data.id);
+	});
 }
 
 /** Mes déclarations en attente d'un MJ (dans l'ordre d'écriture). */
@@ -249,6 +262,13 @@ export async function reportDeclaration(
 	requireRevision(input);
 	const data = parseInput(reportDeclarationSchema, input);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
+		const [target] = await tx
+			.select({ characterId: declarations.characterId })
+			.from(declarations)
+			.where(eq(declarations.id, data.id));
+		if (!target) throw NpError.notFound();
+		const c = await loadCharacter(tx, target.characterId, { lock: true });
 		const [decl] = await tx
 			.select()
 			.from(declarations)
@@ -258,7 +278,6 @@ export async function reportDeclaration(
 		if (decl.status !== 'proposee') {
 			throw new NpError('DECLARATION_CLOSED', "Cette déclaration n'attend plus de report.", 409);
 		}
-		const c = await loadCharacter(tx, decl.characterId, { lock: true });
 		const cols = RESOURCE_COLUMNS[decl.resource];
 		const old = c[cols.cur];
 		const max = c[cols.max];
@@ -324,11 +343,12 @@ export async function strikeDeclaration(
 	const who = assertCan(actor, 'characters.stamp');
 	const data = parseInput(strikeDeclarationSchema, input);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
 		const [decl] = await tx
 			.select({ d: declarations, name: characters.name })
 			.from(declarations)
 			.innerJoin(characters, eq(characters.id, declarations.characterId))
-			.where(eq(declarations.id, data.id))
+			.where(and(eq(declarations.id, data.id), characterIsActive))
 			.for('update');
 		if (!decl) throw NpError.notFound('Déclaration introuvable.');
 		const updated = await tx
@@ -371,6 +391,7 @@ export async function expireDeclarations(db: Db): Promise<{ expired: number }> {
 		.where(
 			and(
 				eq(declarations.status, 'proposee'),
+				sql`exists (select 1 from ${characters} where ${characters.id} = ${declarations.characterId} and ${characters.struckAt} is null)`,
 				lt(
 					declarations.createdAt,
 					sql`now() - interval '${sql.raw(String(DECLARATION_EXPIRY_DAYS))} days'`

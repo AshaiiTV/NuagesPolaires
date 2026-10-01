@@ -1,3 +1,4 @@
+import { assertFreshAccount } from '$lib/server/auth/context';
 // Le ruban, la corne et le marque-page (06-contrats §B.4 ; 03-vision §5.2, §6.2, §9.8 ;
 // 04-architecture §3.12 `reading_marks`).
 //
@@ -8,7 +9,7 @@
 //   s:<historique>   conséquence tamponnée hors combat (character_history, actor_role mj|admin, motif)
 //   c:<combat>       conséquences tamponnées d'un même combat, regroupées (« le combat du 26 septembre »)
 //   f:<fait>         fait validé ; fr:<fait> fait réglé
-//   e:<rendez-vous>  rendez-vous annoncé (« Prévenir les joueurs », events.extra.announcedAt)
+//   e:<rendez-vous>  rendez-vous annoncé (« Prévenir les joueurs », events.announcedAt)
 //   r:<combat>       récit où figure le personnage (combat clos, lisible par ses participants)
 //   d:<déclaration>  déclaration reportée, rayée par un MJ, ou non reportée après 7 jours
 //   j:<entrée>       note du journal (dernière version, non rayée)
@@ -267,7 +268,7 @@ const facts: LineSource = async (db, ctx, { after, sourceId }) => {
 		.where(
 			and(
 				eq(validatedFacts.characterId, ctx.characterId),
-				inArray(validatedFacts.status, ['validated', 'settled']),
+				inArray(validatedFacts.status, ['validated', 'settled', 'rejected']),
 				isNotNull(validatedFacts.validatedAt),
 				sourceId !== null ? eq(validatedFacts.id, sourceId) : undefined
 			)
@@ -279,7 +280,7 @@ const facts: LineSource = async (db, ctx, { after, sourceId }) => {
 			lines.push({
 				id: `f:${r.id}`,
 				at: r.validatedAt,
-				text: `${staffWho(r.validatorRole)} a validé un fait : ${words}`,
+				text: `${staffWho(r.validatorRole)} ${r.status === 'rejected' ? 'a refusé' : 'a validé'} un fait : ${words}`,
 				href: FACTS_HREF
 			});
 		}
@@ -302,7 +303,7 @@ const announcedEvents: LineSource = async (db, ctx, { sourceId }) => {
 		.where(
 			and(
 				eq(events.hidden, false),
-				sql`${events.extra} ->> 'announcedAt' is not null`,
+				isNotNull(events.announcedAt),
 				sourceId !== null ? eq(events.id, sourceId) : undefined
 			)
 		);
@@ -310,10 +311,14 @@ const announcedEvents: LineSource = async (db, ctx, { sourceId }) => {
 	const counts = await db
 		.select({ eventId: eventParticipants.eventId, n: sql<number>`count(*)::int` })
 		.from(eventParticipants)
+		.innerJoin(characters, eq(characters.id, eventParticipants.characterId))
 		.where(
-			inArray(
-				eventParticipants.eventId,
-				rows.map((r) => r.id)
+			and(
+				isNull(characters.struckAt),
+				inArray(
+					eventParticipants.eventId,
+					rows.map((r) => r.id)
+				)
 			)
 		)
 		.groupBy(eventParticipants.eventId);
@@ -448,6 +453,11 @@ function compareLines(a: Line, b: Line): number {
 
 /** Toutes les pages écrites après `after` (chronologiques, les plus anciennes d'abord). */
 async function collectLines(db: Conn, ctx: LineContext, after: Date): Promise<Line[]> {
+	const [active] = await db
+		.select({ id: characters.id })
+		.from(characters)
+		.where(and(eq(characters.id, ctx.characterId), isNull(characters.struckAt)));
+	if (!active) return [];
 	const sources = [...new Set(Object.values(SOURCES))];
 	const batches = await Promise.all(
 		sources.map((source) => source(db, ctx, { after, sourceId: null }))
@@ -460,6 +470,11 @@ async function collectLines(db: Conn, ctx: LineContext, after: Date): Promise<Li
 
 /** Retrouve une page par son identifiant stable, lue ou non. */
 async function findLine(db: Conn, ctx: LineContext, lineId: string): Promise<Line | null> {
+	const [active] = await db
+		.select({ id: characters.id })
+		.from(characters)
+		.where(and(eq(characters.id, ctx.characterId), isNull(characters.struckAt)));
+	if (!active) return null;
 	const sep = lineId.indexOf(':');
 	if (sep <= 0) return null;
 	const prefix = lineId.slice(0, sep);
@@ -489,7 +504,7 @@ async function loadSheetSummary(db: Conn, characterId: string): Promise<SheetSum
 		.select({ character: characters, oathName: oaths.name, rank: oaths.rank })
 		.from(characters)
 		.innerJoin(oaths, eq(oaths.id, characters.oathId))
-		.where(eq(characters.id, characterId));
+		.where(and(eq(characters.id, characterId), isNull(characters.struckAt)));
 	if (!row) return null;
 	const c = row.character;
 	const pending = await db
@@ -642,7 +657,32 @@ export async function getLastPages(
 	};
 	const empty = { waiting: [], since: [], sincePage: 1, sincePages: 1 };
 
-	if (!present.characterId) return { state: 'pending', sheet: null, ...base, ...empty };
+	if (!present.characterId) {
+		const staff = present.role !== 'joueur';
+		const open = staff
+			? await db
+					.select()
+					.from(combats)
+					.where(and(isNull(combats.closedAt), ne(combats.status, 'termine')))
+					.orderBy(desc(combats.updatedAt))
+					.limit(3)
+			: [];
+		return {
+			...base,
+			...empty,
+			state: staff ? 'staff' : 'pending',
+			sheet: null,
+			waiting: open.map((t) => ({
+				kind: 'table' as const,
+				id: t.id,
+				text: `La Table est ouverte : ${t.name || t.label}`,
+				href: `/table/combat/${t.id}`,
+				discordUrl: t.discordUrl || null,
+				channel: null,
+				at: t.updatedAt.toISOString()
+			}))
+		};
+	}
 	const sheet = await loadSheetSummary(db, present.characterId);
 	if (!sheet) return { state: 'unavailable', sheet: null, ...base, ...empty };
 
@@ -687,23 +727,33 @@ export async function openPage(
 ): Promise<OpenPageResult> {
 	const present = requireActor(actor);
 	const { lineId } = parse(openPageSchema, input);
-	if (!present.characterId) throw NpError.notFound('Cette page n’est pas dans ton carnet.');
-	const ctx: LineContext = {
-		characterId: present.characterId,
-		accountId: present.accountId,
-		now: new Date()
-	};
-	const line = await findLine(db, ctx, lineId);
-	if (!line) throw NpError.notFound('Cette page n’est pas dans ton carnet.');
-	const lastReadAt = await advanceMark(db, present.accountId, line.at);
-	return { href: line.href, lastReadAt: lastReadAt.toISOString() };
+	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, present);
+		if (present.characterId && !(await loadSheetSummary(tx, present.characterId)))
+			throw NpError.forbidden('Ta fiche est indisponible.');
+		if (!present.characterId) throw NpError.notFound('Cette page n’est pas dans ton carnet.');
+		const ctx: LineContext = {
+			characterId: present.characterId,
+			accountId: present.accountId,
+			now: new Date()
+		};
+		const line = await findLine(tx, ctx, lineId);
+		if (!line) throw NpError.notFound('Cette page n’est pas dans ton carnet.');
+		const lastReadAt = await advanceMark(tx, present.accountId, line.at);
+		return { href: line.href, lastReadAt: lastReadAt.toISOString() };
+	});
 }
 
 /** « Déplier toutes les cornes » : le signet se pose à maintenant. */
 export async function unfoldAll(db: Db, actor: Actor | null): Promise<{ lastReadAt: string }> {
 	const present = requireActor(actor);
-	const lastReadAt = await advanceMark(db, present.accountId, new Date());
-	return { lastReadAt: lastReadAt.toISOString() };
+	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, present);
+		if (present.characterId && !(await loadSheetSummary(tx, present.characterId)))
+			throw NpError.forbidden('Ta fiche est indisponible.');
+		const lastReadAt = await advanceMark(tx, present.accountId, new Date());
+		return { lastReadAt: lastReadAt.toISOString() };
+	});
 }
 
 /**
@@ -720,6 +770,9 @@ export async function setBookmark(
 	const data = parse(setBookmarkSchema, input ?? {});
 	const now = new Date();
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, present);
+		if (present.characterId && !(await loadSheetSummary(tx, present.characterId)))
+			throw NpError.forbidden('Ta fiche est indisponible.');
 		if (data.sceneId) {
 			const { characterId } = requireOwnCharacter(present);
 			const [participation] = await tx

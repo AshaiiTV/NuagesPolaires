@@ -267,7 +267,7 @@ describe('les sources de pages', () => {
 		await notifyEvent(t.db, actors.mj, { eventId: E.chasse });
 		await t.db
 			.update(schema.events)
-			.set({ extra: { announcedAt: new Date().toISOString() } })
+			.set({ announcedAt: new Date() })
 			.where(eq(schema.events.id, E.masque));
 
 		const view = await getLastPages(t.db, actors.alice);

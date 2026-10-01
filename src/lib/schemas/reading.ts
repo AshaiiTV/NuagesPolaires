@@ -156,7 +156,7 @@ export interface PageLineView {
 }
 
 export interface LastPagesView {
-	state: 'linked' | 'pending' | 'unavailable';
+	state: 'linked' | 'pending' | 'unavailable' | 'staff';
 	pseudo: string;
 	sheet: SheetSummary | null;
 	lastReadAt: string;

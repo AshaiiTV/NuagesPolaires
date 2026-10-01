@@ -18,7 +18,8 @@ export function libelleSansPicto(label: string): string {
 
 /** « 8 EP », « 6 EM », « — » n'existe pas : sans coût fixe, rien. */
 export function coutImprime(rule: Pick<ActionRule, 'cost' | 'resource'>): string {
-	if (rule.cost === null || rule.resource === null) return 'coût du palier';
+	if (rule.resource === null) return '';
+	if (rule.cost === null) return 'coût du palier';
 	return `${rule.cost} ${rule.resource.toUpperCase()}`;
 }
 
@@ -34,4 +35,16 @@ const ANCRES: Record<string, string> = {
 };
 export function ancreSysteme(anchor: string): string {
 	return ANCRES[anchor] ?? (anchor.startsWith('/univers/systeme') ? anchor : '/univers/systeme');
+}
+
+/**
+ * Texte hérité (récit des rounds) sans émoji ni pictogramme : le carnet n'en affiche aucun
+ * (03-vision §8). La ponctuation, les flèches et les chiffres restent.
+ */
+export function sansEmoji(texte: string): string {
+	return texte
+		.replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}\u{20E3}]/gu, '')
+		.replace(/[⚔☠❄⛓◌]/gu, '')
+		.replace(/\s{2,}/g, ' ')
+		.trim();
 }

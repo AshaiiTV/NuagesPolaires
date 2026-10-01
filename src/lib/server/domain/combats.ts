@@ -185,7 +185,7 @@ async function syncParticipants(
 		? await tx
 				.select()
 				.from(characters)
-				.where(inArray(characters.id, ids))
+				.where(and(inArray(characters.id, ids), isNull(characters.struckAt)))
 				.orderBy(asc(characters.id))
 				.for('share')
 		: [];
@@ -265,7 +265,7 @@ export async function createTable(
 			const [sheet] = await tx
 				.select()
 				.from(characters)
-				.where(eq(characters.id, characterId))
+				.where(and(eq(characters.id, characterId), isNull(characters.struckAt)))
 				.for('share');
 			if (!sheet) throw NpError.notFound('Personnage introuvable.');
 			const [oath] = await tx.select().from(oaths).where(eq(oaths.id, sheet.oathId));
@@ -313,6 +313,7 @@ export async function createTable(
 		if (state.fighters.length > 80)
 			throw new NpError('INVALID', 'La Table accueille au plus 80 combattants.');
 		await tx.insert(combats).values({
+			visibleToParticipants: true,
 			id,
 			name: data.name,
 			ownerAccountId: author.accountId,
@@ -510,6 +511,11 @@ export async function getPlayerTable(
 	const present = requireActor(actor);
 	if (!present.characterId) throw NpError.notFound("Cette Table n'est pas la tienne.");
 	const { characterId } = requireOwnCharacter(present);
+	const [active] = await db
+		.select({ id: characters.id })
+		.from(characters)
+		.where(and(eq(characters.id, characterId), isNull(characters.struckAt)));
+	if (!active) throw NpError.notFound();
 	if (actor?.role === 'designer') throw NpError.forbidden();
 	parse(identifier, id);
 	const [row] = await db
@@ -582,7 +588,7 @@ export async function closeTable(
 			? await tx
 					.select()
 					.from(characters)
-					.where(inArray(characters.id, ids))
+					.where(and(inArray(characters.id, ids), isNull(characters.struckAt)))
 					.orderBy(asc(characters.id))
 					.for('update')
 			: [];
@@ -798,7 +804,14 @@ export async function listRecits(
 	const staff = can(present.role, 'combat.run');
 	if (staff) assertCan(present, 'combat.run');
 	else if (present.role === 'designer') throw NpError.forbidden();
-	else requireOwnCharacter(present);
+	else {
+		requireOwnCharacter(present);
+		const [active] = await db
+			.select({ id: characters.id })
+			.from(characters)
+			.where(and(eq(characters.id, present.characterId!), isNull(characters.struckAt)));
+		if (!active) throw NpError.notFound();
+	}
 	const conditions = [eq(combats.status, 'termine')];
 	if (data.search)
 		conditions.push(
@@ -824,7 +837,14 @@ export async function getRecit(db: Db, actor: Actor | null, id: string): Promise
 	const staff = can(present.role, 'combat.run');
 	if (staff) assertCan(present, 'combat.run');
 	else if (present.role === 'designer') throw NpError.forbidden();
-	else requireOwnCharacter(present);
+	else {
+		requireOwnCharacter(present);
+		const [active] = await db
+			.select({ id: characters.id })
+			.from(characters)
+			.where(and(eq(characters.id, present.characterId!), isNull(characters.struckAt)));
+		if (!active) throw NpError.notFound();
+	}
 	const row = await readTable(db, parse(identifier, id));
 	if (row.status !== 'termine') throw NpError.notFound();
 	if (!staff) {

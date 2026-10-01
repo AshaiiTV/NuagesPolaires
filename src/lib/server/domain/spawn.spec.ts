@@ -193,6 +193,7 @@ describe('Apparitions — audit 03 §10, 04 §10.10', () => {
 		const run = await drawSpawn(testDb.db, mj, { zoneId: 'z_test', rng: () => 0 });
 		const table = await spawnToTable(testDb.db, mj, { runId: run.id, characterIds: ['p_a'] });
 		expect(table.row.status).toBe('preparation');
+		expect(table.row.visibleToParticipants).toBe(true);
 		expect(table.row.name).toMatch(/^Apparition — Salon des brumes — .* — mj$/);
 		expect(table.state.fighters.filter((f) => f.type === 'beast')).toHaveLength(2);
 		expect(table.state.fighters.find((f) => f.type === 'player')!.characterId).toBe('p_a');

@@ -30,6 +30,9 @@
 	type Ecriture = ReturnType<typeof creerEcriture>;
 	const NOMS: Record<Res, 'PV' | 'EP' | 'EM'> = { pv: 'PV', ep: 'EP', em: 'EM' };
 	const ROMAINS = ['I', 'II', 'III', 'IV', 'V', 'VI'];
+	/** Noms des paliers du lexique (03-vision §8) : on *atteint* un palier, on ne le « débloque » pas. */
+	const PALIERS = ['Éveil', 'Densité', 'Maîtrise', 'Plénitude'];
+	const nomPalier = (i: number, repli: string) => PALIERS[i] ?? repli;
 
 	const fiche = $derived(data.fiche);
 	const contexte = $derived(data.contexte);
@@ -349,7 +352,7 @@
 					<h2 id="titre-reposer" tabindex="-1">Où j’en suis</h2>
 					<button type="button" class="refermer" onclick={fermerPanneau}>Garder ouvert</button>
 				</header>
-				<p class="aide">Facultatif : une phrase et un lien pour reprendre le fil. C’est ton marque-page.</p>
+				<p class="aide">Facultatif : une phrase et un lien pour reprendre le fil. C’est ton marque-page.</p>
 				<input type="hidden" name="retour" value={retour} />
 				{#if scene}<input type="hidden" name="sceneId" value={scene.id} />{/if}
 				<Champ libelle="Où j’en suis" name="text" bind:value={phraseReprise} maxlength={280} placeholder="Une phrase pour reprendre le fil…" />
@@ -535,7 +538,7 @@
 											{/if}
 										</div>
 										{#if mot.saisie === 'chiffre-mot'}
-											<p class="aide">Sans signe, le chiffre est dépensé ; « +5 » le regagne.</p>
+											<p class="aide">Sans signe, le chiffre est dépensé ; « +5 » le regagne.</p>
 										{/if}
 									{/if}
 									<p class="apercu" aria-live="polite">
@@ -584,7 +587,7 @@
 						{#each fiche.tiers.reached as t, i (t.level)}
 							<li class="palier">
 								<p class="palier-tete">
-									<span class="repere">Palier {ROMAINS[i] ?? i + 1} — {t.stage}</span>
+									<span class="repere">Palier {ROMAINS[i] ?? i + 1} — {nomPalier(i, t.stage)}</span>
 									<span class="niveau">niveau {t.level}</span>
 								</p>
 								<p class="palier-nom">{t.name} <span class="cout">{t.cost}</span></p>
@@ -593,10 +596,10 @@
 						{/each}
 						{#if fiche.tiers.next[0]}
 							{@const t = fiche.tiers.next[0]}
+							{@const n = fiche.tiers.reached.length}
 							<li class="palier suivant">
 								<p class="palier-tete">
-									<span class="repere">Palier {ROMAINS[fiche.tiers.reached.length] ?? ''} — {t.stage}</span>
-									<span class="niveau">au niveau {t.level}</span>
+									<span class="repere">Palier {ROMAINS[n] ?? n + 1} — {nomPalier(n, t.stage)} · au niveau {t.level}</span>
 								</p>
 							</li>
 						{/if}
@@ -628,7 +631,7 @@
 									<form method="POST" action="?/consommer" use:enhance={soumettreConsommer}>
 										<input type="hidden" name="itemId" value={o.id} />
 										<input type="hidden" name="expectedRevision" value={fiche.revision} />
-										<p class="question">Tu déclares avoir utilisé : {objetChoisi.name} ?</p>
+										<p class="question">Tu déclares avoir utilisé {objetChoisi.name} ?</p>
 										<Champ libelle="Contexte (facultatif)" name="note" maxlength={2000} placeholder="Après la chute dans le gué" />
 										<div class="gestes">
 											<Bouton variante="ruban" type="submit" disabled={eConsommer.enCours}>Oui, je le note.</Bouton>
@@ -1080,6 +1083,13 @@
 		color: var(--encre);
 		white-space: pre-wrap;
 		overflow-wrap: anywhere;
+	}
+	/* Téléphone : la ligne des ressources tient sur une ligne, comme dans le salon. */
+	@media (max-width: 420px) {
+		.apercu-bloc {
+			font-size: 12px;
+			letter-spacing: -0.02em;
+		}
 	}
 
 	/* ── Note rapide ── */

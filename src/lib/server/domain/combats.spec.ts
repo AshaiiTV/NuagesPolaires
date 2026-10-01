@@ -371,7 +371,7 @@ describe('relevé, révisions et récits', () => {
 			setVisibleToParticipants(testDb.db, mj, {
 				id: table.row.id,
 				expectedRevision: 1,
-				value: true
+				value: false
 			})
 		).rejects.toBeDefined();
 		expect(await testDb.db.select().from(combats)).toHaveLength(1);
@@ -379,7 +379,7 @@ describe('relevé, révisions et récits', () => {
 		expect((await getTable(testDb.db, mj, table.row.id)).row).toMatchObject({
 			revision: 1,
 			showEnemyNumbers: false,
-			visibleToParticipants: false
+			visibleToParticipants: true
 		});
 	});
 	it('projette LEGER / GRAVE / CRITIQUE sans notes, coûts, compétences ni chiffres adverses', async () => {
@@ -442,13 +442,18 @@ describe('relevé, révisions et récits', () => {
 	});
 	it('refuse un non participant, une Table invisible et un compte sans liaison', async () => {
 		const table = await open();
+		await setVisibleToParticipants(testDb.db, mj, {
+			id: table.row.id,
+			value: false,
+			expectedRevision: 1
+		});
 		await expect(getPlayerTable(testDb.db, player, table.row.id)).rejects.toMatchObject({
 			status: 404
 		});
 		await setVisibleToParticipants(testDb.db, mj, {
 			id: table.row.id,
 			value: true,
-			expectedRevision: 1
+			expectedRevision: 2
 		});
 		await expect(
 			getPlayerTable(testDb.db, actor('joueur', 'p_c'), table.row.id)

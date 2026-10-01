@@ -55,6 +55,8 @@ export class TableMJ {
 	raisonEnAttente = $state<RaisonSauvegarde>('manual');
 	/** Round résolu dont la résolution reste ouverte (rature possible) jusqu'à « Clore le round ». */
 	revue = $state<number | null>(null);
+	/** Heure (ms) de la résolution ouverte, pour « Round 3 · résolu à 21:47. ». */
+	revueA = $state<number | null>(null);
 	/** Note de marge locale (refus du moteur, copie) ; une seule à la fois. */
 	note = $state<NoteTable | null>(null);
 	/** Compteur de gestes : permet de savoir si l'état a changé pendant qu'une sauvegarde partait. */
@@ -170,12 +172,23 @@ export class TableMJ {
 	resoudre() {
 		const round = this.etat.round;
 		const ok = this.appliquer((s) => resolveRound(s, Math.random));
-		if (ok) this.revue = round;
+		if (ok) {
+			this.revue = round;
+			this.revueA = Date.now();
+		}
 		return ok;
+	}
+	/** « Clore le round » : la résolution se referme (plus de rature) ; l'appelant sauvegarde. */
+	clore() {
+		this.revue = null;
+		this.revueA = null;
 	}
 	annulerRound() {
 		const ok = this.appliquer((s) => undoRound(s));
-		if (ok) this.revue = null;
+		if (ok) {
+			this.revue = null;
+			this.revueA = null;
+		}
 		return ok;
 	}
 	/** Ajustement d'une ressource : la nouvelle valeur, jamais un delta implicite. */
@@ -260,5 +273,17 @@ export class TableMJ {
 	reprendre(etat: CombatState, revision: number, releve: string | null) {
 		this.remplacer(etat, revision, releve);
 		this.revue = null;
+		this.revueA = null;
+	}
+
+	// ── Lecture de la ligne d'état ───────────────────────────────────────────────────────────────
+	/** Combattants vivants dans l'ordre, et combien ont fini de déclarer ce round. */
+	get compteDeclares(): { faits: number; vivants: number } {
+		const s = this.etat;
+		const vivants = s.order.filter((id) => (s.fighters.find((f) => f.id === id)?.pvCur ?? 0) > 0);
+		if (!s.active) return { faits: 0, vivants: vivants.length };
+		if (s.phase === 'resolution') return { faits: vivants.length, vivants: vivants.length };
+		const faits = vivants.filter((id) => s.order.indexOf(id) < s.turn).length;
+		return { faits, vivants: vivants.length };
 	}
 }

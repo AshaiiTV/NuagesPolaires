@@ -216,6 +216,14 @@ Décisions tranchées par rapport aux incohérences de l'audit (§11 de 05) : le
 
 ## 11. Conventions de code
 
+Amendements de sécurité INT-2 (1er octobre 2026), prioritaires sur les formulations antérieures :
+
+- Toute mutation authentifiée relit et verrouille le compte avant les verrous métier, puis relit la session (existence, expiration, portée pleine, version concordante et `scopeMatchesAccount`). Un rôle devenu différent refuse avec 401 ; une liaison de personnage devenue différente refuse avec 403. Les acteurs hors requête restent admis pour les scripts et tests, avec vérification du compte réel. La finalisation d'une session `reset` conserve son contrôle dédié.
+- Amorçage et récupération admin : verrou transactionnel commun `pg_advisory_xact_lock(298, 1)`, partagé avec les mutations de comptes multiples ; empreinte consommée par `INSERT … ON CONFLICT DO NOTHING RETURNING` avant toute modification. Sans consommation effective, aucune promotion, révocation ou écriture de journal. Le Discord du compte promu est effacé ; `NP_ADMIN_PSEUDO`, même défini seul, réserve le pseudo à l'inscription publique sans distinction de casse.
+- Connexion : quotas fermes IP et couple IP/pseudo, 10 tentatives par 15 minutes. Le compteur global du pseudo impose seulement 250 ms supplémentaires au-delà du seuil ; il ne bloque ni une autre IP légitime ni la récupération admin. Un succès remet les compteurs de pseudo et de couple à zéro. Les échecs hérités ou malformés effectuent une vérification scrypt factice ; les réponses génériques 401 ont un budget minimal commun de 200 ms, sans promesse de durée exacte sous charge.
+- Le retour de connexion est analysé avec `new URL(retour, origine)` ; contrôles ASCII refusés, origine identique obligatoire, destination limitée à `pathname + search + hash` normalisés.
+- L'import dynamique local utilise une extension `.ts` et un chemin `/src/…` sous le module runner de Vite, un chemin relatif sous tsx. Aucun contournement dans le hook. La garde de bundle autorise uniquement le nom de champ contractuel `pgliteDriver` ; paquets, imports, binaires, nom nu du pilote et démonstration restent bloquants. Les diagnostics n'embarquent que la version du package, jamais ses dépendances.
+
 - Français pour les libellés, l'interface, les messages d'erreur et les commentaires ; anglais pour les identifiants de code (`character`, `oath`, `beast`, `event`, `combat`, `scene`) — un glossaire dans `03-vision.md` fait le lien (Serment = `oath`, personnage = `character`, créature = `beast`, apparition = `spawn`).
 - Erreurs métier : `throw new NpError('EVENT_FULL', 'Événement complet.', 409)` ; les form actions renvoient `fail(status, { code, message, values })` et les pages affichent le message officiel.
 - Aucune donnée privée en `localStorage` ; uniquement des préférences d'affichage (`np:theme`, `np:regime`, `np:last-tab`).

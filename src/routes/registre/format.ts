@@ -83,6 +83,73 @@ export const ACTIONS_AUDIT: Record<string, string> = {
 	scene_auto_close: 'Scène refermée d’elle-même'
 };
 
+/** Sources du journal d'audit, dites dans le lexique du carnet. */
+export const SOURCES_AUDIT: Record<string, string> = {
+	auth: 'entrée',
+	accounts: 'comptes',
+	settings: 'réglages',
+	admin: 'données',
+	characters: 'personnages',
+	pv: 'PV',
+	ep: 'EP',
+	em: 'EM',
+	xp: 'XP',
+	events: 'agenda',
+	journal: 'journal',
+	declarations: 'déclarations',
+	facts: 'faits',
+	scenes: 'scènes',
+	combats: 'la Table',
+	publications: 'publications',
+	observations: 'observations',
+	beasts: 'bestiaire',
+	oaths: 'Serments',
+	zones: 'zones',
+	spawn: 'apparitions',
+	staff_log: 'journal du staff',
+	legacy: 'reprise'
+};
+
+/** Libellés lisibles des actions du journal du staff (déjà en français côté serveur). */
+export const ACTIONS_STAFF: Record<string, string> = {
+	liaison: 'Liaison',
+	deliaison: 'Liaison défaite',
+	role: 'Rôle changé',
+	reglage: 'Réglage',
+	mdp_reset: 'Mot de passe réinitialisé',
+	mdp_defini: 'Mot de passe défini',
+	compte_supprime: 'Compte rayé',
+	personnage_cree: 'Personnage créé',
+	personnage_supprime: 'Personnage rayé',
+	identite_modifiee: 'Identité modifiée',
+	ressource_corrigee: 'Ressource corrigée',
+	xp_combat: 'XP de combat',
+	objet_ajoute: 'Objet ajouté',
+	objet_retire: 'Objet retiré',
+	statut_pose: 'Statut posé',
+	statut_retire: 'Statut retiré',
+	equipement_modifie: 'Équipement modifié',
+	gemmes_fusionnees: 'Gemmes fusionnées',
+	event_cree: 'Rendez-vous créé',
+	event_modif: 'Rendez-vous modifié',
+	event_supprime: 'Rendez-vous rayé',
+	event_visibilite: 'Visibilité d’un rendez-vous',
+	event_notif: 'Joueurs prévenus',
+	declaration_reportee: 'Déclaration reportée',
+	declaration_rayee: 'Déclaration rayée',
+	fait_valide: 'Fait tamponné',
+	extrait_publie: 'Extrait publié',
+	publication_rayee: 'Publication rayée',
+	scene_ouverte: 'Scène ouverte',
+	journal_archive: 'Journal archivé',
+	apparition_tiree: 'Apparition tirée',
+	apparition_transferee: 'Apparition transférée',
+	zone_created: 'Zone créée',
+	zone_renamed: 'Zone renommée',
+	frappe: 'Frappe',
+	connexion: 'Entrée'
+};
+
 /** Noms lisibles des clés de détail les plus courantes. */
 const CLES: Record<string, string> = {
 	pseudo: 'compte',
@@ -102,6 +169,10 @@ const CLES: Record<string, string> = {
 	key: 'réglage',
 	value: 'valeur',
 	reason: 'raison',
+	scope: 'session',
+	method: 'par',
+	rehashed: 'empreinte renouvelée',
+	ip: 'adresse',
 	motif: 'motif',
 	eventId: 'rendez-vous n°',
 	title: 'titre',
@@ -111,11 +182,19 @@ const CLES: Record<string, string> = {
 	events: 'rendez-vous'
 };
 
+const VALEURS: Record<string, string> = {
+	full: 'pleine',
+	reset: 'de réinitialisation',
+	password: 'mot de passe',
+	discord: 'Discord'
+};
+
 function valeur(v: unknown): string {
 	if (v === true) return 'oui';
 	if (v === false) return 'non';
 	if (v === null || v === undefined || v === '') return 'rien';
 	if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return leA(v);
+	if (typeof v === 'string' && VALEURS[v]) return VALEURS[v];
 	if (typeof v === 'string' || typeof v === 'number') return String(v);
 	return JSON.stringify(v);
 }
@@ -125,7 +204,7 @@ export function detailsLisibles(details: Record<string, unknown>): string {
 	const lignes: string[] = [];
 	for (const [k, v] of Object.entries(details)) {
 		if (k === 'accountId' && 'pseudo' in details) continue;
-		lignes.push(`${CLES[k] ?? k} : ${valeur(v)}`);
+		lignes.push(`${CLES[k] ?? k} : ${valeur(v)}`);
 	}
 	return lignes.join(' · ');
 }

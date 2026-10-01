@@ -1,3 +1,4 @@
+import { assertFreshAccount } from '$lib/server/auth/context';
 // Réglages saisis par un administrateur (06-contrats §B.8 ; 04-architecture §3.12 `settings` ;
 // 03-vision §12.6) : lien d'invitation Discord du colophon, salon par défaut, texte de contact.
 import { asc, eq } from 'drizzle-orm';
@@ -76,6 +77,7 @@ export async function setSetting(
 	const data = parse(setSettingSchema, input);
 	validateSetting(data.key, data.value);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, present);
 		const now = new Date();
 		const [row] = await tx
 			.insert(settings)

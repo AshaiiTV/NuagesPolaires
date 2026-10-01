@@ -165,7 +165,9 @@ async function loadLocalModule(): Promise<LocalModule> {
 	if (!localModule) {
 		// Spécificateur NON littéral + @vite-ignore : Vite/Rollup ne suivent pas cet import, le module
 		// local (son paquet, son pilote Drizzle, le jeu de démonstration) reste hors du bundle.
-		const specifier = `./${LOCAL_DRIVER}`;
+		const specifier = import.meta.env?.DEV
+			? `/src/lib/server/db/${LOCAL_DRIVER}.ts`
+			: `./${LOCAL_DRIVER}.ts`;
 		localModule = (await import(/* @vite-ignore */ specifier)) as LocalModule;
 	}
 	return localModule;

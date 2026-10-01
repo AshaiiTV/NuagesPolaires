@@ -34,7 +34,7 @@
 				<li>
 					<span class="mot">{libelleSansPicto(a.label)}</span>
 					<span class="cout chiffres">{coutImprime(a)}</span>
-					<span class="effet">{a.effect}{#if a.conditions !== 'Tous'} · <em>{a.conditions}</em>{/if}</span>
+					<span class="effet">{a.effect}{#if a.conditions !== 'Tous'}{' · '}<em>{a.conditions}</em>{/if}</span>
 				</li>
 			{/each}
 		</ul>

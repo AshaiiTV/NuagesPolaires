@@ -73,6 +73,9 @@
 		text-transform: uppercase;
 		color: var(--encre-2);
 		white-space: nowrap;
+		overflow: hidden;
+		/* Le ruban ne recouvre pas le repère. */
+		margin-right: 28px;
 	}
 	.titre {
 		margin: 2px 0 6px;

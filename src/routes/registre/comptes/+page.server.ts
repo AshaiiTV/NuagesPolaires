@@ -75,7 +75,8 @@ export const actions: Actions = {
 		const accountId = texte(data.accountId);
 		const reset = await adminResetPassword(event.locals.db, event.locals.actor, { accountId });
 		// Le code part une seule fois vers la page qui l'a demandé ; il n'est ni journalisé ni stocké.
-		return { code: { accountId, secret: reset.temporaryPassword, expiresAt: reset.expiresAt } };
+		// (Clé « temporaire » et non « code » : `code` est déjà le code d'erreur des refus.)
+		return { temporaire: { accountId, secret: reset.temporaryPassword, expiresAt: reset.expiresAt } };
 	}),
 	rayer: action(async (event, data) => {
 		await strikeAccount(event.locals.db, event.locals.actor, {

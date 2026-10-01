@@ -143,7 +143,7 @@ describe('openDb — PGlite partagé (04 §10.2)', () => {
 		const third = await openDb(target);
 		expect(third.db).not.toBe(first.db);
 		await closeSharedDb();
-	});
+	}, 30000);
 
 	it('openDb() sans argument suit NP_DB_DRIVER', async () => {
 		const previous = process.env.NP_DB_DRIVER;

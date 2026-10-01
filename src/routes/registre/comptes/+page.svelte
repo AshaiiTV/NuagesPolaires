@@ -29,7 +29,7 @@
 
 	/** Le code temporaire : affiché une fois, jamais gardé ailleurs que dans cette page ouverte. */
 	let efface = $state<string | null>(null);
-	const code = $derived(form && 'code' in form && form.code && form.code.secret !== efface ? form.code : null);
+	const code = $derived(form && 'temporaire' in form && form.temporaire && form.temporaire.secret !== efface ? form.temporaire : null);
 
 	const maintenant = $derived(new Date(data.releve).getTime());
 	const cibleDisparue = $derived(!!cible && !data.rows.some((a) => a.id === cible));
@@ -95,7 +95,7 @@
 				<li>
 					<details class="compte" open={cible === a.id && !!ecriture.note ? true : undefined}>
 						<summary>
-							<span class="pseudo">{a.pseudo}{#if moi}<span class="toi"> · toi</span>{/if}</span>
+							<span class="pseudo">{a.pseudo}{#if moi}<span class="toi">{' · toi'}</span>{/if}</span>
 							<span class="role"><Encre {etat}>{LIBELLE_ROLE[a.role] ?? a.role}</Encre></span>
 							<span class="liaison">
 								{#if a.characterName}
@@ -108,7 +108,7 @@
 								{#if a.forcePasswordReset}<span class="reset">· code temporaire en cours</span>{/if}
 							</span>
 							<span class="venue chiffres">
-								{#if a.lastSeenAt}<span title={leA(a.lastSeenAt)}>{leA(a.lastSeenAt)}</span><span class="relatif"> · {relatif(a.lastSeenAt, maintenant)}</span>{:else}<span class="attente">jamais venu</span>{/if}
+								{#if a.lastSeenAt}<span title={leA(a.lastSeenAt)}>{leA(a.lastSeenAt)}</span><span class="relatif">{' · '}{relatif(a.lastSeenAt, maintenant)}</span>{:else}<span class="attente">jamais venu</span>{/if}
 							</span>
 							<span class="pli" aria-hidden="true"></span>
 						</summary>
@@ -193,7 +193,7 @@
 								</section>
 							{/if}
 
-							<p class="sur-ordinateur">Rôle, mot de passe et rature : sur ordinateur.</p>
+							<p class="sur-ordinateur">Rôle, mot de passe et rature : sur ordinateur.</p>
 
 							{#if cible === a.id}<div class="note">{@render note()}</div>{/if}
 						</div>

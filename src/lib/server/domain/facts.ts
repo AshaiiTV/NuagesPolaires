@@ -1,3 +1,4 @@
+import { assertFreshAccount } from '$lib/server/auth/context';
 // Faits validés : dettes, promesses, alliances, conséquences narratives, observations
 // (06-contrats §B.3 ; 04 §3.12 `validated_facts` ; 03-vision §5.5).
 //
@@ -122,6 +123,7 @@ export async function proposeFact(
 	const { actor: who, characterId } = requireOwnCharacter(actor);
 	const data = parseInput(proposeFactSchema, input);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
 		await loadCharacter(tx, characterId);
 		const id = `f_${nanoid(16)}`;
 		await tx.insert(validatedFacts).values({
@@ -163,6 +165,7 @@ async function stampFact(
 	t: Transition
 ): Promise<FactView> {
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
 		const [current] = await tx
 			.select()
 			.from(validatedFacts)

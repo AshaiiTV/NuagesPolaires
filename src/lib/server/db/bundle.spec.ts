@@ -89,6 +89,13 @@ describe('modules serveur embarqués', () => {
 });
 
 describe('scripts/check-bundle.ts', () => {
+	it('tolère seulement le champ contractuel pgliteDriver ; une chaîne de pilote reste bloquée', () => {
+		const dir = tempDir();
+		writeFileSync(path.join(dir, 'diagnostic.js'), 'export const configured = env.pgliteDriver;');
+		expect(scanBundle([dir]).violations).toEqual([]);
+		writeFileSync(path.join(dir, 'driver.js'), 'import "@electric-sql/pglite";');
+		expect(scanBundle([dir]).violations.length).toBeGreaterThan(0);
+	});
 	it('échoue sur le mot « pglite » nu, sous toute casse, et sur un nom de fichier', () => {
 		const dir = tempDir();
 		writeFileSync(path.join(dir, 'a.js'), 'const d = process.env.NP_DB_DRIVER === "pglite";');

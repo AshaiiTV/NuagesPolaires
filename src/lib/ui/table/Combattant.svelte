@@ -108,13 +108,17 @@
 <li class="combattant" class:ko={ko(f)} class:declare class:ouvert class:adversaire={f.type === 'beast'}>
 	<div class="ligne">
 		<span class="nom">
-			<span class="texte">{f.name}</span>
-			{#if initiative}<span class="marque" title="Ouvre l’ordre de déclaration">initiative</span>{/if}
-			{#if ko(f)}<span class="marque ko-marque">KO</span>{/if}
-			{#if f.isSummon}<span class="marque">invocation</span>{/if}
+			<span class="texte" title={f.name}>{f.name}</span>
+			{#if initiative || ko(f) || f.isSummon}
+				<span class="marques">
+					{#if ko(f)}<span class="marque ko-marque">KO</span>{/if}
+					{#if initiative}<span class="marque" title="Ouvre l’ordre de déclaration">initiative</span>{/if}
+					{#if f.isSummon}<span class="marque">invocation</span>{/if}
+				</span>
+			{/if}
 		</span>
 		{#each RESSOURCES as r (r.id)}
-			<span class="res chiffres" class:bas={r.id === 'pv' && pvBas}>
+			<span class="res chiffres r-{r.id}" class:bas={r.id === 'pv' && pvBas}>
 				{#if max(r.id) > 0}
 					<span class="sr-only">{r.nom} </span><span class="cur">{cur(r.id)}</span><span class="max">/{max(r.id)}</span>
 				{:else}
@@ -129,8 +133,10 @@
 			{/each}
 		</span>
 		<span class="declare-points chiffres" aria-label={maxActions ? `${declares} action${declares > 1 ? 's' : ''} déclarée${declares > 1 ? 's' : ''} sur ${maxActions}` : undefined}>
-			{#if maxActions}
+			{#if maxActions && maxActions <= 4}
 				<span aria-hidden="true">{'●'.repeat(Math.min(declares, maxActions))}{'○'.repeat(Math.max(0, maxActions - declares))}</span>
+			{:else if maxActions}
+				<span aria-hidden="true">{Math.min(declares, maxActions)}/{maxActions}</span>
 			{/if}
 		</span>
 		<button
@@ -323,10 +329,14 @@
 		background: var(--encre-humide);
 	}
 	.nom {
-		display: flex;
-		align-items: baseline;
-		gap: 8px;
+		display: grid;
 		min-width: 0;
+		padding: 4px 0;
+	}
+	.marques {
+		display: flex;
+		gap: 8px;
+		line-height: 16px;
 	}
 	.texte {
 		overflow: hidden;
@@ -344,6 +354,7 @@
 	.marque {
 		flex: none;
 		font: var(--t-repere);
+		line-height: 16px;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		color: var(--encre-grise);
@@ -374,9 +385,9 @@
 	.statuts {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0 14px;
+		gap: 0 12px;
 		min-width: 0;
-		line-height: 24px;
+		line-height: 20px;
 	}
 	.declare-points {
 		font: 400 12px/24px var(--corps);
@@ -530,29 +541,31 @@
 
 	@media (max-width: 760px) {
 		.ligne {
-			grid-template-columns: minmax(0, 1fr) auto auto auto 44px;
+			grid-template-columns: minmax(0, 1fr) 50px 50px 50px 44px;
 			grid-template-areas:
-				'nom nom nom nom menu'
-				'pv ep em pts menu'
-				'st st st st st';
-			gap: 0 12px;
-			padding: 6px 0 6px 12px;
+				'nom pv ep em menu'
+				'st st st pts menu';
+			gap: 0 8px;
+			padding: 4px 0 4px 12px;
 		}
 		.nom {
 			grid-area: nom;
 		}
-		.res:nth-of-type(1) {
+		.r-pv {
 			grid-area: pv;
-			text-align: left;
+		}
+		.r-ep {
+			grid-area: ep;
+		}
+		.r-em {
+			grid-area: em;
 		}
 		.statuts {
 			grid-area: st;
 		}
-		.statuts:empty {
-			display: none;
-		}
 		.declare-points {
 			grid-area: pts;
+			text-align: right;
 		}
 		.menu {
 			grid-area: menu;

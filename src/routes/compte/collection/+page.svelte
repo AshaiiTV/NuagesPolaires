@@ -2,6 +2,7 @@
 	// Ma collection : une galerie de feuillets de thèmes. Ceux de ta collection se portent (groupe de
 	// boutons radio, clavier compris) ; le carnet se recolore après la réponse du serveur, jamais avant.
 	// Les autres se montrent, sans prix ni « débloquer » : un administrateur les donne (03-vision §7).
+	import { untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import Enveloppe from '$lib/ui/Enveloppe.svelte';
 	import Page from '$lib/ui/Page.svelte';
@@ -23,7 +24,7 @@
 	const porte = $derived(data.themes.find((t) => t.active) ?? null);
 
 	// Le choix suit la sélection ; le thème porté est celui que le serveur a noté.
-	let choisi = $state(data.themes.find((t) => t.active)?.id ?? 'dark');
+	let choisi = $state(untrack(() => data.themes.find((t) => t.active)?.id ?? 'dark'));
 	let formulaire: HTMLFormElement | undefined = $state();
 	let enAttente = false;
 

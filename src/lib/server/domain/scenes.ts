@@ -1,3 +1,4 @@
+import { assertFreshAccount } from '$lib/server/auth/context';
 // Scènes : ce qui est encore ouvert (06-contrats §B.4 ; 04-architecture §3.9, §3.12, §5 ;
 // 03-vision §5.3, §12.3).
 //
@@ -105,7 +106,7 @@ async function buildSceneViews(
 		})
 		.from(sceneParticipants)
 		.innerJoin(characters, eq(characters.id, sceneParticipants.characterId))
-		.where(inArray(sceneParticipants.sceneId, ids))
+		.where(and(inArray(sceneParticipants.sceneId, ids), isNull(characters.struckAt)))
 		.orderBy(asc(characters.name), asc(sceneParticipants.characterId));
 
 	const pinRows = await db
@@ -114,6 +115,7 @@ async function buildSceneViews(
 		.where(
 			and(
 				inArray(scenePins.sceneId, ids),
+				sql`exists (select 1 from ${characters} where ${characters.id} = ${scenePins.characterId} and ${characters.struckAt} is null)`,
 				// Les épingles sont la marge personnelle du participant ; le staff les voit toutes.
 				manager ? undefined : me ? eq(scenePins.characterId, me) : sql`false`
 			)
@@ -174,8 +176,13 @@ async function isParticipant(
 	const [row] = await db
 		.select({ id: sceneParticipants.characterId })
 		.from(sceneParticipants)
+		.innerJoin(characters, eq(characters.id, sceneParticipants.characterId))
 		.where(
-			and(eq(sceneParticipants.sceneId, sceneId), eq(sceneParticipants.characterId, characterId))
+			and(
+				eq(sceneParticipants.sceneId, sceneId),
+				eq(sceneParticipants.characterId, characterId),
+				isNull(characters.struckAt)
+			)
 		);
 	return !!row;
 }
@@ -225,6 +232,15 @@ export async function openScene(
 
 	const id = `s_${nanoid(16)}`;
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, present);
+		if (!isManager(present) && present.characterId) {
+			const [active] = await tx
+				.select({ id: characters.id })
+				.from(characters)
+				.where(and(eq(characters.id, present.characterId), isNull(characters.struckAt)))
+				.for('share');
+			if (!active) throw NpError.forbidden('Ta fiche est indisponible.');
+		}
 		const now = new Date();
 		await tx.insert(scenes).values({
 			id,
@@ -237,7 +253,7 @@ export async function openScene(
 		const found = await tx
 			.select({ id: characters.id, name: characters.name })
 			.from(characters)
-			.where(inArray(characters.id, characterIds));
+			.where(and(inArray(characters.id, characterIds), isNull(characters.struckAt)));
 		if (found.length !== characterIds.length) throw NpError.notFound('Personnage introuvable.');
 		await tx
 			.insert(sceneParticipants)
@@ -275,6 +291,11 @@ export async function listOpenScenes(db: Db, actor: Actor | null): Promise<Scene
 			.where(eq(scenes.status, 'ouverte'))
 			.orderBy(desc(scenes.lastActivityAt), asc(scenes.id));
 	} else if (present.characterId) {
+		const [active] = await db
+			.select({ id: characters.id })
+			.from(characters)
+			.where(and(eq(characters.id, present.characterId), isNull(characters.struckAt)));
+		if (!active) return [];
 		rows = (
 			await db
 				.select({ scene: scenes })
@@ -299,6 +320,11 @@ export async function getSceneContext(db: Db, actor: Actor | null): Promise<Scen
 	const present = requireActor(actor);
 	const characterId = present.characterId;
 	if (!characterId) return { scene: null, table: null, channel: null };
+	const [active] = await db
+		.select({ id: characters.id })
+		.from(characters)
+		.where(and(eq(characters.id, characterId), isNull(characters.struckAt)));
+	if (!active) return { scene: null, table: null, channel: null };
 
 	const [current] = await db
 		.select({ scene: scenes })
@@ -360,6 +386,15 @@ async function updateSceneText(
 ): Promise<SceneView> {
 	const present = requireActor(actor);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, present);
+		if (!isManager(present) && present.characterId) {
+			const [active] = await tx
+				.select({ id: characters.id })
+				.from(characters)
+				.where(and(eq(characters.id, present.characterId), isNull(characters.struckAt)))
+				.for('share');
+			if (!active) throw NpError.forbidden('Ta fiche est indisponible.');
+		}
 		const scene = await lockWritableScene(tx, present, sceneId);
 		if (scene.status !== 'ouverte') throw sceneClosed();
 		const updated = await tx
@@ -429,6 +464,15 @@ export async function pin(db: Db, actor: Actor | null, input: PinInput): Promise
 	const { actor: present, characterId } = requireOwnCharacter(actor);
 	const data = parse(pinSchema, input);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, present);
+		if (!isManager(present) && present.characterId) {
+			const [active] = await tx
+				.select({ id: characters.id })
+				.from(characters)
+				.where(and(eq(characters.id, present.characterId), isNull(characters.struckAt)))
+				.for('share');
+			if (!active) throw NpError.forbidden('Ta fiche est indisponible.');
+		}
 		const [scene] = await tx.select().from(scenes).where(eq(scenes.id, data.sceneId)).for('update');
 		if (!scene) throw sceneNotFound();
 		if (!(await isParticipant(tx, scene.id, characterId))) throw NpError.notFound(NOT_YOURS);
@@ -464,6 +508,15 @@ export async function unpin(db: Db, actor: Actor | null, input: UnpinInput): Pro
 	const { actor: present, characterId } = requireOwnCharacter(actor);
 	const data = parse(unpinSchema, input);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, present);
+		if (!isManager(present) && present.characterId) {
+			const [active] = await tx
+				.select({ id: characters.id })
+				.from(characters)
+				.where(and(eq(characters.id, present.characterId), isNull(characters.struckAt)))
+				.for('share');
+			if (!active) throw NpError.forbidden('Ta fiche est indisponible.');
+		}
 		const [found] = await tx
 			.select({ id: scenePins.id, sceneId: scenePins.sceneId })
 			.from(scenePins)
@@ -488,6 +541,15 @@ export async function closeScene(
 	requireRevision(input);
 	const data = parse(closeSceneSchema, input);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, present);
+		if (!isManager(present) && present.characterId) {
+			const [active] = await tx
+				.select({ id: characters.id })
+				.from(characters)
+				.where(and(eq(characters.id, present.characterId), isNull(characters.struckAt)))
+				.for('share');
+			if (!active) throw NpError.forbidden('Ta fiche est indisponible.');
+		}
 		const scene = await lockWritableScene(tx, present, data.sceneId);
 		const manager = isManager(present);
 		if (!manager && scene.createdBy !== present.accountId) {
@@ -553,10 +615,14 @@ export async function autoCloseScenes(db: Db, now: Date = new Date()): Promise<A
 		const participants = await tx
 			.select({ sceneId: sceneParticipants.sceneId, characterId: sceneParticipants.characterId })
 			.from(sceneParticipants)
+			.innerJoin(characters, eq(characters.id, sceneParticipants.characterId))
 			.where(
-				inArray(
-					sceneParticipants.sceneId,
-					closed.map((c) => c.id)
+				and(
+					isNull(characters.struckAt),
+					inArray(
+						sceneParticipants.sceneId,
+						closed.map((c) => c.id)
+					)
 				)
 			);
 		const titleById = new Map(closed.map((c) => [c.id, c.title]));

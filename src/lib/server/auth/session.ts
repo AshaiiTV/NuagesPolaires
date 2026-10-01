@@ -10,7 +10,7 @@
 // - Révocation : incrément de `accounts.session_version` (déconnexion de tous les appareils) et
 //   suppression des lignes de session.
 import { createHmac, randomBytes } from 'node:crypto';
-import { and, eq, lt, sql } from 'drizzle-orm';
+import { and, eq, isNull, lt, sql } from 'drizzle-orm';
 import type { Db, Tx } from '$lib/server/db';
 import { isProductionEnv } from '$lib/server/db';
 import {
@@ -87,7 +87,10 @@ export function sessionExpiry(scope: SessionScope, now: Date, resetExpiresAt?: D
 }
 
 /** Crée une session (à appeler dans la transaction qui l'autorise). */
-export async function createSession(db: Db | Tx, input: CreateSessionInput): Promise<CreatedSession> {
+export async function createSession(
+	db: Db | Tx,
+	input: CreateSessionInput
+): Promise<CreatedSession> {
 	const now = input.now ?? new Date();
 	const expiresAt = sessionExpiry(input.scope, now, input.resetExpiresAt);
 	if (expiresAt.getTime() <= now.getTime()) {
@@ -154,7 +157,10 @@ export async function readSession(
 
 	let character: Character | null = null;
 	if (session.scope === 'full' && account.characterId) {
-		const [c] = await db.select().from(characters).where(eq(characters.id, account.characterId));
+		const [c] = await db
+			.select()
+			.from(characters)
+			.where(and(eq(characters.id, account.characterId), isNull(characters.struckAt)));
 		character = c ?? null;
 	}
 
@@ -203,11 +209,19 @@ export async function purgeExpiredSessions(db: Db | Tx, now: Date = new Date()):
 }
 
 /** Sessions ouvertes d'un compte (diagnostic, tests). */
-export async function countSessions(db: Db | Tx, accountId: string, scope?: SessionScope): Promise<number> {
+export async function countSessions(
+	db: Db | Tx,
+	accountId: string,
+	scope?: SessionScope
+): Promise<number> {
 	const rows = await db
 		.select({ id: sessions.id })
 		.from(sessions)
-		.where(scope ? and(eq(sessions.accountId, accountId), eq(sessions.scope, scope)) : eq(sessions.accountId, accountId));
+		.where(
+			scope
+				? and(eq(sessions.accountId, accountId), eq(sessions.scope, scope))
+				: eq(sessions.accountId, accountId)
+		);
 	return rows.length;
 }
 
@@ -225,7 +239,9 @@ export interface SessionCookieOptions {
 
 /** Cookie sécurisé hors développement : production, ou site servi en https. */
 export function cookieShouldBeSecure(env: Env = process.env): boolean {
-	return isProductionEnv(env) || (env.NP_SITE_URL ?? '').trim().toLowerCase().startsWith('https://');
+	return (
+		isProductionEnv(env) || (env.NP_SITE_URL ?? '').trim().toLowerCase().startsWith('https://')
+	);
 }
 
 /** Options du cookie de session (04 §3.1 : HttpOnly ; Secure hors dev ; SameSite=Lax ; Path=/). */
@@ -247,11 +263,19 @@ export function sessionCookieOptions(
 export interface CookieJar {
 	get(name: string): string | undefined;
 	set(name: string, value: string, opts: SessionCookieOptions): void;
-	delete(name: string, opts: { path: string; secure?: boolean; httpOnly?: boolean; sameSite?: 'lax' }): void;
+	delete(
+		name: string,
+		opts: { path: string; secure?: boolean; httpOnly?: boolean; sameSite?: 'lax' }
+	): void;
 }
 
 /** Pose le cookie de session. */
-export function setSessionCookie(cookies: CookieJar, token: string, expiresAt: Date, secure?: boolean): void {
+export function setSessionCookie(
+	cookies: CookieJar,
+	token: string,
+	expiresAt: Date,
+	secure?: boolean
+): void {
 	cookies.set(SESSION_COOKIE, token, sessionCookieOptions(expiresAt, { secure }));
 }
 

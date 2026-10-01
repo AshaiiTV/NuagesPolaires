@@ -7,6 +7,7 @@
 // Les imports vers src sont relatifs (et non `$lib`) pour rester exécutables par tout lanceur.
 
 import { sql } from 'drizzle-orm';
+import { vi } from 'vitest';
 import type { Db, DbHandle } from '../../src/lib/server/db/index';
 import { createPgliteHandle } from '../../src/lib/server/db/pglite';
 import {
@@ -17,6 +18,10 @@ import {
 	type SeedReport
 } from '../../src/lib/server/db/seed';
 import { BUILTIN_OATHS } from '../../src/lib/game/oaths';
+
+// Les suites complètes initialisent plusieurs moteurs WASM et scrypt simultanément.
+// Ce délai couvre l'initialisation sous charge ; les assertions métier restent inchangées.
+vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 });
 
 export type TestDb = {
 	db: Db;

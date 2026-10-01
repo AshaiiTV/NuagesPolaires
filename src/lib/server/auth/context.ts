@@ -8,7 +8,8 @@
 // le compte s'appliquent.
 import { and, eq } from 'drizzle-orm';
 import type { Db, Tx } from '$lib/server/db';
-import { accounts, sessions, type Account } from '$lib/server/db/schema';
+import { accounts, characters, sessions, type Account } from '$lib/server/db/schema';
+import { scopeMatchesAccount } from './session';
 import { NpError } from '$lib/server/http';
 import type { Actor } from '$lib/server/permissions';
 
@@ -71,10 +72,23 @@ export async function assertFreshAccount(
 	}
 	if (ctx?.sessionId) {
 		const [session] = await tx
-			.select({ id: sessions.id })
+			.select()
 			.from(sessions)
-			.where(and(eq(sessions.id, ctx.sessionId), eq(sessions.accountId, account.id)));
-		if (!session) throw NpError.unauthenticated(SESSION_CLOSED_MESSAGE);
+			.where(and(eq(sessions.id, ctx.sessionId), eq(sessions.accountId, account.id)))
+			.for('share');
+		if (
+			!session ||
+			session.expiresAt.getTime() <= Date.now() ||
+			session.sessionVersion !== account.sessionVersion ||
+			session.scope !== 'full' ||
+			!scopeMatchesAccount(session.scope, account, new Date())
+		) {
+			throw NpError.unauthenticated(SESSION_CLOSED_MESSAGE);
+		}
 	}
+	if (!scopeMatchesAccount('full', account, new Date()))
+		throw NpError.unauthenticated(SESSION_CLOSED_MESSAGE);
+	if (account.characterId !== actor.characterId)
+		throw NpError.forbidden('La liaison de ton personnage a changé. Reconnecte-toi.');
 	return account;
 }

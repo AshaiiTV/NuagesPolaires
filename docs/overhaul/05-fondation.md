@@ -2,6 +2,87 @@
 
 Ce document décrit ce que la fondation fournit réellement, section par section. Il complète `04-architecture.md` (normatif) : en cas d'écart, l'écart est listé ici avec sa raison.
 
+## Consolidation INT-2 — 1er octobre 2026
+
+Cette section remplace les états de chantier plus anciens ci-dessous. Aucune migration SQL existante n'a été réécrite, aucune dépendance ajoutée, aucun nom de fonction ou de champ de vue supprimé.
+
+### Carte des modules
+
+| Modules | Responsabilité |
+| --- | --- |
+| `auth/context.ts`, `session.ts`, `request.ts` et `hooks.server.ts` | Acteur du hook, revalidation transactionnelle, sessions opaques, contrôle d'origine, base par requête et fermeture. |
+| `auth/password.ts`, `rate-limit.ts`, `recovery.ts`, `discord.ts`, `redirect.ts` | Scrypt et héritage, quotas, récupération admin, OAuth et retour interne normalisé. |
+| `domain/accounts.ts`, `characters.ts` | Comptes, thèmes et tokens persistés, liaisons, fiches, objets, conséquences, rature et export. |
+| `domain/events.ts`, `reading.ts`, `scenes.ts` | Agenda et annonces persistées, cornes et signets, scènes et contexte de Table. |
+| `domain/journal.ts`, `facts.ts`, `declarations.ts` | Notes personnelles et corrections, faits tamponnés, déclarations et expiration. |
+| `domain/combats.ts`, `spawn.ts`, `publications.ts` | Tables, clôture et récits, apparitions, extraits et observations associées. |
+| `domain/beasts.ts`, `zones.ts`, `oaths.ts`, `observations.ts` | Référentiels, calque staff, validation/refus des observations. |
+| `domain/settings.ts`, `admin.ts`, `audit.ts`, `staff-log.ts` | Réglages, export partiel audité en transaction, diagnostics, journaux. |
+| `domain/maintenance.ts`, `scripts/entretien.ts` | Scènes inactives, déclarations anciennes, sessions et quotas expirés, audit de plus de 180 jours. |
+| `db/*`, `legacy/*`, `schemas/*`, `game/colors.ts` | Connexions et migrations, import hérité idempotent, contrats partagés, couleurs de sens. |
+
+### Décisions INT-1 vérifiées
+
+| Point | État et résultat |
+| --- | --- |
+| A1 | Déjà fait : message officiel de conflit. |
+| A2 | Déjà fait : exports des schémas et résolution explicite des collisions. |
+| A3 | Colonnes déjà livrées ; fini : annonces/récits depuis les colonnes, tokens depuis `themes.tokens`, motif d'observation persisté ; migrations 0000–0003 conservées. |
+| A3 bis | Fait : personnages rayés exclus des fiches ordinaires, listes, participants et inscriptions, Tables et récits joueur, scènes, cornes, déclarations, faits et journal. L'export admin conserve leur lecture. |
+| A4 | Déjà fait : couleurs hex centralisées pour statuts, rendez-vous, comportements et gemmes. |
+| A5 | Fait : état `staff` sans fiche ; agenda et attente servis ; faits refusés ajoutés aux cornes ; conséquences, autres faits, déclarations, annonces, récits et notes vérifiés. La Table ouverte figure dans l'attente. |
+| A6 | Fait : Table visible par défaut, y compris `spawnToTable` qui appelle `createTable` ; tests du contexte et du ruban. |
+| A7 | Fait : import non littéral avec extension, chemin Vite adapté à Windows, contournement du hook retiré ; build et garde verts, serveur 5173 en HTTP 200. |
+| A8 | Déjà fait : retour Discord `/entrer/discord/retour`. |
+| A9 | Déjà fait : `ActionRule.name`, `label` conservé. |
+| A10 | Fait : script d'entretien et script npm existant désormais exécutable, fermeture de la base et rapport de chaque opération. |
+| A11 | Déjà fait : scripts de tests et garde du bundle, configuration Playwright sur serveur dev isolé. |
+| A12 | Déjà fait et conservé : MJ autorisé à valider/refuser les observations ; journal écrit uniquement par son propriétaire. |
+| A13 | Conservé : LAST_ADMIN 409, compte rayé conservant le personnage, soin de montée de niveau, refus du reset et de la rature de son propre compte. Suites de comptes et personnages vertes. |
+
+### Corrections de sécurité
+
+| Point | Correction et preuve de régression |
+| --- | --- |
+| B1 | Discord effacé lors de toute promotion/récupération ; pseudo d'environnement réservé sans distinction de casse. `auth/recovery.spec.ts` couvre les deux modes et l'inscription. |
+| B2 | Revalidation du compte et de la session avant les verrous métier, liaison fraîche obligatoire. Les mutations joueur auparavant hors transaction sont regroupées. `domain/int2-security.spec.ts` compare toutes les données avant/après révocation, expiration et déliaison ; mutations staff testées dans chaque famille, déclassement compris. Verrou commun pour les opérations sur plusieurs comptes ; rature du personnage verrouillant son compte lié avant la fiche. |
+| B3 | Quotas IP et couple IP/pseudo conservés ; dépassement global du pseudo = délai de 250 ms, sans 429. Tests d'une attaque distribuée suivie d'une connexion correcte, quota IP encore bloquant, récupération d'environnement après dépassement global. |
+| B4 | Verrou transactionnel commun `(298, 1)` et consommation avec RETURNING avant toute modification ; empreinte déjà consommée = aucune écriture. Tests de deux appels simultanés avec/sans compte préexistant et d'une consommation antérieure sans admin. PGlite sérialise les transactions : une recette Neon avec deux connexions reste nécessaire. |
+| B5 | Session relue entièrement : expiration, portée, version et état de reset à l'heure du contrôle ; session verrouillée en lecture. Tests de compte et staff, scope modifié, version modifiée et reset activé. |
+| B6 | Échec hérité/malformé complété par scrypt factice ; budget minimal commun de 200 ms pour les 401 génériques. `domain/login-cost.spec.ts` compte les appels scrypt réels pour inconnu, SHA-256, hex, PBKDF2, scrypt et malformé. Les distributions sous charge en production restent à mesurer. |
+| B7 | Droits du MJ conservés, conformément à la décision A12 ; matrice de validation et refus des observations testée. |
+| B8 | `auth/redirect.ts` normalise le retour via URL, refuse contrôles et origine externe ; route `/entrer` utilise ce helper au load et à l'action. Tests de tabulations, contrôles, antislashs, URLs externes, normalisation et origine identique. |
+
+Les tests de régression ont aussi été exécutés contre des copies isolées réintroduisant les défauts de la revue (4 fichiers, 61 tests en échec et 31 réussis, code 1) ; le code du serveur actif n'a jamais été rétabli à une version vulnérable. La garde de bundle admet exclusivement l'identifiant contractuel `pgliteDriver`, sans autoriser le paquet ou le pilote. L'import des seules métadonnées de version évite d'embarquer `devDependencies`.
+
+### Commandes d'exploitation et de recette
+
+```powershell
+npx svelte-check --tsconfig ./tsconfig.json
+npx vitest run --project server
+npm run build
+npx tsx scripts/check-bundle.ts
+curl.exe -s -o NUL -w "%{http_code}" http://localhost:5173/
+npm run entretien
+npx tsx src/lib/server/db/migrate.ts
+npm run migrate:legacy -- --input <snapshot.json> --dry-run --report <rapport.md>
+```
+
+`npm run test:server`, `npm run test:e2e` et `npm run check:bundle` restent disponibles. L'entretien et la migration lisent l'environnement du processus : configurer `DATABASE_URL`/`NETLIFY_DATABASE_URL` pour Neon ; en local PowerShell, `$env:NP_DB_DRIVER='pglite'` sélectionne PGlite. Une base en mémoire disparaît à la fermeture ; configurer `NP_PGLITE_DIR` pour entretenir une base locale persistante. L'entretien ferme le pool et les handles locaux dans `finally` ; chaque opération est idempotente. Le test d'intégration vérifie un second passage sans effet. Les tests PGlite ont un délai de 30 secondes pour l'initialisation WASM et scrypt sous charge, sans modifier leurs assertions métier.
+
+Résultats finaux (1er octobre 2026) :
+
+| Commande | Résultat |
+| --- | --- |
+| `npx svelte-check --tsconfig ./tsconfig.json` | Code 0 ; 1 200 fichiers, 0 erreur, 1 avertissement CSS hors périmètre (`src/routes/carnet/scene/+page.svelte`). |
+| `npx vitest run --project server` | Code 0 ; 52 fichiers, 942 tests réussis ; durée 114,94 s. |
+| `npm run build` | Code 0 ; build Vite et adapter Netlify terminés. |
+| `npx tsx scripts/check-bundle.ts` | Code 0 ; 517 fichiers analysés, ni pilote local ni démonstration. |
+| `curl.exe -s -o NUL -w "%{http_code}" http://localhost:5173/` | HTTP 200 ; serveur existant finalement sain après régénération. |
+| `npm run entretien` avec `NP_DB_DRIVER=pglite` | Code 0 ; scenes fermées [], declarations expirées 0, sessions 0, quotas 0, audit 0 ; fermeture effective. |
+
+Restent ouverts : recette Neon sur deux connexions pour les récupérations et retraits concurrents des derniers admins ; mesure des distributions de temps des échecs de connexion sur le déploiement. Le seul avertissement Svelte est dans une route hors périmètre. Aucune route ou composant d'interface n'a été édité hors de la correction autorisee de `/entrer/+page.server.ts`.
+
 ## Base de données
 
 Code : `src/lib/server/db/` (`schema.ts`, `index.ts`, `migrations-folder.ts`, `pglite.ts`, `migrate.ts`, `referentials.ts`, `generate-referentials.ts`, `seed.ts`) ; helper de test `tests/helpers/db.ts` ; garde de bundle `scripts/check-bundle.ts`.

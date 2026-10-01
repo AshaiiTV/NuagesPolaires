@@ -1,6 +1,7 @@
 <script lang="ts">
 	// Entrer : rouvrir le carnet. Une page sobre, une seule action principale ; les refus disent ce qui
 	// n'a pas été fait et gardent la saisie (03-vision §4, §8 ; P6).
+	import { untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import Enveloppe from '$lib/ui/Enveloppe.svelte';
 	import Page from '$lib/ui/Page.svelte';
@@ -13,7 +14,7 @@
 	let { data, form } = $props();
 	const ecriture = creerEcriture();
 	// La saisie du pseudo survit à un refus, avec ou sans JavaScript.
-	let pseudo = $state(form?.values?.pseudo?.toString() ?? '');
+	let pseudo = $state(untrack(() => form?.values?.pseudo?.toString() ?? ''));
 
 	// Un refus de connexion est un 401 « Identifiant ou mot de passe incorrect » : c'est le message du
 	// serveur qui s'écrit, pas la phrase de session refermée.
@@ -112,7 +113,7 @@
 	.reperes dt + dd {
 		margin: 4px 0 var(--ligne);
 		font: var(--t-libelle);
-		color: var(--encre-grise);
+		color: var(--encre-2);
 	}
 	.reperes dd:last-child {
 		margin-bottom: 0;
@@ -164,7 +165,7 @@
 	.aide {
 		margin-top: calc(var(--ligne) / 2);
 		font: var(--t-libelle);
-		color: var(--encre-grise);
+		color: var(--encre-2);
 	}
 	.aide a {
 		display: inline-block;

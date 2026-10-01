@@ -1,3 +1,4 @@
+import { assertFreshAccount } from '$lib/server/auth/context';
 // Journal du personnage (« Mes notes ») : entrées datées, corrections en rature, entrées rayées
 // (06-contrats §B.3 ; 04 §3.12 `journal_entries` ; 03-vision §5.5, §12.2).
 //
@@ -174,6 +175,7 @@ export async function writeEntry(
 	const { actor: who, characterId } = requireOwnCharacter(actor);
 	const data = parseInput(writeEntrySchema, input);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
 		// Verrou du personnage : sérialise la matérialisation et les écritures concurrentes.
 		const c = await loadCharacter(tx, characterId, { lock: true });
 		await materializeBeforeNotebook(tx, c);
@@ -227,6 +229,7 @@ export async function amendEntry(
 	const { actor: who, characterId } = requireOwnCharacter(actor);
 	const data = parseInput(amendEntrySchema, input);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
 		const c = await loadCharacter(tx, characterId, { lock: true });
 		const old = await targetEntry(tx, c, data.entryId);
 		if (old.struck) throw new NpError('ENTRY_STRUCK', 'Cette entrée est rayée.', 409);
@@ -260,6 +263,7 @@ export async function strikeEntry(
 	const { actor: who, characterId } = requireOwnCharacter(actor);
 	const data = parseInput(strikeEntrySchema, input);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
 		const c = await loadCharacter(tx, characterId, { lock: true });
 		const row = await targetEntry(tx, c, data.entryId);
 		if (!row.struck) {

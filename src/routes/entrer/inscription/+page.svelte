@@ -1,6 +1,7 @@
 <script lang="ts">
 	// Rejoindre l'aventure : le règlement d'abord (« J'accepte — Continuer »), puis le compte.
 	// Après l'inscription, le carnet s'ouvre en attente de liaison (03-vision §4, §5.2 ; P6).
+	import { untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import Enveloppe from '$lib/ui/Enveloppe.svelte';
 	import Page from '$lib/ui/Page.svelte';
@@ -16,7 +17,7 @@
 
 	let { data, form } = $props();
 	const ecriture = creerEcriture();
-	let pseudo = $state(form?.values?.pseudo?.toString() ?? '');
+	let pseudo = $state(untrack(() => form?.values?.pseudo?.toString() ?? ''));
 
 	// Le refus du serveur, rattaché à la ligne qu'il concerne.
 	const refus = $derived.by(() => {

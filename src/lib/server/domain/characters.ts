@@ -1,3 +1,4 @@
+import { assertFreshAccount } from '$lib/server/auth/context';
 // Personnages : fiche, conséquences tamponnées, attributions du staff, actions du joueur
 // (06-contrats §B.2 ; 04-architecture §3.2, §3.12, §5, §6, §10.3, §10.7, §10.15).
 //
@@ -692,6 +693,7 @@ export async function createCharacter(
 	const who = assertCan(actor, 'characters.create');
 	const data = parseInput(createCharacterSchema, input);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
 		const oath = await loadOath(tx, data.oathId);
 		// Le sélecteur de création ne propose que les Serments visibles (audit 02 §4.1, main.js:9463).
 		if (oath.hidden) {
@@ -759,6 +761,7 @@ export async function correctResource(
 	requireRevision(input);
 	const data = parseInput(correctResourceSchema, input);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
 		const c = await loadCharacter(tx, data.characterId, { lock: true });
 		const cols = RESOURCE_COLUMNS[data.resource];
 		const old = c[cols.cur];
@@ -855,6 +858,7 @@ export async function grantCombatXp(
 	const gain = combatXp(data.beastLevel, data.participationPct);
 	if (gain <= 0) throw new NpError('INVALID', 'XP = 0. Ajuste la participation.', 400);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
 		const c = await loadCharacter(tx, data.characterId, { lock: true });
 		if (data.combatId) {
 			const [combat] = await tx
@@ -920,6 +924,7 @@ export async function fuseGems(
 	requireRevision(input);
 	const data = parseInput(fuseGemsSchema, input);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
 		const c = await loadCharacter(tx, data.characterId, { lock: true });
 		const items = await tx
 			.select()
@@ -1021,6 +1026,7 @@ export async function addItem(
 	requireRevision(input);
 	const data = parseInput(addItemSchema, input);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
 		const c = await loadCharacter(tx, data.characterId, { lock: true });
 		await updateCharacterChecked(tx, c.id, data.expectedRevision, {});
 		const items = await tx
@@ -1091,6 +1097,7 @@ export async function removeItem(
 	requireRevision(input);
 	const data = parseInput(removeItemSchema, input);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
 		const c = await loadCharacter(tx, data.characterId, { lock: true });
 		const item = await findItemOf(tx, c.id, data.itemId, true);
 		if (!item) throw NpError.notFound('Item introuvable dans cet inventaire.');
@@ -1143,6 +1150,7 @@ export async function setStatus(
 	requireRevision(input);
 	const data = parseInput(setStatusSchema, input);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
 		const c = await loadCharacter(tx, data.characterId, { lock: true });
 		const author = stampAuthor(who);
 		const statuses: CharacterStatus[] = [...(c.statuses ?? [])];
@@ -1199,6 +1207,7 @@ export async function removeStatus(
 	requireRevision(input);
 	const data = parseInput(removeStatusSchema, input);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
 		const c = await loadCharacter(tx, data.characterId, { lock: true });
 		const statuses = c.statuses ?? [];
 		const previous = statuses.find((s) => s.id === data.statusId);
@@ -1244,6 +1253,7 @@ export async function setEquipment(
 	requireRevision(input);
 	const data = parseInput(setEquipmentSchema, input);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
 		const c = await loadCharacter(tx, data.characterId, { lock: true });
 		const current: Equipment = {
 			helmet: c.equipment?.helmet ?? null,
@@ -1303,6 +1313,7 @@ export async function updateIdentity(
 	requireRevision(input);
 	const data = parseInput(updateIdentitySchema, input);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
 		const c = await loadCharacter(tx, data.characterId, { lock: true });
 		const author = stampAuthor(who);
 		const motif = data.motif;
@@ -1436,6 +1447,14 @@ export async function strikeCharacter(
 	requireRevision(input);
 	const data = parseInput(strikeCharacterSchema, input);
 	return db.transaction(async (tx) => {
+		await tx.execute(sql`select pg_advisory_xact_lock(298, 1)`);
+		await assertFreshAccount(tx, who);
+		await tx
+			.select({ id: accounts.id })
+			.from(accounts)
+			.where(eq(accounts.characterId, data.characterId))
+			.orderBy(accounts.id)
+			.for('update');
 		const c = await loadCharacter(tx, data.characterId, { lock: true });
 		if (data.typedName !== c.name.trim()) {
 			throw new NpError('INVALID', 'Le nom saisi ne correspond pas au personnage.', 400);
@@ -1493,6 +1512,7 @@ export async function setOwnPortrait(
 	requireRevision(input);
 	const data = parseInput(setOwnPortraitSchema, input);
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
 		const c = await loadCharacter(tx, characterId, { lock: true });
 		await updateCharacterChecked(tx, c.id, data.expectedRevision, { avatarUrl: data.url });
 		await recordAudit(tx, {
@@ -1525,6 +1545,7 @@ export async function consumeOwnItem(
 	const data = parseInput(consumeOwnItemSchema, input);
 	const note = (data.note ?? '').trim();
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, who);
 		const c = await loadCharacter(tx, characterId, { lock: true });
 		const item = await findItemOf(tx, c.id, data.itemId, true);
 		if (!item) throw NpError.notFound('Item introuvable dans ton inventaire.');

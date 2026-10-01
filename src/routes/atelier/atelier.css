@@ -1,0 +1,120 @@
+/* Les formulaires sur réglure et les lignes denses du cahier de l’Atelier. */
+.atelier .gestes {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--ligne) 16px;
+	margin-block: var(--ligne);
+}
+.atelier .saisie {
+	display: grid;
+	gap: var(--ligne);
+	min-width: 0;
+}
+.atelier .champs {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--ligne) 24px;
+}
+.atelier .champs.trois {
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.atelier .choix {
+	display: grid;
+	min-width: 0;
+	font: var(--t-libelle);
+	color: var(--encre-2);
+}
+.atelier select {
+	min-height: var(--cible);
+	width: 100%;
+	min-width: 0;
+	padding: 8px 0;
+	background: var(--page);
+	color: var(--encre);
+	border: 0;
+	border-bottom: 1px solid var(--reglure);
+}
+.atelier .coche {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-height: var(--cible);
+	font: var(--t-libelle);
+}
+.atelier input[type='checkbox'] {
+	accent-color: var(--encre-humide);
+	width: 18px;
+	height: 18px;
+	flex: none;
+}
+.atelier fieldset {
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+.atelier .rappel {
+	font: var(--t-libelle);
+	color: var(--encre-2);
+	line-height: var(--ligne);
+}
+.atelier .lignes {
+	border-top: 1px solid var(--reglure);
+}
+.atelier .ligne-lien {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto 16px;
+	align-items: center;
+	gap: 0 24px;
+	min-height: calc(var(--ligne) * 2);
+	padding: calc(var(--ligne) / 2) 0;
+	border-bottom: 1px solid var(--reglure);
+	text-decoration: none;
+	font: var(--t-libelle);
+}
+.atelier .ligne-lien:hover {
+	background: color-mix(in srgb, var(--encre-humide) 5%, transparent);
+}
+.atelier .nom {
+	font: 600 14px / var(--ligne) var(--corps);
+	overflow-wrap: anywhere;
+}
+.atelier .meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0 16px;
+	color: var(--encre-2);
+}
+.atelier .marque {
+	font: var(--t-repere);
+	color: var(--encre-2);
+	text-transform: uppercase;
+}
+.atelier .sensible {
+	margin-top: calc(var(--ligne) * 2);
+	border-top: 3px double var(--reglure);
+	padding-top: var(--ligne);
+}
+.atelier h3 {
+	font: 500 22px / var(--ligne) var(--voix);
+}
+.atelier .retour {
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--cible);
+	font: var(--t-libelle);
+}
+@media (max-width: 760px) {
+	.atelier .champs,
+	.atelier .champs.trois {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.atelier .ligne-lien {
+		grid-template-columns: minmax(0, 1fr) auto 16px;
+		gap: 0 12px;
+	}
+	.atelier .ligne-lien > .meta {
+		grid-column: 1 / -1;
+	}
+}

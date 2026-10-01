@@ -36,12 +36,18 @@ export function adminRecoveryConfig(env: Env = process.env): AdminRecoveryConfig
 	const password = env.NP_ADMIN_PASSWORD ?? '';
 	if (!pseudo || !password) return null;
 	if (!PSEUDO_RE.test(pseudo) || password.length < 8 || password.length > 256) return null;
-	return { pseudo, password, recovery: (env.NP_ADMIN_RECOVERY ?? '').trim().toLowerCase() === 'true' };
+	return {
+		pseudo,
+		password,
+		recovery: (env.NP_ADMIN_RECOVERY ?? '').trim().toLowerCase() === 'true'
+	};
 }
 
 /** Empreinte consommée : sha256(pseudo minuscule + "\0" + mot de passe) (legacy auth.js:342-344). */
 export function recoveryFingerprint(cfg: { pseudo: string; password: string }): string {
-	return createHash('sha256').update(`${cfg.pseudo.toLowerCase()}\0${cfg.password}`, 'utf8').digest('hex');
+	return createHash('sha256')
+		.update(`${cfg.pseudo.toLowerCase()}\0${cfg.password}`, 'utf8')
+		.digest('hex');
 }
 
 function sameSecret(a: string, b: string): boolean {
@@ -70,7 +76,11 @@ export async function maybeRecoverAdmin(
 
 	const fingerprint = recoveryFingerprint(cfg);
 	// Pré-contrôle sans verrou pour éviter un scrypt inutile ; la décision est reprise sous verrou.
-	const quick = await db.select({ id: accounts.id }).from(accounts).where(eq(accounts.role, 'admin')).limit(1);
+	const quick = await db
+		.select({ id: accounts.id })
+		.from(accounts)
+		.where(eq(accounts.role, 'admin'))
+		.limit(1);
 	if (quick.length > 0) {
 		if (!cfg.recovery) return 'none';
 		const used = await db
@@ -84,6 +94,7 @@ export async function maybeRecoverAdmin(
 	const resetExpiresAt = new Date(now.getTime() + RESET_SESSION_MS);
 
 	return db.transaction(async (tx) => {
+		await tx.execute(sql`select pg_advisory_xact_lock(298, 1)`);
 		// Verrou commun sur les administrateurs (04 §10.7), puis décision.
 		const admins = await tx
 			.select({ id: accounts.id })
@@ -101,6 +112,14 @@ export async function maybeRecoverAdmin(
 			if (used.length > 0) return 'none' as const;
 		}
 
+		// Consommer avant toute modification, m?me lors de l'amor?age sans ligne admin.
+		const consumed = await tx
+			.insert(adminRecoveryConsumptions)
+			.values({ fingerprint, pseudo: cfg.pseudo, consumedAt: now })
+			.onConflictDoNothing()
+			.returning({ fingerprint: adminRecoveryConsumptions.fingerprint });
+		if (consumed.length === 0) return 'none' as const;
+
 		const [existing] = await tx
 			.select()
 			.from(accounts)
@@ -115,6 +134,8 @@ export async function maybeRecoverAdmin(
 				.update(accounts)
 				.set({
 					role: 'admin',
+					discordId: null,
+					discordUsername: null,
 					forcePasswordReset: true,
 					resetExpiresAt,
 					resetSecretHash: secretHash,
@@ -139,19 +160,21 @@ export async function maybeRecoverAdmin(
 			outcome = 'created';
 		}
 
-		if (cfg.recovery) {
-			await tx
-				.insert(adminRecoveryConsumptions)
-				.values({ fingerprint, pseudo: cfg.pseudo, consumedAt: now })
-				.onConflictDoNothing();
-		}
-
-		const actor = { accountId, role: 'admin' as const, characterId: null, pseudo: existing?.pseudo ?? cfg.pseudo };
+		const actor = {
+			accountId,
+			role: 'admin' as const,
+			characterId: null,
+			pseudo: existing?.pseudo ?? cfg.pseudo
+		};
 		await recordAudit(tx, {
 			source: 'auth',
 			action: outcome === 'created' ? 'admin_bootstrap' : 'admin_recovery',
 			actor,
-			details: { pseudo: actor.pseudo, recovery: cfg.recovery, resetExpiresAt: resetExpiresAt.toISOString() },
+			details: {
+				pseudo: actor.pseudo,
+				recovery: cfg.recovery,
+				resetExpiresAt: resetExpiresAt.toISOString()
+			},
 			ip: attempt.ip ?? null,
 			userAgent: attempt.userAgent ?? null
 		});

@@ -1,3 +1,4 @@
+import { assertFreshAccount } from '$lib/server/auth/context';
 // Registre › Données (06-contrats §B.8 ; 03-vision §5.11 ; audit 08 §4.6 export partiel, §6.3
 // diagnostic serveur). Administrateur seulement (`admin.data`).
 //   - exportData : JSON PARTIEL, mention exacte « Ce n'est pas une sauvegarde complète du site. » ;
@@ -28,7 +29,8 @@ import {
 	type ExportDataView,
 	type MigrationStatusView
 } from '$lib/schemas/admin';
-import packageJson from '../../../../package.json';
+import { version } from '../../../../package.json';
+import { LOCAL_DRIVER } from '../db';
 import { recordAudit } from './audit';
 
 type Env = Record<string, string | undefined>;
@@ -58,96 +60,103 @@ export const EXPORT_EXCLUDED = [
 export async function exportData(db: Db, actor: Actor | null): Promise<ExportDataView> {
 	const present = assertCan(actor, 'admin.data');
 
-	const accountRows = await db
-		.select({
-			id: accounts.id,
-			pseudo: accounts.pseudo,
-			role: accounts.role,
-			characterId: accounts.characterId,
-			discordId: accounts.discordId,
-			lastSeenAt: accounts.lastSeenAt,
-			createdAt: accounts.createdAt
-		})
-		.from(accounts)
-		.orderBy(asc(accounts.pseudo));
+	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, present);
+		const accountRows = await tx
+			.select({
+				id: accounts.id,
+				pseudo: accounts.pseudo,
+				role: accounts.role,
+				characterId: accounts.characterId,
+				discordId: accounts.discordId,
+				lastSeenAt: accounts.lastSeenAt,
+				createdAt: accounts.createdAt
+			})
+			.from(accounts)
+			.orderBy(asc(accounts.pseudo));
 
-	const characterRows = await db
-		.select()
-		.from(characters)
-		.orderBy(asc(characters.name), asc(characters.id));
-	const itemRows = await db
-		.select()
-		.from(characterItems)
-		.orderBy(asc(characterItems.characterId), asc(characterItems.position), asc(characterItems.id));
-	const itemsByCharacter = new Map<string, Record<string, unknown>[]>();
-	for (const item of itemRows) {
-		const list = itemsByCharacter.get(item.characterId) ?? [];
-		const { characterId: _owner, ...rest } = item;
-		void _owner;
-		list.push(plain(rest));
-		itemsByCharacter.set(item.characterId, list);
-	}
-
-	const beastRows = await db.select().from(beasts).orderBy(asc(beasts.name), asc(beasts.id));
-	const beastZoneRows = await db.select().from(beastZones);
-	const zonesByBeast = new Map<string, string[]>();
-	for (const bz of beastZoneRows) {
-		zonesByBeast.set(bz.beastId, [...(zonesByBeast.get(bz.beastId) ?? []), bz.zoneId].sort());
-	}
-
-	const eventRows = await db.select().from(events).orderBy(asc(events.startsAt), asc(events.id));
-	const participantRows = await db.select().from(eventParticipants);
-	const participantsByEvent = new Map<string, { characterId: string; registeredAt: string }[]>();
-	for (const p of participantRows) {
-		const list = participantsByEvent.get(p.eventId) ?? [];
-		list.push({ characterId: p.characterId, registeredAt: p.registeredAt.toISOString() });
-		participantsByEvent.set(p.eventId, list);
-	}
-
-	const view: ExportDataView = {
-		format: 'nuages-polaires-export-partiel',
-		version: 3,
-		notice: EXPORT_NOTICE,
-		exportedAt: new Date().toISOString(),
-		excluded: [...EXPORT_EXCLUDED],
-		accounts: accountRows.map((a) => ({
-			id: a.id,
-			pseudo: a.pseudo,
-			role: a.role,
-			characterId: a.characterId,
-			discordLinked: !!a.discordId,
-			lastSeenAt: a.lastSeenAt ? a.lastSeenAt.toISOString() : null,
-			createdAt: a.createdAt.toISOString()
-		})),
-		characters: characterRows.map((c) => ({
-			...plain(c),
-			items: itemsByCharacter.get(c.id) ?? []
-		})),
-		oaths: (await db.select().from(oaths).orderBy(asc(oaths.name))).map(plain),
-		beasts: beastRows.map((b) => ({ ...plain(b), zones: zonesByBeast.get(b.id) ?? [] })),
-		zones: (await db.select().from(zones).orderBy(asc(zones.position), asc(zones.id))).map(plain),
-		events: eventRows.map((e) => ({
-			...plain(e),
-			participants: participantsByEvent.get(e.id) ?? []
-		})),
-		settings: await db
-			.select({ key: settings.key, value: settings.value })
-			.from(settings)
-			.orderBy(asc(settings.key))
-	};
-
-	await recordAudit(db, {
-		source: 'admin',
-		action: 'export_data',
-		actor: present,
-		details: {
-			accounts: view.accounts.length,
-			characters: view.characters.length,
-			beasts: view.beasts.length,
-			events: view.events.length
+		const characterRows = await tx
+			.select()
+			.from(characters)
+			.orderBy(asc(characters.name), asc(characters.id));
+		const itemRows = await tx
+			.select()
+			.from(characterItems)
+			.orderBy(
+				asc(characterItems.characterId),
+				asc(characterItems.position),
+				asc(characterItems.id)
+			);
+		const itemsByCharacter = new Map<string, Record<string, unknown>[]>();
+		for (const item of itemRows) {
+			const list = itemsByCharacter.get(item.characterId) ?? [];
+			const { characterId: _owner, ...rest } = item;
+			void _owner;
+			list.push(plain(rest));
+			itemsByCharacter.set(item.characterId, list);
 		}
+
+		const beastRows = await tx.select().from(beasts).orderBy(asc(beasts.name), asc(beasts.id));
+		const beastZoneRows = await tx.select().from(beastZones);
+		const zonesByBeast = new Map<string, string[]>();
+		for (const bz of beastZoneRows) {
+			zonesByBeast.set(bz.beastId, [...(zonesByBeast.get(bz.beastId) ?? []), bz.zoneId].sort());
+		}
+
+		const eventRows = await tx.select().from(events).orderBy(asc(events.startsAt), asc(events.id));
+		const participantRows = await tx.select().from(eventParticipants);
+		const participantsByEvent = new Map<string, { characterId: string; registeredAt: string }[]>();
+		for (const p of participantRows) {
+			const list = participantsByEvent.get(p.eventId) ?? [];
+			list.push({ characterId: p.characterId, registeredAt: p.registeredAt.toISOString() });
+			participantsByEvent.set(p.eventId, list);
+		}
+
+		const view: ExportDataView = {
+			format: 'nuages-polaires-export-partiel',
+			version: 3,
+			notice: EXPORT_NOTICE,
+			exportedAt: new Date().toISOString(),
+			excluded: [...EXPORT_EXCLUDED],
+			accounts: accountRows.map((a) => ({
+				id: a.id,
+				pseudo: a.pseudo,
+				role: a.role,
+				characterId: a.characterId,
+				discordLinked: !!a.discordId,
+				lastSeenAt: a.lastSeenAt ? a.lastSeenAt.toISOString() : null,
+				createdAt: a.createdAt.toISOString()
+			})),
+			characters: characterRows.map((c) => ({
+				...plain(c),
+				items: itemsByCharacter.get(c.id) ?? []
+			})),
+			oaths: (await tx.select().from(oaths).orderBy(asc(oaths.name))).map(plain),
+			beasts: beastRows.map((b) => ({ ...plain(b), zones: zonesByBeast.get(b.id) ?? [] })),
+			zones: (await tx.select().from(zones).orderBy(asc(zones.position), asc(zones.id))).map(plain),
+			events: eventRows.map((e) => ({
+				...plain(e),
+				participants: participantsByEvent.get(e.id) ?? []
+			})),
+			settings: await tx
+				.select({ key: settings.key, value: settings.value })
+				.from(settings)
+				.orderBy(asc(settings.key))
+		};
+
+		await recordAudit(tx, {
+			source: 'admin',
+			action: 'export_data',
+			actor: present,
+			details: {
+				accounts: view.accounts.length,
+				characters: view.characters.length,
+				beasts: view.beasts.length,
+				events: view.events.length
+			}
+		});
+		return view;
 	});
-	return view;
 }
 
 /** État de la migration héritée, lu dans `migration_registry` (aucune écriture). */
@@ -219,7 +228,7 @@ export async function diagnostics(
 		dbLatencyMs,
 		env: {
 			databaseConfigured: present(env, 'DATABASE_URL') || present(env, 'NETLIFY_DATABASE_URL'),
-			pgliteDriver: (env.NP_DB_DRIVER ?? '').trim().toLowerCase() === 'pglite',
+			[`${LOCAL_DRIVER}Driver`]: (env.NP_DB_DRIVER ?? '').trim().toLowerCase() === LOCAL_DRIVER,
 			sessionSecretConfigured: (env.NP_SESSION_SECRET ?? '').length >= 32,
 			siteUrlConfigured: present(env, 'NP_SITE_URL'),
 			adminBootstrapConfigured:
@@ -229,8 +238,8 @@ export async function diagnostics(
 				present(env, 'DISCORD_CLIENT_ID') && present(env, 'DISCORD_CLIENT_SECRET'),
 			discordWebhookConfigured: present(env, 'DISCORD_EVENTS_WEBHOOK_URL'),
 			production: isProductionEnv(env)
-		},
-		version: String(packageJson.version ?? ''),
+		} as DiagnosticsView['env'],
+		version: version,
 		at: new Date().toISOString()
 	};
 }

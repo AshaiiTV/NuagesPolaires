@@ -45,9 +45,21 @@
 		panneau = null,
 		note = null
 	}: Props = $props();
+
+	// Le régime se lit aussi sur `html` (03-vision §3, parcours P2) : posé à l'ouverture du feuillet,
+	// rendu au régime précédent quand on le repose.
+	$effect(() => {
+		const racine = document.documentElement;
+		const avant = racine.dataset.regime;
+		racine.dataset.regime = 'scene';
+		return () => {
+			if (avant) racine.dataset.regime = avant;
+			else delete racine.dataset.regime;
+		};
+	});
 </script>
 
-<div class="feuille {disposition}" class:gauche style:--dentelure={DENTELURE}>
+<div class="feuille {disposition}" data-feuillet class:gauche style:--dentelure={DENTELURE}>
 	<div class="papier">
 		<div class="bande chiffres">{@render bande()}</div>
 		<div class="contenu">{@render children()}</div>
@@ -62,9 +74,16 @@
 </div>
 
 <style>
+	/* Le feuillet remplace la bande basse des cahiers : sa propre barre tient le bas de l'écran.
+	   (`:has` pour que ce soit vrai dès le rendu serveur.) */
+	:global(body:has([data-feuillet]) .bande-basse) {
+		display: none;
+	}
 	.feuille {
 		position: relative;
-		animation: resserrer 240ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+		/* `backwards` et non `both` : une fois posé, le feuillet ne garde aucune translation, sans quoi
+		   la barre et la carte « fixes » se caleraient sur lui et non sur l'écran. */
+		animation: resserrer 240ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
 	}
 	/* Le carnet se resserre : la colonne arrive de 24 px et prend sa place (un cas de « tourner »). */
 	@keyframes resserrer {
@@ -262,7 +281,7 @@
 
 	@media (prefers-reduced-motion: reduce) {
 		.feuille {
-			animation: fondu 120ms both;
+			animation: fondu 120ms backwards;
 		}
 		@keyframes fondu {
 			from {

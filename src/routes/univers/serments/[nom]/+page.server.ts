@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { isNpError } from '$lib/server/http';
-import { loadOath, loadOaths } from '../source';
+import { loadOath, loadOaths, repereLecteur } from '../source';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, params }) => {
@@ -9,7 +9,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		if (isNpError(e) && e.status < 500) error(404, 'Cette page n’existe pas dans le carnet.');
 		throw e;
 	});
-	const all = await loadOaths(locals);
+	const [all, reader] = await Promise.all([loadOaths(locals), repereLecteur(locals, oath)]);
 	const index = all.findIndex((o) => o.id === oath.id);
 	const link = (o: (typeof all)[number] | undefined) =>
 		o ? { href: '/univers/serments/' + o.id, title: o.name } : null;
@@ -17,7 +17,6 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		oath,
 		previous: index > 0 ? link(all[index - 1]) : null,
 		next: index >= 0 ? link(all[index + 1]) : null,
-		tuEsIci: null as number | null,
-		readerBranch: null as string | null
+		...reader
 	};
 };

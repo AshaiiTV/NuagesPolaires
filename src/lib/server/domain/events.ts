@@ -1,3 +1,4 @@
+import { assertFreshAccount } from '$lib/server/auth/context';
 // Agenda : rendez-vous, inscriptions, organisation et annonce (06-contrats §B.5 ; 03-vision §5.6 ;
 // 04-architecture §3.5, §5, §6, §10.7 ; audit 08 §1 ; audit 05 §3.5, §5.5 `set_event_participation`).
 //
@@ -10,9 +11,9 @@
 //     « La dernière place vient d'être prise. » (06-contrats §A) ;
 //   - `expectedRevision` obligatoire (428), contrôlé dans le WHERE de l'UPDATE (409) ;
 //   - rendez-vous masqués jamais servis hors staff (04 §4) ;
-//   - annonce (« Prévenir les joueurs ») = marque `extra.announcedAt` : la corne est calculée par
+//   - annonce (« Prévenir les joueurs ») = marque `announced_at` : la corne est calculée par
 //     `reading.ts` chez chaque compte relié, sans table de notifications (03-vision §5.6, §9.8).
-import { and, asc, eq, gte, inArray, isNotNull, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import type { z } from 'zod';
 import type { Db, Tx } from '$lib/server/db';
@@ -113,17 +114,12 @@ function stringField(extra: Record<string, unknown>, key: string): string | null
 	return typeof v === 'string' && v !== '' ? v : null;
 }
 
-/** Récit rattaché à un rendez-vous (`extra.recitId`, champ de l'agenda). */
-export function recitIdOf(row: Pick<EventRecord, 'extra'>): string | null {
-	return stringField(extraOf(row), 'recitId');
+/** Récit rattaché à un rendez-vous (`recit_combat_id`, champ de l'agenda). */
+export function recitIdOf(row: Pick<EventRecord, 'recitCombatId'>): string | null {
+	return row.recitCombatId;
 }
-
-/** Instant de l'annonce (`extra.announcedAt`), ou `null` si le rendez-vous n'a jamais été annoncé. */
-export function announcedAtOf(row: Pick<EventRecord, 'extra'>): Date | null {
-	const v = stringField(extraOf(row), 'announcedAt');
-	if (!v) return null;
-	const d = new Date(v);
-	return Number.isFinite(d.getTime()) ? d : null;
+export function announcedAtOf(row: Pick<EventRecord, 'announcedAt'>): Date | null {
+	return row.announcedAt;
 }
 
 function eventLabel(row: Pick<EventRecord, 'title' | 'startsAt'>): string {
@@ -165,7 +161,14 @@ export async function buildEventRows(
 ): Promise<EventRowView[]> {
 	if (rows.length === 0) return [];
 	const ids = rows.map((r) => r.id);
-	const myCharacterId = actor?.characterId ?? null;
+	let myCharacterId = actor?.characterId ?? null;
+	if (myCharacterId) {
+		const [active] = await db
+			.select({ id: characters.id })
+			.from(characters)
+			.where(and(eq(characters.id, myCharacterId), isNull(characters.struckAt)));
+		if (!active) myCharacterId = null;
+	}
 
 	const participantRows = await db
 		.select({
@@ -175,7 +178,7 @@ export async function buildEventRows(
 		})
 		.from(eventParticipants)
 		.innerJoin(characters, eq(characters.id, eventParticipants.characterId))
-		.where(inArray(eventParticipants.eventId, ids))
+		.where(and(inArray(eventParticipants.eventId, ids), isNull(characters.struckAt)))
 		.orderBy(asc(eventParticipants.registeredAt), asc(characters.name));
 	const participantsByEvent = new Map<string, { characterId: string; name: string }[]>();
 	for (const p of participantRows) {
@@ -347,20 +350,22 @@ export async function setParticipation(
 	const now = new Date();
 
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, present);
 		const [event] = await tx.select().from(events).where(eq(events.id, data.eventId)).for('update');
 		if (!event) throw notFound();
 
 		const [character] = await tx
 			.select({ id: characters.id, name: characters.name })
 			.from(characters)
-			.where(eq(characters.id, characterId));
+			.where(and(eq(characters.id, characterId), isNull(characters.struckAt)));
 		if (!character) throw NpError.notFound('Ta fiche est introuvable.');
 
 		const participantIds = (
 			await tx
 				.select({ characterId: eventParticipants.characterId })
 				.from(eventParticipants)
-				.where(eq(eventParticipants.eventId, event.id))
+				.innerJoin(characters, eq(characters.id, eventParticipants.characterId))
+				.where(and(eq(eventParticipants.eventId, event.id), isNull(characters.struckAt)))
 		).map((p) => p.characterId);
 		const registrable = {
 			id: event.id,
@@ -432,6 +437,7 @@ export async function createEvent(
 	const id = `e_${nanoid(16)}`;
 
 	await db.transaction(async (tx) => {
+		await assertFreshAccount(tx, present);
 		if (data.recitId) await assertRecitExists(tx, data.recitId);
 		await tx.insert(events).values({
 			id,
@@ -444,7 +450,7 @@ export async function createEvent(
 			discordUrl: data.discordUrl,
 			createdBy: present.accountId,
 			createdByLabel: present.pseudo,
-			extra: data.recitId ? { recitId: data.recitId } : {}
+			recitCombatId: data.recitId || null
 		});
 		await appendStaffLog(tx, {
 			action: 'event_cree',
@@ -496,13 +502,15 @@ export async function updateEvent(
 	const data = parse(updateEventSchema, input);
 
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, present);
 		const [event] = await tx.select().from(events).where(eq(events.id, data.eventId)).for('update');
 		if (!event) throw notFound();
 
 		const [{ n }] = await tx
 			.select({ n: sql<number>`count(*)::int` })
 			.from(eventParticipants)
-			.where(eq(eventParticipants.eventId, event.id));
+			.innerJoin(characters, eq(characters.id, eventParticipants.characterId))
+			.where(and(eq(eventParticipants.eventId, event.id), isNull(characters.struckAt)));
 		const capacity = data.capacity ?? event.capacity;
 		const capacityMessage = capacityError(capacity, n);
 		if (capacityMessage) throw new NpError('INVALID', capacityMessage, 400);
@@ -512,14 +520,8 @@ export async function updateEvent(
 				? event.startsAt
 				: parseStartsAt(data.startsAt === '' ? null : data.startsAt);
 
-		const extra = extraOf(event);
-		if (data.recitId !== undefined) {
-			if (data.recitId === null || data.recitId === '') delete extra.recitId;
-			else {
-				await assertRecitExists(tx, data.recitId);
-				extra.recitId = data.recitId;
-			}
-		}
+		const recitCombatId = data.recitId === undefined ? event.recitCombatId : data.recitId || null;
+		if (recitCombatId) await assertRecitExists(tx, recitCombatId);
 
 		const title = data.title ?? event.title;
 		const updated = await tx
@@ -532,7 +534,7 @@ export async function updateEvent(
 				capacity,
 				discordUrl: data.discordUrl ?? event.discordUrl,
 				hidden: data.hidden ?? event.hidden,
-				extra,
+				recitCombatId,
 				revision: sql`${events.revision} + 1`
 			})
 			.where(and(eq(events.id, event.id), eq(events.revision, data.expectedRevision)))
@@ -569,6 +571,7 @@ export async function setEventHidden(
 	const data = parse(setEventHiddenSchema, input);
 
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, present);
 		const updated = await tx
 			.update(events)
 			.set({ hidden: data.hidden, revision: sql`${events.revision} + 1` })
@@ -612,6 +615,7 @@ export async function strikeEvent(
 	const data = parse(strikeEventSchema, input);
 
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, present);
 		const [event] = await tx.select().from(events).where(eq(events.id, data.eventId)).for('update');
 		if (!event) throw notFound();
 		const participants = (
@@ -654,7 +658,7 @@ export async function strikeEvent(
 
 /**
  * « Prévenir les joueurs » (MJ et administrateurs) : marque le rendez-vous comme annoncé
- * (`extra.announcedAt`). Chaque compte relié à un personnage y voit une corne dans « Dernières
+ * (`announced_at`). Chaque compte relié à un personnage y voit une corne dans « Dernières
  * pages » (calculée par `reading.ts`). Une nouvelle annonce déplace la corne à la date de l'annonce.
  * Ne touche ni la révision (aucun champ éditable ne change) ni l'historique des fiches.
  */
@@ -668,6 +672,7 @@ export async function notifyEvent(
 	const announcedAt = new Date();
 
 	return db.transaction(async (tx) => {
+		await assertFreshAccount(tx, present);
 		const [event] = await tx.select().from(events).where(eq(events.id, data.eventId)).for('update');
 		if (!event) throw notFound();
 		if (event.hidden) {
@@ -677,17 +682,16 @@ export async function notifyEvent(
 				409
 			);
 		}
-		const extra = {
-			...extraOf(event),
-			announcedAt: announcedAt.toISOString(),
-			announcedBy: present.pseudo
-		};
-		await tx.update(events).set({ extra }).where(eq(events.id, event.id));
+		await tx
+			.update(events)
+			.set({ announcedAt, announcedBy: present.accountId })
+			.where(eq(events.id, event.id));
 
 		const [{ n }] = await tx
 			.select({ n: sql<number>`count(*)::int` })
 			.from(accounts)
-			.where(isNotNull(accounts.characterId));
+			.innerJoin(characters, eq(characters.id, accounts.characterId))
+			.where(isNull(characters.struckAt));
 		await appendStaffLog(tx, {
 			action: 'event_notif',
 			detail: `Corne déposée chez ${n} compte${n > 1 ? 's' : ''} relié${n > 1 ? 's' : ''} pour '${event.title}'`,

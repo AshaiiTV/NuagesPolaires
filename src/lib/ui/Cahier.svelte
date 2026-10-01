@@ -58,7 +58,8 @@
 			{#if compte}
 				<a class="compte" href="/compte">
 					<Portrait nom={compte.pseudo} src={compte.portrait} taille={36} />
-					<span class="pseudo">{compte.pseudo}{#if compte.role}<small>{compte.role}</small>{/if}</span>
+					<span class="pseudo">{compte.pseudo}</span>
+					{#if compte.role}<small class="role">{compte.role}</small>{/if}
 				</a>
 			{/if}
 		</nav>
@@ -192,10 +193,13 @@
 		rotate: 45deg;
 		translate: 0 -50%;
 	}
+	/* Le compte : portrait et pseudo sur une ligne, le rôle dessous sur toute la largeur de la tranche
+	   (« ADMINISTRATEUR » ne tient pas à côté du portrait). */
 	.compte {
-		display: flex;
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
 		align-items: center;
-		gap: 10px;
+		gap: 4px 10px;
 		margin: var(--ligne) 0 0 12px;
 		min-height: var(--cible);
 		text-decoration: none;
@@ -205,13 +209,15 @@
 		color: var(--encre);
 		overflow: hidden;
 		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
-	.pseudo small {
-		display: block;
+	.compte .role {
+		grid-column: 1 / -1;
 		font: var(--t-repere);
-		letter-spacing: 0.1em;
+		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		color: var(--tampon);
+		white-space: nowrap;
 	}
 
 	/* ── La bande basse : téléphone ── */
@@ -235,6 +241,11 @@
 		}
 		.bureau {
 			padding: var(--ligne) 12px;
+		}
+		/* Tranche étroite : le rôle s'écrit en bas de casse pour tenir sans être coupé. */
+		.compte .role {
+			letter-spacing: 0.02em;
+			text-transform: none;
 		}
 	}
 	@media (max-width: 760px) {

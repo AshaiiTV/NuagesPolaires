@@ -5,7 +5,7 @@ import { count, eq, sql } from 'drizzle-orm';
 import { createTestDb, type TestDb } from '../../../../tests/helpers/db';
 import { DEMO_IDS } from '../db/seed';
 import type { Db } from '../db/index';
-import { characters, journalEntries } from '../db/schema';
+import { accounts, characters, journalEntries } from '../db/schema';
 import type { Actor } from '../permissions';
 import { amendEntry, listEntries, strikeEntry, writeEntry } from './journal';
 import { BEFORE_NOTEBOOK_ID } from '../../schemas/journal';
@@ -165,6 +165,7 @@ describe('journal', () => {
 			.update(characters)
 			.set({ journal: 'Ancien texte de Seren.' })
 			.where(eq(characters.id, P.seren));
+		await t.db.update(accounts).set({ characterId: P.seren }).where(eq(accounts.id, A.nova));
 		const amended = await amendEntry(t.db, seren, {
 			entryId: BEFORE_NOTEBOOK_ID,
 			text: 'Texte repris.'

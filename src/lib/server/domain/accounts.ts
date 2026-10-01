@@ -26,7 +26,11 @@ import {
 	type Account,
 	type Theme
 } from '$lib/server/db/schema';
-import { ALWAYS_GRANTED_THEME_IDS, THEME_ID_ALIASES, THEME_SEED } from '$lib/server/db/referentials';
+import {
+	ALWAYS_GRANTED_THEME_IDS,
+	THEME_ID_ALIASES,
+	THEME_SEED
+} from '$lib/server/db/referentials';
 import { NpError } from '$lib/server/http';
 import { assertCan, requireActor, type Actor, type Role } from '$lib/server/permissions';
 import { recordAudit } from '$lib/server/domain/audit';
@@ -78,15 +82,27 @@ import {
 	type ThemeVisibilityInput,
 	type UnlinkCharacterInput
 } from '$lib/schemas/accounts';
-import { assertFreshAccount, auditContextOf, requestContextOf, SESSION_CLOSED_MESSAGE } from '$lib/server/auth/context';
+import {
+	assertFreshAccount,
+	auditContextOf,
+	requestContextOf,
+	SESSION_CLOSED_MESSAGE
+} from '$lib/server/auth/context';
 import {
 	burnPasswordCheck,
+	passwordHashFormat,
 	hashPassword,
 	needsRehash,
 	randomSecret,
 	verifyPassword
 } from '$lib/server/auth/password';
-import { consumeRateLimit, rateLimitKey, resetRateLimit } from '$lib/server/auth/rate-limit';
+import {
+	consumeRateLimit,
+	hitRateLimit,
+	RATE_LIMIT_MAX,
+	rateLimitKey,
+	resetRateLimit
+} from '$lib/server/auth/rate-limit';
 import { maybeRecoverAdmin } from '$lib/server/auth/recovery';
 import {
 	RESET_SESSION_MS,
@@ -98,7 +114,13 @@ import {
 } from '$lib/server/auth/session';
 import { isUniqueViolation, parseInput, requireExpectedRevision } from '$lib/server/auth/validate';
 
-export { discordAuthUrl, discordCallback, discordLogin, discordUnlink, isDiscordEnabled } from '$lib/server/auth/discord';
+export {
+	discordAuthUrl,
+	discordCallback,
+	discordLogin,
+	discordUnlink,
+	isDiscordEnabled
+} from '$lib/server/auth/discord';
 
 // ---------------------------------------------------------------------------
 // Messages officiels
@@ -127,17 +149,30 @@ function iso(d: Date | null | undefined): string | null {
 }
 
 function actorOf(account: Account): Actor {
-	return { accountId: account.id, role: account.role, characterId: account.characterId, pseudo: account.pseudo };
+	return {
+		accountId: account.id,
+		role: account.role,
+		characterId: account.characterId,
+		pseudo: account.pseudo
+	};
 }
 
 /**
  * Verrouille des comptes dans l'ordre des identifiants (une requête), éventuellement avec toutes les
  * lignes administrateur (04 §10.7). Renvoie les lignes verrouillées.
  */
-async function lockAccounts(tx: Tx, ids: readonly string[], withAdmins = false): Promise<Account[]> {
+async function lockAccounts(
+	tx: Tx,
+	ids: readonly string[],
+	withAdmins = false
+): Promise<Account[]> {
 	const unique = [...new Set(ids)];
 	const byId = unique.length > 0 ? inArray(accounts.id, unique) : undefined;
-	const where = withAdmins ? (byId ? or(eq(accounts.role, 'admin'), byId) : eq(accounts.role, 'admin')) : byId;
+	const where = withAdmins
+		? byId
+			? or(eq(accounts.role, 'admin'), byId)
+			: eq(accounts.role, 'admin')
+		: byId;
 	if (!where) return [];
 	return tx.select().from(accounts).where(where).orderBy(asc(accounts.id)).for('update');
 }
@@ -152,7 +187,10 @@ function pseudoTaken(): NpError {
 // ---------------------------------------------------------------------------
 
 /** `readSession(db, token)` → `{ session, account, character } | null` (voir auth/session.ts). */
-export async function readSession(db: Db | Tx, token: string | null | undefined): Promise<SessionRead | null> {
+export async function readSession(
+	db: Db | Tx,
+	token: string | null | undefined
+): Promise<SessionRead | null> {
 	return readSessionRow(db, token);
 }
 
@@ -166,14 +204,26 @@ export interface ResetActor {
  * Inscription (audit 05 §4.4) : pseudo valide, unique sans tenir compte de la casse, mot de passe
  * ≥ 8, règlement accepté ; compte joueur non relié, session pleine. 409 PSEUDO_TAKEN.
  */
-export async function register(db: Db, input: RegisterInput): Promise<SessionResultView & { accountId: string }> {
+export async function register(
+	db: Db,
+	input: RegisterInput
+): Promise<SessionResultView & { accountId: string }> {
 	const data = parseInput(registerInput, input);
+	const reserved = (process.env.NP_ADMIN_PSEUDO ?? '').trim().toLowerCase();
+	if (reserved && data.pseudo.toLowerCase() === reserved) throw pseudoTaken();
 	const ip = data.ip ?? null;
 	const userAgent = data.userAgent ?? null;
 	try {
 		await consumeRateLimit(db, [rateLimitKey('ip', ip), rateLimitKey('register', data.pseudo)]);
 	} catch (e) {
-		await recordAudit(db, { source: 'auth', action: 'register_rate_limited', actor: null, details: { pseudo: data.pseudo }, ip, userAgent });
+		await recordAudit(db, {
+			source: 'auth',
+			action: 'register_rate_limited',
+			actor: null,
+			details: { pseudo: data.pseudo },
+			ip,
+			userAgent
+		});
 		throw e;
 	}
 	const existing = await db
@@ -195,7 +245,14 @@ export async function register(db: Db, input: RegisterInput): Promise<SessionRes
 				sessionVersion: 0,
 				lastSeenAt: now
 			});
-			const session = await createSession(tx, { accountId: id, scope: 'full', sessionVersion: 0, ip, userAgent, now });
+			const session = await createSession(tx, {
+				accountId: id,
+				scope: 'full',
+				sessionVersion: 0,
+				ip,
+				userAgent,
+				now
+			});
 			await recordAudit(tx, {
 				source: 'auth',
 				action: 'register_success',
@@ -203,7 +260,11 @@ export async function register(db: Db, input: RegisterInput): Promise<SessionRes
 				ip,
 				userAgent
 			});
-			return { sessionToken: session.token, expiresAt: session.expiresAt.toISOString(), accountId: id };
+			return {
+				sessionToken: session.token,
+				expiresAt: session.expiresAt.toISOString(),
+				accountId: id
+			};
 		});
 	} catch (e) {
 		if (isUniqueViolation(e, 'accounts_pseudo_lower_uidx')) throw pseudoTaken();
@@ -222,15 +283,27 @@ export async function login(db: Db, input: LoginInput): Promise<LoginResultView>
 	const ip = data.ip ?? null;
 	const userAgent = data.userAgent ?? null;
 	const loginKey = rateLimitKey('login', data.pseudo);
+	const pairKey = rateLimitKey('login', `${ip ?? 'unknown'}:${data.pseudo}`);
 	try {
-		await consumeRateLimit(db, [rateLimitKey('ip', ip), loginKey]);
+		await consumeRateLimit(db, [rateLimitKey('ip', ip), pairKey]);
 	} catch (e) {
-		await recordAudit(db, { source: 'auth', action: 'login_rate_limited', actor: null, details: { pseudo: data.pseudo }, ip, userAgent });
+		await recordAudit(db, {
+			source: 'auth',
+			action: 'login_rate_limited',
+			actor: null,
+			details: { pseudo: data.pseudo },
+			ip,
+			userAgent
+		});
 		throw e;
 	}
 
+	const globalAttempts = await hitRateLimit(db, loginKey);
+	if (globalAttempts > RATE_LIMIT_MAX) await new Promise((resolve) => setTimeout(resolve, 250));
+
 	await maybeRecoverAdmin(db, { pseudo: data.pseudo, password: data.password, ip, userAgent });
 
+	const failureStarted = performance.now();
 	const fail = async (reason: string, account: Account | null): Promise<never> => {
 		await recordAudit(db, {
 			source: 'auth',
@@ -240,6 +313,9 @@ export async function login(db: Db, input: LoginInput): Promise<LoginResultView>
 			ip,
 			userAgent
 		});
+		await new Promise((resolve) =>
+			setTimeout(resolve, Math.max(0, 200 - (performance.now() - failureStarted)))
+		);
 		throw new NpError('UNAUTHENTICATED', LOGIN_FAILED_MESSAGE, 401);
 	};
 
@@ -257,7 +333,10 @@ export async function login(db: Db, input: LoginInput): Promise<LoginResultView>
 	// En réinitialisation forcée, seul le secret ouvre le compte (04 §4) ; un compte hérité forcé sans
 	// empreinte séparée garde son code temporaire dans password_hash.
 	const target = forced ? (account.resetSecretHash ?? account.passwordHash) : account.passwordHash;
-	if (!(await verifyPassword(data.password, target))) return fail('bad_password', account);
+	if (!(await verifyPassword(data.password, target))) {
+		if (passwordHashFormat(target) !== 'scrypt') await burnPasswordCheck(data.password);
+		return fail('bad_password', account);
+	}
 	if (forced && (!account.resetExpiresAt || account.resetExpiresAt.getTime() <= now.getTime())) {
 		await recordAudit(db, {
 			source: 'auth',
@@ -270,7 +349,8 @@ export async function login(db: Db, input: LoginInput): Promise<LoginResultView>
 		throw new NpError('RESET_EXPIRED', RESET_EXPIRED_MESSAGE, 401);
 	}
 
-	const rehash = !forced && needsRehash(account.passwordHash) ? await hashPassword(data.password) : null;
+	const rehash =
+		!forced && needsRehash(account.passwordHash) ? await hashPassword(data.password) : null;
 	const scope = forced ? ('reset' as const) : ('full' as const);
 
 	const result = await db.transaction(async (tx) => {
@@ -310,10 +390,16 @@ export async function login(db: Db, input: LoginInput): Promise<LoginResultView>
 		// Journal staff : connexions des MJ, designers et administrateurs (audit 05 §3.9 `connexion`,
 		// audit 06 B15 : jamais pour un joueur).
 		if (row.role !== 'joueur' && scope === 'full') {
-			await appendStaffLog(tx, { action: 'connexion', detail: `Connexion de '${row.pseudo}'.`, actor, target: row.pseudo });
+			await appendStaffLog(tx, {
+				action: 'connexion',
+				detail: `Connexion de '${row.pseudo}'.`,
+				actor,
+				target: row.pseudo
+			});
 		}
 		return session;
 	});
+	await resetRateLimit(db, pairKey);
 	await resetRateLimit(db, loginKey);
 	return {
 		sessionToken: result.token,
@@ -327,7 +413,10 @@ export async function login(db: Db, input: LoginInput): Promise<LoginResultView>
  * Déconnexion (04 §3.1, §10.8) : supprime la session ET incrémente `session_version` (tous les
  * appareils). Idempotente : un jeton inconnu, expiré ou déjà révoqué ⇒ rien, sans nouvelle révocation.
  */
-export async function logout(db: Db, sessionToken: string | null | undefined): Promise<{ revoked: boolean }> {
+export async function logout(
+	db: Db,
+	sessionToken: string | null | undefined
+): Promise<{ revoked: boolean }> {
 	const read = await readSessionRow(db, sessionToken);
 	if (!read) return { revoked: false };
 	await db.transaction(async (tx) => {
@@ -362,7 +451,10 @@ export async function changeOwnPassword(
 	const ctx = requestContextOf(present);
 	return db.transaction(async (tx) => {
 		const fresh = await assertFreshAccount(tx, present);
-		if (fresh.passwordHash !== account.passwordHash || fresh.sessionVersion !== account.sessionVersion) {
+		if (
+			fresh.passwordHash !== account.passwordHash ||
+			fresh.sessionVersion !== account.sessionVersion
+		) {
 			throw new NpError('ACCESS_CHANGED', ACCESS_CHANGED_MESSAGE, 409);
 		}
 		const [updated] = await tx
@@ -378,7 +470,12 @@ export async function changeOwnPassword(
 			ip: ctx?.ip,
 			userAgent: ctx?.userAgent
 		});
-		await recordAudit(tx, { source: 'auth', action: 'self_change_password', actor: present, ...auditContextOf(present) });
+		await recordAudit(tx, {
+			source: 'auth',
+			action: 'self_change_password',
+			actor: present,
+			...auditContextOf(present)
+		});
 		return { sessionToken: session.token, expiresAt: session.expiresAt.toISOString() };
 	});
 }
@@ -398,17 +495,26 @@ export async function completeForcedReset(
 	const nextHash = await hashPassword(data.next);
 	return db.transaction(async (tx) => {
 		const now = new Date();
-		const [account] = await tx.select().from(accounts).where(eq(accounts.id, resetActor.accountId)).for('update');
+		const [account] = await tx
+			.select()
+			.from(accounts)
+			.where(eq(accounts.id, resetActor.accountId))
+			.for('update');
 		if (!account) throw NpError.unauthenticated(SESSION_CLOSED_MESSAGE);
 		const [session] = await tx
 			.select()
 			.from(sessions)
 			.where(and(eq(sessions.id, resetActor.sessionId), eq(sessions.accountId, account.id)));
-		if (!session || session.expiresAt.getTime() <= now.getTime() || session.sessionVersion !== account.sessionVersion) {
+		if (
+			!session ||
+			session.expiresAt.getTime() <= now.getTime() ||
+			session.sessionVersion !== account.sessionVersion
+		) {
 			throw NpError.unauthenticated(SESSION_CLOSED_MESSAGE);
 		}
 		if (session.scope !== 'reset') throw NpError.forbidden('Aucune réinitialisation autorisée');
-		if (!scopeMatchesAccount('reset', account, now)) throw NpError.unauthenticated(SESSION_CLOSED_MESSAGE);
+		if (!scopeMatchesAccount('reset', account, now))
+			throw NpError.unauthenticated(SESSION_CLOSED_MESSAGE);
 
 		const [updated] = await tx
 			.update(accounts)
@@ -494,7 +600,11 @@ export async function deleteOwnAccount(
 			source: 'auth',
 			action: 'self_delete_account',
 			actor: present,
-			details: { pseudo: fresh.pseudo, characterId: character?.id ?? null, characterName: character?.name ?? null },
+			details: {
+				pseudo: fresh.pseudo,
+				characterId: character?.id ?? null,
+				characterName: character?.name ?? null
+			},
 			...auditContextOf(present)
 		});
 		await appendStaffLog(tx, {
@@ -533,7 +643,10 @@ function toAccountView(row: AccountRowWithName): AccountView {
 	};
 }
 
-async function accountRows(db: Db | Tx, where?: ReturnType<typeof eq>): Promise<AccountRowWithName[]> {
+async function accountRows(
+	db: Db | Tx,
+	where?: ReturnType<typeof eq>
+): Promise<AccountRowWithName[]> {
 	const base = db
 		.select({ account: accounts, characterName: characters.name })
 		.from(accounts)
@@ -596,14 +709,19 @@ function notFoundAccount(): NpError {
 }
 
 /** Relier un compte à un personnage (audit 05 §4.5 `admin_link_account` ; staff `liaison`). */
-export async function linkCharacter(db: Db, actor: Actor | null, input: LinkCharacterInput): Promise<AccountView> {
+export async function linkCharacter(
+	db: Db,
+	actor: Actor | null,
+	input: LinkCharacterInput
+): Promise<AccountView> {
 	const present = assertCan(actor, 'admin.accounts');
 	requireExpectedRevision(input);
 	const data = parseInput(linkCharacterInput, input);
 	try {
 		return await db.transaction(async (tx) => {
+			await tx.execute(sql`select pg_advisory_xact_lock(298, 1)`);
+			await assertFreshAccount(tx, present);
 			const locked = await lockAccounts(tx, [present.accountId, data.accountId]);
-			await assertFreshAccount(tx, present, locked.find((a) => a.id === present.accountId) ?? null);
 			const target = locked.find((a) => a.id === data.accountId);
 			if (!target) throw notFoundAccount();
 			const [character] = await tx
@@ -628,7 +746,12 @@ export async function linkCharacter(db: Db, actor: Actor | null, input: LinkChar
 				source: 'accounts',
 				action: 'admin_link_account',
 				actor: present,
-				details: { accountId: target.id, pseudo: target.pseudo, characterId: character.id, previousCharacterId: target.characterId },
+				details: {
+					accountId: target.id,
+					pseudo: target.pseudo,
+					characterId: character.id,
+					previousCharacterId: target.characterId
+				},
 				...auditContextOf(present)
 			});
 			await appendStaffLog(tx, {
@@ -650,16 +773,22 @@ function characterTaken(): NpError {
 }
 
 /** Délier un compte de son personnage (audit 05 §4.5 `admin_unlink_account` ; staff `deliaison`). */
-export async function unlinkCharacter(db: Db, actor: Actor | null, input: UnlinkCharacterInput): Promise<AccountView> {
+export async function unlinkCharacter(
+	db: Db,
+	actor: Actor | null,
+	input: UnlinkCharacterInput
+): Promise<AccountView> {
 	const present = assertCan(actor, 'admin.accounts');
 	requireExpectedRevision(input);
 	const data = parseInput(unlinkCharacterInput, input);
 	return db.transaction(async (tx) => {
+		await tx.execute(sql`select pg_advisory_xact_lock(298, 1)`);
+		await assertFreshAccount(tx, present);
 		const locked = await lockAccounts(tx, [present.accountId, data.accountId]);
-		await assertFreshAccount(tx, present, locked.find((a) => a.id === present.accountId) ?? null);
 		const target = locked.find((a) => a.id === data.accountId);
 		if (!target) throw notFoundAccount();
-		if (!target.characterId) throw new NpError('INVALID', 'Ce compte n’est relié à aucun personnage.', 400);
+		if (!target.characterId)
+			throw new NpError('INVALID', 'Ce compte n’est relié à aucun personnage.', 400);
 		const [character] = await tx
 			.select({ name: characters.name })
 			.from(characters)
@@ -692,13 +821,18 @@ export async function unlinkCharacter(db: Db, actor: Actor | null, input: Unlink
  * Changer le rôle d'un compte (audit 05 §4.5 `admin_set_role`) : verrou commun sur les lignes admin,
  * recomptage, 409 LAST_ADMIN si l'on retirerait le dernier administrateur.
  */
-export async function setRole(db: Db, actor: Actor | null, input: SetRoleInput): Promise<AccountView> {
+export async function setRole(
+	db: Db,
+	actor: Actor | null,
+	input: SetRoleInput
+): Promise<AccountView> {
 	const present = assertCan(actor, 'admin.accounts');
 	requireExpectedRevision(input);
 	const data = parseInput(setRoleInput, input);
 	return db.transaction(async (tx) => {
+		await tx.execute(sql`select pg_advisory_xact_lock(298, 1)`);
+		await assertFreshAccount(tx, present);
 		const locked = await lockAccounts(tx, [present.accountId, data.accountId], true);
-		await assertFreshAccount(tx, present, locked.find((a) => a.id === present.accountId) ?? null);
 		const target = locked.find((a) => a.id === data.accountId);
 		if (!target) throw notFoundAccount();
 		if (target.revision !== data.expectedRevision) throw NpError.versionConflict();
@@ -743,14 +877,19 @@ export async function adminResetPassword(
 	const present = assertCan(actor, 'admin.accounts');
 	const data = parseInput(adminResetPasswordInput, input);
 	if (data.accountId === present.accountId) {
-		throw new NpError('INVALID', 'Pour ton propre compte, utilise « Changer mon mot de passe ».', 400);
+		throw new NpError(
+			'INVALID',
+			'Pour ton propre compte, utilise « Changer mon mot de passe ».',
+			400
+		);
 	}
 	const secret = randomSecret(24);
 	const secretHash = await hashPassword(secret);
 	const expiresAt = new Date(Date.now() + RESET_SESSION_MS);
 	await db.transaction(async (tx) => {
+		await tx.execute(sql`select pg_advisory_xact_lock(298, 1)`);
+		await assertFreshAccount(tx, present);
 		const locked = await lockAccounts(tx, [present.accountId, data.accountId]);
-		await assertFreshAccount(tx, present, locked.find((a) => a.id === present.accountId) ?? null);
 		const target = locked.find((a) => a.id === data.accountId);
 		if (!target) throw notFoundAccount();
 		await tx
@@ -791,8 +930,9 @@ export async function adminSetPassword(
 	const data = parseInput(adminSetPasswordInput, input);
 	const passwordHash = await hashPassword(data.password);
 	await db.transaction(async (tx) => {
+		await tx.execute(sql`select pg_advisory_xact_lock(298, 1)`);
+		await assertFreshAccount(tx, present);
 		const locked = await lockAccounts(tx, [present.accountId, data.accountId]);
-		await assertFreshAccount(tx, present, locked.find((a) => a.id === present.accountId) ?? null);
 		const target = locked.find((a) => a.id === data.accountId);
 		if (!target) throw notFoundAccount();
 		await tx
@@ -840,8 +980,9 @@ export async function strikeAccount(
 		throw NpError.forbidden('Tu ne peux pas rayer ton propre compte.');
 	}
 	await db.transaction(async (tx) => {
+		await tx.execute(sql`select pg_advisory_xact_lock(298, 1)`);
+		await assertFreshAccount(tx, present);
 		const locked = await lockAccounts(tx, [present.accountId, data.accountId], true);
-		await assertFreshAccount(tx, present, locked.find((a) => a.id === present.accountId) ?? null);
 		const target = locked.find((a) => a.id === data.accountId);
 		if (!target) throw notFoundAccount();
 		if (data.typedPseudo !== target.pseudo) {
@@ -854,7 +995,12 @@ export async function strikeAccount(
 			source: 'accounts',
 			action: 'admin_delete_account',
 			actor: present,
-			details: { accountId: target.id, pseudo: target.pseudo, role: target.role, characterId: target.characterId },
+			details: {
+				accountId: target.id,
+				pseudo: target.pseudo,
+				role: target.role,
+				characterId: target.characterId
+			},
 			...auditContextOf(present)
 		});
 		await appendStaffLog(tx, {
@@ -930,21 +1076,30 @@ interface ThemeAccess {
 }
 
 /** Calcule possession, blocage et visibilité de chaque thème pour un compte (audit 07 §3.3). */
-async function themeAccessFor(db: Db | Tx, account: Pick<Account, 'id' | 'role'>, now = new Date()): Promise<ThemeAccess[]> {
+async function themeAccessFor(
+	db: Db | Tx,
+	account: Pick<Account, 'id' | 'role'>,
+	now = new Date()
+): Promise<ThemeAccess[]> {
 	// Séquentiel : une transaction n'a qu'une connexion.
 	const all = (await db.select().from(themes).orderBy(asc(themes.createdAt), asc(themes.id))).sort(
 		(a, b) => displayRank(a.id) - displayRank(b.id)
 	);
-	const grants = await db.select().from(accountThemeGrants).where(eq(accountThemeGrants.accountId, account.id));
+	const grants = await db
+		.select()
+		.from(accountThemeGrants)
+		.where(eq(accountThemeGrants.accountId, account.id));
 	const unlocked = new Set(grants.filter((g) => g.kind === 'unlocked').map((g) => g.themeId));
 	const blockedSet = new Set(grants.filter((g) => g.kind === 'blocked').map((g) => g.themeId));
 	const staff = STAFF_ROLES.has(account.role);
 	return all.map((theme) => {
 		const blocked = blockedSet.has(theme.id) && !ALWAYS.has(theme.id);
 		const autoGranted =
-			theme.autoGrantAll && (!theme.availableUntil || theme.availableUntil.getTime() > now.getTime());
+			theme.autoGrantAll &&
+			(!theme.availableUntil || theme.availableUntil.getTime() > now.getTime());
 		// Administrateur : possède tout ; MJ et designer : peuvent utiliser tout thème (main.js:1098-1100, 1128).
-		const owned = !blocked && (ALWAYS.has(theme.id) || staff || unlocked.has(theme.id) || autoGranted);
+		const owned =
+			!blocked && (ALWAYS.has(theme.id) || staff || unlocked.has(theme.id) || autoGranted);
 		const visible = ALWAYS.has(theme.id) || theme.visible;
 		return { theme, owned, blocked, visible };
 	});
@@ -1025,12 +1180,24 @@ export async function resolveActiveTheme(
 	db: Db | Tx,
 	account: Pick<Account, 'id' | 'role' | 'selectedTheme'>
 ): Promise<{ id: string; ton: 'sombre' | 'clair'; tokens: ThemeTokens; custom: boolean }> {
-	const fallback = { id: 'dark', ton: 'sombre' as const, tokens: TOKENS_BY_ID.get('dark') as ThemeTokens, custom: false };
+	const fallback = {
+		id: 'dark',
+		ton: 'sombre' as const,
+		tokens: TOKENS_BY_ID.get('dark') as ThemeTokens,
+		custom: false
+	};
 	if (account.selectedTheme === 'dark') return fallback;
-	const access = (await themeAccessFor(db, account)).find((a) => a.theme.id === account.selectedTheme);
+	const access = (await themeAccessFor(db, account)).find(
+		(a) => a.theme.id === account.selectedTheme
+	);
 	if (!access || !access.owned) return fallback;
 	const tokens = themeTokens(access.theme);
-	return { id: access.theme.id, ton: tonOf(tokens), tokens, custom: isCustomTheme(access.theme.id) };
+	return {
+		id: access.theme.id,
+		ton: tonOf(tokens),
+		tokens,
+		custom: isCustomTheme(access.theme.id)
+	};
 }
 
 async function requireTheme(tx: Db | Tx, themeId: string): Promise<Theme> {
@@ -1052,17 +1219,27 @@ async function themeAdminTx<T>(
 }
 
 /** Donner un thème à un joueur (audit 05 §4.5 `admin_grant_theme` : « Ce don est réservé aux joueurs. »). */
-export async function grantTheme(db: Db, actor: Actor | null, input: AccountThemeInput): Promise<{ granted: boolean }> {
+export async function grantTheme(
+	db: Db,
+	actor: Actor | null,
+	input: AccountThemeInput
+): Promise<{ granted: boolean }> {
 	const data = parseInput(accountThemeInput, input);
 	const themeId = normalizeThemeId(data.themeId);
 	return themeAdminTx(db, actor, async (tx, present) => {
 		const theme = await requireTheme(tx, themeId);
 		const [target] = await tx.select().from(accounts).where(eq(accounts.id, data.accountId));
 		if (!target) throw notFoundAccount();
-		if (target.role !== 'joueur') throw new NpError('INVALID', 'Ce don est réservé aux joueurs.', 400);
+		if (target.role !== 'joueur')
+			throw new NpError('INVALID', 'Ce don est réservé aux joueurs.', 400);
 		const rows = await tx
 			.insert(accountThemeGrants)
-			.values({ accountId: target.id, themeId: theme.id, kind: 'unlocked', grantedBy: present.accountId })
+			.values({
+				accountId: target.id,
+				themeId: theme.id,
+				kind: 'unlocked',
+				grantedBy: present.accountId
+			})
 			.onConflictDoNothing()
 			.returning({ themeId: accountThemeGrants.themeId });
 		await recordAudit(tx, {
@@ -1077,17 +1254,31 @@ export async function grantTheme(db: Db, actor: Actor | null, input: AccountThem
 }
 
 /** Donner un thème à tous les joueurs (audit 05 §4.5 `admin_grant_theme_all` → `{ changed }`). */
-export async function grantThemeToAll(db: Db, actor: Actor | null, input: ThemeOnlyInput): Promise<{ changed: number }> {
+export async function grantThemeToAll(
+	db: Db,
+	actor: Actor | null,
+	input: ThemeOnlyInput
+): Promise<{ changed: number }> {
 	const data = parseInput(themeOnlyInput, input);
 	const themeId = normalizeThemeId(data.themeId);
 	return themeAdminTx(db, actor, async (tx, present) => {
 		const theme = await requireTheme(tx, themeId);
-		const players = await tx.select({ id: accounts.id }).from(accounts).where(eq(accounts.role, 'joueur'));
+		const players = await tx
+			.select({ id: accounts.id })
+			.from(accounts)
+			.where(eq(accounts.role, 'joueur'));
 		let changed = 0;
 		if (players.length > 0) {
 			const rows = await tx
 				.insert(accountThemeGrants)
-				.values(players.map((p) => ({ accountId: p.id, themeId: theme.id, kind: 'unlocked' as const, grantedBy: present.accountId })))
+				.values(
+					players.map((p) => ({
+						accountId: p.id,
+						themeId: theme.id,
+						kind: 'unlocked' as const,
+						grantedBy: present.accountId
+					}))
+				)
 				.onConflictDoNothing()
 				.returning({ accountId: accountThemeGrants.accountId });
 			changed = rows.length;
@@ -1104,13 +1295,22 @@ export async function grantThemeToAll(db: Db, actor: Actor | null, input: ThemeO
 }
 
 /** Retirer un thème donné ; le thème équipé retombe sur `dark` (audit 05 §4.5 `admin_revoke_theme`). */
-export async function revokeTheme(db: Db, actor: Actor | null, input: AccountThemeInput): Promise<{ revoked: boolean }> {
+export async function revokeTheme(
+	db: Db,
+	actor: Actor | null,
+	input: AccountThemeInput
+): Promise<{ revoked: boolean }> {
 	const data = parseInput(accountThemeInput, input);
 	const themeId = normalizeThemeId(data.themeId);
-	if (ALWAYS.has(themeId)) throw new NpError('INVALID', 'Ce thème est accordé à tout le monde.', 400);
+	if (ALWAYS.has(themeId))
+		throw new NpError('INVALID', 'Ce thème est accordé à tout le monde.', 400);
 	return themeAdminTx(db, actor, async (tx, present) => {
 		await requireTheme(tx, themeId);
-		const [target] = await tx.select().from(accounts).where(eq(accounts.id, data.accountId)).for('update');
+		const [target] = await tx
+			.select()
+			.from(accounts)
+			.where(eq(accounts.id, data.accountId))
+			.for('update');
 		if (!target) throw notFoundAccount();
 		const rows = await tx
 			.delete(accountThemeGrants)
@@ -1137,13 +1337,22 @@ export async function revokeTheme(db: Db, actor: Actor | null, input: AccountThe
 }
 
 /** Bloquer un thème pour un compte ; le thème équipé retombe sur `dark` (audit 05 §4.5 `admin_block_theme`). */
-export async function blockTheme(db: Db, actor: Actor | null, input: AccountThemeInput): Promise<{ blocked: true }> {
+export async function blockTheme(
+	db: Db,
+	actor: Actor | null,
+	input: AccountThemeInput
+): Promise<{ blocked: true }> {
 	const data = parseInput(accountThemeInput, input);
 	const themeId = normalizeThemeId(data.themeId);
-	if (ALWAYS.has(themeId)) throw new NpError('INVALID', 'Ce thème est accordé à tout le monde.', 400);
+	if (ALWAYS.has(themeId))
+		throw new NpError('INVALID', 'Ce thème est accordé à tout le monde.', 400);
 	return themeAdminTx(db, actor, async (tx, present) => {
 		await requireTheme(tx, themeId);
-		const [target] = await tx.select().from(accounts).where(eq(accounts.id, data.accountId)).for('update');
+		const [target] = await tx
+			.select()
+			.from(accounts)
+			.where(eq(accounts.id, data.accountId))
+			.for('update');
 		if (!target) throw notFoundAccount();
 		await tx
 			.insert(accountThemeGrants)
@@ -1164,7 +1373,11 @@ export async function blockTheme(db: Db, actor: Actor | null, input: AccountThem
 }
 
 /** Lever le blocage d'un thème (audit 05 §4.5 `admin_unblock_theme`). */
-export async function unblockTheme(db: Db, actor: Actor | null, input: AccountThemeInput): Promise<{ blocked: false }> {
+export async function unblockTheme(
+	db: Db,
+	actor: Actor | null,
+	input: AccountThemeInput
+): Promise<{ blocked: false }> {
 	const data = parseInput(accountThemeInput, input);
 	const themeId = normalizeThemeId(data.themeId);
 	return themeAdminTx(db, actor, async (tx, present) => {
@@ -1253,13 +1466,19 @@ export async function setThemeAutoGrant(
  * Les huit tokens sont écrits dans `themes.tokens` (décision INT-1) ; `preview.colors` ne garde que
  * l'aperçu de la carte (bureau, encre, ruban), comme les thèmes natifs.
  */
-export async function createTheme(db: Db, actor: Actor | null, input: CreateThemeInput): Promise<ThemeView> {
+export async function createTheme(
+	db: Db,
+	actor: Actor | null,
+	input: CreateThemeInput
+): Promise<ThemeView> {
 	const present = assertCan(actor, 'admin.themes');
 	const data = parseInput(createThemeInput, input);
 	const tokens = data.tokens as ThemeTokens;
 	const check = validateTheme(tokens);
 	if (!check.valid) {
-		const detail = check.insufficient.map((p) => `${p.foreground} ${p.ratio.toFixed(2)}:1`).join(', ');
+		const detail = check.insufficient
+			.map((p) => `${p.foreground} ${p.ratio.toFixed(2)}:1`)
+			.join(', ');
 		throw new NpError(
 			'CONTRAST',
 			`Contraste insuffisant : l’encre doit atteindre 4,5:1 sur la page (${detail}). Le thème n’est pas proposé.`,
@@ -1298,8 +1517,14 @@ export async function createTheme(db: Db, actor: Actor | null, input: CreateThem
 				details: { themeId: row.id, name: row.name },
 				...auditContextOf(present)
 			});
-			const [owner] = await tx.select({ selectedTheme: accounts.selectedTheme }).from(accounts).where(eq(accounts.id, present.accountId));
-			return toThemeView({ theme: row, owned: true, blocked: false, visible: true }, owner?.selectedTheme ?? 'dark');
+			const [owner] = await tx
+				.select({ selectedTheme: accounts.selectedTheme })
+				.from(accounts)
+				.where(eq(accounts.id, present.accountId));
+			return toThemeView(
+				{ theme: row, owned: true, blocked: false, visible: true },
+				owner?.selectedTheme ?? 'dark'
+			);
 		});
 	} catch (e) {
 		if (isUniqueViolation(e)) throw new NpError('THEME_EXISTS', 'Ce thème existe déjà.', 409);

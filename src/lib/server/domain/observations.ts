@@ -133,6 +133,7 @@ async function review(
 			.update(beastObservations)
 			.set({
 				status,
+				motif: data.motif,
 				validatedBy: current.accountId,
 				validatedAt: new Date(),
 				revision: sql`${beastObservations.revision} + 1`
@@ -146,7 +147,7 @@ async function review(
 			)
 			.returning();
 		if (!row) throw NpError.versionConflict();
-		// Schéma livré sans colonne motif : conservation dans les deux journaux, même transaction.
+		// Le motif est conserve dans la colonne INT-1 et les journaux.
 		await appendStaffLog(tx, {
 			action: `observation_${status}`,
 			detail: data.motif,
