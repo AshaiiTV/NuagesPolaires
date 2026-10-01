@@ -33,3 +33,6 @@ coverage
 .idea/
 *.log
 *.zip
+
+# Outils locaux
+.claude/

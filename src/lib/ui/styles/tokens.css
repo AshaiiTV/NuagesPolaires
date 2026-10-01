@@ -1,0 +1,114 @@
+/* Nuages Polaires — Carnet d'encre : tokens.
+ * Source : docs/overhaul/03-vision.md §3 et §7. Les composants ne lisent que ces variables.
+ * Un thème personnel ne redéfinit que les huit premiers tokens de couleur. */
+
+:root {
+	/* Thème de base « Carnet de nuit » */
+	--bureau: #091519; /* fond de fenêtre (nuit d'encre) */
+	--page: #102327; /* la page (pierre sombre) */
+	--page-2: #172e32; /* feuillet volant, surfaces secondaires */
+	--reglure: #1c3439; /* réglure, filets, bord de page */
+	--encre: #f0eee5; /* écriture confirmée (ivoire) */
+	--encre-2: #bdcdc8; /* écriture secondaire */
+	--encre-grise: #7e8f8b; /* ratures, passés, paliers non atteints — jamais du corps */
+	--ruban: #c6d8c4; /* ruban, action principale (sauge) */
+
+	/* Teintes de sens : identiques dans tous les thèmes */
+	--encre-humide: #95cdbb; /* écriture en attente, liens, focus (aurore) */
+	--tampon: #c6b38b; /* toute décision du staff (laiton) */
+	--rouille: #c9836b; /* danger, relevé en retard */
+	--sur-ruban: #102327; /* texte posé sur le ruban */
+	--filet: color-mix(in srgb, var(--encre) 12%, transparent);
+
+	/* Papier des feuillets posés (accueil) : toujours ivoire, quel que soit le thème */
+	--papier: #efead9;
+	--papier-encre: #1b2a2e;
+	--papier-encre-2: #4c5b5b;
+	--papier-tampon: #8a7440;
+
+	/* Familles */
+	--voix: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+	--corps: Manrope, 'Segoe UI', Arial, sans-serif;
+	--mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+	/* Réglure et rythme (régime carnet) */
+	--ligne: 28px;
+	--gouttiere: 24px;
+	--lecture: 62ch;
+	--page-max: 1200px;
+
+	/* Tailles */
+	--t-titre: 500 48px/52px var(--voix);
+	--t-chapitre: 500 28px/56px var(--voix);
+	--t-recit: 400 18px/28px var(--voix);
+	--t-chiffre: 400 32px/1 var(--voix);
+	--t-corps: 400 16px/28px var(--corps);
+	--t-liste: 400 15px/28px var(--corps);
+	--t-libelle: 500 13px/20px var(--corps);
+	--t-repere: 500 12px/16px var(--corps);
+	--t-mono: 400 14px/28px var(--mono);
+	--approche-repere: 0.18em;
+
+	/* Formes */
+	--rayon: 2px;
+	--ombre-page: 0 1px 2px rgb(0 0 0 / 0.35);
+	--ombre-feuillet: 0 8px 24px rgb(0 0 0 / 0.28);
+	--cible: 44px;
+
+	/* Mouvements : tourner, sécher, tamponner */
+	--tourner: 320ms cubic-bezier(0.2, 0.7, 0.2, 1);
+	--secher: 1200ms ease-out;
+	--tamponner: 180ms cubic-bezier(0.2, 0.7, 0.2, 1);
+
+	color-scheme: dark;
+}
+
+/* Régime serré : outils denses (Table du MJ, Personnages, Registre, ateliers) */
+html[data-regime='serre'] {
+	--ligne: 24px;
+	--gouttiere: 16px;
+	--page-max: 1440px;
+	--t-corps: 500 14px/24px var(--corps);
+	--t-liste: 500 14px/24px var(--corps);
+}
+
+/* Régime scène : feuillet volant et Table vue par un joueur */
+html[data-regime='scene'] {
+	--ligne: 24px;
+	--gouttiere: 12px;
+	--t-corps: 500 14px/24px var(--corps);
+	--t-liste: 500 14px/24px var(--corps);
+	--t-mono: 400 13px/24px var(--mono);
+}
+
+@media (max-width: 760px) {
+	:root {
+		--gouttiere: 16px;
+		--t-titre: 500 34px/38px var(--voix);
+	}
+	html[data-regime='scene'] {
+		--gouttiere: 12px;
+	}
+}
+
+/* Thème « Papier » (l'ancien « Brume Claire ») */
+html[data-theme='light'] {
+	--bureau: #dcd6c5;
+	--page: #efead9;
+	--page-2: #e6e0cf;
+	--reglure: #d9d2bf;
+	--encre: #1b2a2e;
+	--encre-2: #4c5b5b;
+	--encre-grise: #8a928c;
+	--ruban: #7fa089;
+	color-scheme: light;
+}
+
+/* Sur un thème de ton clair, les teintes de sens prennent leur valeur « sur papier » */
+html[data-ton='clair'] {
+	--encre-humide: #3e8a72;
+	--tampon: #8a7440;
+	--rouille: #a6533a;
+	--sur-ruban: #102327;
+	--filet: color-mix(in srgb, var(--encre) 16%, transparent);
+}

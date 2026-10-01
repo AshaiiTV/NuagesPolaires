@@ -1,0 +1,78 @@
+/* Palettes personnelles : huit tokens, sans ambiance animée. */
+
+html[data-theme='violet'] {
+	--bureau: #03020b;
+	--page: #090621;
+	--page-2: #140d3d;
+	--reglure: #21145f;
+	--encre: #fcfaff;
+	--encre-2: #d9d4f4;
+	--encre-grise: #9a93c7;
+	--ruban: #73d8ff;
+}
+
+html[data-theme='green'] {
+	--bureau: #031108;
+	--page: #082111;
+	--page-2: #12381d;
+	--reglure: #1e552d;
+	--encre: #f3fff0;
+	--encre-2: #c9edbf;
+	--encre-grise: #8db883;
+	--ruban: #d8c16a;
+}
+
+html[data-theme='aquaris'] {
+	--bureau: #011018;
+	--page: #041a24;
+	--page-2: #082b37;
+	--reglure: #0d3f4e;
+	--encre: #f0fcff;
+	--encre-2: #c8e8ef;
+	--encre-grise: #8fb6c0;
+	--ruban: #e5c878;
+}
+
+html[data-theme='easter'] {
+	--bureau: #effbe9;
+	--page: #e5f7de;
+	--page-2: #d7f2cf;
+	--reglure: #c6ebbd;
+	--encre: #203227;
+	--encre-2: #49655a;
+	--encre-grise: #668378;
+	--ruban: #ff83bc;
+}
+
+html[data-theme='halloween'] {
+	--bureau: #0a0911;
+	--page: #110d18;
+	--page-2: #191224;
+	--reglure: #251830;
+	--encre: #fff4ea;
+	--encre-2: #e8ccb6;
+	--encre-grise: #a98e8d;
+	--ruban: #d8d2ff;
+}
+
+html[data-theme='noel'] {
+	--bureau: #08140d;
+	--page: #0d1e12;
+	--page-2: #132816;
+	--reglure: #1d361f;
+	--encre: #fbfff9;
+	--encre-2: #d8ead7;
+	--encre-grise: #9bb59e;
+	--ruban: #f2c66d;
+}
+
+html[data-theme='bloodmoon'] {
+	--bureau: #050102;
+	--page: #0c0305;
+	--page-2: #17060a;
+	--reglure: #260912;
+	--encre: #fff6f3;
+	--encre-2: #f0c4bd;
+	--encre-grise: #b07d82;
+	--ruban: #ff7d92;
+}
