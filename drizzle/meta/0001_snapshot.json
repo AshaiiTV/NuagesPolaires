@@ -1,6 +1,6 @@
 {
-  "id": "b63b8686-8ca2-45d6-ac65-4df5caee675f",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "9336278e-eddb-47c8-82ad-8a0a82f66e50",
+  "prevId": "b63b8686-8ca2-45d6-ac65-4df5caee675f",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -46,41 +46,41 @@
         "account_theme_grants_account_id_accounts_id_fk": {
           "name": "account_theme_grants_account_id_accounts_id_fk",
           "tableFrom": "account_theme_grants",
-          "tableTo": "accounts",
           "columnsFrom": [
             "account_id"
           ],
+          "tableTo": "accounts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "account_theme_grants_theme_id_themes_id_fk": {
           "name": "account_theme_grants_theme_id_themes_id_fk",
           "tableFrom": "account_theme_grants",
-          "tableTo": "themes",
           "columnsFrom": [
             "theme_id"
           ],
+          "tableTo": "themes",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "account_theme_grants_granted_by_accounts_id_fk": {
           "name": "account_theme_grants_granted_by_accounts_id_fk",
           "tableFrom": "account_theme_grants",
-          "tableTo": "accounts",
           "columnsFrom": [
             "granted_by"
           ],
+          "tableTo": "accounts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {
@@ -220,15 +220,15 @@
           "columns": [
             {
               "expression": "lower(\"pseudo\")",
-              "asc": true,
               "isExpression": true,
+              "asc": true,
               "nulls": "last"
             }
           ],
           "isUnique": true,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "accounts_role_idx": {
           "name": "accounts_role_idx",
@@ -241,54 +241,54 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "accounts_character_id_characters_id_fk": {
           "name": "accounts_character_id_characters_id_fk",
           "tableFrom": "accounts",
-          "tableTo": "characters",
           "columnsFrom": [
             "character_id"
           ],
+          "tableTo": "characters",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "accounts_selected_theme_themes_id_fk": {
           "name": "accounts_selected_theme_themes_id_fk",
           "tableFrom": "accounts",
-          "tableTo": "themes",
           "columnsFrom": [
             "selected_theme"
           ],
+          "tableTo": "themes",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "accounts_character_id_unique": {
           "name": "accounts_character_id_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "character_id"
-          ]
+          ],
+          "nullsNotDistinct": false
         },
         "accounts_discord_id_unique": {
           "name": "accounts_discord_id_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "discord_id"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -426,9 +426,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "audit_log_actor_idx": {
           "name": "audit_log_actor_idx",
@@ -441,24 +441,24 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "audit_log_actor_account_id_accounts_id_fk": {
           "name": "audit_log_actor_account_id_accounts_id_fk",
           "tableFrom": "audit_log",
-          "tableTo": "accounts",
           "columnsFrom": [
             "actor_account_id"
           ],
+          "tableTo": "accounts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -633,76 +633,76 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "beast_observations_beast_id_beasts_id_fk": {
           "name": "beast_observations_beast_id_beasts_id_fk",
           "tableFrom": "beast_observations",
-          "tableTo": "beasts",
           "columnsFrom": [
             "beast_id"
           ],
+          "tableTo": "beasts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "beast_observations_author_account_id_accounts_id_fk": {
           "name": "beast_observations_author_account_id_accounts_id_fk",
           "tableFrom": "beast_observations",
-          "tableTo": "accounts",
           "columnsFrom": [
             "author_account_id"
           ],
+          "tableTo": "accounts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "beast_observations_validated_by_accounts_id_fk": {
           "name": "beast_observations_validated_by_accounts_id_fk",
           "tableFrom": "beast_observations",
-          "tableTo": "accounts",
           "columnsFrom": [
             "validated_by"
           ],
+          "tableTo": "accounts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "beast_observations_combat_id_combats_id_fk": {
           "name": "beast_observations_combat_id_combats_id_fk",
           "tableFrom": "beast_observations",
-          "tableTo": "combats",
           "columnsFrom": [
             "combat_id"
           ],
+          "tableTo": "combats",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "beast_observations_publication_id_publications_id_fk": {
           "name": "beast_observations_publication_id_publications_id_fk",
           "tableFrom": "beast_observations",
-          "tableTo": "publications",
           "columnsFrom": [
             "publication_id"
           ],
+          "tableTo": "publications",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -745,37 +745,37 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "beast_zones_beast_id_beasts_id_fk": {
           "name": "beast_zones_beast_id_beasts_id_fk",
           "tableFrom": "beast_zones",
-          "tableTo": "beasts",
           "columnsFrom": [
             "beast_id"
           ],
+          "tableTo": "beasts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "beast_zones_zone_id_zones_id_fk": {
           "name": "beast_zones_zone_id_zones_id_fk",
           "tableFrom": "beast_zones",
-          "tableTo": "zones",
           "columnsFrom": [
             "zone_id"
           ],
+          "tableTo": "zones",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {
@@ -996,9 +996,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "beasts_visibility_idx": {
           "name": "beasts_visibility_idx",
@@ -1017,9 +1017,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {},
@@ -1196,9 +1196,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "character_history_combat_id_idx": {
           "name": "character_history_combat_id_idx",
@@ -1211,9 +1211,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "character_history_declaration_id_idx": {
           "name": "character_history_declaration_id_idx",
@@ -1226,76 +1226,76 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "character_history_character_id_characters_id_fk": {
           "name": "character_history_character_id_characters_id_fk",
           "tableFrom": "character_history",
-          "tableTo": "characters",
           "columnsFrom": [
             "character_id"
           ],
+          "tableTo": "characters",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "character_history_actor_account_id_accounts_id_fk": {
           "name": "character_history_actor_account_id_accounts_id_fk",
           "tableFrom": "character_history",
-          "tableTo": "accounts",
           "columnsFrom": [
             "actor_account_id"
           ],
+          "tableTo": "accounts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "character_history_combat_id_combats_id_fk": {
           "name": "character_history_combat_id_combats_id_fk",
           "tableFrom": "character_history",
-          "tableTo": "combats",
           "columnsFrom": [
             "combat_id"
           ],
+          "tableTo": "combats",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "character_history_declaration_id_declarations_id_fk": {
           "name": "character_history_declaration_id_declarations_id_fk",
           "tableFrom": "character_history",
-          "tableTo": "declarations",
           "columnsFrom": [
             "declaration_id"
           ],
+          "tableTo": "declarations",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "character_history_replaces_id_character_history_id_fk": {
           "name": "character_history_replaces_id_character_history_id_fk",
           "tableFrom": "character_history",
-          "tableTo": "character_history",
           "columnsFrom": [
             "replaces_id"
           ],
+          "tableTo": "character_history",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -1399,9 +1399,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "character_items_character_legacy_uidx": {
           "name": "character_items_character_legacy_uidx",
@@ -1420,24 +1420,24 @@
             }
           ],
           "isUnique": true,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "character_items_character_id_characters_id_fk": {
           "name": "character_items_character_id_characters_id_fk",
           "tableFrom": "character_items",
-          "tableTo": "characters",
           "columnsFrom": [
             "character_id"
           ],
+          "tableTo": "characters",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -1619,9 +1619,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "characters_oath_id_idx": {
           "name": "characters_oath_id_idx",
@@ -1634,24 +1634,24 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "characters_oath_id_oaths_id_fk": {
           "name": "characters_oath_id_oaths_id_fk",
           "tableFrom": "characters",
-          "tableTo": "oaths",
           "columnsFrom": [
             "oath_id"
           ],
+          "tableTo": "oaths",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         }
       },
       "compositePrimaryKeys": {},
@@ -1730,37 +1730,37 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "combat_participants_combat_id_combats_id_fk": {
           "name": "combat_participants_combat_id_combats_id_fk",
           "tableFrom": "combat_participants",
-          "tableTo": "combats",
           "columnsFrom": [
             "combat_id"
           ],
+          "tableTo": "combats",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "combat_participants_character_id_characters_id_fk": {
           "name": "combat_participants_character_id_characters_id_fk",
           "tableFrom": "combat_participants",
-          "tableTo": "characters",
           "columnsFrom": [
             "character_id"
           ],
+          "tableTo": "characters",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {
@@ -1948,9 +1948,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "combats_status_idx": {
           "name": "combats_status_idx",
@@ -1963,50 +1963,50 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "combats_owner_account_id_accounts_id_fk": {
           "name": "combats_owner_account_id_accounts_id_fk",
           "tableFrom": "combats",
-          "tableTo": "accounts",
           "columnsFrom": [
             "owner_account_id"
           ],
+          "tableTo": "accounts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "combats_scene_id_scenes_id_fk": {
           "name": "combats_scene_id_scenes_id_fk",
           "tableFrom": "combats",
-          "tableTo": "scenes",
           "columnsFrom": [
             "scene_id"
           ],
+          "tableTo": "scenes",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "combats_published_extract_id_publications_id_fk": {
           "name": "combats_published_extract_id_publications_id_fk",
           "tableFrom": "combats",
-          "tableTo": "publications",
           "columnsFrom": [
             "published_extract_id"
           ],
+          "tableTo": "publications",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -2097,8 +2097,8 @@
           "primaryKey": false,
           "notNull": true,
           "generated": {
-            "as": "((created_at AT TIME ZONE 'UTC') + interval '10 seconds') AT TIME ZONE 'UTC'",
-            "type": "stored"
+            "type": "stored",
+            "as": "((created_at AT TIME ZONE 'UTC') + interval '10 seconds') AT TIME ZONE 'UTC'"
           }
         },
         "reported_by": {
@@ -2146,9 +2146,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "declarations_status_idx": {
           "name": "declarations_status_idx",
@@ -2167,9 +2167,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "declarations_scene_id_idx": {
           "name": "declarations_scene_id_idx",
@@ -2182,9 +2182,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "declarations_combat_id_idx": {
           "name": "declarations_combat_id_idx",
@@ -2197,63 +2197,63 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "declarations_character_id_characters_id_fk": {
           "name": "declarations_character_id_characters_id_fk",
           "tableFrom": "declarations",
-          "tableTo": "characters",
           "columnsFrom": [
             "character_id"
           ],
+          "tableTo": "characters",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "declarations_scene_id_scenes_id_fk": {
           "name": "declarations_scene_id_scenes_id_fk",
           "tableFrom": "declarations",
-          "tableTo": "scenes",
           "columnsFrom": [
             "scene_id"
           ],
+          "tableTo": "scenes",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "declarations_combat_id_combats_id_fk": {
           "name": "declarations_combat_id_combats_id_fk",
           "tableFrom": "declarations",
-          "tableTo": "combats",
           "columnsFrom": [
             "combat_id"
           ],
+          "tableTo": "combats",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "declarations_reported_by_accounts_id_fk": {
           "name": "declarations_reported_by_accounts_id_fk",
           "tableFrom": "declarations",
-          "tableTo": "accounts",
           "columnsFrom": [
             "reported_by"
           ],
+          "tableTo": "accounts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -2298,37 +2298,37 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "event_participants_event_id_events_id_fk": {
           "name": "event_participants_event_id_events_id_fk",
           "tableFrom": "event_participants",
-          "tableTo": "events",
           "columnsFrom": [
             "event_id"
           ],
+          "tableTo": "events",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "event_participants_character_id_characters_id_fk": {
           "name": "event_participants_character_id_characters_id_fk",
           "tableFrom": "event_participants",
-          "tableTo": "characters",
           "columnsFrom": [
             "character_id"
           ],
+          "tableTo": "characters",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {
@@ -2457,9 +2457,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "events_hidden_idx": {
           "name": "events_hidden_idx",
@@ -2472,24 +2472,24 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "events_created_by_accounts_id_fk": {
           "name": "events_created_by_accounts_id_fk",
           "tableFrom": "events",
-          "tableTo": "accounts",
           "columnsFrom": [
             "created_by"
           ],
+          "tableTo": "accounts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -2595,37 +2595,37 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "journal_entries_character_id_characters_id_fk": {
           "name": "journal_entries_character_id_characters_id_fk",
           "tableFrom": "journal_entries",
-          "tableTo": "characters",
           "columnsFrom": [
             "character_id"
           ],
+          "tableTo": "characters",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "journal_entries_replaces_id_journal_entries_id_fk": {
           "name": "journal_entries_replaces_id_journal_entries_id_fk",
           "tableFrom": "journal_entries",
-          "tableTo": "journal_entries",
           "columnsFrom": [
             "replaces_id"
           ],
+          "tableTo": "journal_entries",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -2706,9 +2706,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {},
@@ -2875,15 +2875,15 @@
           "columns": [
             {
               "expression": "lower(\"name\")",
-              "asc": true,
               "isExpression": true,
+              "asc": true,
               "nulls": "last"
             }
           ],
           "isUnique": true,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "oaths_hidden_idx": {
           "name": "oaths_hidden_idx",
@@ -2896,9 +2896,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "oaths_evolves_from_idx": {
           "name": "oaths_evolves_from_idx",
@@ -2911,24 +2911,24 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "oaths_evolves_from_oaths_id_fk": {
           "name": "oaths_evolves_from_oaths_id_fk",
           "tableFrom": "oaths",
-          "tableTo": "oaths",
           "columnsFrom": [
             "evolves_from"
           ],
+          "tableTo": "oaths",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -2983,37 +2983,37 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "publication_beasts_publication_id_publications_id_fk": {
           "name": "publication_beasts_publication_id_publications_id_fk",
           "tableFrom": "publication_beasts",
-          "tableTo": "publications",
           "columnsFrom": [
             "publication_id"
           ],
+          "tableTo": "publications",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "publication_beasts_beast_id_beasts_id_fk": {
           "name": "publication_beasts_beast_id_beasts_id_fk",
           "tableFrom": "publication_beasts",
-          "tableTo": "beasts",
           "columnsFrom": [
             "beast_id"
           ],
+          "tableTo": "beasts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {
@@ -3118,9 +3118,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "publications_combat_id_idx": {
           "name": "publications_combat_id_idx",
@@ -3133,37 +3133,37 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "publications_combat_id_combats_id_fk": {
           "name": "publications_combat_id_combats_id_fk",
           "tableFrom": "publications",
-          "tableTo": "combats",
           "columnsFrom": [
             "combat_id"
           ],
+          "tableTo": "combats",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "publications_stamped_by_accounts_id_fk": {
           "name": "publications_stamped_by_accounts_id_fk",
           "tableFrom": "publications",
-          "tableTo": "accounts",
           "columnsFrom": [
             "stamped_by"
           ],
+          "tableTo": "accounts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -3228,15 +3228,15 @@
         "reading_marks_account_id_accounts_id_fk": {
           "name": "reading_marks_account_id_accounts_id_fk",
           "tableFrom": "reading_marks",
-          "tableTo": "accounts",
           "columnsFrom": [
             "account_id"
           ],
+          "tableTo": "accounts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -3309,37 +3309,37 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "scene_participants_scene_id_scenes_id_fk": {
           "name": "scene_participants_scene_id_scenes_id_fk",
           "tableFrom": "scene_participants",
-          "tableTo": "scenes",
           "columnsFrom": [
             "scene_id"
           ],
+          "tableTo": "scenes",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "scene_participants_character_id_characters_id_fk": {
           "name": "scene_participants_character_id_characters_id_fk",
           "tableFrom": "scene_participants",
-          "tableTo": "characters",
           "columnsFrom": [
             "character_id"
           ],
+          "tableTo": "characters",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {
@@ -3431,37 +3431,37 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "scene_pins_scene_id_scenes_id_fk": {
           "name": "scene_pins_scene_id_scenes_id_fk",
           "tableFrom": "scene_pins",
-          "tableTo": "scenes",
           "columnsFrom": [
             "scene_id"
           ],
+          "tableTo": "scenes",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "scene_pins_character_id_characters_id_fk": {
           "name": "scene_pins_character_id_characters_id_fk",
           "tableFrom": "scene_pins",
-          "tableTo": "characters",
           "columnsFrom": [
             "character_id"
           ],
+          "tableTo": "characters",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -3587,9 +3587,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "scenes_combat_id_idx": {
           "name": "scenes_combat_id_idx",
@@ -3602,37 +3602,37 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "scenes_created_by_accounts_id_fk": {
           "name": "scenes_created_by_accounts_id_fk",
           "tableFrom": "scenes",
-          "tableTo": "accounts",
           "columnsFrom": [
             "created_by"
           ],
+          "tableTo": "accounts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "scenes_combat_id_combats_id_fk": {
           "name": "scenes_combat_id_combats_id_fk",
           "tableFrom": "scenes",
-          "tableTo": "combats",
           "columnsFrom": [
             "combat_id"
           ],
+          "tableTo": "combats",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -3729,9 +3729,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "sessions_expires_at_idx": {
           "name": "sessions_expires_at_idx",
@@ -3744,24 +3744,24 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "sessions_account_id_accounts_id_fk": {
           "name": "sessions_account_id_accounts_id_fk",
           "tableFrom": "sessions",
-          "tableTo": "accounts",
           "columnsFrom": [
             "account_id"
           ],
+          "tableTo": "accounts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -3822,15 +3822,15 @@
         "settings_updated_by_accounts_id_fk": {
           "name": "settings_updated_by_accounts_id_fk",
           "tableFrom": "settings",
-          "tableTo": "accounts",
           "columnsFrom": [
             "updated_by"
           ],
+          "tableTo": "accounts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -3876,15 +3876,15 @@
         "spawn_counters_beast_id_beasts_id_fk": {
           "name": "spawn_counters_beast_id_beasts_id_fk",
           "tableFrom": "spawn_counters",
-          "tableTo": "beasts",
           "columnsFrom": [
             "beast_id"
           ],
+          "tableTo": "beasts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -3954,9 +3954,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "spawn_runs_zone_id_idx": {
           "name": "spawn_runs_zone_id_idx",
@@ -3969,37 +3969,37 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "spawn_runs_actor_account_id_accounts_id_fk": {
           "name": "spawn_runs_actor_account_id_accounts_id_fk",
           "tableFrom": "spawn_runs",
-          "tableTo": "accounts",
           "columnsFrom": [
             "actor_account_id"
           ],
+          "tableTo": "accounts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "spawn_runs_zone_id_zones_id_fk": {
           "name": "spawn_runs_zone_id_zones_id_fk",
           "tableFrom": "spawn_runs",
-          "tableTo": "zones",
           "columnsFrom": [
             "zone_id"
           ],
+          "tableTo": "zones",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         }
       },
       "compositePrimaryKeys": {},
@@ -4141,9 +4141,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "staff_log_archive_id_idx": {
           "name": "staff_log_archive_id_idx",
@@ -4162,37 +4162,37 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "staff_log_actor_account_id_accounts_id_fk": {
           "name": "staff_log_actor_account_id_accounts_id_fk",
           "tableFrom": "staff_log",
-          "tableTo": "accounts",
           "columnsFrom": [
             "actor_account_id"
           ],
+          "tableTo": "accounts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "staff_log_archive_id_staff_log_archives_id_fk": {
           "name": "staff_log_archive_id_staff_log_archives_id_fk",
           "tableFrom": "staff_log",
-          "tableTo": "staff_log_archives",
           "columnsFrom": [
             "archive_id"
           ],
+          "tableTo": "staff_log_archives",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -4245,9 +4245,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {},
@@ -4375,9 +4375,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {},
@@ -4514,50 +4514,50 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "validated_facts_character_id_characters_id_fk": {
           "name": "validated_facts_character_id_characters_id_fk",
           "tableFrom": "validated_facts",
-          "tableTo": "characters",
           "columnsFrom": [
             "character_id"
           ],
+          "tableTo": "characters",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "validated_facts_proposed_by_accounts_id_fk": {
           "name": "validated_facts_proposed_by_accounts_id_fk",
           "tableFrom": "validated_facts",
-          "tableTo": "accounts",
           "columnsFrom": [
             "proposed_by"
           ],
+          "tableTo": "accounts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "validated_facts_validated_by_accounts_id_fk": {
           "name": "validated_facts_validated_by_accounts_id_fk",
           "tableFrom": "validated_facts",
-          "tableTo": "accounts",
           "columnsFrom": [
             "validated_by"
           ],
+          "tableTo": "accounts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -4642,9 +4642,9 @@
             }
           ],
           "isUnique": true,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "zones_position_idx": {
           "name": "zones_position_idx",
@@ -4657,9 +4657,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {},
@@ -4859,10 +4859,10 @@
     }
   },
   "schemas": {},
+  "views": {},
   "sequences": {},
   "roles": {},
   "policies": {},
-  "views": {},
   "_meta": {
     "columns": {},
     "schemas": {},
