@@ -183,7 +183,7 @@ Décisions tranchées par rapport aux incohérences de l'audit (§11 de 05) : le
 
 - `lib/game/*` : tests unitaires exhaustifs (toutes les formules et tables de l'audit 02 et 03, exemples chiffrés de `legacy/docs/fusion-xp.md`).
 - `lib/server/*` : tests d'intégration Vitest sur PGlite avec les migrations réelles : chaque exigence de `audit/06-tests-comme-specification.md` marquée [S] est reprise comme test (auth, sessions, permissions, 428/409, actions joueur, filtrage, fin de combat, migration).
-- Playwright : parcours de référence de `03-vision.md` §10 sur le build de production servi par `npm run preview` avec `DATABASE_URL=pglite://memory` et un seed de démonstration ; captures à 390 / 768 / 1440 px conservées dans `test-results/` (ignoré par git) ; test « aucun débordement horizontal » sur chaque page.
+- Playwright : parcours de référence de `03-vision.md` §10 sur le serveur `vite dev` avec `NP_DB_DRIVER=pglite` et la base de démonstration (PGlite est exclu du bundle Netlify, donc le build de production ne peut pas l'ouvrir ; la recette du build réel se fait sur une preview Netlify avec une base Neon isolée) ; captures à 390 / 768 / 1440 px conservées dans `test-results/` (ignoré par git) ; test « aucun débordement horizontal » sur chaque page.
 - Revue croisée : chaque lot livré est relu par un agent Claude critique **et** par GPT (Codex, lecture seule) ; les réserves sont consignées dans `docs/overhaul/revues/` et traitées avant le lot suivant.
 
 ## 9. Déploiement
