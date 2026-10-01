@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '$lib/ui/styles/fonts.css';
 	import '$lib/ui/styles/tokens.css';
+	import '$lib/ui/styles/themes.css';
 	import '$lib/ui/styles/base.css';
 
 	let { children } = $props();
