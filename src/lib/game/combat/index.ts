@@ -10,7 +10,7 @@
  */
 export * from './types';
 export { createCombat, addFighter, removeFighter, setInitiative, startCombat, adjustResource,
- restoreEnergy, setNotes, renameCombat, moveFighterPosition, currentDeclarantId } from './state';
+ restoreEnergy, setNotes, renameCombat, moveFighterPosition, currentDeclarantId, undoLastGesture } from './state';
 export type { CreateCombatOptions } from './state';
 export { declareAction, buildDeclaration, emptyAction, passTurn, actionsMax, actionsLeft, undoLastDeclaration, editDeclaration } from './actions';
 export { STATUS_EFFECTS, STATUS_IDS, describeStatus, addStatus, removeStatus } from './statuses';

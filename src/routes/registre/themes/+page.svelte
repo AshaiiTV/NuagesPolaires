@@ -637,7 +637,8 @@
 	.telephone {
 		display: none;
 	}
-	/* Téléphone : la galerie se consulte en deux colonnes ; les gestes se font sur ordinateur. */
+	/* Tablette : la galerie se consulte en deux colonnes ; les gestes se font sur ordinateur.
+	   Téléphone (sous 480 px) : une colonne, chaque feuillet à sa vraie mesure. */
 	@media (max-width: 760px) {
 		.galerie {
 			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -663,6 +664,18 @@
 		.couleurs li {
 			grid-template-columns: 44px minmax(0, 1fr) 6.5rem;
 			gap: 0 10px;
+		}
+	}
+	@media (max-width: 479px) {
+		.galerie {
+			grid-template-columns: minmax(0, 1fr);
+			gap: var(--ligne);
+		}
+		.fiche {
+			padding: 12px 16px 14px;
+		}
+		.description {
+			display: block;
 		}
 	}
 </style>

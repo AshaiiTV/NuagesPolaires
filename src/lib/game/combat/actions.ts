@@ -5,7 +5,7 @@
 
 import type { ActionId, CombatAction, CombatState, DeclareOptions, Fighter } from './types';
 import { CombatError } from './types';
-import { advanceDeclarant, cloneState, findFighter, findFighterOrThrow, isAlive, pushLog } from './state';
+import { advanceDeclarant, cloneState, findFighter, findFighterOrThrow, isAlive, pushLog, snapshotGesture } from './state';
 import { statusActionMalus } from './statuses';
 import { forcedTargetInfo } from './resolve';
 
@@ -22,8 +22,8 @@ export const BLOCK_PCT_PLAYER = 50;
 export const BLOCK_PCT_BEAST = 25;
 
 /** Dégâts d'une frappe : dmgBase + niveau (niveau 0 → 1, legacy `f.level||1`). */
-export function baseDamage(f: Pick<Fighter, 'dmgBase' | 'level'>): number {
-	return f.dmgBase + (f.level || 1);
+export function baseDamage(f: Pick<Fighter, 'dmgBase' | 'level'> & Partial<Pick<Fighter, 'oathDamage'>>): number {
+	return (f.oathDamage ?? (f.dmgBase || 6)) + (f.level || 1);
 }
 
 export function pugilatDamage(f: Pick<Fighter, 'level'>): number {
@@ -252,7 +252,7 @@ export function buildDeclaration(f: Fighter, action: DeclarableAction, opts: Dec
 			e.kind = 'attack';
 			e.value = num(opts.value) || dmg;
 			e.label = e.label || `⚔💚 Frappe Déchaînée (${num(opts.value) || dmg})`;
-			e.emCost = num(opts.emCost, actionRule('frappe_dechainees').cost!);
+			e.emCost = num(opts.emCost);
 			e.healAmt = num(opts.healAmt);
 			e.abilityName = opts.abilityName ?? null;
 			break;
@@ -356,6 +356,7 @@ export function editDeclaration(state: CombatState, fighterId: string): CombatSt
 	const pos = state.order.indexOf(fighterId);
 	if (pos < 0) throw new CombatError('COMBAT_UNKNOWN_FIGHTER', "Ce combattant n'est pas dans l'ordre de déclaration.");
 	const draft = cloneState(state);
+	snapshotGesture(draft);
 	for (let i = pos; i < draft.order.length; i++) draft.declarations[draft.order[i]!] = [];
 	draft.turn = pos;
 	draft.phase = 'declaration';

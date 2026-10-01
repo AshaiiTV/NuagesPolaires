@@ -39,9 +39,33 @@
 
 <style>
 	.apercu {
+		/* Les mesures suivent la largeur de l'aperçu, pas celle de l'écran. */
+		container: apercu / inline-size;
 		padding: 14px 14px 0;
 		background: var(--bureau);
 		overflow: hidden;
+	}
+	/* Feuillet étroit (galerie serrée) : on garde les huit couleurs, on retire ce qui ne tient plus. */
+	@container apercu (max-width: 240px) {
+		.feuille {
+			padding: 10px 10px;
+		}
+		.repere-a {
+			display: none;
+		}
+		.titre {
+			margin: 0 26px 6px 0;
+			font-size: 18px;
+			line-height: 24px;
+			overflow: hidden;
+		}
+		.volant {
+			width: auto;
+			left: 10px;
+			right: 10px;
+			bottom: 8px;
+			padding: 5px 8px;
+		}
 	}
 	.feuille {
 		position: relative;

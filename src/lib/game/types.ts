@@ -117,6 +117,6 @@ export type OathDefinition = {
 	category: OathCategory;
 	lore: string;
 	/** Un natif a toujours deux branches ; un custom peut en avoir moins. */
-	branches: { bA: OathBranch | null; bB: OathBranch | null };
+	branches: { bA: OathBranch | null; bB: OathBranch | null; extraBranches?: OathBranch[] };
 	isBuiltin: boolean;
 };

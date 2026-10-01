@@ -637,7 +637,7 @@ export async function listConsequences(
 	assertCanReadCharacter(present, characterId);
 	await loadCharacter(db, characterId);
 
-	const where = and(eq(characterHistory.characterId, characterId), filterCondition(data.filter));
+	const where = and(eq(characterHistory.characterId, characterId), filterCondition(data.filter), data.combatId ? eq(characterHistory.combatId, data.combatId) : undefined);
 	const [{ total }] = await db.select({ total: count() }).from(characterHistory).where(where);
 	const pages = Math.max(1, Math.ceil(total / CONSEQUENCES_PAGE_SIZE));
 	const page = Math.min(Math.max(1, data.page ?? 1), pages);
@@ -1155,12 +1155,12 @@ export async function setStatus(
 		const author = stampAuthor(who);
 		const statuses: CharacterStatus[] = [...(c.statuses ?? [])];
 		const index = statuses.findIndex((s) => s.id === data.statusId);
-		const note = data.note ?? '';
+		const note = data.note?.trim() || statuses[index]?.desc || '';
 		const previous = index >= 0 ? statuses[index] : null;
 		if (!previous && statuses.length >= LIMITS.statuses) {
 			throw new NpError('INVALID', `${LIMITS.statuses} statuts au plus.`, 400);
 		}
-		const next: CharacterStatus = {
+		const next: CharacterStatus = previous && !data.note?.trim() ? previous : {
 			id: data.statusId,
 			desc: note,
 			posedBy: author.actorName,

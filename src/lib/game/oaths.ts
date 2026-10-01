@@ -207,6 +207,7 @@ export function oathBranches(oath: OathDefinition): OathBranch[] {
 	const out: OathBranch[] = [];
 	if (oath.branches.bA) out.push(oath.branches.bA);
 	if (oath.branches.bB) out.push(oath.branches.bB);
+	out.push(...(oath.branches.extraBranches ?? []));
 	return out;
 }
 
@@ -443,7 +444,7 @@ export function oathFromLegacyCustom(
 				? (native?.category ?? 'melee')
 				: normalizeOathCategory(custom.cat),
 		lore: textOr(custom.lore, native?.lore ?? ''),
-		branches: { bA, bB },
+		branches: { bA, bB, extraBranches: fromArray.length ? fromArray.slice(2) : hasOwnBranches ? [] : (native?.branches.extraBranches ?? []) },
 		isBuiltin: false
 	};
 }

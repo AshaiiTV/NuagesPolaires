@@ -85,6 +85,7 @@ export type OathBranch = {
 export type OathBranches = {
 	bA?: OathBranch | null;
 	bB?: OathBranch | null;
+	extraBranches?: OathBranch[];
 };
 
 /** Aperçu d'un thème (audit 07 §3.2 : `colors` = 3 ou 4 couleurs, `tone`, `tagline`). */
@@ -1241,6 +1242,7 @@ export const migrationRegistry = pgTable(
 		targetTable: text('target_table').notNull(),
 		targetId: text('target_id').notNull(),
 		checksum: text('checksum').notNull(),
+		anomalies: jsonb('anomalies').$type<import('../legacy/report').MigrationAnomaly[]>().notNull().default([]),
 		migratedAt: timestamp('migrated_at', { withTimezone: true }).notNull().defaultNow()
 	},
 	(t) => [

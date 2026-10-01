@@ -134,6 +134,8 @@ export interface Fighter extends Resources {
 	rangeType: RangeType | null;
 	/** Dégâts de base : SD[classe].dmg (joueur) ou 1er nombre de `frappe` (créature). */
 	dmgBase: number;
+	/** Base du Serment effectif courant ; null si le Serment est inconnu. */
+	oathDamage?: number | null;
 	/** legacy `frappe` (texte libre de la créature). */
 	strike: string | null;
 	/** legacy `comp` (compétence de créature, texte libre). */
@@ -279,7 +281,9 @@ export interface CombatState {
 	version: 2;
 	schemaVersion: 2;
 	/** Snapshots sans historique imbriqué, maximum 30 rounds. */
-	history: Array<Omit<CombatState, 'history'>>;
+	history: CombatSnapshot[];
+	/** Photographies des gestes manuels, distinctes des résolutions. */
+	gestureHistory?: Array<CombatSnapshot & { history: CombatSnapshot[] }>;
 	id: string;
 	name: string;
 	notes: string;
@@ -306,6 +310,8 @@ export interface CombatState {
 	/** Compteur interne pour les identifiants déterministes (combattants, drops). */
 	seq: number;
 }
+
+export type CombatSnapshot = Omit<CombatState, 'history' | 'gestureHistory'>;
 
 export interface PlayerFighterInput {
 	type: 'player';

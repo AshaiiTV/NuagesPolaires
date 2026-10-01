@@ -1,14 +1,14 @@
 <script lang="ts">
 	// Le journal d'audit : une page à réglure où chaque action du carnet s'écrit sur sa ligne, l'heure
 	// dans la marge, les jours en titres courants. On le lit, on le filtre, on l'exporte ; on ne l'écrit
-	// jamais d'ici. Le journal du staff se lit sur la même réglure.
+	// jamais d'ici. Les décisions des MJ et des administrateurs se lisent sur la même réglure.
 	import Bouton from '$lib/ui/Bouton.svelte';
 	import Champ from '$lib/ui/Champ.svelte';
 	import NoteDeMarge from '$lib/ui/NoteDeMarge.svelte';
 	import Vide from '$lib/ui/Vide.svelte';
 	import { heure } from '$lib/ui/dates';
 	import PageRegistre from '../PageRegistre.svelte';
-	import { ACTIONS_AUDIT, ACTIONS_STAFF, LIBELLE_ROLE, SOURCES_AUDIT, detailsLisibles, le } from '../format';
+	import { ACTIONS_AUDIT, LIBELLE_ROLE, SOURCES_AUDIT, actionAudit, actionDecision, detailsLisibles, le } from '../format';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -31,20 +31,24 @@
 				source: SOURCES_AUDIT[r.source] ?? r.source,
 				acteur: r.actorPseudo,
 				role: r.actorRole ? (LIBELLE_ROLE[r.actorRole] ?? r.actorRole) : '',
-				action: ACTIONS_AUDIT[r.action] ?? r.action,
+				action: actionAudit(r.action),
 				detail: detailsLisibles(r.details)
 			}));
 		}
 		return (data.staff?.rows ?? []).map((r) => ({
 			id: r.id,
 			at: r.at,
-			source: 'staff',
+			source: 'décision',
 			acteur: r.actorName,
 			role: '',
-			action: ACTIONS_STAFF[r.action] ?? r.action,
-			detail: [r.detail, r.target && !r.detail.includes(r.target) ? `cible : ${r.target}` : ''].filter(Boolean).join(' · ')
+			action: actionDecision(r.action),
+			detail: [DETAILS[r.detail] ?? r.detail, r.target && !TECHNIQUE.test(r.target) && !r.detail.includes(r.target) ? `cible : ${r.target}` : ''].filter(Boolean).join(' · ')
 		}));
 	});
+
+	/** Un identifiant interne (« c_caBbbQVpeidlFfcH ») ne dit rien à qui lit : on le tait. */
+	const TECHNIQUE = /^[a-z]{1,4}_[A-Za-z0-9_-]{6,}$/;
+	const DETAILS: Record<string, string> = { auto: 'sauvegarde automatique', true: 'oui', false: 'non' };
 
 	/** Les lignes regroupées par jour (heure de Paris) : le jour s'écrit une fois, en titre courant. */
 	const jours = $derived.by(() => {
@@ -81,9 +85,9 @@
 	const actionsConnues = Object.entries(ACTIONS_AUDIT).sort((a, b) => a[1].localeCompare(b[1], 'fr'));
 </script>
 
-<svelte:head><title>{data.vue === 'staff' ? 'Journal du staff' : 'Journal d’audit'} — Le Registre</title></svelte:head>
+<svelte:head><title>{data.vue === 'staff' ? 'Décisions des MJ' : 'Journal d’audit'} — Le Registre</title></svelte:head>
 
-<PageRegistre titre="Journal" titreVoix={data.vue === 'staff' ? 'du staff.' : 'd’audit.'}>
+<PageRegistre titre={data.vue === 'staff' ? 'Décisions' : 'Journal'} titreVoix={data.vue === 'staff' ? 'des MJ.' : 'd’audit.'}>
 	{#snippet reperes()}
 		<span>relevé <span class="chiffres">{heure(data.releve)}</span></span>
 		<span class="gris">Lu ici, jamais écrit d’ici.</span>
@@ -91,7 +95,7 @@
 
 	<nav class="voix" aria-label="Journaux">
 		<a href="/registre/journal" class:courant={data.vue === 'audit'} aria-current={data.vue === 'audit' ? 'page' : undefined}>Journal d’audit</a>
-		<a href="/registre/journal?vue=staff" class:courant={data.vue === 'staff'} aria-current={data.vue === 'staff' ? 'page' : undefined}>Journal du staff</a>
+		<a href="/registre/journal?vue=staff" class:courant={data.vue === 'staff'} aria-current={data.vue === 'staff' ? 'page' : undefined}>Décisions des MJ</a>
 	</nav>
 
 	{#if data.vue === 'audit'}
@@ -135,7 +139,7 @@
 				{#snippet action()}<Bouton variante="texte" href="/registre/journal" fleche="→">Revoir tout le journal</Bouton>{/snippet}
 			</Vide>
 		{:else if data.vue === 'staff'}
-			<Vide>Le journal du staff est blanc. La prochaine décision s’y écrira.</Vide>
+			<Vide>Aucune décision écrite. La prochaine s’écrira ici.</Vide>
 		{:else}
 			<Vide>Le journal est blanc. Chaque écriture du carnet s’y inscrira.</Vide>
 		{/if}

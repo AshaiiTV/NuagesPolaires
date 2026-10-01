@@ -5,7 +5,7 @@
 
 import type { CombatState, Fighter, StatusId, StatusInstance } from './types';
 import { CombatError } from './types';
-import { cloneState, findFighterOrThrow, pushLog } from './state';
+import { cloneState, findFighterOrThrow, pushLog, snapshotGesture } from './state';
 
 export interface StatusEffect {
 	id: StatusId;
@@ -114,7 +114,7 @@ export function addStatus(state: CombatState, fighterId: string, id: StatusId, t
 	if (!isStatusId(id)) throw new CombatError('COMBAT_INVALID_INPUT', 'Statut inconnu.');
 	const draft = cloneState(state);
 	const f = findFighterOrThrow(draft, fighterId);
-	const t = Math.max(1, Math.min(10, Math.floor(Number.isFinite(tours) ? tours : STATUS_DEFAULT_TOURS) || STATUS_DEFAULT_TOURS));
+	const t = Math.max(1, Math.floor(Number.isFinite(tours) ? tours : STATUS_DEFAULT_TOURS));
 	const existing = f.statuses.find((s) => s.id === id);
 	if (existing) existing.tours = t;
 	else f.statuses.push({ id, tours: t });
@@ -129,6 +129,7 @@ export function removeStatus(state: CombatState, fighterId: string, id: StatusId
 	const f = findFighterOrThrow(draft, fighterId);
 	const idx = f.statuses.findIndex((s) => s.id === id);
 	if (idx < 0) return draft;
+	snapshotGesture(draft);
 	pushLog(draft, 'info', `✓ ${f.name} : ${statusLabel(id)} retiré`, null, f.id);
 	f.statuses.splice(idx, 1);
 	return draft;

@@ -29,6 +29,13 @@
       "when": 1790865030845,
       "tag": "0003_theme_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790865030846,
+      "tag": "0004_fidelite",
+      "breakpoints": true
     }
   ]
 }

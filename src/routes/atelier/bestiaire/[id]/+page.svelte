@@ -311,7 +311,7 @@
 			<p class="rappel">
 				L’aperçu suit ta saisie. La page publique change après la réponse du serveur.
 			</p>
-			<Fiche beast={apercu} portrait={false} />
+			<Fiche beast={apercu} />
 			{#if data.beast}<div class="gestes">
 					<Bouton variante="texte" href="/univers/bestiaire/{data.beast.id}" fleche="→"
 						>Ouvrir la page confirmée</Bouton

@@ -16,7 +16,7 @@
 
 <div class="fiche">
 	{#if portrait && beast.imageUrl}<div class="image-publiee">
-			<Portrait nom={beast.name} src={beast.imageUrl} taille={320} />
+			{#key beast.imageUrl}<Portrait nom={beast.name} src={beast.imageUrl} taille={320} />{/key}
 		</div>{/if}
 	{#if beast.subtitle}<p class="sous-titre">{beast.subtitle}</p>{/if}
 	<div class="reperes">

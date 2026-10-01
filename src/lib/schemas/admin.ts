@@ -80,6 +80,7 @@ export interface MigrationTableStatus {
 }
 
 export interface MigrationStatusView {
+	anomalies: import('../server/legacy/report').MigrationAnomaly[];
 	/** Aucune ligne : la base n'a jamais reçu de migration héritée. */
 	migrated: boolean;
 	total: number;

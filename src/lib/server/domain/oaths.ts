@@ -52,7 +52,7 @@ function definition(row: Oath): OathDefinition {
 		icon: row.icon,
 		category: row.category,
 		lore: row.lore,
-		branches: { bA: branch(row.branches.bA), bB: branch(row.branches.bB) },
+		branches: { bA: branch(row.branches.bA), bB: branch(row.branches.bB), extraBranches: (row.branches.extraBranches ?? []).map((b) => ({ ...b, style: b.style ?? '' })) },
 		isBuiltin: row.isBuiltin
 	};
 }
@@ -146,7 +146,7 @@ export async function getOath(db: Db, actor: Actor | null, input: string): Promi
 		growth: { pvN: row.pvGrowth, epN: row.epGrowth, emN: row.emGrowth },
 		baseDamage: row.baseDamage,
 		damageType: row.damageType,
-		branches: [row.branches.bA, row.branches.bB]
+		branches: [row.branches.bA, row.branches.bB, ...(row.branches.extraBranches ?? [])]
 			.filter((b): b is OathBranch => !!b)
 			.map((b) => ({
 				label: b.nom,

@@ -46,7 +46,8 @@ export const oathFieldsSchema = z.object({
 	branches: z
 		.object({
 			bA: oathBranchSchema.nullable().optional(),
-			bB: oathBranchSchema.nullable().optional()
+			bB: oathBranchSchema.nullable().optional(),
+			extraBranches: z.array(oathBranchSchema).optional()
 		})
 		.default({})
 });

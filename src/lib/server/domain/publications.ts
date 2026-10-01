@@ -194,6 +194,24 @@ export async function strikePublication(
 	});
 }
 
+/** Extraits du combat, y compris les ratures, réservés au MJ et à l’administrateur. */
+export async function listPublications(db: Db, actor: Actor | null, input: { combatId: string }): Promise<Array<PublicationView & { creatures: { id: string; name: string }[]; tampon: { role: string | null; name: string | null; at: string }; texte: string; raye: boolean }>> {
+	assertCan(actor, 'combat.run');
+	const combatId = parse(z.string().min(1).max(200), input.combatId);
+	const rows = await db.select({ publication: publications, pseudo: accounts.pseudo, role: accounts.role })
+		.from(publications).leftJoin(accounts, eq(publications.stampedBy, accounts.id))
+		.where(eq(publications.combatId, combatId)).orderBy(desc(publications.stampedAt), desc(publications.id));
+	const result = [];
+	for (const { publication: p, pseudo, role } of rows) {
+		const creatures = await db.select({ id: beasts.id, name: beasts.name }).from(publicationBeasts)
+			.innerJoin(beasts, eq(publicationBeasts.beastId, beasts.id)).where(eq(publicationBeasts.publicationId, p.id)).orderBy(asc(beasts.id));
+		result.push({ id: p.id, combatId: p.combatId, text: p.text, texte: p.text, onHome: p.onHome,
+			beastIds: creatures.map((b) => b.id), creatures, at: p.stampedAt.toISOString(),
+			tampon: { role, name: pseudo, at: p.stampedAt.toISOString() }, struck: p.struck, raye: p.struck });
+	}
+	return result;
+}
+
 export async function listHomeLeaves(db: Db): Promise<HomeLeaf[]> {
 	const now = new Date();
 	const [published] = await db

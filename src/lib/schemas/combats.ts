@@ -47,6 +47,7 @@ const fighterSchema = z
 		autoInterpose: z.boolean(),
 		rangeType: z.enum(['cac', 'distance']).nullable(),
 		dmgBase: integer,
+		oathDamage: integer.nullable().optional(),
 		strike: z.string().nullable(),
 		skill: z.string().nullable(),
 		behavior: z.string().nullable(),
@@ -224,7 +225,7 @@ const stateBody = z
 	})
 	.strict();
 export const combatStateSchema = stateBody
-	.extend({ history: z.array(stateBody).max(30) })
+	.extend({ history: z.array(stateBody).max(30), gestureHistory: z.array(stateBody.extend({ history: z.array(stateBody).max(30) })).max(30).optional() })
 	.refine((state) => {
 		const ids = state.fighters.map((f) => f.id);
 		const players = state.fighters
@@ -332,6 +333,9 @@ export type TableView = {
 	revision: number;
 };
 export type PlayerTableView = {
+	status: 'preparation' | 'en_cours' | 'termine';
+	closedAt: string | null;
+	recitId: string | null;
 	projection: PlayerProjection;
 	name: string;
 	discordUrl: string;
@@ -347,4 +351,4 @@ export type RecitRowView = {
 	visibleToParticipants: boolean;
 	revision: number;
 };
-export type RecitView = RecitRowView & { log: CombatLogEntry[]; discordUrl: string };
+export type RecitView = RecitRowView & { log: CombatLogEntry[]; discordUrl: string; participants: string[]; notes?: string };

@@ -57,9 +57,11 @@ export function fromLegacyArchive(legacy: unknown): CombatState {
 	const idAt = (index: unknown): string | null => fighters[num(index, -1)]?.id ?? null;
 	s.round = Math.max(1, num(source.round, 1)); s.active = source.active === true;
 	s.phase = source.phase === 'resolution' || source.phase === 'declaration' ? source.phase : 'idle';
-	s.ended = !s.active && s.phase === 'idle' && list(source.log).length > 0;
-	s.startedAt = s.active || list(source.log).length ? num(source.savedAt) : null;
-	s.endedAt = s.ended ? num(source.savedAt) : null;
+	const texts = list(source.log).map((entry) => typeof entry === 'string' ? entry : str(object(entry).text));
+	s.ended = source.ended === true || source.closedAt != null || source.endedAt != null || source.status === 'termine' || texts.some((text) => /Combat terminé\s*[—-]\s*Round/i.test(text));
+	const started = s.active || s.ended || s.phase !== 'idle' || s.round > 1 || texts.some((text) => /Combat démarré|Résolution Round/i.test(text));
+	s.startedAt = started ? num(source.startedAt, num(source.savedAt)) : null;
+	s.endedAt = s.ended ? num(source.endedAt ?? source.closedAt, num(source.savedAt)) : null;
 	s.initiative = idAt(source.initiative ?? 0);
 	s.order = list(source.order).map(idAt).filter((v): v is string => v !== null);
 	if (!s.order.length) s.order = fighters.map((f) => f.id);

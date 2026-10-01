@@ -13,6 +13,9 @@
 import { createHash } from 'node:crypto';
 import { eq, inArray } from 'drizzle-orm';
 import { isProductionEnv, type Db, type Tx } from './index';
+import { addFighter, createCombat, declareAction, endCombat, resolveRound, startCombat } from '../../game/combat';
+import { findBranch } from '../../game/oaths';
+import { oathDefinitionFromRow } from '../domain/combat-context';
 import {
 	SETTING_SEED,
 	SPAWN_SETTINGS_SEED,
@@ -201,6 +204,7 @@ export const DEMO_IDS = {
 		masque: 'e_demo_masque'
 	},
 	combat: 'c_demo_lisiere',
+	openCombat: 'c_demo_table_ouverte',
 	scene: 's_demo_brume'
 } as const;
 
@@ -591,6 +595,34 @@ export async function seedDemo(
 
 		// --- Combat terminé et archivé ---------------------------------------------------------
 		const combatClosedAt = at(-10, 22);
+		const demoState = async (id: string, name: string, beastIds: string[], rounds: number, startedAt: number) => {
+			let state = createCombat({ id, name, ownerAccountId: A.mj, notes: 'Surveiller le passage derrière les racines.' });
+			const sheets = await tx.select().from(characters).where(inArray(characters.id, [P.aria, P.kael]));
+			for (const sheet of sheets) {
+				const [oath] = await tx.select().from(oaths).where(eq(oaths.id, sheet.oathId));
+				const branch = findBranch(oathDefinitionFromRow(oath), sheet.branch);
+				state = addFighter(state, { type: 'player', characterId: sheet.id, name: sheet.name, oathName: oath.name, level: sheet.level,
+					pvCur: sheet.pvCur, pvMax: sheet.pvMax, epCur: sheet.epCur, epMax: sheet.epMax, emCur: sheet.emCur, emMax: sheet.emMax,
+					dmgBase: oath.baseDamage, branch: branch ? { name: branch.nom, tiers: branch.paliers } : null });
+			}
+			for (const beastId of beastIds) {
+				const [beast] = await tx.select().from(beasts).where(eq(beasts.id, beastId));
+				state = addFighter(state, { type: 'beast', beastId, name: beast.name, level: beast.level, pv: beast.pv, ep: beast.ep,
+					strike: beast.strike, skill: beast.skill, behavior: beast.behavior, gem: beast.gem });
+			}
+			state = startCombat(state, undefined, { now: startedAt });
+			for (let n = 0; n < rounds; n++) {
+				for (const id of state.order) {
+					const fighter = state.fighters.find((f) => f.id === id)!;
+					if (fighter.type === 'player') state = declareAction(state, id, 'frappe', { target: state.fighters.at(-1)!.id });
+					state = declareAction(state, id, 'passer');
+				}
+				state = resolveRound(state, () => 0.5);
+			}
+			return { state, characterRevisions: Object.fromEntries(sheets.map((s) => [s.id, s.revision])) };
+		};
+		const archived = await demoState(DEMO_IDS.combat, 'Embuscade à la lisière', [B.corbeau, B.vouivre], 2, combatClosedAt.getTime() - 3600000);
+		const ending = endCombat(archived.state, { now: combatClosedAt.getTime() });
 		await tx.insert(combats).values({
 			id: DEMO_IDS.combat,
 			ownerAccountId: A.mj,
@@ -598,9 +630,9 @@ export async function seedDemo(
 			name: 'Embuscade à la lisière',
 			label: 'Vouivre du canyon',
 			status: 'termine',
-			round: 4,
+			round: ending.state.round,
 			phase: 'idle',
-			state: { fighters: [], order: [], log: [] },
+			state: { ...ending.state, characterRevisions: archived.characterRevisions },
 			savedAt: combatClosedAt,
 			manualSaved: true,
 			visibleToParticipants: true,
@@ -626,6 +658,12 @@ export async function seedDemo(
 				outcome: { pvCur: 32, pvMax: 32, epCur: 44, emCur: 36, xpGain: 35, drops: [] }
 			}
 		]);
+		const opened = await demoState(DEMO_IDS.openCombat, 'Aux racines de la lisière', [B.loup, B.golem], 1, now - 300000);
+		await tx.insert(combats).values({ id: DEMO_IDS.openCombat, ownerAccountId: A.mj, ownerLabel: 'mj', name: opened.state.name,
+			status: 'en_cours', round: opened.state.round, phase: opened.state.phase,
+			state: { ...opened.state, characterRevisions: opened.characterRevisions }, savedAt: new Date(now), visibleToParticipants: true,
+			discordUrl: 'https://discord.com/channels/demo/lisiere-du-canyon' });
+		await tx.insert(combatParticipants).values([P.aria, P.kael].map((characterId) => ({ combatId: DEMO_IDS.openCombat, characterId })));
 
 		// --- Historique d'Aria (registre des conséquences) -------------------------------------
 		await tx.insert(characterHistory).values([
@@ -747,7 +785,7 @@ export async function seedDemo(
 			characters: 3,
 			beasts: 6,
 			events: 4,
-			combats: 1,
+			combats: 2,
 			scenes: 1
 		};
 	});

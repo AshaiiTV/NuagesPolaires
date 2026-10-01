@@ -21,6 +21,7 @@
 	import { copierTexte } from '$lib/ui/scene/presse-papiers';
 	import { creerEcriture } from '$lib/ui/ecriture.svelte';
 	import { heure } from '$lib/ui/dates';
+	import { ligneFeuillet } from '$lib/ui/scene/table';
 	import { declarationText, type DeclarationView } from '$lib/schemas/declarations';
 	import { RESSOURCES, resoudre, type Res } from './mots';
 	import type { PageProps } from './$types';
@@ -211,11 +212,9 @@
 			}
 		});
 	});
+	/** Même phrase que la Table vue par le joueur, au même instant (la Table a commencé = `en_cours`). */
 	function ligneTable(t: NonNullable<typeof contexte.table>): string {
-		if (t.status === 'preparation') return 'La Table se prépare.';
-		if (t.phase === 'declaration') return `Round ${t.round} · déclarations`;
-		if (t.phase === 'resolution') return 'Le MJ résout.';
-		return `Round ${t.round}`;
+		return ligneFeuillet({ active: t.status === 'en_cours', round: t.round, phase: t.phase });
 	}
 
 	// ── Bloc à coller ──
@@ -252,8 +251,8 @@
 	let boutonRegle = $state<HTMLButtonElement>();
 	let boutonReposer = $state<HTMLButtonElement>();
 	let retour = $state('/carnet');
-	let phraseReprise = $state(untrack(() => data.contexte.scene?.bookmark?.text ?? ''));
-	let lienReprise = $state(untrack(() => data.contexte.scene?.bookmark?.url ?? ''));
+	let phraseReprise = $state(untrack(() => data.marquePage?.text ?? ''));
+	let lienReprise = $state(untrack(() => data.marquePage?.url ?? ''));
 	async function basculer(p: 'regle' | 'reposer') {
 		panneau = panneau === p ? null : p;
 		if (!panneau) return (p === 'regle' ? boutonRegle : boutonReposer)?.focus();
@@ -421,8 +420,8 @@
 						<span>{scene.title}</span>
 						{#if scene.discordUrl}<a href={scene.discordUrl} target="_blank" rel="noopener noreferrer">Ouvrir le salon <span aria-hidden="true">↗</span></a>{/if}
 					</p>
-					{#if scene.bookmark?.text}
-						<p class="reprise"><span class="repere">Tu t’étais arrêté ici</span> {scene.bookmark.text}</p>
+					{#if data.marquePage?.text}
+						<p class="reprise"><span class="repere">Tu t’étais arrêté ici</span> « {data.marquePage.text} »</p>
 					{/if}
 				</section>
 			{:else}

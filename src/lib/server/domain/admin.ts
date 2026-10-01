@@ -6,7 +6,7 @@ import { assertFreshAccount } from '$lib/server/auth/context';
 //   - migrationStatus : lecture de `migration_registry` ;
 //   - diagnostics : base joignable, variables d'environnement PRÉSENTES (booléens, jamais les
 //     valeurs), version du paquet. Aucune écriture.
-import { asc, sql } from 'drizzle-orm';
+import { asc, eq, ne, sql } from 'drizzle-orm';
 import type { Db } from '$lib/server/db';
 import { isProductionEnv } from '$lib/server/db';
 import {
@@ -169,6 +169,7 @@ export async function migrationStatus(db: Db, actor: Actor | null): Promise<Migr
 			lastMigratedAt: sql<Date | string | null>`max(${migrationRegistry.migratedAt})`
 		})
 		.from(migrationRegistry)
+		.where(ne(migrationRegistry.targetTable, 'migration_report'))
 		.groupBy(migrationRegistry.targetTable)
 		.orderBy(asc(migrationRegistry.targetTable));
 	const versions = await db
@@ -188,7 +189,12 @@ export async function migrationStatus(db: Db, actor: Actor | null): Promise<Migr
 		.filter((v): v is string => v !== null)
 		.sort()
 		.at(-1);
+	const reports = await db.select({ anomalies: migrationRegistry.anomalies }).from(migrationRegistry).where(eq(migrationRegistry.sourceKey, 'migration_report'));
+	const anomalies = [...new Map(reports.flatMap((r) => r.anomalies)
+		.filter((a) => ['HOMONYM', 'OWNER_QUARANTINE', 'BEAST_QUANTITY_RECALCULATED'].includes(a.code))
+		.map((a) => [`${a.code}:${a.sourceKey}:${a.sourceId}`, a])).values()];
 	return {
+		anomalies,
 		migrated: total > 0,
 		total,
 		lastMigratedAt: last ?? null,

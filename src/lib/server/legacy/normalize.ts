@@ -8,6 +8,7 @@ import { normalizeLegacyProgression, clampResources } from '../../game/progressi
 import { fromLegacyArchive } from '../../game/combat/legacy';
 import { THEME_ID_ALIASES, THEME_SEED } from '../db/referentials';
 import { checksum } from './snapshot';
+import { behaviorLabel, legacyQtyRange } from '../../game/spawn';
 
 export type LegacyRecord = Record<string, unknown>;
 const objectSchema = z.record(z.string(), z.unknown());
@@ -330,13 +331,17 @@ export function normalizeBeast(value: unknown, identity: unknown = value) {
 					return source[key];
 		return undefined;
 	};
-	const min = integer(pick('qtyMin', 'minQty', 'spawnMin'), 1, 1);
+	const level = integer(pick('niv', 'level'), 1, 1);
+	const rawBehavior = pick('beh', 'behavior', 'comportement', 'behaviour') ?? 'Neutre';
+	const range = legacyQtyRange(level, rawBehavior, pick('spawnMin'), pick('spawnMax'));
+	const enteredMin = pick('qtyMin', 'minQty'), enteredMax = pick('qtyMax', 'maxQty');
+	const quantityRecalculated = (enteredMin !== undefined && Number(enteredMin) !== range.min) || (enteredMax !== undefined && Number(enteredMax) !== range.max);
 	const row = {
 		id: sourceId(r, 'b', identity),
 		name: text(pick('nom', 'name', 'label'), 'Créature héritée').slice(0, 80),
 		subtitle: text(pick('sub', 'subtitle', 'sousTitre', 'sous_titre', 'typeLabel')),
-		behavior: text(pick('beh', 'behavior', 'comportement', 'behaviour'), 'Neutre'),
-		level: integer(pick('niv', 'level'), 1, 1),
+		behavior: behaviorLabel(rawBehavior) ?? String(rawBehavior),
+		level,
 		pv: integer(pick('pv', 'hp', 'pvMax'), 20, 1),
 		ep: integer(pick('ep', 'energy', 'epMax'), 20),
 		strike: text(pick('frappe', 'attack', 'basicAttack')),
@@ -349,8 +354,8 @@ export function normalizeBeast(value: unknown, identity: unknown = value) {
 		quote: text(pick('citation', 'quote')),
 		hidden: pick('hidden') === true,
 		archived: pick('archived', 'isArchived') === true,
-		qtyMin: min,
-		qtyMax: integer(pick('qtyMax', 'maxQty', 'spawnMax'), Math.max(3, min), min),
+		qtyMin: range.min,
+		qtyMax: range.max,
 		spawnWeight: integer(pick('spawnWeight', 'weight'), 1),
 		tags: strings(pick('tags')),
 		statuses: list(pick('statuts', 'statuses')),
@@ -360,7 +365,7 @@ export function normalizeBeast(value: unknown, identity: unknown = value) {
 		// Le brut permet d'arbitrer les alias divergents sans perdre leurs valeurs.
 		extra: { legacy: r }
 	} satisfies typeof s.beasts.$inferInsert;
-	return { row, zones: strings(pick('zones')) };
+	return { row, zones: strings(pick('zones')), quantityRecalculated, enteredQuantity: { min: enteredMin, max: enteredMax } };
 }
 export function normalizeEvent(value: unknown, identity: unknown = value) {
 	const r = object(value);
@@ -409,15 +414,18 @@ export function normalizeCombat(value: unknown, owner: string, identity: unknown
 		state = { ...r, schemaVersion: 0 };
 		rawState = true;
 	}
-	const ongoing = r.active === true || r._inProgress === true || r._draft === true;
+	const ongoing = !state.ended && (r.active === true || r._inProgress === true || r._draft === true || state.startedAt != null);
+	const closed = state.ended === true;
+	const targetId = stableId('c', [owner, legacyId]);
+	state.id = targetId;
 	return {
 		row: {
-			id: stableId('c', [owner, legacyId]),
+			id: targetId,
 			ownerAccountId: null,
 			ownerLabel: owner,
 			name: text(r.name),
 			label: text(r.label),
-			status: ongoing ? 'en_cours' : 'termine',
+			status: closed ? 'termine' : ongoing ? 'en_cours' : 'preparation',
 			round: integer(r.round, 1, 1),
 			phase: text(r.phase, 'idle'),
 			state,
@@ -425,7 +433,7 @@ export function normalizeCombat(value: unknown, owner: string, identity: unknown
 			manualSaved: r._manualSaved === true,
 			autosaveAt: date(r._autosaveAt),
 			autosaveReason: text(r._autosaveReason),
-			closedAt: ongoing ? null : date(r.savedAt, EPOCH)!
+			closedAt: closed ? date(r.savedAt, EPOCH)! : null
 		} satisfies typeof s.combats.$inferInsert,
 		legacyId,
 		rawState,

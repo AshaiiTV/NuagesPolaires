@@ -34,6 +34,11 @@
 		panneau?: Snippet | null;
 		/** Note de marge posée juste au-dessus de la barre (copie, réseau). */
 		note?: Snippet | null;
+		/**
+		 * Le ruban de l'enveloppe, quand le feuillet n'est pas lui-même ce que le ruban ouvre (la Table
+		 * vue par un joueur : « le ruban ouvre le feuillet par-dessus », 03-vision §5.9).
+		 */
+		ruban?: { href: string; libelle: string; corne?: boolean } | null;
 	}
 	let {
 		disposition = 'volant',
@@ -43,7 +48,8 @@
 		barre,
 		etiquetteBarre = 'Gestes du feuillet',
 		panneau = null,
-		note = null
+		note = null,
+		ruban = null
 	}: Props = $props();
 
 	// Le régime se lit aussi sur `html` (03-vision §3, parcours P2) : posé à l'ouverture du feuillet,
@@ -59,7 +65,13 @@
 	});
 </script>
 
-<div class="feuille {disposition}" data-feuillet class:gauche style:--dentelure={DENTELURE}>
+<div class="feuille {disposition}" data-feuillet class:gauche class:avec-ruban={!!ruban} style:--dentelure={DENTELURE}>
+	{#if ruban}
+		<a class="ruban" href={ruban.href}>
+			{ruban.libelle}
+			{#if ruban.corne}<span class="corne" aria-hidden="true"></span><span class="sr-only"> — pages non lues</span>{/if}
+		</a>
+	{/if}
 	<div class="papier">
 		<div class="bande chiffres">{@render bande()}</div>
 		<div class="contenu">{@render children()}</div>
@@ -110,6 +122,46 @@
 		}
 	}
 
+	/* ── Le ruban : le même signet de sauge que l'enveloppe, accroché en haut à droite du feuillet.
+	   Le contenu lui laisse sa place (`--place-ruban`) pour qu'aucun titre ne passe dessous. ── */
+	.avec-ruban {
+		--place-ruban: 112px;
+	}
+	.ruban {
+		position: absolute;
+		z-index: 4;
+		top: 0;
+		right: 24px;
+		display: flex;
+		align-items: flex-start;
+		min-height: 56px;
+		padding: 14px 14px 22px;
+		background: var(--ruban);
+		color: var(--sur-ruban);
+		font: 600 12px/16px var(--corps);
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		text-decoration: none;
+		white-space: nowrap;
+		clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 10px), 0 100%);
+		transition: padding-bottom 160ms;
+	}
+	.ruban:hover {
+		padding-bottom: 28px;
+	}
+	.ruban:focus-visible {
+		outline-offset: -4px;
+		outline-color: var(--sur-ruban);
+	}
+	.ruban .corne {
+		position: absolute;
+		top: 0;
+		right: 0;
+		border-style: solid;
+		border-width: 0 10px 10px 0;
+		border-color: transparent var(--sur-ruban) transparent transparent;
+	}
+
 	.papier {
 		position: relative;
 		padding-top: 6px;
@@ -140,8 +192,9 @@
 	.barre {
 		z-index: 4;
 		display: grid;
+		/* Chaque geste tient sur une ligne (« Copier pour Discord » prend sa largeur), le reste se partage. */
 		grid-auto-flow: column;
-		grid-auto-columns: 1fr;
+		grid-auto-columns: minmax(max-content, 1fr);
 		min-height: 56px;
 		background: var(--page-2);
 		border-top: 1px solid var(--reglure);
@@ -161,6 +214,7 @@
 		color: var(--encre);
 		text-align: center;
 		text-decoration: none;
+		white-space: nowrap;
 		cursor: pointer;
 	}
 	.barre :global(:is(a, button):first-child) {
@@ -203,6 +257,9 @@
 	@media (max-width: 760px) {
 		.papier {
 			min-height: 100svh;
+		}
+		.ruban {
+			right: 12px;
 		}
 		.contenu {
 			padding-bottom: calc(56px + env(safe-area-inset-bottom) + 48px);

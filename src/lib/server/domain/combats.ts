@@ -58,6 +58,8 @@ import {
 import { appendStaffLog } from './staff-log';
 import { recordAudit } from './audit';
 import { publishExtract } from './publications';
+import { findBranch } from '../../game/oaths';
+import { enrichCombatState, oathDefinitionFromRow } from './combat-context';
 
 const identifier = z.string().min(1).max(200);
 function parse<T>(schema: z.ZodType<T>, input: unknown): T {
@@ -77,7 +79,7 @@ function newId(prefix: string): string {
 	return `${prefix}_${randomBytes(12).toString('base64url')}`;
 }
 function stateOf(row: Combat): CombatState {
-	const { characterRevisions: _revisions, ...state } = row.state;
+	const { characterRevisions: _revisions, legacy: _legacy, ...state } = row.state;
 	return parse(combatStateSchema, state);
 }
 function revisionsOf(row: Combat): Record<string, number> {
@@ -270,7 +272,7 @@ export async function createTable(
 			if (!sheet) throw NpError.notFound('Personnage introuvable.');
 			const [oath] = await tx.select().from(oaths).where(eq(oaths.id, sheet.oathId));
 			if (!oath) throw NpError.notFound('Serment introuvable.');
-			const branch = [oath.branches.bA, oath.branches.bB].find((b) => b?.nom === sheet.branch);
+			const branch = findBranch(oathDefinitionFromRow(oath), sheet.branch);
 			state = addFighter(state, {
 				type: 'player',
 				characterId,
@@ -285,10 +287,7 @@ export async function createTable(
 				emMax: sheet.emMax,
 				dmgBase: oath.baseDamage,
 				imageUrl: sheet.avatarUrl,
-				branch: branch ? { name: branch.nom, tiers: branch.paliers } : null,
-				statuses: sheet.statuses
-					.filter((s) => STATUS_IDS.includes(s.id as StatusId))
-					.map((s) => ({ id: s.id as StatusId, tours: 2 }))
+				branch: branch ? { name: branch.nom, tiers: branch.paliers } : null
 			});
 			baselines[characterId] = sheet.revision;
 		}
@@ -390,7 +389,7 @@ async function pendingFor(
 export async function getTable(db: Db, actor: Actor | null, id: string): Promise<TableView> {
 	const author = assertCan(actor, 'combat.run');
 	const row = await readTable(db, parse(identifier, id));
-	const state = stateOf(row);
+	const state = await enrichCombatState(db, stateOf(row));
 	return {
 		state,
 		row: tableRow(row),
@@ -538,6 +537,9 @@ export async function getPlayerTable(
 			showEnemyNumbers: row.combat.showEnemyNumbers
 		}),
 		name: row.combat.name,
+		status: row.combat.status,
+		closedAt: row.combat.closedAt?.toISOString() ?? null,
+		recitId: row.combat.status === 'termine' ? row.combat.id : null,
 		discordUrl: row.combat.discordUrl,
 		revision: row.combat.revision,
 		at: row.combat.updatedAt.toISOString()
@@ -864,7 +866,6 @@ export async function getRecit(db: Db, actor: Actor | null, id: string): Promise
 	// Liste blanche même pour le MJ : un récit n'est jamais un export de l'état réservé.
 	const log = staff
 		? state.log
-				.filter((e) => !e.private)
 				.map((e) => ({
 					n: e.n,
 					round: e.round,
@@ -879,9 +880,9 @@ export async function getRecit(db: Db, actor: Actor | null, id: string): Promise
 						showEnemyNumbers: row.showEnemyNumbers
 					}).log
 			);
-	return { ...recitRow(row), log, discordUrl: row.discordUrl };
+	return { ...recitRow(row), log, discordUrl: row.discordUrl, participants: state.fighters.map((f) => f.name), ...(staff ? { notes: state.notes } : {}) };
 }
 export async function recitAsText(db: Db, actor: Actor | null, id: string): Promise<string> {
 	const recit = await getRecit(db, actor, id);
-	return `${recit.title}\n${recit.at} · ${recit.round} round(s)\n\n${recit.log.map((entry) => `Round ${entry.round} · ${entry.text}`).join('\n')}\n`;
+	return `${recit.title}\n${recit.at} · ${recit.round} round(s)\n\n${recit.log.map((entry) => `Round ${entry.round} · ${entry.text}`).join('\n')}\n${recit.notes ? `\nNotes du MJ :\n${recit.notes}\n` : ''}`;
 }

@@ -201,7 +201,7 @@ function addSummonDraft(s: CombatState, owner: Fighter, spec: SummonSpec): void 
 	const summon = makePlayerFighter(s, { type: 'player', characterId: pid, name: `${owner.name} · ${spec.name}`, oathName: `${owner.oathName} — Invocation`, level: owner.level, pvCur: spec.pv, pvMax: spec.pv, epCur: 999, epMax: 999, emCur: 0, emMax: 0, dmgBase: spec.dmg });
 	summon.type = owner.type; summon.isSummon = true; summon.ownerCharacterId = pid; summon.summonName = spec.name;
 	summon.actionsMax = 2; summon.autoInterpose = spec.autoInterpose; summon.rangeType = spec.rangeType;
-	s.fighters.push(summon); s.order.push(summon.id); s.usedSummons.push(marker);
+	s.fighters.push(summon); s.usedSummons.push(marker);
 	pushLog(s, 'summon', `🌀 ${owner.name} invoque ${spec.name} [${marker}]`, owner.id, summon.id);
 }
 
@@ -213,10 +213,11 @@ export function isFinished(state: CombatState): boolean {
 export function resolveRound(state: CombatState, _rng: Rng): CombatState {
 	if (!state.active || state.phase !== 'resolution') throw new CombatError('COMBAT_NOT_RESOLUTION_PHASE', 'Les déclarations ne sont pas complètes.');
 	const s = cloneState(state);
-	const { history: _history, ...snapshot } = cloneState(state);
+	const { history: _history, gestureHistory: _gestures, ...snapshot } = cloneState(state);
 	s.history = [...s.history, snapshot].slice(-30);
+	s.gestureHistory = [];
 	pushLog(s, 'round', `— Résolution Round ${s.round} —`);
-	// Copier l'ordre : les invocations rejoignent le prochain round, pas la passe courante.
+	// L'ordre reste celui du simulateur ; une invocation ajoutée ne reçoit aucun tour.
 	const order = [...s.order];
 	for (const id of order) {
 		const f = findFighter(s, id); if (!f || f.pvCur <= 0) continue;
@@ -257,7 +258,7 @@ export function resolveRound(state: CombatState, _rng: Rng): CombatState {
 			if (a.action === 'deplacer') pushLog(s, 'info', `🏃 ${f.name} se déplace`, id);
 		}
 	}
-	for (const id of order) { const f = findFighter(s, id); if (f && f.pvCur > 0) { tickStatuses(s, f); if (f.pvCur === 0) queueDrop(s, f); } }
+	for (const id of order) { const f = findFighter(s, id); if (f && f.pvCur > 0) tickStatuses(s, f); }
 	s.declarations = {}; s.round++; s.turn = 0; s.phase = 'declaration';
 	for (const f of s.fighters) {
 		f.elemState = null;
@@ -278,5 +279,5 @@ export function resolveRound(state: CombatState, _rng: Rng): CombatState {
 export function undoRound(state: CombatState): CombatState {
 	if (state.ended) throw new CombatError('COMBAT_ALREADY_ENDED', 'Ce combat est clos.');
 	const snapshot = state.history.at(-1);
-	return snapshot ? { ...structuredClone(snapshot), history: structuredClone(state.history.slice(0, -1)) } : cloneState(state);
+	return snapshot ? { ...structuredClone(snapshot), history: structuredClone(state.history.slice(0, -1)), gestureHistory: [] } : cloneState(state);
 }

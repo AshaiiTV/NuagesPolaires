@@ -122,13 +122,13 @@ export function maxAtLevel(level: number, growth: Growth): Pick<Resources, 'pvMa
  */
 export function combatXp(beastLevel: number, participationPercent: number): number {
 	const base = Math.max(1, Math.floor(finiteOr(beastLevel, 1)));
-	const part = finiteOr(participationPercent, 0);
+	const part = Math.trunc(finiteOr(participationPercent, 0));
 	return Math.ceil(base * 10 * (part / 100));
 }
 
 /** Texte d'historique d'une récompense de combat : `+X XP (<mob>, <part>%)`. audit 02 §8 */
 export function combatXpEntryText(xpGain: number, beastName: string, participationPercent: number): string {
-	return `+${xpGain} XP (${beastName}, ${participationPercent}%)`;
+	return `+${xpGain} XP (${beastName}, ${Math.trunc(participationPercent)}%)`;
 }
 
 // ---------------------------------------------------------------------------
@@ -515,7 +515,7 @@ export function normalizeLegacyProgression(
 				: typeof out.class === 'string'
 					? out.class
 					: '';
-		const resolved = resolveGrowth(oathName) ?? {};
+		const resolved = { ...growthFor(oathName), ...resolveGrowth(oathName) };
 		const growth: Growth = {
 			pvN: finiteOr(resolved.pvN, 0),
 			epN: finiteOr(resolved.epN, 0),

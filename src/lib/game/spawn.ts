@@ -335,6 +335,17 @@ export function qtyRange(beast: Pick<SpawnBeast, 'level' | 'behavior' | 'qtyMin'
 	return { min, max: Math.max(min, max) };
 }
 
+/** Bornes réellement lues par l’ancien tirage ; les qtyMin/qtyMax saisis étaient ignorés. */
+export function legacyQtyRange(level: number, behavior: unknown, spawnMin?: unknown, spawnMax?: unknown): QtyRange {
+	return qtyRange({
+		level,
+		// Le legacy ne traduisait pas les indices numériques avant le tirage.
+		behavior: /^[1-5]$/.test(String(behavior).trim()) ? 'indice hérité' : String(behavior ?? ''),
+		qtyMin: Number.parseInt(String(spawnMin ?? ''), 10),
+		qtyMax: Number.parseInt(String(spawnMax ?? ''), 10)
+	});
+}
+
 function countOf(counts: Readonly<Record<string, number>> | undefined, id: string): number {
 	const n = Math.trunc(Number(counts?.[id]));
 	return Number.isFinite(n) ? n : 0;

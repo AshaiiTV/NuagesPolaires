@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
-	import { onMount, untrack } from 'svelte';
+	import { onMount, tick, untrack } from 'svelte';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import PagePersonnages from '../PagePersonnages.svelte';
 	import Attributions from '../Attributions.svelte';
@@ -82,13 +82,18 @@
 		return () => clearTimeout(timer);
 	});
 
-	function ouvrir(id: string) {
+	async function ouvrir(id: string) {
 		const el = document.getElementById(id);
 		let ancestor = el?.parentElement;
 		while (ancestor) {
-			if (ancestor instanceof HTMLDetailsElement) ancestor.open = true;
+			if (ancestor instanceof HTMLDetailsElement) {
+				if (ancestor.classList.contains('chapitre')) expandedChapters[ancestor.id] = true;
+				ancestor.open = true;
+			}
 			ancestor = ancestor.parentElement;
 		}
+		// Le chapitre se pose avant d’ouvrir son formulaire ; sa réponse ne referme pas la ligne.
+		await tick();
 		if (el instanceof HTMLDetailsElement) {
 			el.open = true;
 			el.querySelector('summary')?.focus();

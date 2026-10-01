@@ -16,6 +16,8 @@
 	import CarteRegle from '$lib/ui/scene/CarteRegle.svelte';
 	import { copierTexte } from '$lib/ui/scene/presse-papiers';
 	import { sansEmoji } from '$lib/ui/scene/regles';
+	import { consigne, phaseLibelle } from '$lib/ui/scene/table';
+	import { rubanPour } from '$lib/ui/navigation';
 	import { dateHeure, heure } from '$lib/ui/dates';
 	import { channelFromTitle } from '$lib/schemas/scenes';
 	import type { PlayerTableView } from '$lib/schemas/combats';
@@ -23,6 +25,8 @@
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
+	/** Le ruban ouvre le feuillet par-dessus la Table (03-vision §5.9, P3). */
+	const ruban = $derived(data.compte ? rubanPour(data.compte) : null);
 
 	type Champ = 'pv' | 'ep' | 'em';
 	const CHAMPS: readonly Champ[] = ['pv', 'ep', 'em'];
@@ -161,25 +165,10 @@
 	);
 	const recuHeure = $derived(heure(recuA));
 
-	// ── Ce que dit la Table ──
-	function phaseLibelle(): string {
-		if (!p) return '';
-		if (!p.active && p.round === 0) return 'en préparation';
-		if (p.phase === 'declaration') return 'déclarations';
-		if (p.phase === 'resolution') return 'résolution';
-		return 'entre deux rounds';
-	}
+	// ── Ce que dit la Table (même source que la seconde ligne du feuillet) ──
 	const tour = $derived(p?.currentFighterId ? (p.fighters.find((f) => f.id === p.currentFighterId) ?? null) : null);
-	const consigne = $derived.by(() => {
-		if (!p) return '';
-		if (!p.active && p.round === 0) return 'La Table se prépare.';
-		if (p.phase === 'resolution') return 'Le MJ résout.';
-		if (p.phase === 'declaration') {
-			if (!tour || tour.id === moi?.id) return 'Le MJ attend ta déclaration sur Discord.';
-			return `Le MJ attend la déclaration de ${tour.name}.`;
-		}
-		return 'Le MJ prépare le round suivant.';
-	});
+	const phase = $derived(p ? phaseLibelle(p) : '');
+	const consigneTable = $derived(p ? consigne(p, tour && tour.id !== moi?.id ? tour.name : null) : '');
 
 	// ── Le récit des rounds : la plus récente en bas, « Round N · résolu à hh:mm. » à sa place ──
 	type Ligne =
@@ -333,6 +322,7 @@
 		{bande}
 		{barre}
 		etiquetteBarre="Gestes de la Table"
+		{ruban}
 		panneau={regleOuverte && carte ? panneau : null}
 		note={copie ? notePied : null}
 	>
@@ -360,7 +350,7 @@
 					À la table — {vue.name}<span class="etape"
 						><span class="point" aria-hidden="true">{' · '}</span
 						>{#if p.active || p.round > 0}<span class="round chiffres">Round {p.round}</span>{' · '}{/if}<span
-							class="phase">{phaseLibelle()}</span
+							class="phase">{phase}</span
 						></span
 					>
 				</h1>
@@ -403,7 +393,7 @@
 								{/each}
 							</ul>
 						{/if}
-						<p class="consigne">{consigne}</p>
+						<p class="consigne">{consigneTable}</p>
 					</section>
 				{/if}
 
@@ -485,9 +475,6 @@
 				</section>
 			</div>
 
-			<p class="feuillet">
-				<a class="lien" href="/carnet/scene">Ouvrir le feuillet <span aria-hidden="true">→</span></a>
-			</p>
 		{/if}
 	</Feuille>
 </Enveloppe>
@@ -511,6 +498,7 @@
 	/* ── En-tête ── */
 	.tete {
 		padding-top: 12px;
+		padding-right: var(--place-ruban, 0);
 	}
 	.titre {
 		font: 500 20px/24px var(--corps);
@@ -723,10 +711,6 @@
 	.l-resolu {
 		padding: 6px 0 0;
 		font: 600 14px/24px var(--corps);
-	}
-
-	.feuillet {
-		margin-top: 24px;
 	}
 
 	/* ── Table repliée ── */

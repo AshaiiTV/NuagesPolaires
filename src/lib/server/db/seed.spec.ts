@@ -246,7 +246,7 @@ describe('seedDemo — jeu de démonstration', () => {
 			characters: 3,
 			beasts: 6,
 			events: 4,
-			combats: 1,
+			combats: 2,
 			scenes: 1
 		});
 		const again = await seedDemo(t.db, { NP_DB_DRIVER: 'pglite' });

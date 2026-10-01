@@ -3,6 +3,7 @@ import { action } from '$lib/server/actions';
 import { requireAccount } from '$lib/server/guards';
 import { getLastPages, openPage, setBookmark, unfoldAll } from '$lib/server/domain/reading';
 import { setParticipation } from '$lib/server/domain/events';
+import { composerAttente } from './attente';
 import type { Actions, PageServerLoad } from './$types';
 
 // « Dernières pages » (03-vision §5.2 ; 06-contrats §B.4, §C).
@@ -25,8 +26,11 @@ export const load: PageServerLoad = async (event) => {
 	return {
 		vue: {
 			...vue,
-			// La Table vue par un joueur se suit dans son carnet, en lecture seule.
-			waiting: vue.waiting.map((w) => (w.kind === 'table' ? { ...w, href: `/carnet/table/${w.id}` } : w)),
+			// La Table vue par un joueur se suit dans son carnet, en lecture seule ; le MJ la suit à la Table.
+			waiting:
+				vue.state === 'staff'
+					? vue.waiting
+					: composerAttente(vue.waiting).map((w) => (w.kind === 'table' ? { ...w, href: `/carnet/table/${w.id}` } : w)),
 			since: vue.since.map((l) => ({ ...l, href: versPage(l.href) }))
 		}
 	};

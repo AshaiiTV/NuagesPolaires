@@ -16,7 +16,7 @@ import {
 	strikeOwnDeclaration
 } from '$lib/server/domain/declarations';
 import { writeEntry } from '$lib/server/domain/journal';
-import { setBookmark } from '$lib/server/domain/reading';
+import { getLastPages, setBookmark } from '$lib/server/domain/reading';
 import { ruleCardFor, type RuleCard } from '$lib/game/rules';
 import { STATUS_IDS } from '$lib/game/combat/statuses';
 import type { StatusId } from '$lib/game/combat/types';
@@ -43,10 +43,14 @@ export const load: PageServerLoad = async (event) => {
 	const contexte = await getSceneContext(db, actor);
 	const fiche = await getOwnSheet(db, actor);
 	const attente = fiche ? await listOwnPending(db, actor) : [];
+	// Le marque-page est unique, tenu par compte (03-vision §6.2) : le feuillet montre le même que
+	// Dernières pages, jamais une seconde phrase « Tu t'étais arrêté ici ».
+	const { bookmark: marquePage } = await getLastPages(db, actor);
 	return {
 		contexte,
 		fiche,
 		attente,
+		marquePage,
 		mots: fiche ? motsPour(fiche) : null,
 		carte: fiche ? carteDuMoment(fiche, contexte) : ruleCardFor({ kind: 'out-of-combat' }),
 		/** Heure du serveur : le compte à rebours d'annulation se cale dessus. */

@@ -37,6 +37,18 @@ export function cloneState(state: CombatState): CombatState {
 	return structuredClone(state);
 }
 
+/** Photographie sans historique de gestes imbriqué. Compatible avec les états v2 existants. */
+export function snapshotGesture(draft: CombatState): void {
+	const { gestureHistory: _gestures, ...snapshot } = cloneState(draft);
+	draft.gestureHistory = [...(draft.gestureHistory ?? []), snapshot].slice(-30);
+}
+
+export function undoLastGesture(state: CombatState): CombatState {
+	if (state.ended) throw new CombatError('COMBAT_ALREADY_ENDED', 'Ce combat est clos.');
+	const snapshot = state.gestureHistory?.at(-1);
+	return snapshot ? { ...structuredClone(snapshot), gestureHistory: structuredClone(state.gestureHistory!.slice(0, -1)) } : cloneState(state);
+}
+
 export function findFighter(state: CombatState, fighterId: string): Fighter | null {
 	return state.fighters.find((f) => f.id === fighterId) ?? null;
 }
@@ -209,10 +221,11 @@ export function makePlayerFighter(draft: CombatState, input: PlayerFighterInput)
 	f.emCur = toInt(input.emCur, 0);
 	f.emMax = toInt(input.emMax, 0);
 	f.dmgBase = toInt(input.dmgBase, findOath(input.oathName)?.baseDamage ?? DEFAULT_DMG_BASE);
+	f.oathDamage = findOath(input.oathName) ? f.dmgBase : null;
 	f.imageUrl = input.imageUrl ?? null;
 	f.branch = input.branch ? structuredClone(input.branch) : null;
 	// legacy : statuts:[] à l'ajout (les statuts de la fiche ne sont pas importés)
-	f.statuses = input.statuses ? structuredClone(input.statuses) : [];
+	f.statuses = [];
 	return f;
 }
 
@@ -279,15 +292,16 @@ export function removeFighter(state: CombatState, fighterId: string): CombatStat
 	const draft = cloneState(state);
 	const idx = draft.fighters.findIndex((f) => f.id === fighterId);
 	if (idx < 0) throw new CombatError('COMBAT_UNKNOWN_FIGHTER', 'Combattant introuvable.');
+	snapshotGesture(draft);
 	draft.fighters.splice(idx, 1);
 	draft.declarations = {};
-	draft.order = draft.fighters.map((f) => f.id);
 	if (draft.initiative === fighterId) draft.initiative = null;
 	for (const f of draft.fighters) if (f.taunt && f.taunt.sourceId === fighterId) f.taunt = null;
-	if (draft.active && draft.phase !== 'idle') {
-		draft.turn = 0;
-		draft.phase = 'declaration';
-		advanceDeclarant(draft);
+	if (draft.active) {
+		draft.order = draft.fighters.map((f) => f.id);
+		if (draft.turn >= draft.fighters.length) draft.turn = 0;
+	} else {
+		draft.order = draft.order.filter((id) => id !== fighterId);
 	}
 	return draft;
 }
@@ -363,6 +377,7 @@ export function adjustResource(state: CombatState, fighterId: string, stat: Reso
 	if (!['pv', 'ep', 'em'].includes(stat) || !motif.trim()) throw new CombatError('COMBAT_INVALID_INPUT', 'Ressource et motif requis.');
 	const draft = cloneState(state);
 	const f = findFighterOrThrow(draft, fighterId);
+	snapshotGesture(draft);
 	const old = f[`${stat}Cur`];
 	const journal = () => {
 		const entry = pushLog(draft, 'info', `${f.name} : ${stat.toUpperCase()} ${old} → ${f[`${stat}Cur`]} — ${motif}`, f.id);

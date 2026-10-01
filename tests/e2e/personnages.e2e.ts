@@ -51,8 +51,10 @@ async function connecter(page: Page, pseudo: string) {
 	const cookies = sessions.get(pseudo);
 	if (cookies) {
 		await page.context().addCookies(cookies);
-		await page.goto('/univers', { waitUntil: 'networkidle' });
-		return;
+		await page.goto('/compte', { waitUntil: 'networkidle' });
+		if (!new URL(page.url()).pathname.startsWith('/entrer')) return;
+		// Un autre paquet peut redémarrer la base de démonstration pendant les vérifications.
+		sessions.delete(pseudo);
 	}
 	await page.goto('/entrer', { waitUntil: 'networkidle' });
 	await page.locator('input[name="pseudo"]').fill(pseudo);
@@ -332,6 +334,7 @@ test.describe('Personnages — tampons', () => {
 		const pending = page.locator('#declarations details').first();
 		await pending.locator('summary').click();
 		await pending.locator('[name="motif"]').fill('Report depuis le salon.');
+		await capturerEtat(page, 'declaration-a-reporter', 'declarations');
 		await pending.getByRole('button', { name: 'Reporter', exact: true }).click();
 		await expect(page.locator('#consequences')).toContainText('Report depuis le salon.');
 		await expect(page.locator('#declarations')).toContainText(
@@ -347,6 +350,7 @@ test.describe('Personnages — tampons', () => {
 		await page.reload({ waitUntil: 'networkidle' });
 		await pending.locator('summary').click();
 		await pending.locator('[name="motif"]').fill('Déclaration doublée, gardée en rature.');
+		await capturerEtat(page, 'declaration-a-rayer', 'declarations');
 		await pending.getByRole('button', { name: 'Rayer', exact: true }).click();
 		await expect(page.locator('#declarations')).toContainText(
 			'Aucune déclaration n’attend de report.'
@@ -368,12 +372,15 @@ test.describe('Personnages — tampons', () => {
 		let fact = page.locator('#faits > .faits > li').filter({ hasText: 'Revenir au gué ensemble.' });
 		await ouvrir(page, (await fact.locator('details').getAttribute('id'))!);
 		await fact.locator('[name="motif"]').fill('Promesse lue dans le salon.');
+		await capturerEtat(page, 'fait-propose', 'faits');
 		await fact.getByRole('button', { name: 'Tamponner', exact: true }).click();
 		await expect(fact).toContainText('validé');
+		await capturerEtat(page, 'fait-tamponne', 'faits');
 		await ouvrir(page, (await fact.locator('details').getAttribute('id'))!);
 		await fact.locator('[name="motif"]').fill('Retour au gué écrit.');
 		await fact.getByRole('button', { name: 'Régler', exact: true }).click();
 		await expect(fact).toContainText('réglé');
+		await capturerEtat(page, 'fait-regle', 'faits');
 		await owner.reload({ waitUntil: 'networkidle' });
 		await proposed.evaluate((el) => {
 			for (let p = el.parentElement; p; p = p.parentElement)
@@ -393,6 +400,7 @@ test.describe('Personnages — tampons', () => {
 		await fact.getByRole('button', { name: 'Refuser', exact: true }).click();
 		await expect(fact).toContainText('refusé');
 		await expect(fact).toContainText('Le salon ne porte pas ce récit.');
+		await capturerEtat(page, 'fait-refuse', 'faits');
 		await ownerContext.close();
 	});
 
@@ -403,6 +411,7 @@ test.describe('Personnages — tampons', () => {
 		const editor = await ouvrir(page, 'identite');
 		await editor.locator('[name="name"]').fill(name + ' relue');
 		await editor.locator('[name="levelDelta"]').fill('1');
+		await capturerEtat(page, 'identite-a-tamponner', 'sensible');
 		await tamponner(page, 'identite', 'Niveau et identité relus ensemble.');
 		await expect(page.getByRole('heading', { level: 1 })).toHaveText(name + ' relue');
 		const strike = await ouvrir(page, 'rayerPersonnage');
@@ -410,6 +419,7 @@ test.describe('Personnages — tampons', () => {
 		await strike.locator('[name="motif"]').fill('Fiche rayée à la demande du joueur.');
 		await strike.getByRole('button', { name: 'Rayer ce personnage', exact: true }).click();
 		await expect(strike.getByRole('alert')).toContainText('ne correspond pas');
+		await capturerEtat(page, 'rature-nom-refuse', 'sensible');
 		await strike.locator('[name="typedName"]').fill(name + ' relue');
 		await strike.getByRole('button', { name: 'Rayer ce personnage', exact: true }).click();
 		await expect(page).toHaveURL(new RegExp(`${LIST}$`));

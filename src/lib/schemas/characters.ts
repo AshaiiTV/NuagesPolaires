@@ -215,7 +215,7 @@ export const grantCombatXpSchema = z.object({
 	participationPct: z
 		.number({ error: 'Participation invalide.' })
 		.min(0, { error: 'Participation invalide.' })
-		.max(100, { error: 'Participation invalide.' }),
+		.max(100, { error: 'Participation invalide.' }).transform(Math.trunc),
 	/** Nom de la créature pour la ligne « +X XP (<créature>, <part>%) » (audit 02 §8). */
 	beastName: z.string().trim().max(LIMITS.name).optional(),
 	combatId: z.string().trim().min(1).max(LIMITS.actionId).optional(),
@@ -335,6 +335,7 @@ export const strikeCharacterSchema = z.object({
 
 export const listConsequencesSchema = z.object({
 	characterId: characterId.optional(),
+	combatId: z.string().trim().min(1).max(LIMITS.actionId).optional(),
 	filter: z.enum(CONSEQUENCE_FILTERS).optional(),
 	page: z.int().min(1).optional()
 });

@@ -22,7 +22,7 @@ export const ROLES: { id: RoleView; libelle: string; pluriel: string }[] = [
 ];
 export const LIBELLE_ROLE: Record<string, string> = Object.fromEntries(ROLES.map((r) => [r.id, r.libelle]));
 
-/** Libellés lisibles des actions du journal d'audit ; une action inconnue garde son nom technique. */
+/** Libellés lisibles des actions du journal d'audit ; une action absente se lit « Action non décrite ». */
 export const ACTIONS_AUDIT: Record<string, string> = {
 	login_success: 'Entrée dans le carnet',
 	login_failed: 'Entrée refusée',
@@ -53,7 +53,7 @@ export const ACTIONS_AUDIT: Record<string, string> = {
 	admin_create_theme: 'Thème créé',
 	set_setting: 'Réglage',
 	export_data: 'Export des données',
-	staff_log_archive: 'Journal du staff archivé',
+	staff_log_archive: 'Décisions des MJ archivées',
 	consume_own_item: 'Objet consommé',
 	set_event_participation: 'Inscription à un rendez-vous',
 	character_create: 'Personnage créé',
@@ -80,8 +80,34 @@ export const ACTIONS_AUDIT: Record<string, string> = {
 	event_notify: 'Joueurs prévenus d’un rendez-vous',
 	scene_open: 'Scène ouverte',
 	scene_close: 'Scène refermée',
-	scene_auto_close: 'Scène refermée d’elle-même'
+	scene_auto_close: 'Scène refermée d’elle-même',
+	table_ouverte: 'Table ouverte',
+	table_sauvee: 'Table sauvegardée',
+	table_chiffres: 'Chiffres des adversaires montrés',
+	table_visibilite: 'Visibilité d’une Table',
+	table_close: 'Table refermée',
+	beast_created: 'Créature ajoutée au bestiaire',
+	beast_updated: 'Créature modifiée',
+	beast_duplicated: 'Créature dupliquée',
+	observation_proposed: 'Observation proposée',
+	observation_validated: 'Observation tamponnée',
+	observation_rejected: 'Observation écartée',
+	oath_created: 'Serment écrit',
+	oath_updated: 'Serment modifié',
+	oath_visibility: 'Visibilité d’un Serment',
+	extrait_publie: 'Extrait publié',
+	publication_rayee: 'Publication rayée',
+	apparition_tiree: 'Apparition tirée',
+	apparition_transferee: 'Apparition transférée',
+	zone_created: 'Zone créée',
+	zone_renamed: 'Zone renommée',
+	migration_legacy: 'Reprise de l’ancien carnet'
 };
+
+/** Le libellé d'une action du journal d'audit, jamais son nom technique. */
+export function actionAudit(action: string): string {
+	return ACTIONS_AUDIT[action] ?? 'Action non décrite';
+}
 
 /** Sources du journal d'audit, dites dans le lexique du carnet. */
 export const SOURCES_AUDIT: Record<string, string> = {
@@ -106,11 +132,11 @@ export const SOURCES_AUDIT: Record<string, string> = {
 	oaths: 'Serments',
 	zones: 'zones',
 	spawn: 'apparitions',
-	staff_log: 'journal du staff',
+	staff_log: 'décisions des MJ',
 	legacy: 'reprise'
 };
 
-/** Libellés lisibles des actions du journal du staff (déjà en français côté serveur). */
+/** Libellés lisibles des décisions des MJ et des administrateurs (déjà en français côté serveur). */
 export const ACTIONS_STAFF: Record<string, string> = {
 	liaison: 'Liaison',
 	deliaison: 'Liaison défaite',
@@ -147,8 +173,27 @@ export const ACTIONS_STAFF: Record<string, string> = {
 	zone_created: 'Zone créée',
 	zone_renamed: 'Zone renommée',
 	frappe: 'Frappe',
-	connexion: 'Entrée'
+	connexion: 'Entrée',
+	table_ouverte: 'Table ouverte',
+	table_sauvee: 'Table sauvegardée',
+	table_chiffres: 'Chiffres des adversaires montrés',
+	table_visibilite: 'Visibilité d’une Table',
+	table_close: 'Table refermée',
+	beast_created: 'Créature ajoutée au bestiaire',
+	beast_updated: 'Créature modifiée',
+	beast_duplicated: 'Créature dupliquée',
+	observation_proposed: 'Observation proposée',
+	observation_validated: 'Observation tamponnée',
+	observation_rejected: 'Observation écartée',
+	oath_created: 'Serment écrit',
+	oath_updated: 'Serment modifié',
+	oath_visibility: 'Visibilité d’un Serment'
 };
+
+/** Le libellé d'une décision, jamais son nom technique. */
+export function actionDecision(action: string): string {
+	return ACTIONS_STAFF[action] ?? ACTIONS_AUDIT[action] ?? 'Action non décrite';
+}
 
 /** Noms lisibles des clés de détail les plus courantes. */
 const CLES: Record<string, string> = {
@@ -179,14 +224,27 @@ const CLES: Record<string, string> = {
 	accounts: 'comptes',
 	characters: 'personnages',
 	beasts: 'créatures',
-	events: 'rendez-vous'
+	events: 'rendez-vous',
+	detail: 'détail',
+	beastId: 'créature n°',
+	zoneId: 'zone n°',
+	count: 'nombre',
+	revision: 'version',
+	consequences: 'conséquences',
+	recit: 'récit'
 };
+
+/** Clés techniques qui ne disent rien à qui lit : on les tait. */
+const CLES_TUES = new Set(['id', 'runId', 'combatId', 'publishedExtractId', 'packs']);
 
 const VALEURS: Record<string, string> = {
 	full: 'pleine',
 	reset: 'de réinitialisation',
 	password: 'mot de passe',
-	discord: 'Discord'
+	discord: 'Discord',
+	auto: 'automatique',
+	true: 'oui',
+	false: 'non'
 };
 
 function valeur(v: unknown): string {
@@ -196,7 +254,13 @@ function valeur(v: unknown): string {
 	if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return leA(v);
 	if (typeof v === 'string' && VALEURS[v]) return VALEURS[v];
 	if (typeof v === 'string' || typeof v === 'number') return String(v);
-	return JSON.stringify(v);
+	if (Array.isArray(v)) return v.length === 0 ? 'aucune' : String(v.length);
+	if (typeof v === 'object') {
+		const o = v as Record<string, unknown>;
+		const nom = o.title ?? o.name;
+		if (typeof nom === 'string' && nom) return nom;
+	}
+	return 'détaillé';
 }
 
 /** « compte : nova · personnage n° : p_seren » — les détails d'une ligne, lisibles et dans l'ordre. */
@@ -204,6 +268,7 @@ export function detailsLisibles(details: Record<string, unknown>): string {
 	const lignes: string[] = [];
 	for (const [k, v] of Object.entries(details)) {
 		if (k === 'accountId' && 'pseudo' in details) continue;
+		if (CLES_TUES.has(k)) continue;
 		lignes.push(`${CLES[k] ?? k} : ${valeur(v)}`);
 	}
 	return lignes.join(' · ');

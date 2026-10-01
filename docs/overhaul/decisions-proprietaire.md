@@ -28,6 +28,8 @@ En reconstruisant le moteur de la Table à partir du code de l'ancien simulateur
 
 Les capacités de Bretteur et de Lame d'Honneur, et celles des Serments personnalisés, sont interprétées à partir du texte de leurs paliers (comme dans l'ancien site) : si un effet n'est pas reconnu, le MJ l'applique à la main.
 
+Dans l'ancien simulateur, une invocation ajoutée en cours de combat n'entrait jamais dans l'ordre de tour (elle ne jouait pas). Le nouveau moteur reproduit ce comportement. Si c'était un défaut, dis-le : c'est une ligne à changer.
+
 ## 2. Qui lit le journal d'un personnage
 
 Aujourd'hui le serveur le sert au joueur, aux MJ et aux administrateurs, alors que l'ancienne interface annonçait « propriétaire et administrateurs ». **Par défaut** : lisible par le joueur, les MJ et les administrateurs, et l'interface l'écrit en toutes lettres partout où le journal apparaît. **Pour changer** : une ligne dans la matrice des droits et une phrase.

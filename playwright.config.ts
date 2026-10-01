@@ -23,6 +23,7 @@ export default defineConfig({
 		timeout: 120_000,
 		env: {
 			NP_DB_DRIVER: 'pglite',
+			NP_RATE_LIMIT_MAX: '100000',
 			// Secret de TEST uniquement (≥ 32 caractères), jamais utilisé hors de ce serveur local.
 			NP_SESSION_SECRET: 'np-e2e-secret-de-test-uniquement-0123456789',
 			NP_SITE_URL: BASE_URL

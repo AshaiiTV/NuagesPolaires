@@ -149,12 +149,12 @@ const jourLong = (ms: number) =>
 
 /**
  * Bloc « Copier pour Discord » : format de l'export du simulateur (audit 03 §8.5), sans pictogramme
- * et sans les notes du MJ (elles ne quittent jamais la Table).
+ * staff : journal intégral et notes du MJ. La projection joueur reste filtrée par le moteur.
  */
 export function exportDiscord(s: CombatState, maintenant = Date.now()): string {
 	const joueurs = s.fighters.filter((f) => f.type === 'player');
 	const adversaires = s.fighters.filter((f) => f.type === 'beast');
-	const rounds = Math.max(1, s.round - (s.active ? 0 : 1));
+	const rounds = s.round;
 	const lignes: string[] = [];
 	lignes.push(`## ${s.name || 'La Table'}`);
 	lignes.push(`*${jourLong(s.startedAt || maintenant)} · ${rounds} round${rounds > 1 ? 's' : ''}*`);
@@ -162,7 +162,7 @@ export function exportDiscord(s: CombatState, maintenant = Date.now()): string {
 	if (joueurs.length) lignes.push(`**Élèves du Serment :** ${joueurs.map((f) => `${f.name} (niv. ${f.level})`).join(' · ')}`);
 	if (adversaires.length) lignes.push(`**Adversaires :** ${adversaires.map((f) => `${f.name}${ko(f) ? ' (KO)' : ''}`).join(' · ')}`);
 	lignes.push('');
-	for (const e of s.log.filter((x) => !x.private)) {
+	for (const e of s.log) {
 		const texte = sansEmoji(e.text);
 		if (!texte) continue;
 		if (e.kind === 'round') lignes.push('', `**${texte}**`, '');
@@ -177,6 +177,7 @@ export function exportDiscord(s: CombatState, maintenant = Date.now()): string {
 	if (s.startedAt !== null && (!joueursDebout || !adversairesDebout)) {
 		lignes.push('', joueursDebout ? '**Résultat : victoire**' : '**Résultat : défaite**');
 	}
+	if (s.notes) lignes.push('', '**Notes du MJ :**', s.notes);
 	lignes.push('', '*— Nuages Polaires*');
 	return lignes.join('\n');
 }

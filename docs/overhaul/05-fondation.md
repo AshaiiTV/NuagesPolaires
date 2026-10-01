@@ -240,3 +240,17 @@ Garde de bundle, après `npm run build` : `npx tsx scripts/check-bundle.ts` (cod
 12. **Mot de passe de `nova`** : non fourni par la commande ; valeur fictive `Nova-audit-123!` au même format.
 13. **Horodatage, exceptions au « partout » de 04 §3** : les tables en ajout seul gardent leur seul horodatage d'événement, sans `updated_at` (une ligne n'y change jamais) — `audit_log` (`ts`), `spawn_runs` (`generated_at`), `migration_registry` (`migrated_at`), `admin_recovery_consumptions` (`consumed_at`), `staff_log_archives` (`archived_at`), `event_participants` (`registered_at`), `account_theme_grants` (`created_at`, conforme à 04 §3.1 : un don se crée ou se supprime) ; les tables de liaison pures `beast_zones` et `publication_beasts` n'en portent aucun. Ajoutés au-delà du texte de 04 §3 / §3.12 pour appliquer le principe : `updated_at` sur `sessions`, `combat_participants`, `scene_pins`, `declarations` ; `created_at` + `updated_at` sur `auth_rate_limits`, `character_history`, `journal_entries`, `publications`, `staff_log` ; `created_at` sur `reading_marks`, `scene_participants`, `spawn_counters`, `spawn_settings`, `settings`.
 14. **Thème `bloodmoon`** : `is_event = false` bien que le catalogue `THEMES_EVENT_BUILTIN` déclare `event:true` ; c'est la valeur réécrite par theme-max.js (`event = rarity === 'Saisonnier'`, audit 07 §3.1) qui s'affiche dans l'ancien site. Un `is_event = true` sans date d'échéance aurait rangé la carte non possédée dans « À débloquer » (audit 07 §3.3) au lieu d'« Indisponible ».
+
+## Écarts assumés au simulateur hérité
+
+Décisions INT-3, explicites et conservées après la revue de fidélité :
+
+1. L’XP est **proposée** à la clôture dans le feuillet Conséquences (vision §5.8). Le legacy n’attribuait aucune XP à la clôture ; le MJ peut mettre 0 avant de tamponner.
+2. Les drops et les conséquences sont crédités au tampon de clôture, pas pendant le combat.
+3. Un Serment personnalisé incomplet est complété depuis le natif ; le legacy pouvait produire `NaN`.
+4. Les créatures archivées sont exclues des apparitions.
+5. Un comportement numérique hérité est traduit en libellé. La migration calcule toutefois les quantités avec le comportement que l’ancien tirage lisait réellement.
+6. Le MJ pose des statuts et change l’équipement : le serveur hérité l’autorisait, seul l’ancien menu cachait ces gestes.
+7. La projection joueur emploie les états narratifs **LÉGER / GRAVE / CRITIQUE**, aux seuils de la page Système de jeu (66–100 %, 33–65 %, 0–32 % ; architecture §3.12).
+
+Pour les apparitions, `qtyMin` / `qtyMax` saisis dans l’Atelier sont désormais prioritaires. À l’import, ces colonnes reçoivent la plage effective héritée (`spawnMin` / `spawnMax` valides, sinon niveau et comportement), et le rapport signale toute quantité saisie différente.

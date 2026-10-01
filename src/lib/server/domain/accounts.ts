@@ -99,7 +99,7 @@ import {
 import {
 	consumeRateLimit,
 	hitRateLimit,
-	RATE_LIMIT_MAX,
+	rateLimitMax,
 	rateLimitKey,
 	resetRateLimit
 } from '$lib/server/auth/rate-limit';
@@ -299,7 +299,7 @@ export async function login(db: Db, input: LoginInput): Promise<LoginResultView>
 	}
 
 	const globalAttempts = await hitRateLimit(db, loginKey);
-	if (globalAttempts > RATE_LIMIT_MAX) await new Promise((resolve) => setTimeout(resolve, 250));
+	if (globalAttempts > rateLimitMax()) await new Promise((resolve) => setTimeout(resolve, 250));
 
 	await maybeRecoverAdmin(db, { pseudo: data.pseudo, password: data.password, ip, userAgent });
 
