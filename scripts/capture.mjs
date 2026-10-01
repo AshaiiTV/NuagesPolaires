@@ -15,6 +15,16 @@ const tailles = option('tailles', '390,768,1440').split(',').map(Number);
 const theme = option('theme', '');
 const sortie = option('sortie', 'test-results/captures');
 const pleine = args.includes('--pleine');
+// Comptes fictifs de la base de démonstration (src/lib/server/db/seed.ts) : --compte=alice
+const compte = option('compte', '');
+const COMPTES_DEMO = {
+	admin: 'Admin-audit-123!',
+	alice: 'Alice-audit-123!',
+	bob: 'Bob-audit-123!',
+	mj: 'Maitre-audit-123!',
+	designer: 'Designer-audit-123!',
+	nova: 'Nova-audit-123!'
+};
 const chemins = args.filter((a) => !a.startsWith('--'));
 if (chemins.length === 0) chemins.push('/');
 
@@ -33,6 +43,15 @@ for (const largeur of tailles) {
 		timezoneId: 'Europe/Paris'
 	});
 	const page = await contexte.newPage();
+	if (compte) {
+		// Connexion par le formulaire public, avec un compte fictif de la base de démonstration.
+		const motDePasse = COMPTES_DEMO[compte] ?? option('mot-de-passe', '');
+		await page.goto(base + '/entrer', { waitUntil: 'networkidle' });
+		await page.fill('input[name="pseudo"]', compte === 'mj' ? 'Maitre' : compte[0].toUpperCase() + compte.slice(1));
+		await page.fill('input[name="password"]', motDePasse);
+		await Promise.all([page.waitForLoadState('networkidle'), page.click('form[action*="entrer"] button[type="submit"], form button[type="submit"]')]);
+		if (new URL(page.url()).pathname.startsWith('/entrer')) console.log(`CONNEXION REFUSÉE pour ${compte} (toujours sur ${page.url()})`);
+	}
 	const erreurs = [];
 	page.on('console', (m) => m.type() === 'error' && erreurs.push(m.text()));
 	page.on('pageerror', (e) => erreurs.push(String(e)));
@@ -54,7 +73,9 @@ for (const largeur of tailles) {
 				.slice(0, 5)
 				.map((e) => `${e.tagName.toLowerCase()}.${e.className} (${getComputedStyle(e).fontSize}) « ${e.textContent.trim().slice(0, 30)} »`)
 		}));
-		const nom = (chemin === '/' ? 'accueil' : chemin.replace(/^\//, '').replace(/[\/?#=&]/g, '-')) + `-${largeur}${theme ? '-' + theme : ''}.png`;
+		const nom =
+			(chemin === '/' ? 'accueil' : chemin.replace(/^\//, '').replace(/[\/?#=&]/g, '-')) +
+			`${compte ? '-' + compte : ''}-${largeur}${theme ? '-' + theme : ''}.png`;
 		await page.screenshot({ path: path.join(sortie, nom), fullPage: pleine });
 		const deborde = mesure.scroll > mesure.client + 1;
 		if (deborde) debordements++;
