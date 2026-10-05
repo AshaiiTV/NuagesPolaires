@@ -37,7 +37,11 @@ export const BASE_STATS = { pv: 30, ep: 50, em: 20 } as const;
 export const ZERO_GROWTH: Readonly<Growth> = { pvN: 0, epN: 0, emN: 0 };
 
 /** XP par grade de Gemme de Sang. audit 02 §6, main.js:9418, fusion-xp.md */
-export const GEM_XP: Readonly<Record<GemKind, number>> = { blanche: 5, incarnate: 20, ecarlate: 50 };
+export const GEM_XP: Readonly<Record<GemKind, number>> = {
+	blanche: 5,
+	incarnate: 20,
+	ecarlate: 50
+};
 
 /** Noms exacts des objets d'inventaire. audit 02 §6, main.js:9418 */
 export const GEM_NAMES: Readonly<Record<GemKind, string>> = {
@@ -106,7 +110,10 @@ export function growthFor(
  * Maxima théoriques à un niveau : `base + (niveau − 1) × gain`. audit 02 §2.3
  * (saveStats main.js:9578-9580, adjVal main.js:9440). Écrase tout bonus de maximum.
  */
-export function maxAtLevel(level: number, growth: Growth): Pick<Resources, 'pvMax' | 'epMax' | 'emMax'> {
+export function maxAtLevel(
+	level: number,
+	growth: Growth
+): Pick<Resources, 'pvMax' | 'epMax' | 'emMax'> {
 	const steps = levelNumber(level) - 1;
 	return {
 		pvMax: BASE_STATS.pv + steps * growth.pvN,
@@ -127,7 +134,11 @@ export function combatXp(beastLevel: number, participationPercent: number): numb
 }
 
 /** Texte d'historique d'une récompense de combat : `+X XP (<mob>, <part>%)`. audit 02 §8 */
-export function combatXpEntryText(xpGain: number, beastName: string, participationPercent: number): string {
+export function combatXpEntryText(
+	xpGain: number,
+	beastName: string,
+	participationPercent: number
+): string {
 	return `+${xpGain} XP (${beastName}, ${Math.trunc(participationPercent)}%)`;
 }
 
@@ -558,15 +569,26 @@ export function normalizeLegacyProgression(
  * `xpMax ≥ 1`, `xp ≥ 0`, `pvMax ≥ 1` (repli `pvCur` puis 30), `epMax/emMax ≥ 0` (repli 50 / 20),
  * `xCur ≥ 0` (repli `xMax`), valeurs entières.
  */
-export function clampResources(record: Record<string, unknown>): ProgressionState & { xpMax: number } {
+export function clampResources(
+	record: Record<string, unknown>
+): ProgressionState & { xpMax: number } {
 	const level = levelNumber(record.level);
 	const max = Math.max(1, Math.floor(finiteOr(record.xpMax, xpMax(level))));
 	const xp = Math.max(0, Math.floor(finiteOr(record.xp, 0)));
-	const pvMax = Math.max(1, Math.floor(finiteOr(record.pvMax, finiteOr(record.pvCur, BASE_STATS.pv))));
+	const pvMax = Math.max(
+		1,
+		Math.floor(finiteOr(record.pvMax, finiteOr(record.pvCur, BASE_STATS.pv)))
+	);
 	const pvCur = Math.max(0, Math.floor(finiteOr(record.pvCur, pvMax)));
-	const epMax = Math.max(0, Math.floor(finiteOr(record.epMax, finiteOr(record.epCur, BASE_STATS.ep))));
+	const epMax = Math.max(
+		0,
+		Math.floor(finiteOr(record.epMax, finiteOr(record.epCur, BASE_STATS.ep)))
+	);
 	const epCur = Math.max(0, Math.floor(finiteOr(record.epCur, epMax)));
-	const emMax = Math.max(0, Math.floor(finiteOr(record.emMax, finiteOr(record.emCur, BASE_STATS.em))));
+	const emMax = Math.max(
+		0,
+		Math.floor(finiteOr(record.emMax, finiteOr(record.emCur, BASE_STATS.em)))
+	);
 	const emCur = Math.max(0, Math.floor(finiteOr(record.emCur, emMax)));
 	return { level, xp, xpMax: max, pvMax, pvCur, epMax, epCur, emMax, emCur };
 }

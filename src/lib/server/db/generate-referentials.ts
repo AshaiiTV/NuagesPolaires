@@ -56,8 +56,16 @@ const isDirectRun =
 
 if (isDirectRun) {
 	const targets = [
-		{ name: REFERENTIALS_MIGRATION_FILE, file: referentialsMigrationPath(), next: renderReferentialsMigration() },
-		{ name: THEME_TOKENS_MIGRATION_FILE, file: themeTokensMigrationPath(), next: renderThemeTokensMigration() }
+		{
+			name: REFERENTIALS_MIGRATION_FILE,
+			file: referentialsMigrationPath(),
+			next: renderReferentialsMigration()
+		},
+		{
+			name: THEME_TOKENS_MIGRATION_FILE,
+			file: themeTokensMigrationPath(),
+			next: renderThemeTokensMigration()
+		}
 	];
 	for (const { name, file, next } of targets) {
 		if (readReferentialsMigration(file) === next) {

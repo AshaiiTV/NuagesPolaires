@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { chemin } from '$lib/ui/adresse';
 	// La sous-navigation de l’Atelier suit le rythme de celle du Registre.
 	import { page } from '$app/state';
 	import type { Snippet } from 'svelte';
@@ -17,9 +18,9 @@
 {#snippet sommaire()}
 	<nav class="sommaire" aria-label="Pages de l’Atelier">
 		<ul>
-			{#each pages as p, i}<li>
+			{#each pages as p, i (p.href)}<li>
 					<a
-						href={p.href}
+						href={chemin(p.href)}
 						class:courant={page.url.pathname.startsWith(p.href)}
 						aria-current={page.url.pathname === p.href ? 'page' : undefined}
 						><span class="numero chiffres">{String(i + 1).padStart(2, '0')}</span>{p.libelle}</a

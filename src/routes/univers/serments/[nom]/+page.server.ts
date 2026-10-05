@@ -10,6 +10,12 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		throw e;
 	});
 	const [all, reader] = await Promise.all([loadOaths(locals), repereLecteur(locals, oath)]);
+	const categories = ['melee', 'distance', 'magie', 'soutien'];
+	all.sort(
+		(a, b) =>
+			categories.indexOf(a.category) - categories.indexOf(b.category) ||
+			a.name.localeCompare(b.name, 'fr')
+	);
 	const index = all.findIndex((o) => o.id === oath.id);
 	const link = (o: (typeof all)[number] | undefined) =>
 		o ? { href: '/univers/serments/' + o.id, title: o.name } : null;

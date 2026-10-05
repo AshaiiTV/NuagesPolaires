@@ -2,13 +2,16 @@
 // MJ, participants et adversaires ; « Publier un extrait » a posteriori ; « Rayer la publication »
 // avec motif (03-vision §5.8, §6 moment 8, P7 ; 06-contrats B.6).
 import { error } from '@sveltejs/kit';
-import { desc, eq, inArray } from 'drizzle-orm';
 import { requireCapability } from '$lib/server/guards';
 import { action, type FormValues } from '$lib/server/actions';
 import { NpError, isNpError } from '$lib/server/http';
 import { getRecit, getTable } from '$lib/server/domain/combats';
-import { publishExtract, strikePublication } from '$lib/server/domain/publications';
-import { publicationBeasts, publications } from '$lib/server/db/schema';
+import { sansEmoji } from '$lib/ui/table/texte';
+import {
+	listPublications,
+	publishExtract,
+	strikePublication
+} from '$lib/server/domain/publications';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -19,32 +22,34 @@ export const load: PageServerLoad = async (event) => {
 	try {
 		[recit, table] = await Promise.all([getRecit(db, actor, id), getTable(db, actor, id)]);
 	} catch (e) {
-		if (isNpError(e) && e.status === 404) error(404, { message: 'Ce récit n’existe pas, ou la Table n’est pas repliée.', code: 'NOT_FOUND' });
-		if (isNpError(e)) error(e.status, { message: 'Ce récit n’a pas pu s’ouvrir : son état enregistré est illisible.', code: e.code });
+		if (isNpError(e) && e.status === 404)
+			error(404, {
+				message: 'Ce récit n’existe pas, ou la Table n’est pas repliée.',
+				code: 'NOT_FOUND'
+			});
+		if (isNpError(e))
+			error(e.status, {
+				message: 'Ce récit n’a pas pu s’ouvrir : son état enregistré est illisible.',
+				code: e.code
+			});
 		throw e;
 	}
-	// Lecture des extraits publiés de ce récit. Écart assumé : le domaine publications.ts n'expose pas
-	// encore de lecture par combat (listPublications) ; la requête reste en lecture seule et filtrée.
-	const extraits = await db
-		.select({ id: publications.id, text: publications.text, onHome: publications.onHome, at: publications.stampedAt, struck: publications.struck, struckAt: publications.struckAt })
-		.from(publications)
-		.where(eq(publications.combatId, id))
-		.orderBy(desc(publications.stampedAt));
-	const liens = extraits.length
-		? await db
-				.select()
-				.from(publicationBeasts)
-				.where(
-					inArray(
-						publicationBeasts.publicationId,
-						extraits.map((x) => x.id)
-					)
-				)
-		: [];
+	const extraits = await listPublications(db, actor, { combatId: id });
 	const state = table.state;
-	const adversaires = [...new Map(state.fighters.filter((f) => f.type === 'beast' && f.beastId).map((f) => [f.beastId!, f.baseName || f.name])).entries()].map(
-		([beastId, nom]) => ({ id: beastId, nom })
-	);
+	const groupes = new Map<string, { id: string; nom: string; qty: number }>();
+	for (const fighter of state.fighters.filter((f) => f.type === 'beast' && f.beastId)) {
+		const g = groupes.get(fighter.beastId!) ?? {
+			id: fighter.beastId!,
+			nom: fighter.baseName || fighter.name,
+			qty: 0
+		};
+		g.qty++;
+		groupes.set(g.id, g);
+	}
+	const adversaires = [...groupes.values()].map((g) => ({
+		id: g.id,
+		nom: g.nom + (g.qty > 1 ? ' ×' + g.qty : '')
+	}));
 	return {
 		recit: {
 			id: recit.id,
@@ -56,23 +61,30 @@ export const load: PageServerLoad = async (event) => {
 			salon: recit.discordUrl
 		},
 		// Le MJ lit tout : les lignes réservées (journaux repris de l'ancien simulateur) sont marquées.
-		journal: state.log.map((e) => ({ n: e.n, round: e.round, kind: e.kind, text: e.text, prive: !!e.private })),
-		notes: state.notes,
+		journal: recit.log
+			.filter((e) => !/^Déclaration de\s*:/u.test(sansEmoji(e.text)))
+			.map((e) => ({ n: e.n, round: e.round, kind: e.kind, text: e.text, prive: !!e.private })),
+		notes: recit.notes ?? '',
 		eleves: state.fighters
 			.filter((f) => f.type === 'player' && !f.isSummon)
-			.map((f) => ({ id: f.id, nom: f.name, niveau: f.level, pv: `${f.pvCur}/${f.pvMax}`, ko: f.pvCur <= 0 })),
+			.map((f) => ({
+				id: f.id,
+				nom: f.name,
+				niveau: f.level,
+				pv: `${f.pvCur}/${f.pvMax}`,
+				ko: f.pvCur <= 0
+			})),
 		adversaires,
 		ko: state.fighters.filter((f) => f.type === 'beast' && f.pvCur <= 0).map((f) => f.name),
 		extraits: extraits.map((x) => ({
+			tampon: x.tampon,
 			id: x.id,
 			texte: x.text,
 			accueil: x.onHome,
-			at: x.at.toISOString(),
+			at: x.at,
 			raye: x.struck,
-			rayeA: x.struckAt?.toISOString() ?? null,
-			creatures: liens
-				.filter((l) => l.publicationId === x.id)
-				.map((l) => adversaires.find((a) => a.id === l.beastId)?.nom ?? 'une créature')
+			rayeA: x.struckAt ?? null,
+			creatures: x.creatures.map((c) => c.name)
 		}))
 	};
 };
@@ -91,8 +103,17 @@ export const actions: Actions = {
 		const text = texte(data.extrait).replace(/\r\n/g, '\n');
 		const onHome = texte(data.accueil) === 'oui';
 		const beastIds = liste(data.creatures);
-		if (!onHome && !beastIds.length) throw new NpError('INVALID', 'Coche au moins une destination : l’accueil ou la page d’une créature.');
-		const pub = await publishExtract(event.locals.db, actor, { text, onHome, beastIds, combatId: event.params.id });
+		if (!onHome && !beastIds.length)
+			throw new NpError(
+				'INVALID',
+				'Coche au moins une destination : l’accueil ou la page d’une créature.'
+			);
+		const pub = await publishExtract(event.locals.db, actor, {
+			text,
+			onHome,
+			beastIds,
+			combatId: event.params.id
+		});
 		return { publie: { id: pub.id, at: pub.at } };
 	}),
 

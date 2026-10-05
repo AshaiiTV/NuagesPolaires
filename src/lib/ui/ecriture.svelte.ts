@@ -1,3 +1,4 @@
+import { SvelteDate } from 'svelte/reactivity';
 // L'encre sèche — assistant commun à tous les formulaires du carnet.
 //
 //   const ecriture = creerEcriture();
@@ -13,8 +14,10 @@ import { invalidateAll } from '$app/navigation';
 import type { EtatEncre } from './Encre.svelte';
 
 export const PHRASE_ATTENTE = 'L’encre sèche…';
-export const PHRASE_REFUS = 'L’encre n’a pas pris. Ta page est gardée ici ; réessaie quand tu veux.';
-export const PHRASE_CONFLIT = 'Quelqu’un a écrit sur cette page entre-temps. Relis avant d’écrire par-dessus.';
+export const PHRASE_REFUS =
+	'L’encre n’a pas pris. Ta page est gardée ici ; réessaie quand tu veux.';
+export const PHRASE_CONFLIT =
+	'Quelqu’un a écrit sur cette page entre-temps. Relis avant d’écrire par-dessus.';
 export const PHRASE_FERME = 'Le carnet s’est refermé. Rouvre-le en te reconnectant.';
 
 export interface NoteEcriture {
@@ -25,8 +28,12 @@ export interface NoteEcriture {
 }
 
 /** Heure de Paris, format du carnet : « 21:14 ». */
-export function heure(date: Date = new Date()): string {
-	return new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }).format(date);
+export function heure(date: Date = new SvelteDate()): string {
+	return new Intl.DateTimeFormat('fr-FR', {
+		hour: '2-digit',
+		minute: '2-digit',
+		timeZone: 'Europe/Paris'
+	}).format(date);
 }
 
 interface OptionsEcriture {
@@ -58,7 +65,10 @@ export function creerEcriture() {
 				enCours = false;
 				if (result.type === 'success' || result.type === 'redirect') {
 					etat = 'prise';
-					note = { ton: 'fait', texte: `${options.verbe ?? 'Noté'} · ${heure()} — l’encre a pris.` };
+					note = {
+						ton: 'fait',
+						texte: `${options.verbe ?? 'Noté'} · ${heure()} — l’encre a pris.`
+					};
 					options.apres?.();
 					if (result.type === 'redirect') {
 						await applyAction(result);
@@ -76,7 +86,11 @@ export function creerEcriture() {
 					note = {
 						ton: 'refus',
 						code: donnees.code,
-						texte: conflit ? PHRASE_CONFLIT : ferme ? PHRASE_FERME : (donnees.message ?? PHRASE_REFUS)
+						texte: conflit
+							? PHRASE_CONFLIT
+							: ferme
+								? PHRASE_FERME
+								: (donnees.message ?? PHRASE_REFUS)
 					};
 					// La saisie reste dans le formulaire : on n'applique pas de remise à zéro.
 					await applyAction(result);

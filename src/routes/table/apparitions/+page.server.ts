@@ -29,9 +29,12 @@ export const load: PageServerLoad = async (event) => {
 			{ id: NO_ZONE_VALUE, nom: 'Sans zone', defaut: false }
 		],
 		tirages: historique.map((r) => ({
+			combatId: r.combatId ?? null,
 			id: r.id,
 			at: r.at,
-			zone: zones.find((z) => z.id === r.zoneId)?.name ?? (r.zoneId === NO_ZONE_VALUE ? 'Sans zone' : (r.zoneId ?? 'Sans zone')),
+			zone:
+				zones.find((z) => z.id === r.zoneId)?.name ??
+				(r.zoneId === NO_ZONE_VALUE ? 'Sans zone' : (r.zoneId ?? 'Sans zone')),
 			groupes: r.packs.map((p) => ({
 				id: p.id,
 				nom: p.name,
@@ -44,9 +47,18 @@ export const load: PageServerLoad = async (event) => {
 		})),
 		totaux: Object.entries(totaux.totals)
 			.filter(([, n]) => n > 0)
-			.map(([id, n]) => ({ id, nom: parCreature.get(id)?.name ?? 'créature rayée du bestiaire', total: n }))
+			.map(([id, n]) => ({
+				id,
+				nom: parCreature.get(id)?.name ?? 'créature rayée du bestiaire',
+				total: n
+			}))
 			.sort((a, b) => b.total - a.total || a.nom.localeCompare(b.nom, 'fr')),
-		personnages: personnages.map((p) => ({ id: p.id, nom: p.name, serment: p.oath.name, niveau: p.level }))
+		personnages: personnages.map((p) => ({
+			id: p.id,
+			nom: p.name,
+			serment: p.oath.name,
+			niveau: p.level
+		}))
 	};
 };
 
@@ -73,7 +85,10 @@ export const actions: Actions = {
 		requireCapability(event, 'combat.run');
 		const runId = texte(data.tirage);
 		if (!runId) throw new NpError('INVALID', 'Choisis un tirage à envoyer.');
-		const table = await spawnToTable(event.locals.db, actor, { runId, characterIds: liste(data.personnages) });
+		const table = await spawnToTable(event.locals.db, actor, {
+			runId,
+			characterIds: liste(data.personnages)
+		});
 		redirect(303, `/table/combat/${table.row.id}`);
 	})
 };

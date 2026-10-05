@@ -13,7 +13,7 @@
 	import Losange from '$lib/ui/Losange.svelte';
 	import NoteDeMarge from '$lib/ui/NoteDeMarge.svelte';
 	import { creerEcriture } from '$lib/ui/ecriture.svelte';
-	import { dateHeure, versChampLocal } from '$lib/ui/dates';
+	import { versChampLocal } from '$lib/ui/dates';
 	import { EVENT_EDITOR_MESSAGES } from '$lib/game/events';
 	import { DISCORD_URL_MESSAGE } from '$lib/schemas/reading';
 	import type { EventRowView } from '$lib/schemas/events';
@@ -72,10 +72,18 @@
 	const erreurs = $derived.by(() => {
 		const e: Partial<Record<keyof Brouillon, string>> = {};
 		if (!refus) return e;
-		if (refus === EVENT_EDITOR_MESSAGES.titleRequired || refus.startsWith('Le titre')) e.titre = refus;
-		else if (refus === EVENT_EDITOR_MESSAGES.dateInvalid || refus.startsWith('Choisis aussi une date')) e.date = refus;
+		if (refus === EVENT_EDITOR_MESSAGES.titleRequired || refus.startsWith('Le titre'))
+			e.titre = refus;
+		else if (
+			refus === EVENT_EDITOR_MESSAGES.dateInvalid ||
+			refus.startsWith('Choisis aussi une date')
+		)
+			e.date = refus;
 		else if (refus.startsWith('Choisis une heure')) e.heure = refus;
-		else if (refus === EVENT_EDITOR_MESSAGES.capacityInvalid || refus === EVENT_EDITOR_MESSAGES.capacityBelowParticipants)
+		else if (
+			refus === EVENT_EDITOR_MESSAGES.capacityInvalid ||
+			refus === EVENT_EDITOR_MESSAGES.capacityBelowParticipants
+		)
 			e.places = refus;
 		else if (refus === DISCORD_URL_MESSAGE) e.salon = refus;
 		else if (refus.startsWith('La description')) e.description = refus;
@@ -171,7 +179,15 @@
 	{/if}
 
 	<div class="ligne-titre">
-		<Champ libelle="Titre" name="titre" bind:value={b.titre} erreur={erreurs.titre} maxlength={120} autocomplete="off" placeholder="Chasse au col des brumes" />
+		<Champ
+			libelle="Titre"
+			name="titre"
+			bind:value={b.titre}
+			erreur={erreurs.titre}
+			maxlength={120}
+			autocomplete="off"
+			placeholder="Chasse au col des brumes"
+		/>
 	</div>
 
 	<fieldset class="choix-type" aria-describedby={erreurs.type ? 'type-erreur' : undefined}>
@@ -188,8 +204,23 @@
 	</fieldset>
 
 	<div class="trio">
-		<Champ libelle="Date" name="date" type="date" bind:value={b.date} erreur={erreurs.date} aide="Vide : date à confirmer." />
-		<Champ libelle="Heure" name="heure" type="time" step={300} bind:value={b.heure} erreur={erreurs.heure} aide="Heure de Paris." />
+		<Champ
+			libelle="Date"
+			name="date"
+			type="date"
+			bind:value={b.date}
+			erreur={erreurs.date}
+			aide="Vide : date à confirmer."
+		/>
+		<Champ
+			libelle="Heure"
+			name="heure"
+			type="time"
+			step={300}
+			bind:value={b.heure}
+			erreur={erreurs.heure}
+			aide="Heure de Paris."
+		/>
 		<Champ
 			libelle="Places"
 			name="places"
@@ -240,10 +271,20 @@
 
 	{#if !evenement && peutPrevenir}
 		<label class="cocher">
-			<input type="checkbox" name="prevenir" value="oui" bind:checked={prevenir} disabled={b.visibilite === 'masque'} />
+			<input
+				type="checkbox"
+				name="prevenir"
+				value="oui"
+				bind:checked={prevenir}
+				disabled={b.visibilite === 'masque'}
+			/>
 			<span>
 				Prévenir les joueurs à la création
-				<small>{b.visibilite === 'masque' ? 'Un rendez-vous masqué ne prévient personne.' : 'Une corne s’ouvre dans les Dernières pages de chaque compte relié.'}</small>
+				<small
+					>{b.visibilite === 'masque'
+						? 'Un rendez-vous masqué ne prévient personne.'
+						: 'Une corne s’ouvre dans les Dernières pages de chaque compte relié.'}</small
+				>
 			</span>
 		</label>
 	{/if}
@@ -253,7 +294,11 @@
 			<p class="repere">Écrit entre-temps</p>
 			<ul>
 				{#each ecarts as e (e.champ)}
-					<li><span class="champ-nom">{e.champ}</span><span class="leur">{e.leur}</span><span class="mien">ton brouillon : {e.mien}</span></li>
+					<li>
+						<span class="champ-nom">{e.champ}</span><span class="leur">{e.leur}</span><span
+							class="mien">ton brouillon : {e.mien}</span
+						>
+					</li>
 				{/each}
 			</ul>
 			<div class="choix-version">
@@ -265,11 +310,12 @@
 
 	<div class="envoi">
 		<Bouton variante="ruban" type="submit" disabled={humide}>
-			{#if humide && zone === 'saisie'}<Encre etat="humide">{evenement ? 'Noter les changements' : 'Noter le rendez-vous'}</Encre>{:else}{evenement
-					? 'Noter les changements'
-					: 'Noter le rendez-vous'}{/if}
+			{#if humide && zone === 'saisie'}<Encre etat="humide"
+					>{evenement ? 'Noter les changements' : 'Noter le rendez-vous'}</Encre
+				>{:else}{evenement ? 'Noter les changements' : 'Noter le rendez-vous'}{/if}
 		</Bouton>
-		{#if evenement}<Bouton variante="texte" href="/agenda/organiser">Nouveau rendez-vous</Bouton>{/if}
+		{#if evenement}<Bouton variante="texte" href="/agenda/organiser">Nouveau rendez-vous</Bouton
+			>{/if}
 	</div>
 	{#if zone === 'saisie'}<div class="note">{@render note()}</div>{/if}
 </form>
@@ -280,20 +326,34 @@
 
 		<div class="geste">
 			<p class="explique">
-				{evenement.hidden ? 'Masqué : seuls les MJ, les designers et les administrateurs le voient.' : 'Visible par tous les comptes.'}
+				{evenement.hidden
+					? 'Masqué : seuls les MJ, les designers et les administrateurs le voient.'
+					: 'Visible par tous les comptes.'}
 			</p>
-			<form method="POST" action="?/masquer" use:enhance={geste(evenement.hidden ? 'Visible' : 'Masqué')} onsubmit={() => demander('gestes')}>
+			<form
+				method="POST"
+				action="?/masquer"
+				use:enhance={geste(evenement.hidden ? 'Visible' : 'Masqué')}
+				onsubmit={() => demander('gestes')}
+			>
 				<input type="hidden" name="eventId" value={evenement.id} />
 				<input type="hidden" name="expectedRevision" value={evenement.revision} />
 				<input type="hidden" name="hidden" value={evenement.hidden ? 'false' : 'true'} />
-				<Bouton variante="trait" type="submit" disabled={humide}>{evenement.hidden ? 'Le rendre visible' : 'Masquer ce rendez-vous'}</Bouton>
+				<Bouton variante="trait" type="submit" disabled={humide}
+					>{evenement.hidden ? 'Le rendre visible' : 'Masquer ce rendez-vous'}</Bouton
+				>
 			</form>
 		</div>
 
 		{#if peutPrevenir && !evenement.hidden && !passe}
 			<div class="geste">
 				<p class="explique">Une corne s’ouvre dans les Dernières pages de chaque compte relié.</p>
-				<form method="POST" action="?/prevenir" use:enhance={geste('Prévenu')} onsubmit={() => demander('gestes')}>
+				<form
+					method="POST"
+					action="?/prevenir"
+					use:enhance={geste('Prévenu')}
+					onsubmit={() => demander('gestes')}
+				>
 					<input type="hidden" name="eventId" value={evenement.id} />
 					<Bouton variante="tampon" type="submit" disabled={humide}>Prévenir les joueurs</Bouton>
 				</form>
@@ -302,12 +362,19 @@
 
 		<div class="geste rayure">
 			{#if confirmerRayure}
-				<form method="POST" action="?/rayer" use:enhance={geste('Rayé')} onsubmit={() => demander('gestes')} class="confirmer">
+				<form
+					method="POST"
+					action="?/rayer"
+					use:enhance={geste('Rayé')}
+					onsubmit={() => demander('gestes')}
+					class="confirmer"
+				>
 					<input type="hidden" name="eventId" value={evenement.id} />
 					<input type="hidden" name="expectedRevision" value={evenement.revision} />
 					<input type="hidden" name="titre" value={evenement.title} />
 					<p class="question">
-						Rayer « {evenement.title} » ? Il sort de l’agenda avec ses inscriptions ; sa trace reste dans le journal d’audit.
+						Rayer « {evenement.title} » ? Il sort de l’agenda avec ses inscriptions ; sa trace reste dans
+						le journal d’audit.
 					</p>
 					<div class="oui-non">
 						<Bouton variante="rouille" type="submit" disabled={humide}>Oui, rayer</Bouton>
@@ -315,8 +382,12 @@
 					</div>
 				</form>
 			{:else}
-				<p class="explique">Rien ne s’efface : la version complète reste dans le journal d’audit.</p>
-				<Bouton variante="rouille" onclick={() => (confirmerRayure = true)}>Rayer ce rendez-vous</Bouton>
+				<p class="explique">
+					Rien ne s’efface : la version complète reste dans le journal d’audit.
+				</p>
+				<Bouton variante="rouille" onclick={() => (confirmerRayure = true)}
+					>Rayer ce rendez-vous</Bouton
+				>
 			{/if}
 		</div>
 		{#if zone === 'gestes'}<div class="note">{@render note()}</div>{/if}

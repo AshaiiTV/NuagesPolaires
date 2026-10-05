@@ -26,7 +26,9 @@ export const load: PageServerLoad = async (event) => {
 
 	const q = (event.url.searchParams.get('q') ?? '').trim().slice(0, 64);
 	const roleParam = event.url.searchParams.get('role') ?? '';
-	const role = (ROLE_VALUES as readonly string[]).includes(roleParam) ? (roleParam as RoleView) : null;
+	const role = (ROLE_VALUES as readonly string[]).includes(roleParam)
+		? (roleParam as RoleView)
+		: null;
 	const aiguille = q.toLocaleLowerCase('fr');
 	const rows = accounts.filter(
 		(a) =>
@@ -54,7 +56,9 @@ export const actions: Actions = {
 			characterId: texte(data.characterId),
 			expectedRevision: revision(data.expectedRevision)
 		});
-		return { lie: { id: compte.id, personnage: compte.characterName ?? '', at: new Date().toISOString() } };
+		return {
+			lie: { id: compte.id, personnage: compte.characterName ?? '', at: new Date().toISOString() }
+		};
 	}),
 	delier: action(async (event, data) => {
 		await unlinkCharacter(event.locals.db, event.locals.actor, {
@@ -76,7 +80,9 @@ export const actions: Actions = {
 		const reset = await adminResetPassword(event.locals.db, event.locals.actor, { accountId });
 		// Le code part une seule fois vers la page qui l'a demandé ; il n'est ni journalisé ni stocké.
 		// (Clé « temporaire » et non « code » : `code` est déjà le code d'erreur des refus.)
-		return { temporaire: { accountId, secret: reset.temporaryPassword, expiresAt: reset.expiresAt } };
+		return {
+			temporaire: { accountId, secret: reset.temporaryPassword, expiresAt: reset.expiresAt }
+		};
 	}),
 	rayer: action(async (event, data) => {
 		await strikeAccount(event.locals.db, event.locals.actor, {

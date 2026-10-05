@@ -20,6 +20,9 @@ export const load: PageServerLoad = async (event) => {
 		listBeasts(db, actor, {})
 	]);
 	return {
+		creature: creatures.some((b) => b.id === event.url.searchParams.get('creature'))
+			? event.url.searchParams.get('creature')
+			: null,
 		ouvertes: tables.filter((t) => t.status !== 'termine'),
 		recentes: tables.filter((t) => t.status === 'termine').slice(0, RECENTES),
 		personnages: personnages.map((p) => ({
@@ -63,7 +66,8 @@ export const actions: Actions = {
 		for (const [cle, valeur] of Object.entries(data)) {
 			if (!cle.startsWith('qte_')) continue;
 			const qty = Number.parseInt(texte(valeur), 10);
-			if (Number.isFinite(qty) && qty > 0) beasts.push({ beastId: cle.slice(4), qty: Math.min(30, qty) });
+			if (Number.isFinite(qty) && qty > 0)
+				beasts.push({ beastId: cle.slice(4), qty: Math.min(30, qty) });
 		}
 		const table = await createTable(event.locals.db, actor, {
 			name,

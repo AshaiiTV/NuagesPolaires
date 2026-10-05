@@ -4,12 +4,14 @@ import { requireCapability } from '$lib/server/guards';
 import { action, toRevision } from '$lib/server/actions';
 import { NpError } from '$lib/server/http';
 import { linkCharacter, listPending } from '$lib/server/domain/accounts';
+import { migrationStatus } from '$lib/server/domain/admin';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
 	const actor = requireCapability(event, 'admin.accounts');
 	const pending = await listPending(event.locals.db, actor);
-	return { pending, releve: new Date().toISOString() };
+	const { anomalies } = await migrationStatus(event.locals.db, actor);
+	return { pending, anomalies, releve: new Date().toISOString() };
 };
 
 export const actions: Actions = {
@@ -21,7 +23,11 @@ export const actions: Actions = {
 		}
 		// Chaque compte en attente porte sa propre version attendue (champ caché `revision.<id>`).
 		const expectedRevision = toRevision(data[`revision.${accountId}`]) as number | undefined;
-		const compte = await linkCharacter(event.locals.db, event.locals.actor, { accountId, characterId, expectedRevision: expectedRevision as number });
+		const compte = await linkCharacter(event.locals.db, event.locals.actor, {
+			accountId,
+			characterId,
+			expectedRevision: expectedRevision as number
+		});
 		return {
 			lie: {
 				id: compte.id,

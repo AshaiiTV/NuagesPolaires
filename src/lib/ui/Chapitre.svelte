@@ -14,7 +14,16 @@
 		children: Snippet;
 		actions?: Snippet;
 	}
-	let { numero, titre, id, chapeau, repliable = false, ouvert = true, children, actions }: Props = $props();
+	let {
+		numero,
+		titre,
+		id,
+		chapeau,
+		repliable = false,
+		ouvert = true,
+		children,
+		actions
+	}: Props = $props();
 </script>
 
 {#if repliable}

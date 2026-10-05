@@ -542,25 +542,14 @@ async function loadWaiting(db: Conn, characterId: string, now: Date): Promise<Wa
 			id: scenes.id,
 			title: scenes.title,
 			discordUrl: scenes.discordUrl,
+			combatId: scenes.combatId,
 			lastActivityAt: scenes.lastActivityAt
 		})
 		.from(scenes)
 		.innerJoin(sceneParticipants, eq(sceneParticipants.sceneId, scenes.id))
 		.where(and(eq(sceneParticipants.characterId, characterId), eq(scenes.status, 'ouverte')))
 		.orderBy(desc(scenes.lastActivityAt), asc(scenes.id));
-	const waiting: WaitingView[] = openScenes.map((s) => {
-		const channel = channelFromTitle(s.title) || null;
-		return {
-			kind: 'scene' as const,
-			id: s.id,
-			text: `Scène ouverte · ${channel ?? s.title}`,
-			href: '/carnet/scene',
-			discordUrl: s.discordUrl || null,
-			channel,
-			at: s.lastActivityAt.toISOString()
-		};
-	});
-
+	const waiting: WaitingView[] = [];
 	const tables = await db
 		.select({
 			id: combats.id,
@@ -580,13 +569,37 @@ async function loadWaiting(db: Conn, characterId: string, now: Date): Promise<Wa
 			)
 		)
 		.orderBy(desc(combats.updatedAt), asc(combats.id));
-	for (const t of tables) {
+	const tableIds = new Set(tables.map((t) => t.id));
+	const tableSalons = new Set(tables.map((t) => t.discordUrl).filter(Boolean));
+	const salons = new Set<string>();
+	for (const s of openScenes) {
+		const salon = s.discordUrl || channelFromTitle(s.title) || s.id;
+		if (
+			(s.combatId && tableIds.has(s.combatId)) ||
+			tableSalons.has(s.discordUrl) ||
+			salons.has(salon)
+		)
+			continue;
+		salons.add(salon);
+		const channel = channelFromTitle(s.title) || null;
+		waiting.push({
+			kind: 'scene',
+			id: s.id,
+			text: `Scène ouverte · ${channel ?? s.title}`,
+			href: '/carnet/scene',
+			discordUrl: s.discordUrl || null,
+			channel,
+			at: s.lastActivityAt.toISOString()
+		});
+		break;
+	}
+	for (const t of tables.slice(0, 1)) {
 		const name = t.name || t.label || 'sans titre';
 		waiting.push({
 			kind: 'table',
 			id: t.id,
 			text: `La Table est ouverte : ${name}`,
-			href: `/table/combat/${t.id}`,
+			href: `/carnet/table/${t.id}`,
 			discordUrl: t.discordUrl || null,
 			channel: channelFromTitle(name) || null,
 			at: t.updatedAt.toISOString()

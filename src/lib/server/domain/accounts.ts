@@ -1042,7 +1042,7 @@ export function normalizeThemeId(value: unknown): string {
 	return THEME_ID_ALIASES[loose] ?? (loose || 'dark');
 }
 
-/** Vrai si alue porte les huit tokens, chacun en hexadécimal. */
+/** Vrai si value porte les huit tokens, chacun en hexadécimal. */
 function isCompleteTokens(value: unknown): value is ThemeTokens {
 	if (!value || typeof value !== 'object') return false;
 	const record = value as Record<string, unknown>;

@@ -9,5 +9,8 @@ export const load: PageServerLoad = async (event) => {
 	requireAccount(event);
 	const character = event.locals.character;
 	// La connexion Discord n'est annoncée que si elle est ouverte sur ce carnet.
-	return { personnage: character ? { name: character.name } : null, discordActif: isDiscordEnabled() };
+	return {
+		personnage: character ? { name: character.name } : null,
+		discordActif: isDiscordEnabled()
+	};
 };

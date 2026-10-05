@@ -119,6 +119,9 @@ export type BeastUsageView = {
 	history: { id: string; name: string; at: string | null }[];
 };
 export type BeastView = BeastRowView & {
+	qtyMin: number;
+	qtyMax: number;
+	spawnWeight: number;
 	pv: number;
 	ep: number;
 	strike: string;

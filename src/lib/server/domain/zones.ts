@@ -16,6 +16,7 @@ function parse<T>(schema: z.ZodType<T>, input: unknown): T {
 	return result.data;
 }
 export async function listZones(db: Db, _actor: Actor | null): Promise<ZoneView[]> {
+	void _actor;
 	return db
 		.select({
 			id: zones.id,

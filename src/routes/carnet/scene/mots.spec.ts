@@ -20,7 +20,7 @@ describe('motsPour', () => {
 
 	it('propose les actions en EP de rules.ts avec leur coût, sans émoji', () => {
 		const libelles = mots.ep.map((m) => m.libelle);
-		expect(libelles).toContain('Esquive · 8 EP');
+		expect(libelles).toContain('Esquive · 8\u00a0EP');
 		for (const l of libelles) expect(l).not.toMatch(/\p{Extended_Pictographic}/u);
 		expect(mots.ep.at(-1)?.id).toBe('autre');
 	});
@@ -28,7 +28,7 @@ describe('motsPour', () => {
 	it('propose les capacités atteintes en EM, sans doublon, sans les paliers sans coût', () => {
 		const paliers = mots.em.filter((m) => m.id.startsWith('palier:'));
 		expect(paliers).toHaveLength(1);
-		expect(paliers[0].libelle).toBe('Élan Tranchant · 6 EM');
+		expect(paliers[0].libelle).toBe('Élan Tranchant · 6\u00a0EM');
 	});
 
 	it('PV : « subis … PV », « soigné de … PV », « autre… »', () => {
@@ -40,23 +40,48 @@ describe('resoudre', () => {
 	const mots = motsPour(DUELLISTE);
 
 	it('un mot à coût fixe donne −coût', () => {
-		expect(resoudre(mots.ep, 'regle:esquive', '', '')).toEqual({ ok: true, delta: -8, word: 'Esquive' });
+		expect(resoudre(mots.ep, 'regle:esquive', '', '')).toEqual({
+			ok: true,
+			delta: -8,
+			word: 'Esquive'
+		});
 	});
 
 	it('« subis » dépense, « soigné de » regagne', () => {
-		expect(resoudre(mots.pv, 'subis', '12', '')).toEqual({ ok: true, delta: -12, word: 'Dégâts subis' });
+		expect(resoudre(mots.pv, 'subis', '12', '')).toEqual({
+			ok: true,
+			delta: -12,
+			word: 'Dégâts subis'
+		});
 		expect(resoudre(mots.pv, 'soigne', '5', '')).toEqual({ ok: true, delta: 5, word: 'Soin reçu' });
 	});
 
 	it('« autre… » exige un chiffre et un mot ; « +5 » regagne', () => {
-		expect(resoudre(mots.ep, 'autre', '', 'Course')).toEqual({ ok: false, erreur: 'Le chiffre est obligatoire.' });
-		expect(resoudre(mots.ep, 'autre', '5', '  ')).toEqual({ ok: false, erreur: 'Le mot est obligatoire.' });
-		expect(resoudre(mots.ep, 'autre', '+5', 'Souffle repris')).toEqual({ ok: true, delta: 5, word: 'Souffle repris' });
-		expect(resoudre(mots.ep, 'autre', '−5', 'Course')).toEqual({ ok: true, delta: -5, word: 'Course' });
+		expect(resoudre(mots.ep, 'autre', '', 'Course')).toEqual({
+			ok: false,
+			erreur: 'Le chiffre est obligatoire.'
+		});
+		expect(resoudre(mots.ep, 'autre', '5', '  ')).toEqual({
+			ok: false,
+			erreur: 'Le mot est obligatoire.'
+		});
+		expect(resoudre(mots.ep, 'autre', '+5', 'Souffle repris')).toEqual({
+			ok: true,
+			delta: 5,
+			word: 'Souffle repris'
+		});
+		expect(resoudre(mots.ep, 'autre', '−5', 'Course')).toEqual({
+			ok: true,
+			delta: -5,
+			word: 'Course'
+		});
 	});
 
 	it('refuse un mot inconnu (le navigateur ne fixe jamais un coût)', () => {
-		expect(resoudre(mots.ep, 'regle:inventee', '', '')).toEqual({ ok: false, erreur: 'Choisis un mot.' });
+		expect(resoudre(mots.ep, 'regle:inventee', '', '')).toEqual({
+			ok: false,
+			erreur: 'Choisis un mot.'
+		});
 	});
 });
 

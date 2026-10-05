@@ -1,6 +1,6 @@
 <script lang="ts">
 	// Une ligne d'agenda : bloc-date en marge gauche, puis le rendez-vous écrit comme une entrée de
-	// carnet (titre, type, heure, places, inscrits nommés, salon, tampon de l'organisateur), et le geste
+	// carnet (titre, type, places, inscrits nommés, salon, tampon de l'organisateur), et le geste
 	// d'inscription. L'état « Tu viens » ne s'écrit qu'après la réponse du serveur.
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { enhance } from '$app/forms';
@@ -11,8 +11,9 @@
 	import Tampon from '$lib/ui/Tampon.svelte';
 	import type { EtatEncre } from '$lib/ui/Encre.svelte';
 	import type { NoteEcriture } from '$lib/ui/ecriture.svelte';
-	import { dateCourte, heureRonde, jourSemaine } from '$lib/ui/dates';
-	import { LIBELLES_ROLE, type RoleCompte } from '$lib/ui/navigation';
+	import { heureRonde, jourSemaine } from '$lib/ui/dates';
+	import { signature } from '$lib/ui/tampons';
+	import { type RoleCompte } from '$lib/ui/navigation';
 	import type { EventRowView } from '$lib/schemas/events';
 	import { blocDate, phrasePasses, phrasePlaces, teinte } from './agenda';
 
@@ -47,7 +48,9 @@
 	}: Props = $props();
 
 	const bloc = $derived(blocDate(ev.startsAt, lu));
-	const quand = $derived(ev.startsAt ? `${jourSemaine(ev.startsAt)} · ${heureRonde(ev.startsAt)}` : null);
+	const quand = $derived(
+		ev.startsAt ? `${jourSemaine(ev.startsAt)} · ${heureRonde(ev.startsAt)}` : null
+	);
 	const humide = $derived(active && etat === 'humide');
 	// Une description courte se lit d'un trait ; une longue se replie.
 	const longue = $derived(ev.description.length > 110 || ev.description.includes('\n'));
@@ -59,7 +62,9 @@
 		{#if bloc}
 			<time datetime={ev.startsAt}>
 				<span class="jour chiffres">{bloc.jour}</span>
-				<span class="mois">{bloc.mois}{#if bloc.annee}<span class="annee"> {bloc.annee}</span>{/if}</span>
+				<span class="mois"
+					>{bloc.mois}{#if bloc.annee}<span class="annee"> {bloc.annee}</span>{/if}</span
+				>
 				<span class="semaine">{bloc.semaine}</span>
 			</time>
 		{:else}
@@ -71,16 +76,20 @@
 		<h3 class="titre" id={titreId}>{ev.title}</h3>
 		<p class="meta">
 			<Losange couleur={teinte(ev.typeColor)} libelle={ev.typeLabel} />
-			{#if quand}<span class="quand chiffres">{quand}</span>{:else}<span class="quand">Date à confirmer</span>{/if}
+			{#if quand}<span class="quand chiffres">{quand}</span>{:else}<span class="quand"
+					>Date à confirmer</span
+				>{/if}
 			{#if ev.hidden}<span class="masque">Masqué · visible de ceux qui organisent</span>{/if}
 		</p>
 		<p class="places chiffres">
-			<span class="compte">{passe ? phrasePasses(ev.count) : phrasePlaces(ev.count, ev.capacity)}</span>
+			<span class="compte"
+				>{passe ? phrasePasses(ev.count) : phrasePlaces(ev.count, ev.capacity)}</span
+			>
 			{#if ev.participants.length}
 				<span class="noms">
 					{#each ev.participants as p, i (i)}<span class="nom" class:moi={p.me}
-							>{p.name}{#if p.me}<span class="toi">{' · toi'}</span>{/if}</span
-						>{#if i < ev.participants.length - 1}{', '}{/if}{/each}
+							>{p.name}{#if p.me}<span class="toi">&nbsp;·&nbsp;toi</span>{/if}</span
+						>{#if i < ev.participants.length - 1},&nbsp;{/if}{/each}
 				</span>
 			{/if}
 		</p>
@@ -88,7 +97,9 @@
 		{#if ev.description}
 			{#if longue}
 				<details class="description">
-					<summary><span>Lire la description</span><span class="pli" aria-hidden="true"></span></summary>
+					<summary
+						><span>Lire la description</span><span class="pli" aria-hidden="true"></span></summary
+					>
 					<p>{ev.description}</p>
 				</details>
 			{:else}
@@ -98,20 +109,37 @@
 
 		<div class="pied">
 			{#if !passe && ev.discordUrl}
-				<Bouton variante="texte" href={ev.discordUrl} fleche="↗" target="_blank" rel="noopener noreferrer">Ouvrir le salon</Bouton>
+				<Bouton
+					variante="texte"
+					href={ev.discordUrl}
+					fleche="↗"
+					target="_blank"
+					rel="noopener noreferrer">Ouvrir le salon</Bouton
+				>
 			{/if}
 			{#if passe && ev.recitId}
-				<Bouton variante="texte" href="/carnet/recits/{ev.recitId}" fleche="→">Lire le récit</Bouton>
+				<Bouton variante="texte" href="/carnet/recits/{ev.recitId}" fleche="→">Lire le récit</Bouton
+				>
 			{/if}
 		</div>
 	</div>
 
 	{#if tampon}
 		<p class="organise">
-			<span class="par">organisé par</span><Tampon cle={ev.id}>{LIBELLES_ROLE[tampon.role]} {tampon.pseudo}<span class="point" aria-hidden="true">{' · '}</span><span class="sr-only">, le </span>{dateCourte(tampon.at, lu)}</Tampon>
+			<span class="par">organisé par</span><Tampon cle={ev.id}
+				>{signature(tampon.role, tampon.pseudo, tampon.at)}</Tampon
+			>
+		</p>
+	{:else if ev.organizerStamp}
+		<p class="organise">
+			<Tampon cle={ev.id}
+				>{signature(ev.organizerStamp.role, ev.organizerStamp.pseudo, ev.organizerStamp.at)}</Tampon
+			>
 		</p>
 	{:else if ev.organizer}
-		<p class="organise"><span class="par">organisé par</span><Tampon cle={ev.id}>{ev.organizer}</Tampon></p>
+		<p class="organise">
+			<span class="par">organisé par</span><span>{ev.organizer}</span>
+		</p>
 	{/if}
 
 	{#if !passe}
@@ -152,7 +180,9 @@
 		<div class="note">
 			<NoteDeMarge ton={note.ton}>
 				{#if note.ton === 'fait'}
-					{geste === 'rayer' ? 'Rayé. Ta place est libre.' : 'Tu viens. Le rendez-vous est en marge de ton carnet.'}
+					{geste === 'rayer'
+						? 'Rayé. Ta place est libre.'
+						: 'Tu viens. Le rendez-vous est en marge de ton carnet.'}
 				{:else}
 					{note.texte}
 				{/if}

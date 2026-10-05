@@ -9,6 +9,7 @@ export const spawnToTableSchema = z
 export type DrawSpawnInput = z.input<typeof drawSpawnSchema> & { rng?: () => number };
 export type SpawnToTableInput = z.input<typeof spawnToTableSchema>;
 export type SpawnRunView = {
+	combatId?: string | null;
 	id: string;
 	at: string;
 	zoneId: string | null;

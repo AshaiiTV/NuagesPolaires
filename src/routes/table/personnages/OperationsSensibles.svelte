@@ -103,7 +103,7 @@
 			min={-99}
 			max={99}
 			value={initial('levelDelta', '')}
-			aide="Vide : niveau conservé. La valeur saisie s’ajoute au niveau du relevé."
+			aide="Vide&nbsp;: niveau conservé. La valeur saisie s’ajoute au niveau du relevé."
 		/>
 		{#snippet note()}{@render afficherNote('identite')}{/snippet}
 	</SaisieTampon>
@@ -117,7 +117,7 @@
 		{values}
 	>
 		<p>
-			La fiche sort des pages du carnet. Elle reste exportable dans les Données ; le compte est
+			La fiche sort des pages du carnet. Elle reste exportable dans les Données&nbsp;; le compte est
 			délié.
 		</p>
 		<Champ

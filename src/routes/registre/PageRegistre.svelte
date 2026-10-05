@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { chemin } from '$lib/ui/adresse';
 	// Une page du Registre : la page du carnet en régime serré, avec la sous-navigation du cahier
 	// (Ce qui attend · Comptes et liaisons · Thèmes · Journal d'audit · Données) dans la marge sur
 	// ordinateur et dans la bande sous le titre sur téléphone.
@@ -24,8 +25,11 @@
 		{ href: '/registre/journal', libelle: 'Journal d’audit' },
 		{ href: '/registre/donnees', libelle: 'Données' }
 	];
-	const chemin = $derived(page.url.pathname);
-	const courante = (href: string) => (href === '/registre' ? chemin === href : chemin === href || chemin.startsWith(href + '/'));
+	const cheminCourant = $derived(page.url.pathname);
+	const courante = (href: string) =>
+		href === '/registre'
+			? cheminCourant === href
+			: cheminCourant === href || cheminCourant.startsWith(href + '/');
 </script>
 
 {#snippet sommaire()}
@@ -33,8 +37,13 @@
 		<ul>
 			{#each PAGES as p, i (p.href)}
 				<li>
-					<a href={p.href} class:courant={courante(p.href)} aria-current={courante(p.href) ? 'page' : undefined}>
-						<span class="numero chiffres" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>{p.libelle}
+					<a
+						href={chemin(p.href)}
+						class:courant={courante(p.href)}
+						aria-current={courante(p.href) ? 'page' : undefined}
+					>
+						<span class="numero chiffres" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span
+						>{p.libelle}
 					</a>
 				</li>
 			{/each}
@@ -43,17 +52,17 @@
 {/snippet}
 
 <div class="registre">
-<Page repere="NP / 09 — Le Registre" {titre} {titreVoix} {reglure} {pied}>
-	{#snippet marge()}
-		{@render sommaire()}
-		{#if reperes}<div class="reperes">{@render reperes()}</div>{/if}
-	{/snippet}
-	{#snippet bande()}
-		{@render sommaire()}
-		{#if reperes}<div class="reperes">{@render reperes()}</div>{/if}
-	{/snippet}
-	{@render children()}
-</Page>
+	<Page repere="NP / 09 — Le Registre" {titre} {titreVoix} {reglure} {pied}>
+		{#snippet marge()}
+			{@render sommaire()}
+			{#if reperes}<div class="reperes">{@render reperes()}</div>{/if}
+		{/snippet}
+		{#snippet bande()}
+			{@render sommaire()}
+			{#if reperes}<div class="reperes">{@render reperes()}</div>{/if}
+		{/snippet}
+		{@render children()}
+	</Page>
 </div>
 
 <style>
@@ -103,7 +112,7 @@
 	.numero {
 		font: var(--t-repere);
 		letter-spacing: 0.12em;
-		color: var(--tampon);
+		color: var(--encre-2);
 	}
 	.reperes {
 		display: flex;

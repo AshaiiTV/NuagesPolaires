@@ -20,10 +20,24 @@ export const ROLES: { id: RoleView; libelle: string; pluriel: string }[] = [
 	{ id: 'designer', libelle: 'designer', pluriel: 'Designers' },
 	{ id: 'admin', libelle: 'administrateur', pluriel: 'Administrateurs' }
 ];
-export const LIBELLE_ROLE: Record<string, string> = Object.fromEntries(ROLES.map((r) => [r.id, r.libelle]));
+export const LIBELLE_ROLE: Record<string, string> = Object.fromEntries(
+	ROLES.map((r) => [r.id, r.libelle])
+);
 
 /** Libellés lisibles des actions du journal d'audit ; une action absente se lit « Action non décrite ». */
 export const ACTIONS_AUDIT: Record<string, string> = {
+	fait_valide: 'Fait tamponné',
+	fact_validate: 'Fait tamponné',
+	fact_reject: 'Fait refusé',
+	fact_settle: 'Fait réglé',
+	fait_refuse: 'Fait refusé',
+	fait_regle: 'Fait réglé',
+	scene_resume: 'Résumé de scène écrit',
+	scene_question: 'Question de scène écrite',
+	scene_summary: 'Résumé de scène écrit',
+	scene_open_question: 'Question de scène écrite',
+	scene_pin: 'Repère de scène épinglé',
+	scene_unpin: 'Repère de scène détaché',
 	login_success: 'Entrée dans le carnet',
 	login_failed: 'Entrée refusée',
 	login_rate_limited: 'Entrées suspendues (trop de tentatives)',
@@ -269,7 +283,8 @@ export function detailsLisibles(details: Record<string, unknown>): string {
 	for (const [k, v] of Object.entries(details)) {
 		if (k === 'accountId' && 'pseudo' in details) continue;
 		if (CLES_TUES.has(k)) continue;
-		lignes.push(`${CLES[k] ?? k} : ${valeur(v)}`);
+		if (!CLES[k]) continue;
+		lignes.push(`${CLES[k]}\u00a0: ${valeur(v)}`);
 	}
 	return lignes.join(' · ');
 }

@@ -50,8 +50,11 @@ for (const largeur of tailles) {
 		await page.fill('input[name="pseudo"]', compte);
 		await page.fill('input[name="password"]', motDePasse);
 		await page.click('form button[type="submit"]');
-		await page.waitForURL((u) => !u.pathname.startsWith('/entrer'), { timeout: 10000 }).catch(() => {});
-		if (new URL(page.url()).pathname.startsWith('/entrer')) console.log(`CONNEXION REFUSÉE pour ${compte} (toujours sur ${page.url()})`);
+		await page
+			.waitForURL((u) => !u.pathname.startsWith('/entrer'), { timeout: 10000 })
+			.catch(() => {});
+		if (new URL(page.url()).pathname.startsWith('/entrer'))
+			console.log(`CONNEXION REFUSÉE pour ${compte} (toujours sur ${page.url()})`);
 	}
 	const erreurs = [];
 	page.on('console', (m) => m.type() === 'error' && erreurs.push(m.text()));
@@ -72,10 +75,13 @@ for (const largeur of tailles) {
 				.filter((e) => e.children.length === 0 && e.textContent.trim() && e.getClientRects().length)
 				.filter((e) => parseFloat(getComputedStyle(e).fontSize) < 12)
 				.slice(0, 5)
-				.map((e) => `${e.tagName.toLowerCase()}.${e.className} (${getComputedStyle(e).fontSize}) « ${e.textContent.trim().slice(0, 30)} »`)
+				.map(
+					(e) =>
+						`${e.tagName.toLowerCase()}.${e.className} (${getComputedStyle(e).fontSize}) « ${e.textContent.trim().slice(0, 30)} »`
+				)
 		}));
 		const nom =
-			(chemin === '/' ? 'accueil' : chemin.replace(/^\//, '').replace(/[\/?#=&]/g, '-')) +
+			(chemin === '/' ? 'accueil' : chemin.replace(/^\//, '').replace(/[/?#=&]/g, '-')) +
 			`${compte ? '-' + compte : ''}-${largeur}${theme ? '-' + theme : ''}.png`;
 		await page.screenshot({ path: path.join(sortie, nom), fullPage: pleine });
 		const deborde = mesure.scroll > mesure.client + 1;

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { chemin } from '$lib/ui/adresse';
 	import PageAtelier from '../PageAtelier.svelte';
 	import Bouton from '$lib/ui/Bouton.svelte';
 	import Vide from '$lib/ui/Vide.svelte';
@@ -18,8 +19,8 @@
 		><Bouton variante="texte" href="/univers/serments" fleche="→">Lire les Serments</Bouton>
 	</div>
 	{#if !data.oaths.length}<Vide>Les Serments restent à écrire.</Vide>{:else}<ul class="lignes">
-			{#each data.oaths as oath}<li>
-					<a class="ligne-lien" href="/atelier/serments/{oath.id}">
+			{#each data.oaths as oath, index (index)}<li>
+					<a class="ligne-lien" href={chemin(`/atelier/serments/${oath.id}`)}>
 						<span class="nom">{oath.name}</span><span>{oath.weapon}</span><span
 							>{oath.rankLabel}</span
 						><span aria-hidden="true">→</span>

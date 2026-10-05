@@ -29,6 +29,8 @@ import {
 	type PublishExtractInput,
 	type StrikePublicationInput
 } from '../../schemas/publications';
+import { signature } from '../../ui/tampons';
+import { dateCourte, jour, heureRonde } from '../../ui/dates';
 import { appendStaffLog } from './staff-log';
 import { recordAudit } from './audit';
 
@@ -195,19 +197,50 @@ export async function strikePublication(
 }
 
 /** Extraits du combat, y compris les ratures, réservés au MJ et à l’administrateur. */
-export async function listPublications(db: Db, actor: Actor | null, input: { combatId: string }): Promise<Array<PublicationView & { creatures: { id: string; name: string }[]; tampon: { role: string | null; name: string | null; at: string }; texte: string; raye: boolean }>> {
+export async function listPublications(
+	db: Db,
+	actor: Actor | null,
+	input: { combatId: string }
+): Promise<
+	Array<
+		PublicationView & {
+			creatures: { id: string; name: string }[];
+			tampon: { role: string | null; name: string | null; at: string };
+			texte: string;
+			raye: boolean;
+		}
+	>
+> {
 	assertCan(actor, 'combat.run');
 	const combatId = parse(z.string().min(1).max(200), input.combatId);
-	const rows = await db.select({ publication: publications, pseudo: accounts.pseudo, role: accounts.role })
-		.from(publications).leftJoin(accounts, eq(publications.stampedBy, accounts.id))
-		.where(eq(publications.combatId, combatId)).orderBy(desc(publications.stampedAt), desc(publications.id));
+	const rows = await db
+		.select({ publication: publications, pseudo: accounts.pseudo, role: accounts.role })
+		.from(publications)
+		.leftJoin(accounts, eq(publications.stampedBy, accounts.id))
+		.where(eq(publications.combatId, combatId))
+		.orderBy(desc(publications.stampedAt), desc(publications.id));
 	const result = [];
 	for (const { publication: p, pseudo, role } of rows) {
-		const creatures = await db.select({ id: beasts.id, name: beasts.name }).from(publicationBeasts)
-			.innerJoin(beasts, eq(publicationBeasts.beastId, beasts.id)).where(eq(publicationBeasts.publicationId, p.id)).orderBy(asc(beasts.id));
-		result.push({ id: p.id, combatId: p.combatId, text: p.text, texte: p.text, onHome: p.onHome,
-			beastIds: creatures.map((b) => b.id), creatures, at: p.stampedAt.toISOString(),
-			tampon: { role, name: pseudo, at: p.stampedAt.toISOString() }, struck: p.struck, raye: p.struck });
+		const creatures = await db
+			.select({ id: beasts.id, name: beasts.name })
+			.from(publicationBeasts)
+			.innerJoin(beasts, eq(publicationBeasts.beastId, beasts.id))
+			.where(eq(publicationBeasts.publicationId, p.id))
+			.orderBy(asc(beasts.id));
+		result.push({
+			id: p.id,
+			combatId: p.combatId,
+			text: p.text,
+			texte: p.text,
+			onHome: p.onHome,
+			beastIds: creatures.map((b) => b.id),
+			creatures,
+			at: p.stampedAt.toISOString(),
+			tampon: { role, name: pseudo, at: p.stampedAt.toISOString() },
+			struck: p.struck,
+			struckAt: p.struckAt?.toISOString() ?? null,
+			raye: p.struck
+		});
 	}
 	return result;
 }
@@ -241,12 +274,7 @@ export async function listHomeLeaves(db: Db): Promise<HomeLeaf[]> {
 		.orderBy(asc(events.startsAt), asc(events.id))
 		.limit(1);
 	const leaves: HomeLeaf[] = [];
-	const date = (value: Date) =>
-		new Intl.DateTimeFormat('fr-FR', {
-			timeZone: 'Europe/Paris',
-			day: 'numeric',
-			month: 'short'
-		}).format(value);
+	const date = (value: Date) => dateCourte(value);
 	if (published) {
 		const p = published.publication;
 		leaves.push({
@@ -255,9 +283,7 @@ export async function listHomeLeaves(db: Db): Promise<HomeLeaf[]> {
 			margin: date(p.stampedAt),
 			title: published.title || published.name || 'Récit',
 			excerpt: p.text,
-			stamp: published.pseudo
-				? `${published.role === 'admin' ? 'Admin' : 'MJ'} ${published.pseudo} · ${date(p.stampedAt)}`
-				: date(p.stampedAt),
+			stamp: signature(published.role, published.pseudo, p.stampedAt),
 			href: null
 		});
 	}
@@ -265,16 +291,31 @@ export async function listHomeLeaves(db: Db): Promise<HomeLeaf[]> {
 		[past, 'passe'],
 		[next, 'a-venir']
 	] as const) {
-		if (row?.startsAt)
+		if (row?.startsAt) {
+			const [organisateur] = row.createdBy
+				? await db
+						.select({ pseudo: accounts.pseudo, role: accounts.role })
+						.from(accounts)
+						.where(eq(accounts.id, row.createdBy))
+				: [];
 			leaves.push({
 				id: row.id,
 				kind,
 				margin: date(row.startsAt),
 				title: row.title,
-				excerpt: row.description,
-				stamp: null,
-				href: '/agenda'
+				excerpt:
+					row.description ||
+					(kind === 'passe'
+						? 'Rendez-vous passé · ' + row.title
+						: 'Prochain rendez-vous · ' + jour(row.startsAt) + ' ' + heureRonde(row.startsAt)),
+				stamp: signature(
+					organisateur?.role ?? 'mj',
+					organisateur?.pseudo ?? row.createdByLabel,
+					row.createdAt ?? row.startsAt
+				),
+				href: null
 			});
+		}
 	}
 	return leaves;
 }

@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { SvelteMap } from 'svelte/reactivity';
+	import { chemin } from '$lib/ui/adresse';
+	import { signature } from '$lib/ui/tampons';
 	// /table/archives/[id] — un récit lu par le MJ : qui était là, le journal du combat round par
-	// round (lignes réservées marquées), les notes du MJ (encre laiton, jamais servies aux joueurs),
+	// round (lignes réservées marquées), les notes du MJ (jamais servies aux joueurs),
 	// les extraits publiés (tamponnés, rayables avec motif) et « Publier un extrait » a posteriori.
 	import { enhance } from '$app/forms';
 	import Page from '$lib/ui/Page.svelte';
@@ -11,7 +14,7 @@
 	import NoteDeMarge from '$lib/ui/NoteDeMarge.svelte';
 	import Sommaire from '$lib/ui/table/Sommaire.svelte';
 	import { creerEcriture } from '$lib/ui/ecriture.svelte';
-	import { dateCourte, dateLongue, heure } from '$lib/ui/dates';
+	import { dateCourte, heure } from '$lib/ui/dates';
 	import { sansEmoji } from '$lib/ui/table/texte';
 	import type { PageProps } from './$types';
 
@@ -20,7 +23,7 @@
 	const r = $derived(data.recit);
 	/** Journal regroupé par round, sans pictogramme. */
 	const rounds = $derived.by(() => {
-		const groupes = new Map<number, typeof data.journal>();
+		const groupes = new SvelteMap<number, typeof data.journal>();
 		for (const e of data.journal) {
 			if (!sansEmoji(e.text)) continue;
 			const g = groupes.get(e.round) ?? [];
@@ -35,7 +38,12 @@
 	let accueil = $state(true);
 	let creatures = $state<string[]>([]);
 	const lignes = $derived(extrait.split(/\r?\n/).filter((l) => l.trim()).length);
-	const valide = $derived(lignes >= 2 && lignes <= 4 && !/\n\s*\n/.test(extrait.trim()) && (accueil || creatures.length > 0));
+	const valide = $derived(
+		lignes >= 2 &&
+			lignes <= 4 &&
+			!/\n\s*\n/.test(extrait.trim()) &&
+			(accueil || creatures.length > 0)
+	);
 
 	const rayer = creerEcriture();
 	let enRature = $state<string | null>(null);
@@ -47,22 +55,14 @@
 <Page repere="NP / 06 — La Table · récit" titre={r.titre} reglure={false}>
 	{#snippet marge()}
 		<Sommaire />
-		<dl class="fiche-recit">
-			<dt>Replié</dt>
-			<dd class="chiffres">{dateLongue(r.at)} · {heure(r.at)}</dd>
-			<dt>Durée</dt>
-			<dd class="chiffres">{r.rounds} round{r.rounds > 1 ? 's' : ''}</dd>
-			<dt>Lecture</dt>
-			<dd>{r.lisible ? 'Lisible par ses participants, sans tes notes.' : 'Réservé à la Table.'}</dd>
-			{#if r.salon}
-				<dt>Salon</dt>
-				<dd><a href={r.salon} rel="noopener noreferrer" target="_blank">Ouvrir le salon ↗</a></dd>
-			{/if}
-		</dl>
 	{/snippet}
 	{#snippet bande()}
 		<Sommaire />
-		<span class="chiffres">{dateCourte(r.at)} · {r.rounds} round{r.rounds > 1 ? 's' : ''} · {r.lisible ? 'lisible par ses participants' : 'réservé à la Table'}</span>
+		<span class="chiffres"
+			>{dateCourte(r.at)} · {r.rounds} round{r.rounds > 1 ? 's' : ''} · {r.lisible
+				? 'lisible par ses participants'
+				: 'réservé à la Table'}</span
+		>
 	{/snippet}
 
 	<Chapitre numero="01" titre="À la Table">
@@ -72,7 +72,11 @@
 				{#if data.eleves.length}
 					<ul>
 						{#each data.eleves as e (e.id)}
-							<li><span class="nom">{e.nom}</span><span class="detail chiffres">niv. {e.niveau} · PV {e.pv}{e.ko ? ' · KO' : ''}</span></li>
+							<li>
+								<span class="nom">{e.nom}</span><span class="detail chiffres"
+									>niv. {e.niveau} · PV {e.pv}{e.ko ? ' · KO' : ''}</span
+								>
+							</li>
 						{/each}
 					</ul>
 				{:else}
@@ -84,7 +88,7 @@
 				{#if data.adversaires.length}
 					<ul>
 						{#each data.adversaires as a (a.id)}
-							<li><a class="nom" href="/univers/bestiaire/{a.id}">{a.nom}</a></li>
+							<li><a class="nom" href={chemin(`/univers/bestiaire/${a.id}`)}>{a.nom}</a></li>
 						{/each}
 					</ul>
 				{:else}
@@ -115,7 +119,11 @@
 		{/if}
 	</Chapitre>
 
-	<Chapitre numero="03" titre="Notes du MJ" chapeau="Jamais servies aux joueurs, même aux participants.">
+	<Chapitre
+		numero="03"
+		titre="Notes du MJ"
+		chapeau="Jamais servies aux joueurs, même aux participants."
+	>
 		{#if data.notes.trim()}
 			<p class="notes">{data.notes}</p>
 		{:else}
@@ -123,26 +131,38 @@
 		{/if}
 	</Chapitre>
 
-	<Chapitre numero="04" titre="Extraits publiés" chapeau="Un extrait se lit sur l’accueil et sur la page des créatures cochées. Aucun nom de participant sur l’accueil.">
+	<Chapitre
+		numero="04"
+		titre="Extraits publiés"
+		chapeau="Un extrait se lit sur l’accueil et sur la page des créatures cochées. Aucun nom de participant sur l’accueil."
+	>
 		{#if data.extraits.length}
 			<ul class="extraits">
 				{#each data.extraits as x (x.id)}
 					<li class:raye={x.raye}>
 						<p class="texte-extrait">{x.texte}</p>
 						<p class="destinations detail">
-							{[x.accueil ? 'l’accueil' : '', ...x.creatures.map((c) => `la page de ${c}`)].filter(Boolean).join(' · ')}
+							{[x.accueil ? 'l’accueil' : '', ...x.creatures.map((c) => `la page de ${c}`)]
+								.filter(Boolean)
+								.join(' · ')}
 						</p>
 						{#if x.raye}
-							<p class="detail">Rayé{x.rayeA ? ` le ${dateCourte(x.rayeA)}, ${heure(x.rayeA)}` : ''} : il ne se lit plus nulle part.</p>
+							<p class="detail">
+								Rayé{x.rayeA ? ` le ${dateCourte(x.rayeA)}, ${heure(x.rayeA)}` : ''} : il ne se lit plus
+								nulle part.
+							</p>
 						{:else}
 							<div class="signature">
-								<Tampon cle={x.id}>Publié · {dateCourte(x.at)}, {heure(x.at)}</Tampon>
+								<Tampon cle={x.id}>{signature(x.tampon.role, x.tampon.name, x.tampon.at)}</Tampon>
 								{#if enRature === x.id}
 									<form
 										method="POST"
 										action="?/rayerPublication"
 										class="rature"
-										use:enhance={rayer.enhance({ verbe: 'Rayé', apres: () => ((enRature = null), (motif = '')) })}
+										use:enhance={rayer.enhance({
+											verbe: 'Rayé',
+											apres: () => ((enRature = null), (motif = ''))
+										})}
 									>
 										<input type="hidden" name="publication" value={x.id} />
 										<label>
@@ -150,11 +170,21 @@
 											<!-- svelte-ignore a11y_autofocus -->
 											<input name="motif" bind:value={motif} required maxlength={2000} autofocus />
 										</label>
-										<Bouton variante="rouille" type="submit" disabled={!motif.trim() || rayer.enCours}>Rayer la publication</Bouton>
-										<button type="button" class="geste" onclick={() => (enRature = null)}>Garder</button>
+										<Bouton
+											variante="rouille"
+											type="submit"
+											disabled={!motif.trim() || rayer.enCours}>Rayer la publication</Bouton
+										>
+										<button type="button" class="geste" onclick={() => (enRature = null)}
+											>Garder</button
+										>
 									</form>
 								{:else}
-									<button type="button" class="geste" onclick={() => ((enRature = x.id), (motif = ''))}>Rayer la publication</button>
+									<button
+										type="button"
+										class="geste"
+										onclick={() => ((enRature = x.id), (motif = ''))}>Rayer la publication</button
+									>
 								{/if}
 							</div>
 						{/if}
@@ -162,61 +192,62 @@
 				{/each}
 			</ul>
 			{#if rayer.note}
-				<div aria-live="polite"><NoteDeMarge ton={rayer.note.ton}>{rayer.note.texte}</NoteDeMarge></div>
+				<div aria-live="polite">
+					<NoteDeMarge ton={rayer.note.ton}>{rayer.note.texte}</NoteDeMarge>
+				</div>
 			{/if}
 		{:else}
 			<Vide>Rien n’a été publié de ce récit. L’accueil garde un feuillet blanc.</Vide>
 		{/if}
 
-		<form method="POST" action="?/publier" class="publier" use:enhance={publier.enhance({ verbe: 'Publié', apres: () => (extrait = '') })}>
+		<form
+			method="POST"
+			action="?/publier"
+			class="publier"
+			use:enhance={publier.enhance({ verbe: 'Publié', apres: () => (extrait = '') })}
+		>
 			<h3 class="sous">Publier un extrait</h3>
 			<label class="champ">
 				<span>Deux à quatre lignes, écrites par toi</span>
 				<textarea name="extrait" bind:value={extrait} rows="4" maxlength={4000} required></textarea>
 			</label>
-			<p class="detail chiffres" class:refus={extrait.trim() && (lignes < 2 || lignes > 4)} aria-live="polite">
+			<p
+				class="detail chiffres"
+				class:refus={extrait.trim() && (lignes < 2 || lignes > 4)}
+				aria-live="polite"
+			>
 				{lignes ? `${lignes} ligne${lignes > 1 ? 's' : ''}` : 'Va à la ligne entre deux phrases.'}
 			</p>
 			<fieldset>
 				<legend>Destinations</legend>
-				<label class="case"><input type="checkbox" name="accueil" value="oui" bind:checked={accueil} /><span>L’accueil</span></label>
+				<label class="case"
+					><input type="checkbox" name="accueil" value="oui" bind:checked={accueil} /><span
+						>L’accueil</span
+					></label
+				>
 				{#each data.adversaires as a (a.id)}
-					<label class="case"><input type="checkbox" name="creatures" value={a.id} bind:group={creatures} /><span>La page de {a.nom}</span></label>
+					<label class="case"
+						><input type="checkbox" name="creatures" value={a.id} bind:group={creatures} /><span
+							>La page de {a.nom}</span
+						></label
+					>
 				{/each}
 			</fieldset>
 			<div class="valider">
-				<Bouton variante="tampon" type="submit" disabled={!valide || publier.enCours}>Publier l’extrait</Bouton>
+				<Bouton variante="tampon" type="submit" disabled={!valide || publier.enCours}
+					>Publier l’extrait</Bouton
+				>
 			</div>
 			{#if publier.note}
-				<div aria-live="polite"><NoteDeMarge ton={publier.note.ton}>{publier.note.texte}</NoteDeMarge></div>
+				<div aria-live="polite">
+					<NoteDeMarge ton={publier.note.ton}>{publier.note.texte}</NoteDeMarge>
+				</div>
 			{/if}
 		</form>
 	</Chapitre>
 </Page>
 
 <style>
-	.fiche-recit {
-		display: grid;
-		gap: 4px;
-		margin-top: 24px;
-	}
-	.fiche-recit dt {
-		font: var(--t-repere);
-		letter-spacing: var(--approche-repere);
-		text-transform: uppercase;
-		color: var(--encre-grise);
-		margin-top: 8px;
-	}
-	.fiche-recit dd {
-		font: var(--t-libelle);
-		color: var(--encre);
-	}
-	.fiche-recit a {
-		display: inline-flex;
-		min-height: 44px;
-		align-items: center;
-		color: var(--encre-humide);
-	}
 	.sous {
 		font: var(--t-repere);
 		letter-spacing: var(--approche-repere);
@@ -269,7 +300,7 @@
 		);
 	}
 	.round li {
-		font: 500 14px/24px var(--corps);
+		font: 500 14px/24px var(--mono);
 		color: var(--encre-2);
 	}
 	.round li.damage,
@@ -295,7 +326,7 @@
 		padding-top: 24px;
 		white-space: pre-wrap;
 		font: 500 14px/24px var(--corps);
-		color: var(--tampon);
+		color: var(--encre-2);
 		background-image: repeating-linear-gradient(
 			to bottom,
 			transparent 0 calc(var(--ligne) - 1px),
@@ -407,7 +438,7 @@
 		width: 20px;
 		height: 20px;
 		margin: 0;
-		accent-color: var(--tampon);
+		accent-color: var(--encre-humide);
 	}
 	.valider {
 		display: flex;

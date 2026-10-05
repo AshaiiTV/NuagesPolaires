@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { signature } from '$lib/ui/tampons';
 	// Registre › Thèmes : la galerie des feuillets (chaque thème peint comme une petite page), les
 	// gestes de l'administrateur sur chacun, et la création d'un thème — huit couleurs, aperçu vivant,
 	// contraste écrit en clair. Sous 4,5:1, le bouton d'enregistrement n'existe pas et la raison est dite.
@@ -13,7 +14,6 @@
 	import Tampon from '$lib/ui/Tampon.svelte';
 	import Vide from '$lib/ui/Vide.svelte';
 	import { creerEcriture } from '$lib/ui/ecriture.svelte';
-	import { heure } from '$lib/ui/dates';
 	import { THEMES, contrastRatio, tonOf, type ThemeToken, type ThemeTokens } from '$lib/ui/themes';
 	import PageRegistre from '../PageRegistre.svelte';
 	import { le } from '../format';
@@ -38,9 +38,9 @@
 
 	/** Ce que le serveur a constaté sans rien changer : on le dit, plutôt qu'une heure muette. */
 	const CONSTATS: Record<string, string> = {
-		deja: 'Ce compte avait déjà ce thème : rien n’a changé.',
-		absent: 'Ce compte n’avait pas reçu ce thème : rien n’est retiré.',
-		'tous-deja': 'Tous les joueurs l’avaient déjà : rien n’a changé.'
+		deja: 'Ce compte avait déjà ce thème\u00a0: rien n’a changé.',
+		absent: 'Ce compte n’avait pas reçu ce thème\u00a0: rien n’est retiré.',
+		'tous-deja': 'Tous les joueurs l’avaient déjà\u00a0: rien n’a changé.'
 	};
 
 	// ── Nouveau thème : le brouillon ─────────────────────────────────────────────────────────────
@@ -54,7 +54,10 @@
 		{ cle: '--encre-grise', libelle: 'Encre grise', role: 'ratures, passés' },
 		{ cle: '--ruban', libelle: 'Ruban', role: 'action principale' }
 	];
-	const LIBELLE = Object.fromEntries(TOKENS.map((t) => [t.cle, t.libelle])) as Record<ThemeToken, string>;
+	const LIBELLE = Object.fromEntries(TOKENS.map((t) => [t.cle, t.libelle])) as Record<
+		ThemeToken,
+		string
+	>;
 	const HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 	const BASE = THEMES[0].tokens;
 
@@ -91,17 +94,19 @@
 	);
 	const insuffisants = $derived(ratios.filter((r) => r.ratio < 4.5));
 	const ton = $derived(invalides.length ? null : tonOf(couleurs));
-	const proposable = $derived(invalides.length === 0 && insuffisants.length === 0);
 	const ratioLu = (r: number) => r.toFixed(2).replace('.', ',') + ':1';
 
 	const raison = $derived.by(() => {
 		if (invalides.length) {
 			const noms = invalides.map((t) => `« ${t.libelle} »`).join(', ');
-			return `Le thème n’est pas proposé : ${noms} ${invalides.length > 1 ? 'ne sont pas des couleurs' : 'n’est pas une couleur'} au format #rrggbb.`;
+			return `Le thème n’est pas proposé\u00a0: ${noms} ${invalides.length > 1 ? 'ne sont pas des couleurs' : 'n’est pas une couleur'} au format #rrggbb.`;
 		}
 		if (insuffisants.length) {
-			const parts = insuffisants.map((r) => `${r.cle === '--encre' ? 'l’encre' : 'l’encre secondaire'} n’atteint que ${ratioLu(r.ratio)}`);
-			return `Le thème n’est pas proposé : sur la page, ${parts.join(' et ')} ; il faut 4,5:1 pour se lire.`;
+			const parts = insuffisants.map(
+				(r) =>
+					`${r.cle === '--encre' ? 'l’encre' : 'l’encre secondaire'} n’atteint que ${ratioLu(r.ratio)}`
+			);
+			return `Le thème n’est pas proposé\u00a0: sur la page, ${parts.join(' et ')}\u00a0; il faut 4,5:1 pour se lire.`;
 		}
 		return null;
 	});
@@ -143,23 +148,39 @@
 
 		<div class="gestes">
 			{#if t.toujours}
-				<p class="aide">Accordé à tout le monde, toujours visible : rien à donner ni à retirer.</p>
+				<p class="aide">
+					Accordé à tout le monde, toujours visible&nbsp;: rien à donner ni à retirer.
+				</p>
 			{:else}
 				<div class="bascules">
-					<form method="POST" action="?/visibilite" use:enhance={pour(t.id, t.visible ? 'Masqué' : 'Rendu visible')}>
+					<form
+						method="POST"
+						action="?/visibilite"
+						use:enhance={pour(t.id, t.visible ? 'Masqué' : 'Rendu visible')}
+					>
 						<input type="hidden" name="themeId" value={t.id} />
 						<input type="hidden" name="visible" value={String(!t.visible)} />
-						<Bouton variante="texte" type="submit">{t.visible ? 'Masquer' : 'Rendre visible'}</Bouton>
+						<Bouton variante="texte" type="submit"
+							>{t.visible ? 'Masquer' : 'Rendre visible'}</Bouton
+						>
 					</form>
-					<form method="POST" action="?/distribution" use:enhance={pour(t.id, t.autoGrantAll ? 'Distribution arrêtée' : 'Distribué')}>
+					<form
+						method="POST"
+						action="?/distribution"
+						use:enhance={pour(t.id, t.autoGrantAll ? 'Distribution arrêtée' : 'Distribué')}
+					>
 						<input type="hidden" name="themeId" value={t.id} />
 						<input type="hidden" name="enabled" value={String(!t.autoGrantAll)} />
-						<Bouton variante="texte" type="submit">{t.autoGrantAll ? 'Cesser la distribution' : 'Distribuer à tous'}</Bouton>
+						<Bouton variante="texte" type="submit"
+							>{t.autoGrantAll ? 'Cesser la distribution' : 'Distribuer à tous'}</Bouton
+						>
 					</form>
 				</div>
 
 				<details class="don">
-					<summary><span>Donner ou retirer</span><span class="pli" aria-hidden="true"></span></summary>
+					<summary
+						><span>Donner ou retirer</span><span class="pli" aria-hidden="true"></span></summary
+					>
 					<form method="POST" action="?/donner" use:enhance={pour(t.id, 'Donné')}>
 						<input type="hidden" name="themeId" value={t.id} />
 						{#if data.joueurs.length}
@@ -167,7 +188,9 @@
 								<span>Compte d’un joueur</span>
 								<select name="accountId" required>
 									{#each data.joueurs as j (j.id)}
-										<option value={j.id}>{j.pseudo}{j.personnage ? ` · ${j.personnage}` : ''}</option>
+										<option value={j.id}
+											>{j.pseudo}{j.personnage ? ` · ${j.personnage}` : ''}</option
+										>
 									{/each}
 								</select>
 							</label>
@@ -181,13 +204,17 @@
 					</form>
 					<form class="tous" method="POST" action="?/tous" use:enhance={pour(t.id, 'Donné à tous')}>
 						<input type="hidden" name="themeId" value={t.id} />
-						<p class="aide">Une fois donné, le thème reste dans chaque collection, même si la distribution cesse.</p>
+						<p class="aide">
+							Une fois donné, le thème reste dans chaque collection, même si la distribution cesse.
+						</p>
 						<Bouton variante="tampon" type="submit">Donner à tous les joueurs</Bouton>
 					</form>
 				</details>
 			{/if}
 
-			<Bouton variante="texte" fleche="↓" onclick={() => partirDe(t.tokens, t.name)}>Partir de ce thème</Bouton>
+			<Bouton variante="texte" fleche="↓" onclick={() => partirDe(t.tokens, t.name)}
+				>Partir de ce thème</Bouton
+			>
 
 			{#if cible === t.id && ecriture.note}
 				<NoteDeMarge ton={ecriture.note.ton}>{ecriture.note.texte}</NoteDeMarge>
@@ -201,7 +228,9 @@
 
 <PageRegistre titre="Les" titreVoix="thèmes.">
 	{#snippet reperes()}
-		<span>Un thème repeint huit couleurs ; jamais les mots, les tampons ni l’accueil public.</span>
+		<span
+			>Un thème repeint huit couleurs&nbsp;; jamais les mots, les tampons ni l’accueil public.</span
+		>
 		<a class="saut" href="#nouveau">Nouveau thème ↓</a>
 	{/snippet}
 
@@ -227,24 +256,44 @@
 
 	<Chapitre numero="03" titre="Nouveau thème" id="nouveau">
 		<p class="consigne">
-			Huit couleurs, rien d’autre : l’aurore, le laiton et la rouille gardent leur sens partout. L’encre et l’encre secondaire doivent atteindre 4,5:1 sur la page.
+			Huit couleurs, rien d’autre&nbsp;: l’aurore, le laiton et la rouille gardent leur sens
+			partout. L’encre et l’encre secondaire doivent atteindre 4,5:1 sur la page.
 		</p>
-		<form class="atelier" method="POST" action="?/creer" use:enhance={pour('nouveau', 'Créé', apresCreation)}>
+		<form
+			class="atelier"
+			method="POST"
+			action="?/creer"
+			use:enhance={pour('nouveau', 'Créé', apresCreation)}
+		>
 			<div class="saisie">
 				<div class="identite">
-					<Champ libelle="Nom" name="name" bind:value={nom} maxlength={60} required autocomplete="off" />
+					<Champ
+						libelle="Nom"
+						name="name"
+						bind:value={nom}
+						maxlength={60}
+						required
+						autocomplete="off"
+					/>
 					<Champ
 						libelle="Identifiant"
 						name="id"
 						bind:value={identifiant}
-						aide="Minuscules, chiffres et tirets ; il ne change plus."
+						aide="Minuscules, chiffres et tirets&nbsp;; il ne change plus."
 						pattern={'[a-z0-9][a-z0-9\\-]{1,39}'}
 						maxlength={40}
 						required
 						autocomplete="off"
 						spellcheck="false"
 					/>
-					<Champ libelle="Description" name="description" bind:value={description} maxlength={300} multiligne lignes={2} />
+					<Champ
+						libelle="Description"
+						name="description"
+						bind:value={description}
+						maxlength={300}
+						multiligne
+						lignes={2}
+					/>
 				</div>
 
 				<fieldset class="couleurs">
@@ -288,13 +337,21 @@
 					{#each ratios as r (r.cle)}
 						<div class:insuffisant={r.ratio < 4.5}>
 							<dt>{LIBELLE[r.cle]} sur la page</dt>
-							<dd class="chiffres">{ratioLu(r.ratio)}<span>{r.ratio < 4.5 ? 'sous 4,5:1' : 'se lit'}</span></dd>
+							<dd class="chiffres">
+								{ratioLu(r.ratio)}<span>{r.ratio < 4.5 ? 'sous 4,5:1' : 'se lit'}</span>
+							</dd>
 						</div>
 					{/each}
 					{#if ton}
 						<div>
 							<dt>Ton</dt>
-							<dd>{ton}<span>{ton === 'clair' ? 'aurore, laiton et rouille prennent leurs teintes sur papier' : 'aurore, laiton et rouille gardent leurs teintes de nuit'}</span></dd>
+							<dd>
+								{ton}<span
+									>{ton === 'clair'
+										? 'aurore, laiton et rouille prennent leurs teintes sur papier'
+										: 'aurore, laiton et rouille gardent leurs teintes de nuit'}</span
+								>
+							</dd>
 						</div>
 					{/if}
 				</dl>
@@ -303,7 +360,9 @@
 					{#if raison}
 						<p class="raison" role="status">{raison}</p>
 					{:else}
-						<Bouton variante="tampon" type="submit" disabled={ecriture.enCours}>Enregistrer ce thème</Bouton>
+						<Bouton variante="tampon" type="submit" disabled={ecriture.enCours}
+							>Enregistrer ce thème</Bouton
+						>
 					{/if}
 					{#if cible === 'nouveau' && ecriture.note}
 						<NoteDeMarge ton={ecriture.note.ton}>{ecriture.note.texte}</NoteDeMarge>
@@ -311,7 +370,7 @@
 					{#if cree && cible === 'nouveau' && ecriture.note?.ton === 'fait'}
 						<p class="cree">
 							<span>« {cree.name} » rejoint la galerie, visible, sans être distribué.</span>
-							<Tampon cle={cree.id + cree.at}>Administrateur {cree.par} · {heure(cree.at)}</Tampon>
+							<Tampon cle={cree.id + cree.at}>{signature('admin', cree.par, cree.at)}</Tampon>
 						</p>
 					{/if}
 				</div>

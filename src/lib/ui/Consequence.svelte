@@ -18,7 +18,14 @@
 		rayee?: boolean;
 		children: Snippet;
 	}
-	let { cle, tampon = null, signature = null, motif = null, rayee = false, children }: Props = $props();
+	let {
+		cle,
+		tampon = null,
+		signature = null,
+		motif = null,
+		rayee = false,
+		children
+	}: Props = $props();
 </script>
 
 <li class="consequence" class:rayee>

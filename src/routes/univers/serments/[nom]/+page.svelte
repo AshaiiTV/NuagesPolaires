@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { chemin } from '$lib/ui/adresse';
 	// La page d'un Serment : cartouche d'identité en marge (catégorie, rang, arme, croissance),
 	// lore en Cormorant sous le titre, deux branches lues comme des chapitres (A, B), quatre paliers en lignes de carnet.
 	import Page from '$lib/ui/Page.svelte';
+	import Sceau from '$lib/ui/Sceau.svelte';
 	import Losange from '$lib/ui/Losange.svelte';
 	import Vide from '$lib/ui/Vide.svelte';
 	import Depliant from '../../Depliant.svelte';
@@ -66,6 +68,7 @@
 </svelte:head>
 
 {#snippet identite()}
+	<div class="sceau-serment"><Sceau serment={data.oath.name} taille={88} /></div>
 	<dl class="cartouche">
 		<div class="entete">
 			<dt class="sr-only">Catégorie</dt>
@@ -114,6 +117,16 @@
 		</section>
 	{/if}
 
+	{#if data.oath.reserved}
+		<section aria-label="Calque réservé">
+			<p class="repere">
+				Calque réservé · {data.oath.reserved.hidden || data.oath.rank !== 'basic'
+					? 'Hors vitrine'
+					: 'En vitrine'}
+			</p>
+			<a href={chemin(`/atelier/serments/${data.oath.id}`)}>Modifier dans l’Atelier →</a>
+		</section>
+	{/if}
 	{#if !branches.length}<Vide>Aucune branche définie.</Vide>{/if}
 	{#each branches as branch (branch.id)}
 		<section class="chapitre branche" id={branch.id}>
@@ -160,6 +173,11 @@
 
 <style>
 	/* ── Cartouche d'identité ─────────────────────────────────────────── */
+	/* Le sceau du Serment ouvre la marge, en encre : le laiton reste au rang. */
+	.sceau-serment {
+		padding-bottom: calc(var(--ligne) / 2);
+		color: var(--encre);
+	}
 	.cartouche {
 		border-top: 1px solid var(--reglure);
 	}

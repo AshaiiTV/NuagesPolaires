@@ -23,7 +23,9 @@
 <span class="ressource {disposition}" class:bas>
 	<abbr class="nom" title={TITRES[nom]}>{nom}</abbr>
 	<span class="chiffre chiffres">
-		{#if ancien !== null && ancien !== cur}<Rature {ancien} nouveau={cur} />{:else}<span class="cur">{cur}</span>{/if}<span class="max">/{max}</span>
+		{#if ancien !== null && ancien !== cur}<Rature {ancien} nouveau={cur} />{:else}<span class="cur"
+				>{cur}</span
+			>{/if}<span class="max">/{max}</span>
 	</span>
 </span>
 

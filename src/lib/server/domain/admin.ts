@@ -189,10 +189,20 @@ export async function migrationStatus(db: Db, actor: Actor | null): Promise<Migr
 		.filter((v): v is string => v !== null)
 		.sort()
 		.at(-1);
-	const reports = await db.select({ anomalies: migrationRegistry.anomalies }).from(migrationRegistry).where(eq(migrationRegistry.sourceKey, 'migration_report'));
-	const anomalies = [...new Map(reports.flatMap((r) => r.anomalies)
-		.filter((a) => ['HOMONYM', 'OWNER_QUARANTINE', 'BEAST_QUANTITY_RECALCULATED'].includes(a.code))
-		.map((a) => [`${a.code}:${a.sourceKey}:${a.sourceId}`, a])).values()];
+	const reports = await db
+		.select({ anomalies: migrationRegistry.anomalies })
+		.from(migrationRegistry)
+		.where(eq(migrationRegistry.sourceKey, 'migration_report'));
+	const anomalies = [
+		...new Map(
+			reports
+				.flatMap((r) => r.anomalies)
+				.filter((a) =>
+					['HOMONYM', 'OWNER_QUARANTINE', 'BEAST_QUANTITY_RECALCULATED'].includes(a.code)
+				)
+				.map((a) => [`${a.code}:${a.sourceKey}:${a.sourceId}`, a])
+		).values()
+	];
 	return {
 		anomalies,
 		migrated: total > 0,

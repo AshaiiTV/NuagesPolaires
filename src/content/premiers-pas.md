@@ -1,8 +1,8 @@
 ---
-title: "Les premiers pas."
+title: 'Les premiers pas.'
 slug: premiers-pas
 ordre: 5
-resume: "Prendre ses repères, trouver son Serment, puis écrire la suite ensemble."
+resume: 'Prendre ses repères, trouver son Serment, puis écrire la suite ensemble.'
 # La page /univers/premiers-pas met ce texte en scène : elle ne montre que le chapitre
 # d'accueil qui correspond au compte qui la lit (routes/univers/premiers-pas/+page.svelte).
 ---

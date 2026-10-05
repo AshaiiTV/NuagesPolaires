@@ -85,7 +85,14 @@ export function behaviorKey(raw: unknown): string {
 export function behaviorLabel(raw: unknown): BehaviorLabel | null {
 	if (typeof raw === 'number' || /^[1-5]$/.test(String(raw ?? '').trim())) {
 		const idx = Number(raw);
-		const byIndex: (BehaviorLabel | null)[] = [null, 'Gibier', 'Passif', 'Neutre', 'Agressif', 'Très agressif'];
+		const byIndex: (BehaviorLabel | null)[] = [
+			null,
+			'Gibier',
+			'Passif',
+			'Neutre',
+			'Agressif',
+			'Très agressif'
+		];
 		return byIndex[idx] ?? null;
 	}
 	return BEHAVIOR_ALIASES[behaviorKey(raw)] ?? null;
@@ -260,7 +267,10 @@ export function zoneOptions(
  * Résout la zone courante : première option si inconnue ; « Toutes zones »
  * seulement s'il n'y a aucune option (`_spawnLabResolveZone`, legacy main.js:14091-14098).
  */
-export function resolveZone(current: string | null | undefined, options: readonly ZoneOption[]): ZoneOption {
+export function resolveZone(
+	current: string | null | undefined,
+	options: readonly ZoneOption[]
+): ZoneOption {
 	if (!options.length) return { value: ALL_ZONES_VALUE, label: ALL_ZONES_LABEL };
 	const wanted = String(current ?? '').trim();
 	return options.find((o) => o.value === wanted) ?? options[0]!;
@@ -309,7 +319,9 @@ export function baseWeight(beast: Pick<SpawnBeast, 'level' | 'behavior' | 'spawn
  * Les bornes saisies (`qtyMin`/`qtyMax`, colonnes `qty_min`/`qty_max`) priment si valides ;
  * le legacy lisait `spawnMin/spawnMax` jamais renseignés (dette signalée audit 03 §10.4).
  */
-export function qtyRange(beast: Pick<SpawnBeast, 'level' | 'behavior' | 'qtyMin' | 'qtyMax'>): QtyRange {
+export function qtyRange(
+	beast: Pick<SpawnBeast, 'level' | 'behavior' | 'qtyMin' | 'qtyMax'>
+): QtyRange {
 	const minV = Math.trunc(Number(beast.qtyMin));
 	const maxV = Math.trunc(Number(beast.qtyMax));
 	if (Number.isFinite(minV) && Number.isFinite(maxV) && maxV >= minV && minV > 0) {
@@ -336,7 +348,12 @@ export function qtyRange(beast: Pick<SpawnBeast, 'level' | 'behavior' | 'qtyMin'
 }
 
 /** Bornes réellement lues par l’ancien tirage ; les qtyMin/qtyMax saisis étaient ignorés. */
-export function legacyQtyRange(level: number, behavior: unknown, spawnMin?: unknown, spawnMax?: unknown): QtyRange {
+export function legacyQtyRange(
+	level: number,
+	behavior: unknown,
+	spawnMin?: unknown,
+	spawnMax?: unknown
+): QtyRange {
 	return qtyRange({
 		level,
 		// Le legacy ne traduisait pas les indices numériques avant le tirage.
@@ -352,7 +369,10 @@ function countOf(counts: Readonly<Record<string, number>> | undefined, id: strin
 }
 
 /** Moyenne des sorties sur le pool (`_spawnLabAverageCount`, legacy main.js:14119-14125). */
-export function averageCount(pool: readonly SpawnBeast[], totals: Readonly<Record<string, number>>): number {
+export function averageCount(
+	pool: readonly SpawnBeast[],
+	totals: Readonly<Record<string, number>>
+): number {
 	if (!pool.length) return 0;
 	let sum = 0;
 	for (const b of pool) sum += countOf(totals, b.id);
@@ -381,7 +401,16 @@ export function adjustedWeight(
 	const encounterPenalty = 1 + already * SAME_ENCOUNTER_COEF;
 	let weight = (base * catchup) / (fatigue * encounterPenalty);
 	if (already > 0 && pool.length > 1) weight *= SAME_ENCOUNTER_MULT;
-	return { beastId: beast.id, weight, base, count, avg, catchup, fatigue, eligible: weight > MIN_CANDIDATE_WEIGHT };
+	return {
+		beastId: beast.id,
+		weight,
+		base,
+		count,
+		avg,
+		catchup,
+		fatigue,
+		eligible: weight > MIN_CANDIDATE_WEIGHT
+	};
 }
 
 /** Tirage proportionnel (`_spawnLabPickWeighted`, legacy main.js:14108-14118). */
@@ -437,7 +466,10 @@ export function drawEncounter(
 	}
 	const encounterCounts: Record<string, number> = {};
 
-	const details = pool.map((b) => ({ beast: b, ...adjustedWeight(b, pool, totals, encounterCounts) }));
+	const details = pool.map((b) => ({
+		beast: b,
+		...adjustedWeight(b, pool, totals, encounterCounts)
+	}));
 	const cands = details.filter((d) => d.eligible);
 	const sum = cands.reduce((s, c) => s + c.weight, 0);
 	const weights: WeightDetail[] = details.map(({ beast: _b, ...d }) => ({
@@ -496,7 +528,10 @@ export function transferCombatName(zone: string, rolledAt: Date, rolledBy: strin
 }
 
 /** Récap copiable (audit 03 §10.5) : `**Générateur d'apparitions**` / `Zone <zone>` / `**Roll** — 2x Loup • 1x Ours`. */
-export function encounterRecap(zone: string, packs: readonly Pick<SpawnPack, 'qty' | 'name'>[]): string {
+export function encounterRecap(
+	zone: string,
+	packs: readonly Pick<SpawnPack, 'qty' | 'name'>[]
+): string {
 	const line = packs.map((p) => `${p.qty}x ${p.name}`).join(' • ');
 	return `**Générateur d'apparitions**\nZone ${zoneLabel(zone)}\n**Roll** — ${line}`;
 }

@@ -1,3 +1,4 @@
+import { SvelteDate, SvelteMap } from 'svelte/reactivity';
 // La Table du MJ — l'état du combat vit ici, côté client, piloté par les fonctions PURES du moteur
 // (src/lib/game/combat). Rien n'est « enregistré » avant la réponse du serveur : chaque clôture de round
 // et chaque « Sauvegarder » envoient l'état complet à l'action ?/sauver ; le relevé ne change qu'à la
@@ -107,7 +108,7 @@ export class TableMJ {
 	}
 	/** Signature d'un geste du MJ : motif · auteur · heure (chaque changement est daté et signé). */
 	signature(motif: string) {
-		return `${motif.trim()} · ${this.pseudo} · ${heure(new Date())}`;
+		return `${motif.trim()} · ${this.pseudo} · ${heure(new SvelteDate())}`;
 	}
 
 	// ── Écriture locale ──────────────────────────────────────────────────────────────────────────
@@ -124,7 +125,9 @@ export class TableMJ {
 				suivant = {
 					...suivant,
 					log: suivant.log.map((e, i) =>
-						i >= avant.log.length && !e.text.includes(' · ' + this.pseudo + ' · ') ? { ...e, text: `${e.text} — ${sig}` } : e
+						i >= avant.log.length && !e.text.includes(' · ' + this.pseudo + ' · ')
+							? { ...e, text: `${e.text} — ${sig}` }
+							: e
 					)
 				};
 			}
@@ -134,7 +137,12 @@ export class TableMJ {
 			if (this.note?.ton === 'refus' || this.note?.ton === 'info') this.note = null;
 			return true;
 		} catch (e) {
-			this.note = { ton: 'refus', texte: isCombatError(e) ? sansEmoji(e.message) : 'Ce geste n’a pas pu s’écrire sur la Table.' };
+			this.note = {
+				ton: 'refus',
+				texte: isCombatError(e)
+					? sansEmoji(e.message)
+					: 'Ce geste n’a pas pu s’écrire sur la Table.'
+			};
 			return false;
 		}
 	}
@@ -171,17 +179,40 @@ export class TableMJ {
 	}
 	resoudre() {
 		const round = this.etat.round;
-		const ok = this.appliquer((s) => resolveRound(s, Math.random));
+		const instant = Date.now();
+		const ok = this.appliquer((s) => {
+			const resultat = resolveRound(s, Math.random);
+			const pv = new SvelteMap(s.fighters.map((f) => [f.id, f.pvCur]));
+			return {
+				...resultat,
+				log: resultat.log.map((e, i) => {
+					if (i < s.log.length) return e;
+					let text = e.text;
+					if (e.kind === 'round' && /Résolution Round/.test(text))
+						text += ` · résolu à ${heure(instant)}`;
+					if (e.targetId) {
+						const changement = /\((\d+)→(\d+)\)/.exec(text);
+						const saignement = /saigne −\d+ PV \(→(\d+)\)/.exec(text);
+						if (saignement) {
+							const ancien = pv.get(e.targetId);
+							if (ancien !== undefined)
+								text = text.replace(`(→${saignement[1]})`, `(${ancien}→${saignement[1]})`);
+							pv.set(e.targetId, Number(saignement[1]));
+						} else if (changement && e.kind === 'damage') pv.set(e.targetId, Number(changement[2]));
+					}
+					return { ...e, text };
+				})
+			};
+		});
 		if (ok) {
 			this.revue = round;
-			this.revueA = Date.now();
+			this.revueA = instant;
 		}
 		return ok;
 	}
 	/** « Clore le round » : la résolution se referme (plus de rature) ; l'appelant sauvegarde. */
 	clore() {
 		this.revue = null;
-		this.revueA = null;
 	}
 	annulerRound() {
 		const ok = this.appliquer((s) => undoRound(s));
@@ -220,7 +251,15 @@ export class TableMJ {
 		const e = this.etat.log.find((x) => x.n === n);
 		const c = e ? correctionDe(e) : null;
 		if (!e || !c || this.revue === null) return false;
-		return this.appliquer((s) => adjustResource(s, c.cible, c.ressource, c.delta, this.signature(`rature de la ligne ${n} : ${motif}`)));
+		return this.appliquer((s) =>
+			adjustResource(
+				s,
+				c.cible,
+				c.ressource,
+				c.delta,
+				this.signature(`rature de la ligne ${n} : ${motif}`)
+			)
+		);
 	}
 	lancerD100(fighterId: string) {
 		return this.appliquer((s) => rollDrop(s, fighterId, Math.random), 'D100 lancé');
@@ -259,7 +298,7 @@ export class TableMJ {
 	}
 	sauvee(revision: number, releve: string | null) {
 		this.revision = revision;
-		this.releve = releve ?? new Date().toISOString();
+		this.releve = releve ?? new SvelteDate().toISOString();
 		this.echec = false;
 		// Un geste fait pendant le vol de la sauvegarde reste non sauvegardé.
 		if (this.gestes === this.envoye) this.nonSauve = null;

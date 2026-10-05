@@ -15,7 +15,10 @@ export const load: PageServerLoad = async (event) => {
 	const agenda = await listAgenda(event.locals.db, actor, { pastPage });
 	return {
 		agenda,
-		tampons: await tamponsOrganisateurs(event.locals.db, [...agenda.upcoming, ...agenda.past].map((e) => e.id)),
+		tampons: await tamponsOrganisateurs(
+			event.locals.db,
+			[...agenda.upcoming, ...agenda.past].map((e) => e.id)
+		),
 		pagePasses: Math.min(pastPage, agenda.pastPages),
 		relie: !!actor.characterId,
 		pseudo: actor.pseudo,
@@ -33,14 +36,18 @@ export const load: PageServerLoad = async (event) => {
 async function tamponsOrganisateurs(
 	db: App.Locals['db'],
 	ids: string[]
-): Promise<Record<string, { role: (typeof accounts.$inferSelect)['role']; pseudo: string; at: string }>> {
+): Promise<
+	Record<string, { role: (typeof accounts.$inferSelect)['role']; pseudo: string; at: string }>
+> {
 	if (ids.length === 0) return {};
 	const lignes = await db
 		.select({ id: events.id, at: events.createdAt, role: accounts.role, pseudo: accounts.pseudo })
 		.from(events)
 		.innerJoin(accounts, eq(accounts.id, events.createdBy))
 		.where(inArray(events.id, ids));
-	return Object.fromEntries(lignes.map((l) => [l.id, { role: l.role, pseudo: l.pseudo, at: l.at.toISOString() }]));
+	return Object.fromEntries(
+		lignes.map((l) => [l.id, { role: l.role, pseudo: l.pseudo, at: l.at.toISOString() }])
+	);
 }
 
 export const actions: Actions = {

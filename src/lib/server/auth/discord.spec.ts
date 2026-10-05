@@ -25,12 +25,18 @@ const ENV = {
 };
 
 /** Faux Discord : vérifie l'échange PKCE et renvoie l'identité donnée. */
-function fakeDiscord(identity: { id: string; username: string }, calls: { url: string; body?: string }[] = []): FetchLike {
+function fakeDiscord(
+	identity: { id: string; username: string },
+	calls: { url: string; body?: string }[] = []
+): FetchLike {
 	return async (url, init) => {
 		calls.push({ url, body: typeof init?.body === 'string' ? init.body : undefined });
 		if (url.endsWith('/oauth2/token')) {
 			const body = new URLSearchParams(String(init?.body ?? ''));
-			if (!body.get('code_verifier') || body.get('redirect_uri') !== `https://np.test${DISCORD_CALLBACK_PATH}`) {
+			if (
+				!body.get('code_verifier') ||
+				body.get('redirect_uri') !== `https://np.test${DISCORD_CALLBACK_PATH}`
+			) {
 				return new Response('{}', { status: 400 });
 			}
 			return Response.json({ access_token: 'jeton-discord' });
@@ -59,7 +65,9 @@ describe('Discord (04 §4 ; 03-vision §12.6)', () => {
 	it('désactivé tant que DISCORD_CLIENT_ID est vide', () => {
 		expect(isDiscordEnabled({})).toBe(false);
 		expect(isDiscordEnabled(ENV)).toBe(true);
-		expect(() => discordAuthUrl(null, { ...ENV, DISCORD_CLIENT_ID: '' })).toThrow(expect.objectContaining({ status: 404 }));
+		expect(() => discordAuthUrl(null, { ...ENV, DISCORD_CLIENT_ID: '' })).toThrow(
+			expect.objectContaining({ status: 404 })
+		);
 	});
 
 	it('URL d’autorisation : state, PKCE S256, redirection exacte, cookie signé de 10 minutes', () => {
@@ -73,9 +81,22 @@ describe('Discord (04 §4 ; 03-vision §12.6)', () => {
 		const payload = readDiscordState(start.cookieValue, stateOf(start.url), ENV);
 		expect(payload).toMatchObject({ m: 'link', a: alice.accountId });
 		// Falsifié, autre state, ou expiré : refusé.
-		expect(readDiscordState(start.cookieValue.replace(/.$/, (c) => (c === 'A' ? 'B' : 'A')), stateOf(start.url), ENV)).toBeNull();
+		expect(
+			readDiscordState(
+				start.cookieValue.replace(/.$/, (c) => (c === 'A' ? 'B' : 'A')),
+				stateOf(start.url),
+				ENV
+			)
+		).toBeNull();
 		expect(readDiscordState(start.cookieValue, 'autre', ENV)).toBeNull();
-		expect(readDiscordState(start.cookieValue, stateOf(start.url), ENV, new Date(Date.now() + 11 * 60_000))).toBeNull();
+		expect(
+			readDiscordState(
+				start.cookieValue,
+				stateOf(start.url),
+				ENV,
+				new Date(Date.now() + 11 * 60_000)
+			)
+		).toBeNull();
 	});
 
 	it('lie le compte connecté puis permet la connexion par discord_id', async () => {
@@ -83,14 +104,23 @@ describe('Discord (04 §4 ; 03-vision §12.6)', () => {
 		const fetch = fakeDiscord({ id: '987654321012', username: 'aria_d' }, calls);
 		const link = discordAuthUrl(alice, ENV);
 		await expect(
-			discordCallback(t.db, alice, { code: 'c1', state: stateOf(link.url), cookieValue: link.cookieValue }, { fetch, env: ENV })
+			discordCallback(
+				t.db,
+				alice,
+				{ code: 'c1', state: stateOf(link.url), cookieValue: link.cookieValue },
+				{ fetch, env: ENV }
+			)
 		).resolves.toEqual({ discordUsername: 'aria_d' });
 		const [row] = await t.db.select().from(accounts).where(eq(accounts.id, alice.accountId));
 		expect(row).toMatchObject({ discordId: '987654321012', discordUsername: 'aria_d' });
 		expect(calls[0].body).toContain('code_verifier=');
 
 		const start = discordAuthUrl(null, ENV);
-		const res = await discordLogin(t.db, { code: 'c2', state: stateOf(start.url), cookieValue: start.cookieValue }, { fetch, env: ENV });
+		const res = await discordLogin(
+			t.db,
+			{ code: 'c2', state: stateOf(start.url), cookieValue: start.cookieValue },
+			{ fetch, env: ENV }
+		);
 		expect((await readSession(t.db, res.sessionToken))?.account.id).toBe(alice.accountId);
 	});
 
@@ -99,28 +129,54 @@ describe('Discord (04 §4 ; 03-vision §12.6)', () => {
 		const bob = await actorFor(t.db, DEMO_IDS.accounts.bob);
 		const link = discordAuthUrl(alice, ENV);
 		await expect(
-			discordCallback(t.db, bob, { code: 'c', state: stateOf(link.url), cookieValue: link.cookieValue }, { fetch, env: ENV })
+			discordCallback(
+				t.db,
+				bob,
+				{ code: 'c', state: stateOf(link.url), cookieValue: link.cookieValue },
+				{ fetch, env: ENV }
+			)
 		).rejects.toMatchObject({ status: 400, code: 'DISCORD_STATE' });
 		await expect(
-			discordLogin(t.db, { code: 'c', state: stateOf(link.url), cookieValue: link.cookieValue }, { fetch, env: ENV })
+			discordLogin(
+				t.db,
+				{ code: 'c', state: stateOf(link.url), cookieValue: link.cookieValue },
+				{ fetch, env: ENV }
+			)
 		).rejects.toMatchObject({ status: 400 });
 		await expect(
-			discordCallback(t.db, null, { code: 'c', state: stateOf(link.url), cookieValue: link.cookieValue }, { fetch, env: ENV })
+			discordCallback(
+				t.db,
+				null,
+				{ code: 'c', state: stateOf(link.url), cookieValue: link.cookieValue },
+				{ fetch, env: ENV }
+			)
 		).rejects.toMatchObject({ status: 401 });
 	});
 
 	it('un compte Discord déjà lié ailleurs ⇒ 409 ; inconnu à la connexion ⇒ 401', async () => {
 		const fetch = fakeDiscord({ id: '111111111111', username: 'x' });
-		await t.db.update(accounts).set({ discordId: '111111111111' }).where(eq(accounts.id, DEMO_IDS.accounts.bob));
+		await t.db
+			.update(accounts)
+			.set({ discordId: '111111111111' })
+			.where(eq(accounts.id, DEMO_IDS.accounts.bob));
 		const link = discordAuthUrl(alice, ENV);
 		await expect(
-			discordCallback(t.db, alice, { code: 'c', state: stateOf(link.url), cookieValue: link.cookieValue }, { fetch, env: ENV })
+			discordCallback(
+				t.db,
+				alice,
+				{ code: 'c', state: stateOf(link.url), cookieValue: link.cookieValue },
+				{ fetch, env: ENV }
+			)
 		).rejects.toMatchObject({ status: 409, code: 'DISCORD_TAKEN' });
 
 		const other = fakeDiscord({ id: '222222222222', username: 'y' });
 		const start = discordAuthUrl(null, ENV);
 		await expect(
-			discordLogin(t.db, { code: 'c', state: stateOf(start.url), cookieValue: start.cookieValue }, { fetch: other, env: ENV })
+			discordLogin(
+				t.db,
+				{ code: 'c', state: stateOf(start.url), cookieValue: start.cookieValue },
+				{ fetch: other, env: ENV }
+			)
 		).rejects.toMatchObject({ status: 401 });
 	});
 
@@ -130,14 +186,22 @@ describe('Discord (04 §4 ; 03-vision §12.6)', () => {
 		};
 		const link = discordAuthUrl(alice, ENV);
 		await expect(
-			discordCallback(t.db, alice, { code: 'c', state: stateOf(link.url), cookieValue: link.cookieValue }, { fetch: broken, env: ENV })
+			discordCallback(
+				t.db,
+				alice,
+				{ code: 'c', state: stateOf(link.url), cookieValue: link.cookieValue },
+				{ fetch: broken, env: ENV }
+			)
 		).rejects.toMatchObject({ status: 502 });
 		const [row] = await t.db.select().from(accounts).where(eq(accounts.id, alice.accountId));
 		expect(row.discordId).toBeNull();
 	});
 
 	it('délier', async () => {
-		await t.db.update(accounts).set({ discordId: '333333333333', discordUsername: 'z' }).where(eq(accounts.id, alice.accountId));
+		await t.db
+			.update(accounts)
+			.set({ discordId: '333333333333', discordUsername: 'z' })
+			.where(eq(accounts.id, alice.accountId));
 		await discordUnlink(t.db, alice);
 		const [row] = await t.db.select().from(accounts).where(eq(accounts.id, alice.accountId));
 		expect(row.discordId).toBeNull();

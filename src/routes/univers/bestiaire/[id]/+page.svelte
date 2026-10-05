@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { signature } from '$lib/ui/tampons';
 	import { enhance } from '$app/forms';
 	import Page from '$lib/ui/Page.svelte';
 	import Chapitre from '$lib/ui/Chapitre.svelte';
@@ -13,10 +14,7 @@
 	import Fiche from '../Fiche.svelte';
 	import type { PageProps } from './$types';
 	let { data, form }: PageProps = $props();
-	let calque = $state(false);
-	$effect.pre(() => {
-		calque = data.calque;
-	});
+	let calque = $derived(data.calque);
 	const ecriture = creerEcriture();
 	$effect(() => {
 		if (ecriture.note?.ton === 'fait') {
@@ -69,7 +67,7 @@
 			{#if data.beast.reserved.usage.history.length}
 				<p>Rencontrée dans les récits suivants.</p>
 				<ul>
-					{#each data.beast.reserved.usage.history as usage}<li>
+					{#each data.beast.reserved.usage.history as usage, index (index)}<li>
 							{usage.name}{#if usage.at}
 								· {dateLongue(usage.at)}{/if}
 						</li>{/each}
@@ -82,7 +80,7 @@
 						fleche="→">Modifier dans l’Atelier</Bouton
 					>{/if}{#if data.canTable}<Bouton
 						variante="texte"
-						href="/table?beastId={data.beast.id}"
+						href="/table?creature={data.beast.id}"
 						fleche="→">Envoyer à la Table</Bouton
 					>{/if}
 			</div>
@@ -94,7 +92,7 @@
 						<p class="extrait">{observation.text}</p>
 						<p class="date">{dateLongue(observation.at)} · {heure(observation.at)}</p>
 						{#if observation.stamp}<Tampon cle={observation.id}
-								>{observation.stamp.role} {observation.stamp.name}</Tampon
+								>{signature(observation.stamp.role, observation.stamp.name, observation.at)}</Tampon
 							>{/if}
 						{#if observation.combatId && data.recits.includes(observation.combatId)}<div
 								class="gestes"
@@ -152,21 +150,21 @@
 		gap: 12px;
 	}
 	.interrupteur input {
-		accent-color: var(--tampon);
+		accent-color: var(--encre-humide);
 		width: 18px;
 		height: 18px;
 	}
 	.calque {
 		margin: var(--ligne) 0 var(--ligne) 8px;
 		padding-left: 16px;
-		border-left: 1px solid var(--tampon);
-		color: var(--tampon);
+		border-left: 1px solid var(--reglure);
+		color: var(--encre-2);
 		font: var(--t-libelle);
 		line-height: var(--ligne);
 		overflow-wrap: anywhere;
 	}
 	.calque .repere {
-		color: var(--tampon);
+		color: var(--encre-2);
 	}
 	.note-reservee {
 		white-space: pre-line;

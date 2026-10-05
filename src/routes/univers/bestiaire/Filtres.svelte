@@ -27,7 +27,7 @@
 			><input type="radio" name="comportement" value="" checked={!filters.behavior} />Tous les
 			comportements</label
 		>
-		{#each comportements as comportement}
+		{#each comportements as comportement (comportement)}
 			<label
 				><input
 					type="radio"
@@ -40,8 +40,8 @@
 	</fieldset>
 	<label class="choix"
 		>Zone<select name="zone" value={filters.zoneId ?? ''}
-			><option value="">Toutes les zones</option>{#each zones as zone}<option value={zone.id}
-					>{nomZone(zone.name)}</option
+			><option value="">Toutes les zones</option>{#each zones as zone (zone.id)}<option
+					value={zone.id}>{nomZone(zone.name)}</option
 				>{/each}</select
 		></label
 	>

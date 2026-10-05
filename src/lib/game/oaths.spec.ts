@@ -43,19 +43,188 @@ const EXPECTED: Array<{
 	category: OathCategory;
 	level10: [number, number, number];
 }> = [
-	{ id: 'duelliste', name: 'Duelliste', weapon: 'Épée moyenne du serment', growth: [6, 6, 2], dmg: 11, type: 'Tranchant', rank: 'basic', hidden: false, evolvesFrom: null, icon: '⚔', category: 'melee', level10: [84, 104, 38] },
-	{ id: 'bretteur', name: 'Bretteur', weapon: 'Épée fine du serment', growth: [5, 7, 3], dmg: 12, type: 'Tranchant', rank: 'seasoned', hidden: true, evolvesFrom: 'Duelliste', icon: '⚔', category: 'melee', level10: [75, 113, 47] },
-	{ id: 'claymore', name: 'Claymore', weapon: 'Claymore du serment', growth: [7, 4, 2], dmg: 16, type: 'Tranchant lourd', rank: 'seasoned', hidden: true, evolvesFrom: 'Duelliste', icon: '⚔', category: 'melee', level10: [93, 86, 38] },
-	{ id: 'lame-d-honneur', name: "Lame d'Honneur", weapon: 'Épée claire du serment', growth: [7, 5, 3], dmg: 10, type: 'Tranchant', rank: 'seasoned', hidden: true, evolvesFrom: 'Duelliste', icon: '⚔', category: 'melee', level10: [93, 95, 47] },
-	{ id: 'sauvageon', name: 'Sauvageon', weapon: 'Hache à deux mains du serment', growth: [5, 8, 1], dmg: 14, type: 'Tranchant', rank: 'basic', hidden: false, evolvesFrom: null, icon: '🪓', category: 'melee', level10: [75, 122, 29] },
-	{ id: 'croise', name: 'Croisé', weapon: 'Bouclier du serment', growth: [8, 3, 2], dmg: 6, type: 'Contondant', rank: 'basic', hidden: false, evolvesFrom: null, icon: '🛡', category: 'melee', level10: [102, 77, 38] },
-	{ id: 'rodeur', name: 'Rôdeur', weapon: 'Dague du serment', growth: [2, 5, 3], dmg: 8, type: 'Tranchant', rank: 'basic', hidden: false, evolvesFrom: null, icon: '🗡', category: 'melee', level10: [48, 95, 47] },
-	{ id: 'traqueur', name: 'Traqueur', weapon: 'Lance du serment', growth: [2, 7, 2], dmg: 8, type: 'Tranchant', rank: 'basic', hidden: false, evolvesFrom: null, icon: '🏹', category: 'melee', level10: [48, 113, 38] },
-	{ id: 'flecheur', name: 'Flécheur', weapon: 'Arc du serment', growth: [3, 5, 4], dmg: 10, type: 'Tranchant', rank: 'basic', hidden: false, evolvesFrom: null, icon: '🏹', category: 'distance', level10: [57, 95, 56] },
-	{ id: 'elementaliste', name: 'Elementaliste', weapon: 'Poing américain du serment serti de gemmes', growth: [4, 4, 4], dmg: 7, type: 'Contondant', rank: 'basic', hidden: false, evolvesFrom: null, icon: '👊', category: 'melee', level10: [66, 86, 56] },
-	{ id: 'evocateur', name: 'Evocateur', weapon: "Bâton du serment orné de runes et d'anneaux", growth: [2, 3, 6], dmg: 4, type: 'Contondant', rank: 'basic', hidden: false, evolvesFrom: null, icon: '🪄', category: 'magie', level10: [48, 77, 74] },
-	{ id: 'conjurateur', name: 'Conjurateur', weapon: 'Chaîne du serment', growth: [2, 2, 7], dmg: 6, type: 'Contondant', rank: 'basic', hidden: false, evolvesFrom: null, icon: '⛓', category: 'soutien', level10: [48, 68, 83] },
-	{ id: 'arcaniste', name: 'Arcaniste', weapon: 'Orbe du serment', growth: [1, 1, 8], dmg: 4, type: 'Contondant (coup de poing pour les non-magiques)', rank: 'basic', hidden: false, evolvesFrom: null, icon: '🔮', category: 'magie', level10: [39, 59, 92] }
+	{
+		id: 'duelliste',
+		name: 'Duelliste',
+		weapon: 'Épée moyenne du serment',
+		growth: [6, 6, 2],
+		dmg: 11,
+		type: 'Tranchant',
+		rank: 'basic',
+		hidden: false,
+		evolvesFrom: null,
+		icon: '⚔',
+		category: 'melee',
+		level10: [84, 104, 38]
+	},
+	{
+		id: 'bretteur',
+		name: 'Bretteur',
+		weapon: 'Épée fine du serment',
+		growth: [5, 7, 3],
+		dmg: 12,
+		type: 'Tranchant',
+		rank: 'seasoned',
+		hidden: true,
+		evolvesFrom: 'Duelliste',
+		icon: '⚔',
+		category: 'melee',
+		level10: [75, 113, 47]
+	},
+	{
+		id: 'claymore',
+		name: 'Claymore',
+		weapon: 'Claymore du serment',
+		growth: [7, 4, 2],
+		dmg: 16,
+		type: 'Tranchant lourd',
+		rank: 'seasoned',
+		hidden: true,
+		evolvesFrom: 'Duelliste',
+		icon: '⚔',
+		category: 'melee',
+		level10: [93, 86, 38]
+	},
+	{
+		id: 'lame-d-honneur',
+		name: "Lame d'Honneur",
+		weapon: 'Épée claire du serment',
+		growth: [7, 5, 3],
+		dmg: 10,
+		type: 'Tranchant',
+		rank: 'seasoned',
+		hidden: true,
+		evolvesFrom: 'Duelliste',
+		icon: '⚔',
+		category: 'melee',
+		level10: [93, 95, 47]
+	},
+	{
+		id: 'sauvageon',
+		name: 'Sauvageon',
+		weapon: 'Hache à deux mains du serment',
+		growth: [5, 8, 1],
+		dmg: 14,
+		type: 'Tranchant',
+		rank: 'basic',
+		hidden: false,
+		evolvesFrom: null,
+		icon: '🪓',
+		category: 'melee',
+		level10: [75, 122, 29]
+	},
+	{
+		id: 'croise',
+		name: 'Croisé',
+		weapon: 'Bouclier du serment',
+		growth: [8, 3, 2],
+		dmg: 6,
+		type: 'Contondant',
+		rank: 'basic',
+		hidden: false,
+		evolvesFrom: null,
+		icon: '🛡',
+		category: 'melee',
+		level10: [102, 77, 38]
+	},
+	{
+		id: 'rodeur',
+		name: 'Rôdeur',
+		weapon: 'Dague du serment',
+		growth: [2, 5, 3],
+		dmg: 8,
+		type: 'Tranchant',
+		rank: 'basic',
+		hidden: false,
+		evolvesFrom: null,
+		icon: '🗡',
+		category: 'melee',
+		level10: [48, 95, 47]
+	},
+	{
+		id: 'traqueur',
+		name: 'Traqueur',
+		weapon: 'Lance du serment',
+		growth: [2, 7, 2],
+		dmg: 8,
+		type: 'Tranchant',
+		rank: 'basic',
+		hidden: false,
+		evolvesFrom: null,
+		icon: '🏹',
+		category: 'melee',
+		level10: [48, 113, 38]
+	},
+	{
+		id: 'flecheur',
+		name: 'Flécheur',
+		weapon: 'Arc du serment',
+		growth: [3, 5, 4],
+		dmg: 10,
+		type: 'Tranchant',
+		rank: 'basic',
+		hidden: false,
+		evolvesFrom: null,
+		icon: '🏹',
+		category: 'distance',
+		level10: [57, 95, 56]
+	},
+	{
+		id: 'elementaliste',
+		name: 'Elementaliste',
+		weapon: 'Poing américain du serment serti de gemmes',
+		growth: [4, 4, 4],
+		dmg: 7,
+		type: 'Contondant',
+		rank: 'basic',
+		hidden: false,
+		evolvesFrom: null,
+		icon: '👊',
+		category: 'melee',
+		level10: [66, 86, 56]
+	},
+	{
+		id: 'evocateur',
+		name: 'Evocateur',
+		weapon: "Bâton du serment orné de runes et d'anneaux",
+		growth: [2, 3, 6],
+		dmg: 4,
+		type: 'Contondant',
+		rank: 'basic',
+		hidden: false,
+		evolvesFrom: null,
+		icon: '🪄',
+		category: 'magie',
+		level10: [48, 77, 74]
+	},
+	{
+		id: 'conjurateur',
+		name: 'Conjurateur',
+		weapon: 'Chaîne du serment',
+		growth: [2, 2, 7],
+		dmg: 6,
+		type: 'Contondant',
+		rank: 'basic',
+		hidden: false,
+		evolvesFrom: null,
+		icon: '⛓',
+		category: 'soutien',
+		level10: [48, 68, 83]
+	},
+	{
+		id: 'arcaniste',
+		name: 'Arcaniste',
+		weapon: 'Orbe du serment',
+		growth: [1, 1, 8],
+		dmg: 4,
+		type: 'Contondant (coup de poing pour les non-magiques)',
+		rank: 'basic',
+		hidden: false,
+		evolvesFrom: null,
+		icon: '🔮',
+		category: 'magie',
+		level10: [39, 59, 92]
+	}
 ];
 
 /** Noms de branches attendus (audit 02 §5). */
@@ -104,24 +273,27 @@ describe('BUILTIN_OATHS', () => {
 		);
 	});
 
-	it.each(EXPECTED)('$name a deux branches complètes de quatre paliers aux niveaux de son rang', (e) => {
-		const oath = findOath(e.id);
-		if (!oath) throw new Error(`Serment ${e.id} introuvable`);
-		const branches = oathBranches(oath);
-		expect(branches).toHaveLength(2);
-		expect(branches.map((b) => b.nom)).toEqual(EXPECTED_BRANCHES[e.name]);
-		for (const branch of branches) {
-			expect(branch.style).not.toBe('');
-			expect(branch.descPhys ?? '').not.toBe('');
-			expect(branch.flavor ?? '').not.toBe('');
-			expect(branch.paliers.map((p) => p.niv)).toEqual([...tierLevelsFor(oath.rank)]);
-			for (const tier of branch.paliers) {
-				expect(tier.nom).not.toBe('');
-				expect(tier.cout).not.toBe('');
-				expect(tier.desc).not.toBe('');
+	it.each(EXPECTED)(
+		'$name a deux branches complètes de quatre paliers aux niveaux de son rang',
+		(e) => {
+			const oath = findOath(e.id);
+			if (!oath) throw new Error(`Serment ${e.id} introuvable`);
+			const branches = oathBranches(oath);
+			expect(branches).toHaveLength(2);
+			expect(branches.map((b) => b.nom)).toEqual(EXPECTED_BRANCHES[e.name]);
+			for (const branch of branches) {
+				expect(branch.style).not.toBe('');
+				expect(branch.descPhys ?? '').not.toBe('');
+				expect(branch.flavor ?? '').not.toBe('');
+				expect(branch.paliers.map((p) => p.niv)).toEqual([...tierLevelsFor(oath.rank)]);
+				for (const tier of branch.paliers) {
+					expect(tier.nom).not.toBe('');
+					expect(tier.cout).not.toBe('');
+					expect(tier.desc).not.toBe('');
+				}
 			}
 		}
-	});
+	);
 
 	it('conserve les textes verbatim (échantillons)', () => {
 		const duelliste = findOath('Duelliste');
@@ -138,18 +310,24 @@ describe('BUILTIN_OATHS', () => {
 			'\n\nRÈGLE UNIVERSELLE — LE COMPTEUR ÉLÉMENTAIRE : Quelle que soit la branche choisie'
 		);
 		expect(findOath('Evocateur')?.lore).toContain('\n\nRÈGLES DES INVOCATIONS : Chaque invocation');
-		expect(findOath('Evocateur')?.branches.bA?.paliers[3]?.cout).toBe('4 EM invoc / 3 EM par action');
+		expect(findOath('Evocateur')?.branches.bA?.paliers[3]?.cout).toBe(
+			'4 EM invoc / 3 EM par action'
+		);
 		expect(findOath('Elementaliste')?.branches.bB?.paliers[0]?.nom).toBe(
 			'Poing Foudre (4 EM) / Poing Aquatique (6 EM)'
 		);
 		expect(findOath("Lame d'Honneur")?.branches.bA?.paliers[0]?.cout).toBe(
 			'5 EM — 1 action — EM non régénérable'
 		);
-		expect(findOath('Croisé')?.branches.bA?.paliers[0]?.cout).toBe('6 EM — 1 action (CAC uniquement)');
+		expect(findOath('Croisé')?.branches.bA?.paliers[0]?.cout).toBe(
+			'6 EM — 1 action (CAC uniquement)'
+		);
 		expect(findOath('Flécheur')?.branches.bB?.paliers[0]?.cout).toBe(
 			'8 EM — coûte toutes les actions restantes du tour'
 		);
-		expect(findOath('Arcaniste')?.branches.bB?.paliers[3]?.desc).toBe('46+Niv. Entièrement défendable.');
+		expect(findOath('Arcaniste')?.branches.bB?.paliers[3]?.desc).toBe(
+			'46+Niv. Entièrement défendable.'
+		);
 	});
 
 	it('expose la vitrine sans les Aguerris masqués et la lignée Duelliste', () => {
@@ -347,7 +525,15 @@ describe('branches', () => {
 describe('surcharges héritées (serments_custom)', () => {
 	it('un custom remplace le natif de même nom et garde sa position', () => {
 		const merged = mergeOathCatalogue(BUILTIN_OATHS, {
-			Duelliste: { pvN: 11, epN: 6, emN: 2, dmg: 11, arme: 'Épée moyenne du serment', sermLevel: 'basic', hidden: true }
+			Duelliste: {
+				pvN: 11,
+				epN: 6,
+				emN: 2,
+				dmg: 11,
+				arme: 'Épée moyenne du serment',
+				sermLevel: 'basic',
+				hidden: true
+			}
 		});
 		expect(merged).toHaveLength(13);
 		expect(merged[0]?.id).toBe('duelliste');

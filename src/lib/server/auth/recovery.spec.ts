@@ -24,16 +24,14 @@ describe('INT-2 : récupération et identité Discord', () => {
 		async (recovery) => {
 			const t = await createTestDb();
 			try {
-				await t.db
-					.insert(accounts)
-					.values({
-						id: 'hostile',
-						pseudo: 'Gardien',
-						passwordHash: legacySha256('Hostile-123'),
-						role: recovery ? 'admin' : 'joueur',
-						discordId: 'hostile-discord',
-						discordUsername: 'hostile'
-					});
+				await t.db.insert(accounts).values({
+					id: 'hostile',
+					pseudo: 'Gardien',
+					passwordHash: legacySha256('Hostile-123'),
+					role: recovery ? 'admin' : 'joueur',
+					discordId: 'hostile-discord',
+					discordUsername: 'hostile'
+				});
 				const env = {
 					NP_ADMIN_PSEUDO: 'Gardien',
 					NP_ADMIN_PASSWORD: ENV_PASSWORD,
@@ -113,12 +111,10 @@ describe('INT-2 : récupération et identité Discord', () => {
 				NP_ADMIN_PASSWORD: ENV_PASSWORD,
 				NP_ADMIN_RECOVERY: 'true'
 			};
-			await t.db
-				.insert(adminRecoveryConsumptions)
-				.values({
-					fingerprint: recoveryFingerprint({ pseudo: 'Gardien', password: ENV_PASSWORD }),
-					pseudo: 'Gardien'
-				});
+			await t.db.insert(adminRecoveryConsumptions).values({
+				fingerprint: recoveryFingerprint({ pseudo: 'Gardien', password: ENV_PASSWORD }),
+				pseudo: 'Gardien'
+			});
 			expect(
 				await maybeRecoverAdmin(t.db, { pseudo: 'Gardien', password: ENV_PASSWORD }, env)
 			).toBe('none');

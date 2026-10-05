@@ -38,9 +38,7 @@ const toutes: PageUnivers[] = [
 	}
 ];
 
-export const pages: PageUnivers[] = toutes.filter((page) =>
-	ecrites.has(page.href.split('/')[2])
-);
+export const pages: PageUnivers[] = toutes.filter((page) => ecrites.has(page.href.split('/')[2]));
 
 /** Les voisines d'une page, pour le pied « Tourner ». */
 export function voisines(slug: string) {

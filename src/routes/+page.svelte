@@ -1,8 +1,12 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+	import { chemin } from '$lib/ui/adresse';
+	import BandeVisiteur from '$lib/ui/BandeVisiteur.svelte';
 	import Masthead from '$lib/ui/Masthead.svelte';
 	import Colophon from '$lib/ui/Colophon.svelte';
 	import Boussole from '$lib/ui/Boussole.svelte';
 	import Feuillet from '$lib/ui/Feuillet.svelte';
+	import Sceau from '$lib/ui/Sceau.svelte';
 	import Tampon from '$lib/ui/Tampon.svelte';
 
 	let { data } = $props();
@@ -22,7 +26,7 @@
 <a class="evitement" href="#contenu">Aller au contenu</a>
 
 <div class="accueil">
-	<Masthead />
+	<Masthead connecte={!!data.compte} />
 
 	<main id="contenu" tabindex="-1">
 		<section class="hero" aria-labelledby="titre-accueil">
@@ -36,21 +40,38 @@
 			/>
 			<div class="voile" aria-hidden="true"></div>
 			<div class="texte">
-				<p class="repere signal"><span class="losange" aria-hidden="true"></span>Roleplay textuel · Univers original</p>
+				<p class="repere signal">
+					<span class="losange" aria-hidden="true"></span>Roleplay textuel · Univers original
+				</p>
 				<h1 id="titre-accueil">Nuages<br /><em>Polaires.</em></h1>
 				<p class="accroche">Le monde attend.<br />Votre histoire commence.</p>
-				<p class="description">Un futur inconnu. Une marque en vous.<br />Et tout ce qui reste à écrire, ensemble.</p>
+				<p class="description">
+					Un futur inconnu. Une marque en vous.<br />Et tout ce qui reste à écrire, ensemble.
+				</p>
 				<div class="actions">
-					<a class="action principale" href="/entrer/inscription">Rejoindre l’aventure <span aria-hidden="true">↗</span></a>
-					<a class="action discrete" href="#univers">Découvrir l’univers <span aria-hidden="true">↓</span></a>
+					<a
+						class="action principale"
+						href={chemin(data.compte ? '/carnet' : '/entrer/inscription')}
+						>{data.compte ? 'Ouvrir mon carnet' : 'Rejoindre l’aventure'}
+						<span aria-hidden="true">↗</span></a
+					>
+					<a class="action discrete" href="#univers"
+						>Découvrir l’univers <span aria-hidden="true">↓</span></a
+					>
 				</div>
 				<p class="plateforme">
 					Une histoire collective, sur Discord.
-					<a href="/univers/premiers-pas">Comment commencer ?</a>
+					<a href={resolve('/univers/premiers-pas')}>Comment commencer ?</a>
 				</p>
 			</div>
-			<p class="coordonnee repere" aria-hidden="true"><span>NP / 01</span><i></i><span>Après le basculement</span></p>
-			<p class="legende"><span class="filet" aria-hidden="true"></span><span>« Le monde n’est pas mort.<br /><em>Il attend.</em> »</span></p>
+			<p class="coordonnee repere" aria-hidden="true">
+				<span>NP / 01</span><i></i><span>Après le basculement</span>
+			</p>
+			<p class="legende">
+				<span class="filet" aria-hidden="true"></span><span
+					>« Le monde n’est pas mort.<br /><em>Il attend.</em> »</span
+				>
+			</p>
 		</section>
 
 		<section class="dernieres" aria-labelledby="titre-dernieres">
@@ -67,7 +88,12 @@
 			{:else}
 				<div class="feuillets">
 					{#each data.leaves as leaf, i (leaf.id)}
-						<Feuillet marge={leaf.margin} titre={leaf.title} href={leaf.href ?? undefined} biais={biais[i % biais.length]}>
+						<Feuillet
+							marge={leaf.margin}
+							titre={leaf.title}
+							href={leaf.href ?? undefined}
+							biais={biais[i % biais.length]}
+						>
 							{leaf.excerpt}
 							{#snippet pied()}
 								{#if leaf.stamp}<Tampon cle={leaf.id} support="papier">{leaf.stamp}</Tampon>{/if}
@@ -86,14 +112,20 @@
 			<div class="corps">
 				<h2 id="titre-univers">Tout commence<br /><em>après la chute.</em></h2>
 				<div class="recit">
-					<p>L’Argonaute a perdu. Le Dimenséa a changé de mains. Alors les nuages ont couvert le ciel, et la réalité s’est pliée.</p>
 					<p>
-						L’humanité s’éveille dans un futur lointain. Les anciens repères se sont effacés. Un horizon méconnaissable s’étend
-						dans le silence. Parmi les survivants, certains portent une marque intérieure : un <strong>Serment</strong>.
+						L’Argonaute a perdu. Le Dimenséa a changé de mains. Alors les nuages ont couvert le
+						ciel, et la réalité s’est pliée.
+					</p>
+					<p>
+						L’humanité s’éveille dans un futur lointain. Les anciens repères se sont effacés. Un
+						horizon méconnaissable s’étend dans le silence. Parmi les survivants, certains portent
+						une marque intérieure : un <strong>Serment</strong>.
 					</p>
 					<p class="chute">Ce qui reste à écrire dépend de ceux qui se relèvent.</p>
 				</div>
-				<a class="lien-fleche" href="/univers/synopsis">Lire le synopsis <span aria-hidden="true">↗</span></a>
+				<a class="lien-fleche" href={resolve('/univers/synopsis')}
+					>Lire le synopsis <span aria-hidden="true">↗</span></a
+				>
 			</div>
 		</section>
 
@@ -109,16 +141,20 @@
 			<div class="corps">
 				<p class="repere">Ce qui vous lie à ce monde</p>
 				<h2 id="titre-serments">Une marque.<br /><em>Un chemin.</em></h2>
-				<blockquote>« Nul ne choisit son Serment.<br />C’est le Serment qui reconnaît son porteur. »</blockquote>
+				<blockquote>
+					« Nul ne choisit son Serment.<br />C’est le Serment qui reconnaît son porteur. »
+				</blockquote>
 				<p class="texte-serments">
-					Votre Serment grandit à travers vos choix, vos sorties et vos combats. Ici, votre personnage se construit autant
-					dans l’histoire que vous écrivez que dans les pouvoirs qu’il découvre.
+					Votre Serment grandit à travers vos choix, vos sorties et vos combats. Ici, votre
+					personnage se construit autant dans l’histoire que vous écrivez que dans les pouvoirs
+					qu’il découvre.
 				</p>
 				{#if data.oaths.length}
 					<ul class="liste-serments">
 						{#each data.oaths as oath (oath.id)}
 							<li>
-								<a href="/univers/serments/{oath.id}">
+								<a href={chemin(`/univers/serments/${oath.id}`)}>
+									<span class="sceau-serment"><Sceau serment={oath.name} taille={28} nu /></span>
 									<span class="nom-serment">{oath.name}</span>
 									<span class="arme">{oath.weapon}</span>
 									<span class="categorie repere">{oath.category}</span>
@@ -127,7 +163,9 @@
 						{/each}
 					</ul>
 				{/if}
-				<a class="lien-fleche" href="/entrer/inscription">Faire le premier pas <span aria-hidden="true">↗</span></a>
+				<a class="lien-fleche" href={resolve('/entrer/inscription')}
+					>Faire le premier pas <span aria-hidden="true">↗</span></a
+				>
 			</div>
 		</section>
 
@@ -135,14 +173,24 @@
 			<p class="repere">La suite n’est pas encore écrite</p>
 			<h2 id="titre-invitation">Laissez votre trace.</h2>
 			<p>Découvrez les règles, créez votre compte et rejoignez une histoire collective.</p>
-			<a class="action principale" href="/entrer/inscription">Commencer l’aventure <span aria-hidden="true">↗</span></a>
+			<a class="action principale" href={chemin(data.compte ? '/carnet' : '/entrer/inscription')}
+				>{data.compte ? 'Ouvrir mon carnet' : 'Commencer l’aventure'}
+				<span aria-hidden="true">↗</span></a
+			>
 		</section>
 	</main>
 
 	<Colophon discord={data.discord} />
 </div>
 
+{#if !data.compte}<BandeVisiteur chemin="/" />{/if}
+
 <style>
+	@media (max-width: 760px) {
+		.accueil {
+			padding-bottom: calc(56px + env(safe-area-inset-bottom));
+		}
+	}
 	/* L'accueil public garde la palette de marque : il ignore les thèmes personnels. */
 	.accueil {
 		--bureau: #091519;
@@ -479,30 +527,41 @@
 	}
 	.liste-serments a {
 		display: grid;
-		grid-template-columns: 1fr auto;
+		grid-template-columns: 28px 1fr auto;
 		align-items: baseline;
 		gap: 0 12px;
 		min-height: 56px;
 		padding: 8px 0;
 		text-decoration: none;
 	}
+	.sceau-serment {
+		grid-row: 1 / 3;
+		grid-column: 1;
+		align-self: center;
+		color: var(--encre-grise);
+		transition: color 160ms;
+	}
 	.nom-serment {
+		grid-column: 2;
 		font: 500 22px/28px var(--voix);
 		color: var(--encre);
 	}
 	.arme {
-		grid-column: 1;
+		grid-column: 2;
 		font: 400 13px/20px var(--corps);
 		color: var(--encre-grise);
 	}
 	.categorie {
 		grid-row: 1;
-		grid-column: 2;
+		grid-column: 3;
 		color: var(--encre-grise);
 		letter-spacing: 0.12em;
 	}
 	.liste-serments a:hover .nom-serment {
 		color: var(--encre-humide);
+	}
+	.liste-serments a:hover .sceau-serment {
+		color: var(--encre);
 	}
 
 	/* ── Invitation ───────────────────────────────────────────────────── */

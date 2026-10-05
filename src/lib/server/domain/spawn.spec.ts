@@ -37,26 +37,22 @@ const actor = (role: Role): Actor => {
 const mj = actor('mj');
 beforeEach(async () => {
 	testDb = await createTestDb();
-	await testDb.db
-		.insert(accounts)
-		.values(
-			(['mj', 'admin', 'designer', 'joueur'] as const).map((role) => ({
-				id: `a_${role}`,
-				pseudo: role,
-				role,
-				passwordHash: 'fixture'
-			}))
-		);
-	await testDb.db
-		.insert(sessions)
-		.values(
-			(['mj', 'admin'] as const).map((role) => ({
-				id: `session_${role}`,
-				accountId: `a_${role}`,
-				sessionVersion: 0,
-				expiresAt: new Date(Date.now() + 3600000)
-			}))
-		);
+	await testDb.db.insert(accounts).values(
+		(['mj', 'admin', 'designer', 'joueur'] as const).map((role) => ({
+			id: `a_${role}`,
+			pseudo: role,
+			role,
+			passwordHash: 'fixture'
+		}))
+	);
+	await testDb.db.insert(sessions).values(
+		(['mj', 'admin'] as const).map((role) => ({
+			id: `session_${role}`,
+			accountId: `a_${role}`,
+			sessionVersion: 0,
+			expiresAt: new Date(Date.now() + 3600000)
+		}))
+	);
 	await testDb.db.insert(zones).values({ id: 'z_test', name: 'Salon des brumes' });
 	await testDb.db.insert(beasts).values([
 		{ id: 'b_loup', name: 'Loup', spawnWeight: 10, qtyMin: 2, qtyMax: 2 },
@@ -65,14 +61,12 @@ beforeEach(async () => {
 		{ id: 'b_archive', name: 'Archive', archived: true, spawnWeight: 1000 },
 		{ id: 'b_zero', name: 'Poids nul', spawnWeight: 0 }
 	]);
-	await testDb.db
-		.insert(beastZones)
-		.values(
-			['b_loup', 'b_ours', 'b_secret', 'b_archive', 'b_zero'].map((beastId) => ({
-				beastId,
-				zoneId: 'z_test'
-			}))
-		);
+	await testDb.db.insert(beastZones).values(
+		['b_loup', 'b_ours', 'b_secret', 'b_archive', 'b_zero'].map((beastId) => ({
+			beastId,
+			zoneId: 'z_test'
+		}))
+	);
 	const [oath] = await testDb.db.select().from(oaths).limit(1);
 	await testDb.db.insert(characters).values({ id: 'p_a', name: 'Alice', oathId: oath.id });
 });
@@ -174,17 +168,15 @@ describe('Apparitions — audit 03 §10, 04 §10.10', () => {
 	it('garde les 24 dernières apparitions en lecture sans perdre les anciens cumuls', async () => {
 		const run = await drawSpawn(testDb.db, mj, { zoneId: 'z_test', rng: () => 0 });
 		const [stored] = await testDb.db.select().from(spawnRuns);
-		await testDb.db
-			.insert(spawnRuns)
-			.values(
-				Array.from({ length: 26 }, (_, n) => ({
-					id: `spawn_${n}`,
-					zoneId: 'z_test',
-					generatedAt: new Date(Date.now() + n * 1000),
-					payload: stored.payload,
-					beastIds: stored.beastIds
-				}))
-			);
+		await testDb.db.insert(spawnRuns).values(
+			Array.from({ length: 26 }, (_, n) => ({
+				id: `spawn_${n}`,
+				zoneId: 'z_test',
+				generatedAt: new Date(Date.now() + n * 1000),
+				payload: stored.payload,
+				beastIds: stored.beastIds
+			}))
+		);
 		expect(await spawnHistory(testDb.db, mj)).toHaveLength(24);
 		expect((await spawnHistory(testDb.db, mj)).some((r) => r.id === run.id)).toBe(false);
 		expect(await spawnTotals(testDb.db, mj)).toEqual({ totals: { b_loup: 54 }, totalDraws: 27 });

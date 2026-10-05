@@ -14,7 +14,10 @@ import {
 type Locals = Partial<App.Locals>;
 
 function ev(locals: Locals, path = '/carnet/fiche'): Pick<RequestEvent, 'locals' | 'url'> {
-	return { locals: { session: null, account: null, actor: null, ...locals } as App.Locals, url: new URL(`https://np.test${path}`) };
+	return {
+		locals: { session: null, account: null, actor: null, ...locals } as App.Locals,
+		url: new URL(`https://np.test${path}`)
+	};
 }
 
 function thrown(fn: () => unknown): unknown {
@@ -56,8 +59,12 @@ describe('gardes (06-contrats §A)', () => {
 	});
 
 	it('redirectIfConnected : vers la première page du rôle', () => {
-		expect((thrown(() => redirectIfConnected(ev({ actor: joueur }))) as { location: string }).location).toBe('/carnet');
-		expect((thrown(() => redirectIfConnected(ev({ actor: mj }))) as { location: string }).location).toBe('/table');
+		expect(
+			(thrown(() => redirectIfConnected(ev({ actor: joueur }))) as { location: string }).location
+		).toBe('/carnet');
+		expect(
+			(thrown(() => redirectIfConnected(ev({ actor: mj }))) as { location: string }).location
+		).toBe('/table');
 		expect(thrown(() => redirectIfConnected(ev({})))).toBeNull();
 		expect(homeFor('designer', false)).toBe('/atelier/bestiaire');
 		expect(homeFor('admin', false)).toBe('/registre');
@@ -66,8 +73,15 @@ describe('gardes (06-contrats §A)', () => {
 
 	it('requireResetSession : session reset exigée', () => {
 		const account = { id: 'a_1', role: 'joueur', characterId: null } as Account;
-		expect(requireResetSession(ev({ session: { id: 's1', scope: 'reset' }, account }))).toEqual({ accountId: 'a_1', sessionId: 's1' });
-		expect(isRedirect(thrown(() => requireResetSession(ev({ session: { id: 's1', scope: 'full' }, account }))))).toBe(true);
+		expect(requireResetSession(ev({ session: { id: 's1', scope: 'reset' }, account }))).toEqual({
+			accountId: 'a_1',
+			sessionId: 's1'
+		});
+		expect(
+			isRedirect(
+				thrown(() => requireResetSession(ev({ session: { id: 's1', scope: 'full' }, account })))
+			)
+		).toBe(true);
 		expect(isRedirect(thrown(() => requireResetSession(ev({}))))).toBe(true);
 	});
 });

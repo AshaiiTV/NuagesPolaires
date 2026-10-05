@@ -8,7 +8,8 @@ export default defineConfig({
 		sveltekit({
 			compilerOptions: {
 				// Force runes mode for the project, except for libraries. Can be removed in svelte 6.
-				runes: ({ filename }) => filename.split(/[/\\]/).includes('node_modules') ? undefined : true
+				runes: ({ filename }) =>
+					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
 			adapter: adapter(),
 			// CSP (04-architecture §4, amendement §10.11) : mode `auto` (nonces en SSR, hashes au prérendu).
@@ -22,7 +23,13 @@ export default defineConfig({
 					'default-src': ['self'],
 					'script-src': ['self'],
 					'style-src': ['self', 'unsafe-inline'],
-					'img-src': ['self', 'data:', 'blob:', 'https://i.imgur.com', 'https://cdn.discordapp.com'],
+					'img-src': [
+						'self',
+						'data:',
+						'blob:',
+						'https://i.imgur.com',
+						'https://cdn.discordapp.com'
+					],
 					'font-src': ['self'],
 					'connect-src': ['self'],
 					'object-src': ['none'],

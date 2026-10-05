@@ -112,9 +112,13 @@ export async function listAudit(
 
 /** Une ligne de l'export texte : date · source · action · acteur (rôle) · ip · détails. */
 export function auditLineText(row: AuditRowView): string {
-	const who = row.actorPseudo ? `${row.actorPseudo}${row.actorRole ? ` (${row.actorRole})` : ''}` : '—';
+	const who = row.actorPseudo
+		? `${row.actorPseudo}${row.actorRole ? ` (${row.actorRole})` : ''}`
+		: '—';
 	const details = Object.keys(row.details).length > 0 ? JSON.stringify(row.details) : '';
-	return [row.at, row.source, row.action, who, row.ip || '—', details].join('\t').replace(/[\r\n]+/g, ' ');
+	return [row.at, row.source, row.action, who, row.ip || '—', details]
+		.join('\t')
+		.replace(/[\r\n]+/g, ' ');
 }
 
 /** Export « .txt » du journal d'audit (06 §B.8 `auditAsText`), mêmes filtres, sans pagination. */
@@ -131,6 +135,7 @@ export async function auditAsText(
 		.where(whereFor(filters))
 		.orderBy(desc(auditLog.ts), desc(auditLog.id))
 		.limit(AUDIT_TEXT_MAX_ROWS);
-	const header = 'Nuages Polaires — journal d’audit\nDate (UTC)\tSource\tAction\tActeur\tIP\tDétails';
+	const header =
+		'Nuages Polaires — journal d’audit\nDate (UTC)\tSource\tAction\tActeur\tIP\tDétails';
 	return `${[header, ...rows.map((r) => auditLineText(toRow(r)))].join('\n')}\n`;
 }

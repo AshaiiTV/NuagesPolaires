@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { adresse } from '$lib/ui/adresse';
 	// Une ligne de « Dernières pages ». La corne (coin plié) marque une page écrite depuis ta dernière
 	// lecture ; elle se déplie quand on l'ouvre. Jamais de nombre.
 	import type { Snippet } from 'svelte';
@@ -13,10 +14,13 @@
 	let { href, cornee = false, date, children }: Props = $props();
 </script>
 
-<a class="ligne" class:cornee {href}>
+<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- adresse résout les chemins internes et conserve les URL externes. -->
+<a class="ligne" class:cornee href={adresse(href)}>
 	{#if date}<span class="date">{date}</span>{/if}
 	<span class="texte">{@render children()}</span>
-	{#if cornee}<span class="corne" aria-hidden="true"></span><span class="sr-only">— page non lue</span>{/if}
+	{#if cornee}<span class="corne" aria-hidden="true"></span><span class="sr-only"
+			>— page non lue</span
+		>{/if}
 </a>
 
 <style>

@@ -31,6 +31,25 @@ describe('getLastPages — jeu de démonstration', () => {
 	afterAll(async () => {
 		await t.close();
 	});
+	it('ne répète ni le salon ni la scène automatique d’une Table ouverte', async () => {
+		const id = 's_double_table';
+		await t.db.insert(schema.scenes).values({
+			id,
+			title: 'Aux racines de la lisière',
+			status: 'ouverte',
+			combatId: DEMO_IDS.openCombat,
+			discordUrl: 'https://discord.com/channels/demo/lisiere-du-canyon'
+		});
+		await t.db.insert(schema.sceneParticipants).values({ sceneId: id, characterId: P.aria });
+		try {
+			const vue = await getLastPages(t.db, actors.alice);
+			expect(vue.waiting.map((w) => w.kind)).toEqual(['scene', 'table', 'event']);
+			expect(vue.waiting.some((w) => w.id === id)).toBe(false);
+			expect(vue.waiting.filter((w) => w.kind === 'table')).toHaveLength(1);
+		} finally {
+			await t.db.delete(schema.scenes).where(eq(schema.scenes.id, id));
+		}
+	});
 
 	it('Alice : fiche, signet, marque-page, ce qui attend, depuis, ce qui vient', async () => {
 		const view = await getLastPages(t.db, actors.alice);

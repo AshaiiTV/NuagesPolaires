@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { chemin } from '$lib/ui/adresse';
 	// Mon journal — trois voix (03-vision §5.5) : Mes notes, Récits, Faits validés. Le centre de
 	// gravité de la mémoire : une page réglée, des entrées datées en marge, le texte en Cormorant
 	// 18 / 28 ; écrire, c'est poser le curseur sous la dernière ligne. Rien ne s'efface : une correction
@@ -11,11 +12,18 @@
 	import Bouton from '$lib/ui/Bouton.svelte';
 	import Encre from '$lib/ui/Encre.svelte';
 	import NoteDeMarge from '$lib/ui/NoteDeMarge.svelte';
+	import { signature } from '$lib/ui/tampons';
 	import Tampon from '$lib/ui/Tampon.svelte';
 	import Vide from '$lib/ui/Vide.svelte';
 	import { creerEcriture } from '$lib/ui/ecriture.svelte';
 	import { dateCourte, dateLongue, heure } from '$lib/ui/dates';
-	import { FACT_KINDS, FACT_KIND_LABELS, FACT_TEXT_MAX, FACT_COUNTERPART_MAX, type FactView } from '$lib/schemas/facts';
+	import {
+		FACT_KINDS,
+		FACT_KIND_LABELS,
+		FACT_TEXT_MAX,
+		FACT_COUNTERPART_MAX,
+		type FactView
+	} from '$lib/schemas/facts';
 	import { JOURNAL_MAX_CHARS, type JournalEntryView } from '$lib/schemas/journal';
 	import type { PageProps } from './$types';
 
@@ -25,12 +33,21 @@
 	const VOIX = [
 		{ cle: 'notes', titre: 'Mes notes', phrase: 'Lu par toi, les MJ et les administrateurs.' },
 		{ cle: 'recits', titre: 'Récits', phrase: 'Les combats archivés où ton personnage figure.' },
-		{ cle: 'faits', titre: 'Faits validés', phrase: 'Tamponnés par un MJ, avec témoin et date. Tu peux en proposer.' }
+		{
+			cle: 'faits',
+			titre: 'Faits validés',
+			phrase: 'Tamponnés par un MJ, avec témoin et date. Tu peux en proposer.'
+		}
 	] as const;
-	const lienVoix = (cle: string) => (cle === 'notes' ? '/carnet/journal' : `/carnet/journal?voix=${cle}`);
+	const lienVoix = (cle: string) =>
+		cle === 'notes' ? '/carnet/journal' : `/carnet/journal?voix=${cle}`;
 	const courante = $derived(VOIX.find((v) => v.cle === data.voix) ?? VOIX[0]);
 	const pagesEcrites = $derived(
-		data.notes.count === 0 ? 'Aucune page écrite pour l’instant.' : data.notes.count === 1 ? 'Une page écrite.' : `${data.notes.count} pages écrites.`
+		data.notes.count === 0
+			? 'Aucune page écrite pour l’instant.'
+			: data.notes.count === 1
+				? 'Une page écrite.'
+				: `${data.notes.count} pages écrites.`
 	);
 
 	// ---- Écritures : une seule note de marge à la fois ------------------------------------------
@@ -113,8 +130,10 @@
 	let faitTexte = $state('');
 	function etatFait(f: FactView): string {
 		if (f.status === 'proposed') return `proposé le ${dateLongue(f.proposedAt)} · attend un tampon`;
-		if (f.status === 'settled') return `réglée · tamponné le ${dateLongue(f.settledAt ?? f.stamp?.at ?? f.proposedAt)}`;
-		if (f.status === 'rejected') return `non retenu · tamponné le ${dateLongue(f.stamp?.at ?? f.proposedAt)}`;
+		if (f.status === 'settled')
+			return `réglée · tamponné le ${dateLongue(f.settledAt ?? f.stamp?.at ?? f.proposedAt)}`;
+		if (f.status === 'rejected')
+			return `non retenu · tamponné le ${dateLongue(f.stamp?.at ?? f.proposedAt)}`;
 		return `tamponné le ${dateLongue(f.stamp?.at ?? f.proposedAt)}`;
 	}
 </script>
@@ -126,7 +145,7 @@
 		<ul>
 			{#each VOIX as v (v.cle)}
 				<li>
-					<a href={lienVoix(v.cle)} aria-current={data.voix === v.cle ? 'page' : undefined}>
+					<a href={chemin(lienVoix(v.cle))} aria-current={data.voix === v.cle ? 'page' : undefined}>
 						<span class="voix-titre">{v.titre}</span>
 						{#if classe === 'en-marge'}<span class="voix-phrase">{v.phrase}</span>{/if}
 					</a>
@@ -152,7 +171,9 @@
 		<section class="feuille" aria-label="Mes notes">
 			{#if data.notes.page > 1}
 				<nav class="tourner haut" aria-label="Pages du journal">
-					<Bouton variante="texte" href="/carnet/journal?page={data.notes.page - 1}">← Pages précédentes</Bouton>
+					<Bouton variante="texte" href="/carnet/journal?page={data.notes.page - 1}"
+						>← Pages précédentes</Bouton
+					>
 				</nav>
 			{/if}
 
@@ -167,22 +188,47 @@
 							</p>
 							<div class="ecrit">
 								{#if enCorrection === e.id}
-									<form method="POST" action="?/corriger" use:enhance={ecrire(`corriger:${e.id}`, 'Corrigé', () => (enCorrection = null))}>
+									<form
+										method="POST"
+										action="?/corriger"
+										use:enhance={ecrire(`corriger:${e.id}`, 'Corrigé', () => (enCorrection = null))}
+									>
 										<input type="hidden" name="entryId" value={e.id} />
-										<label class="sr-only" for="corriger-{e.id}">Corriger l’entrée du {quand(e)}</label>
-										<textarea id="corriger-{e.id}" class="sur-reglure" class:humide={humide(`corriger:${e.id}`)} name="text" bind:value={correction} maxlength={JOURNAL_MAX_CHARS} rows="2"></textarea>
+										<label class="sr-only" for="corriger-{e.id}"
+											>Corriger l’entrée du {quand(e)}</label
+										>
+										<textarea
+											id="corriger-{e.id}"
+											class="sur-reglure"
+											class:humide={humide(`corriger:${e.id}`)}
+											name="text"
+											bind:value={correction}
+											maxlength={JOURNAL_MAX_CHARS}
+											rows="2"></textarea>
 										<div class="actions">
-											<Bouton variante="ruban" type="submit" disabled={!correction.trim() || correction.trim() === e.text.trim()}>
-												<Encre etat={cible === `corriger:${e.id}` ? ecriture.etat : 'prise'}>Noter la correction</Encre>
+											<Bouton
+												variante="ruban"
+												type="submit"
+												disabled={!correction.trim() || correction.trim() === e.text.trim()}
+											>
+												<Encre etat={cible === `corriger:${e.id}` ? ecriture.etat : 'prise'}
+													>Noter la correction</Encre
+												>
 											</Bouton>
-											<button class="lien-discret" type="button" onclick={() => (enCorrection = null)}>Laisser tel quel</button>
+											<button
+												class="lien-discret"
+												type="button"
+												onclick={() => (enCorrection = null)}>Laisser tel quel</button
+											>
 										</div>
 									</form>
 								{:else}
 									<p class="texte">{e.text}</p>
 								{/if}
 								{#each versions(e) as p (p.id)}
-									<p class="ancienne"><s>{p.text}</s><span class="sr-only"> (version raturée du {quand(p)})</span></p>
+									<p class="ancienne">
+										<s>{p.text}</s><span class="sr-only"> (version raturée du {quand(p)})</span>
+									</p>
 								{/each}
 								{#if e.struck}
 									<p class="mention">rayée</p>
@@ -190,14 +236,28 @@
 									<div class="actions">
 										{#if aRayer === e.id}
 											<span class="question">Rayer cette entrée&nbsp;? Elle restera lisible.</span>
-											<form method="POST" action="?/rayer" use:enhance={ecrire(`rayer:${e.id}`, 'Rayé', () => (aRayer = null))}>
+											<form
+												method="POST"
+												action="?/rayer"
+												use:enhance={ecrire(`rayer:${e.id}`, 'Rayé', () => (aRayer = null))}
+											>
 												<input type="hidden" name="entryId" value={e.id} />
-												<button class="lien-discret fort" type="submit"><Encre etat={cible === `rayer:${e.id}` ? ecriture.etat : 'prise'}>Oui, la rayer</Encre></button>
+												<button class="lien-discret fort" type="submit"
+													><Encre etat={cible === `rayer:${e.id}` ? ecriture.etat : 'prise'}
+														>Oui, la rayer</Encre
+													></button
+												>
 											</form>
-											<button class="lien-discret" type="button" onclick={() => (aRayer = null)}>Laisser</button>
+											<button class="lien-discret" type="button" onclick={() => (aRayer = null)}
+												>Laisser</button
+											>
 										{:else}
-											<button class="lien-discret" type="button" onclick={() => corriger(e)}>Corriger</button>
-											<button class="lien-discret" type="button" onclick={() => (aRayer = e.id)}>Rayer</button>
+											<button class="lien-discret" type="button" onclick={() => corriger(e)}
+												>Corriger</button
+											>
+											<button class="lien-discret" type="button" onclick={() => (aRayer = e.id)}
+												>Rayer</button
+											>
 										{/if}
 									</div>
 								{/if}
@@ -214,8 +274,17 @@
 			{/if}
 
 			{#if derniere}
-				<form class="ecrire" method="POST" action="?/noter" use:enhance={ecrire('noter', 'Noté', oublier)}>
-					<label class="date" for="nouvelle-page"><span class="jour">Aujourd’hui</span><span class="sr-only"> — écrire une nouvelle entrée</span></label>
+				<form
+					class="ecrire"
+					method="POST"
+					action="?/noter"
+					use:enhance={ecrire('noter', 'Noté', oublier)}
+				>
+					<label class="date" for="nouvelle-page"
+						><span class="jour">Aujourd’hui</span><span class="sr-only">
+							— écrire une nouvelle entrée</span
+						></label
+					>
 					<div class="ecrit">
 						<textarea
 							id="nouvelle-page"
@@ -227,14 +296,15 @@
 							placeholder="Écris sous la dernière ligne…"
 							bind:this={zone}
 							bind:value={brouillon}
-							oninput={garder}
-						></textarea>
+							oninput={garder}></textarea>
 						<div class="noter-barre">
 							<Bouton variante="ruban" type="submit" disabled={!brouillon.trim()}>
 								<Encre etat={cible === 'noter' ? ecriture.etat : 'prise'}>Noter</Encre>
 							</Bouton>
 							<div class="note-noter" aria-live="polite">
-								{#if noteDe('noter')}<NoteDeMarge ton={noteDe('noter')!.ton}>{noteDe('noter')!.texte}</NoteDeMarge>{/if}
+								{#if noteDe('noter')}<NoteDeMarge ton={noteDe('noter')!.ton}
+										>{noteDe('noter')!.texte}</NoteDeMarge
+									>{/if}
 							</div>
 						</div>
 					</div>
@@ -242,7 +312,9 @@
 			{:else}
 				<nav class="tourner" aria-label="Pages du journal">
 					<span></span>
-					<Bouton variante="texte" href="/carnet/journal?page={data.notes.page + 1}" fleche="→">Pages suivantes</Bouton>
+					<Bouton variante="texte" href="/carnet/journal?page={data.notes.page + 1}" fleche="→"
+						>Pages suivantes</Bouton
+					>
 				</nav>
 			{/if}
 		</section>
@@ -256,19 +328,35 @@
 							<p class="date"><span class="jour">{dateCourte(r.at)}</span></p>
 							<div class="recit-corps">
 								<p class="recit-titre">{r.title}</p>
-								<p class="recit-details chiffres">{r.round} round{r.round > 1 ? 's' : ''}{#if r.name && r.name !== r.title}{' · '}{r.name}{/if}</p>
+								<p class="recit-details chiffres">
+									{r.round} round{r.round > 1
+										? 's'
+										: ''}{#if r.name && r.name !== r.title}&nbsp;·&nbsp;{r.name}{/if}
+								</p>
 							</div>
 							<p class="recit-gestes">
 								<Bouton variante="texte" href="/carnet/recits/{r.id}" fleche="→">Lire</Bouton>
-								<a class="lien-discret export" href="/carnet/recits/{r.id}/texte" download>Exporter (.txt)</a>
+								<a
+									class="lien-discret export"
+									href={chemin(`/carnet/recits/${r.id}/texte`)}
+									download>Exporter (.txt)</a
+								>
 							</p>
 						</li>
 					{/each}
 				</ol>
 				{#if data.pageRecits > 1 || data.recits.length >= 20}
 					<nav class="tourner" aria-label="Pages des récits">
-						{#if data.pageRecits > 1}<Bouton variante="texte" href="/carnet/journal?voix=recits&recits={data.pageRecits - 1}">← Récits plus récents</Bouton>{:else}<span></span>{/if}
-						{#if data.recits.length >= 20}<Bouton variante="texte" href="/carnet/journal?voix=recits&recits={data.pageRecits + 1}" fleche="→">Récits plus anciens</Bouton>{/if}
+						{#if data.pageRecits > 1}<Bouton
+								variante="texte"
+								href="/carnet/journal?voix=recits&recits={data.pageRecits - 1}"
+								>← Récits plus récents</Bouton
+							>{:else}<span></span>{/if}
+						{#if data.recits.length >= 20}<Bouton
+								variante="texte"
+								href="/carnet/journal?voix=recits&recits={data.pageRecits + 1}"
+								fleche="→">Récits plus anciens</Bouton
+							>{/if}
 					</nav>
 				{/if}
 			{:else}
@@ -282,28 +370,49 @@
 				<ol class="faits">
 					{#each data.faits as f (f.id)}
 						<li class="fait {f.status}">
-							<p class="date"><span class="jour">{dateCourte(f.stamp?.at ?? f.proposedAt)}</span></p>
+							<p class="date">
+								<span class="jour">{dateCourte(f.stamp?.at ?? f.proposedAt)}</span>
+							</p>
 							<div class="fait-corps">
 								<p class="fait-tete">
 									<span class="fait-type">{FACT_KIND_LABELS[f.kind] ?? f.kind}</span>
 									{#if f.counterpart}<span class="envers">envers {f.counterpart}</span>{/if}
 								</p>
-								<p class="fait-texte">{#if f.status === 'settled' || f.status === 'rejected'}<s>{f.text}</s>{:else}{f.text}{/if}</p>
+								<p class="fait-texte">
+									{#if f.status === 'settled' || f.status === 'rejected'}<s>{f.text}</s
+										>{:else}{f.text}{/if}
+								</p>
 								<p class="fait-pied">
-									{#if f.stamp && f.status !== 'proposed'}<Tampon cle={f.id}>{f.stamp.role} {f.stamp.name}</Tampon>{/if}
-									<span class="fait-etat" class:attend={f.status === 'proposed'}>{etatFait(f)}</span>
+									{#if f.stamp && f.status !== 'proposed'}<Tampon cle={f.id}
+											>{signature(f.stamp.role, f.stamp.name, f.stamp.at)}</Tampon
+										>{/if}
+									<span class="fait-etat" class:attend={f.status === 'proposed'}>{etatFait(f)}</span
+									>
 									{#if f.witness}<span class="temoin">témoin : {f.witness}</span>{/if}
-									{#if f.stamp?.motif && f.status !== 'proposed'}<span class="temoin">motif : {f.stamp.motif}</span>{/if}
+									{#if f.stamp?.motif && f.status !== 'proposed'}<span class="temoin"
+											>motif : {f.stamp.motif}</span
+										>{/if}
 								</p>
 							</div>
 						</li>
 					{/each}
 				</ol>
 			{:else}
-				<Vide>Aucun fait validé. Ils s’écrivent d’abord sur Discord ; propose-en un ici quand un MJ peut le tamponner.</Vide>
+				<Vide
+					>Aucun fait validé. Ils s’écrivent d’abord sur Discord ; propose-en un ici quand un MJ
+					peut le tamponner.</Vide
+				>
 			{/if}
 
-			<form class="proposer" method="POST" action="?/proposerFait" use:enhance={ecrire('fait', 'Proposé', () => { faitEnvers = ''; faitTexte = ''; })}>
+			<form
+				class="proposer"
+				method="POST"
+				action="?/proposerFait"
+				use:enhance={ecrire('fait', 'Proposé', () => {
+					faitEnvers = '';
+					faitTexte = '';
+				})}
+			>
 				<p class="repere">Proposer un fait</p>
 				<div class="ligne-fait">
 					<label class="petit-champ">
@@ -314,18 +423,36 @@
 					</label>
 					<label class="petit-champ">
 						<span class="etiquette">Envers</span>
-						<input name="counterpart" bind:value={faitEnvers} maxlength={FACT_COUNTERPART_MAX} placeholder="Kael Morvan" autocomplete="off" />
+						<input
+							name="counterpart"
+							bind:value={faitEnvers}
+							maxlength={FACT_COUNTERPART_MAX}
+							placeholder="Kael Morvan"
+							autocomplete="off"
+						/>
 					</label>
 					<label class="petit-champ large">
 						<span class="etiquette">Le fait</span>
-						<input name="text" class:humide={humide('fait')} bind:value={faitTexte} maxlength={FACT_TEXT_MAX} placeholder="Je lui dois la traversée du gué." autocomplete="off" required />
+						<input
+							name="text"
+							class:humide={humide('fait')}
+							bind:value={faitTexte}
+							maxlength={FACT_TEXT_MAX}
+							placeholder="Je lui dois la traversée du gué."
+							autocomplete="off"
+							required
+						/>
 					</label>
 				</div>
 				<div class="gestes">
 					<Bouton variante="trait" type="submit" disabled={!faitTexte.trim()}>
 						<Encre etat={cible === 'fait' ? ecriture.etat : 'prise'}>Proposer au tampon</Encre>
 					</Bouton>
-					<div aria-live="polite">{#if noteDe('fait')}<NoteDeMarge ton={noteDe('fait')!.ton}>{noteDe('fait')!.texte}</NoteDeMarge>{/if}</div>
+					<div aria-live="polite">
+						{#if noteDe('fait')}<NoteDeMarge ton={noteDe('fait')!.ton}
+								>{noteDe('fait')!.texte}</NoteDeMarge
+							>{/if}
+					</div>
 				</div>
 			</form>
 		</section>
@@ -348,7 +475,9 @@
 		border-left: 1px solid var(--reglure);
 		text-decoration: none;
 		color: var(--encre-2);
-		transition: border-color 160ms, color 160ms;
+		transition:
+			border-color 160ms,
+			color 160ms;
 	}
 	.voix.en-marge a:hover {
 		color: var(--encre);

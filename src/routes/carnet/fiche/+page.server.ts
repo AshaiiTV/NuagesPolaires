@@ -1,7 +1,16 @@
 import { action } from '$lib/server/actions';
 import { requireCharacter } from '$lib/server/guards';
-import { consumeOwnItem, getOwnSheet, listConsequences, setOwnPortrait } from '$lib/server/domain/characters';
-import { cancelDeclaration, listOwnPending, strikeOwnDeclaration } from '$lib/server/domain/declarations';
+import {
+	consumeOwnItem,
+	getOwnSheet,
+	listConsequences,
+	setOwnPortrait
+} from '$lib/server/domain/characters';
+import {
+	cancelDeclaration,
+	listOwnPending,
+	strikeOwnDeclaration
+} from '$lib/server/domain/declarations';
 import { CONSEQUENCE_FILTERS, type ConsequenceFilter } from '$lib/schemas/characters';
 import type { Actions, PageServerLoad } from './$types';
 

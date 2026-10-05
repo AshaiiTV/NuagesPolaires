@@ -11,18 +11,20 @@ export default defineConfig({
 	testMatch: '**/*.e2e.ts',
 	fullyParallel: false,
 	workers: 1,
+	globalTeardown: './tests/e2e/stop.ts',
 	use: {
 		baseURL: BASE_URL,
 		locale: 'fr-FR',
 		timezoneId: 'Europe/Paris'
 	},
 	webServer: {
-		command: `npm run dev -- --port ${PORT} --strictPort`,
+		command: 'node tests/e2e/serve.mjs',
 		url: BASE_URL,
 		reuseExistingServer: false,
 		timeout: 120_000,
 		env: {
 			NP_DB_DRIVER: 'pglite',
+			NP_E2E_RESET: 'true',
 			NP_RATE_LIMIT_MAX: '100000',
 			// Secret de TEST uniquement (≥ 32 caractères), jamais utilisé hors de ce serveur local.
 			NP_SESSION_SECRET: 'np-e2e-secret-de-test-uniquement-0123456789',

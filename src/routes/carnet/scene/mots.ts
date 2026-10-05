@@ -29,13 +29,16 @@ export interface FichePourMots {
 	tiers: { reached: { level: number; name: string; cost: string }[] };
 }
 
-const sansAccent = (s: string) =>
-	s
-		.normalize('NFD')
-		.replace(/\p{M}/gu, '')
-		.toLowerCase();
+const sansAccent = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 
-const AUTRE: Mot = { id: 'autre', libelle: 'autre…', mot: '', cout: null, saisie: 'chiffre-mot', signe: -1 };
+const AUTRE: Mot = {
+	id: 'autre',
+	libelle: 'autre…',
+	mot: '',
+	cout: null,
+	saisie: 'chiffre-mot',
+	signe: -1
+};
 
 function motsEp(serment: string): Mot[] {
 	const s = sansAccent(serment);
@@ -46,7 +49,14 @@ function motsEp(serment: string): Mot[] {
 		return s !== '' && sansAccent(r.conditions).includes(s);
 	}).map((r) => {
 		const mot = libelleSansPicto(r.label);
-		return { id: `regle:${r.id}`, libelle: `${mot} · ${r.cost} EP`, mot, cout: r.cost, saisie: 'aucune', signe: -1 };
+		return {
+			id: `regle:${r.id}`,
+			libelle: `${mot} · ${r.cost}\u00a0EP`,
+			mot,
+			cout: r.cost,
+			saisie: 'aucune',
+			signe: -1
+		};
 	});
 }
 
@@ -66,14 +76,28 @@ function motsEm(fiche: FichePourMots): Mot[] {
 		const cle = `${t.name}|${cout}`;
 		if (vus.has(cle)) continue;
 		vus.add(cle);
-		mots.push({ id: `palier:${t.level}`, libelle: `${t.name} · ${cout} EM`, mot: t.name, cout, saisie: 'aucune', signe: -1 });
+		mots.push({
+			id: `palier:${t.level}`,
+			libelle: `${t.name} · ${cout}\u00a0EM`,
+			mot: t.name,
+			cout,
+			saisie: 'aucune',
+			signe: -1
+		});
 	}
 	const s = sansAccent(fiche.oath.name);
 	for (const r of ACTION_RULES) {
 		if (r.resource !== 'em' || r.cost === null || r.cost <= 0 || s === '') continue;
 		if (!sansAccent(r.conditions).includes(s)) continue;
 		const mot = libelleSansPicto(r.label);
-		mots.push({ id: `regle:${r.id}`, libelle: `${mot} · ${r.cost} EM`, mot, cout: r.cost, saisie: 'aucune', signe: -1 });
+		mots.push({
+			id: `regle:${r.id}`,
+			libelle: `${mot} · ${r.cost}\u00a0EM`,
+			mot,
+			cout: r.cost,
+			saisie: 'aucune',
+			signe: -1
+		});
 	}
 	return mots;
 }
@@ -82,8 +106,22 @@ function motsEm(fiche: FichePourMots): Mot[] {
 export function motsPour(fiche: FichePourMots): Record<Res, Mot[]> {
 	return {
 		pv: [
-			{ id: 'subis', libelle: 'subis … PV', mot: 'Dégâts subis', cout: null, saisie: 'chiffre', signe: -1 },
-			{ id: 'soigne', libelle: 'soigné de … PV', mot: 'Soin reçu', cout: null, saisie: 'chiffre', signe: 1 },
+			{
+				id: 'subis',
+				libelle: 'subis … PV',
+				mot: 'Dégâts subis',
+				cout: null,
+				saisie: 'chiffre',
+				signe: -1
+			},
+			{
+				id: 'soigne',
+				libelle: 'soigné de … PV',
+				mot: 'Soin reçu',
+				cout: null,
+				saisie: 'chiffre',
+				signe: 1
+			},
 			AUTRE
 		],
 		ep: [...motsEp(fiche.oath.name), AUTRE],
@@ -104,7 +142,12 @@ export function lireChiffre(brut: string): { n: number; signe: -1 | 1 | null } |
 export type Resolution = { ok: true; delta: number; word: string } | { ok: false; erreur: string };
 
 /** Du choix au chiffre et au mot de la déclaration (même calcul au navigateur et au serveur). */
-export function resoudre(mots: Mot[], choix: string, chiffre: string, motLibre: string): Resolution {
+export function resoudre(
+	mots: Mot[],
+	choix: string,
+	chiffre: string,
+	motLibre: string
+): Resolution {
 	const m = mots.find((x) => x.id === choix);
 	if (!m) return { ok: false, erreur: 'Choisis un mot.' };
 	if (m.saisie === 'aucune' && m.cout !== null) return { ok: true, delta: -m.cout, word: m.mot };

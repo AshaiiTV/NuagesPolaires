@@ -27,10 +27,22 @@ afterEach(async () => {
 
 describe('journal staff (04 §3.10, §5 ; audit 05 §3.9)', () => {
 	it('appendStaffLog écrit action, phrase, auteur et cible', async () => {
-		await appendStaffLog(t.db, { action: 'liaison', detail: "Compte 'nova' lié au personnage 'Seren'", actor: admin, target: 'Seren' });
+		await appendStaffLog(t.db, {
+			action: 'liaison',
+			detail: "Compte 'nova' lié au personnage 'Seren'",
+			actor: admin,
+			target: 'Seren'
+		});
 		const page = await listStaffLog(t.db, mj);
 		expect(page.rows).toEqual([
-			{ id: expect.any(Number), at: expect.any(String), action: 'liaison', detail: "Compte 'nova' lié au personnage 'Seren'", actorName: 'admin', target: 'Seren' }
+			{
+				id: expect.any(Number),
+				at: expect.any(String),
+				action: 'liaison',
+				detail: "Compte 'nova' lié au personnage 'Seren'",
+				actorName: 'admin',
+				target: 'Seren'
+			}
 		]);
 	});
 
@@ -43,7 +55,12 @@ describe('journal staff (04 §3.10, §5 ; audit 05 §3.9)', () => {
 
 	it('pagine du plus récent au plus ancien', async () => {
 		for (let i = 0; i < 60; i++) {
-			await t.db.insert(staffLog).values({ action: 'event_cree', detail: `n${i}`, actorName: 'mj', ts: new Date(Date.UTC(2026, 8, 1) + i * 60_000) });
+			await t.db.insert(staffLog).values({
+				action: 'event_cree',
+				detail: `n${i}`,
+				actorName: 'mj',
+				ts: new Date(Date.UTC(2026, 8, 1) + i * 60_000)
+			});
 		}
 		const first = await listStaffLog(t.db, mj, { page: 1 });
 		expect(first.rows).toHaveLength(STAFF_LOG_PAGE_SIZE);
@@ -53,7 +70,8 @@ describe('journal staff (04 §3.10, §5 ; audit 05 §3.9)', () => {
 	});
 
 	it('archivage : marque les lignes courantes, garde les historiques, laisse une ligne de trace', async () => {
-		for (let i = 0; i < 3; i++) await appendStaffLog(t.db, { action: 'connexion', detail: `c${i}`, actor: mj });
+		for (let i = 0; i < 3; i++)
+			await appendStaffLog(t.db, { action: 'connexion', detail: `c${i}`, actor: mj });
 		const historyBefore = (await t.db.select().from(characterHistory)).length;
 		const res = await archiveStaffLog(t.db, mj, { label: 'Archive de septembre' });
 		expect(res).toMatchObject({ label: 'Archive de septembre', archived: 3 });
@@ -65,7 +83,9 @@ describe('journal staff (04 §3.10, §5 ; audit 05 §3.9)', () => {
 		expect(await t.db.select().from(characterHistory)).toHaveLength(historyBefore);
 		const page = await listStaffLog(t.db, admin);
 		expect(page.rows.map((r) => r.action)).toEqual(['journal_archive']);
-		expect((await t.db.select().from(auditLog)).map((r) => r.action)).toContain('staff_log_archive');
+		expect((await t.db.select().from(auditLog)).map((r) => r.action)).toContain(
+			'staff_log_archive'
+		);
 	});
 
 	it('libellé par défaut daté ; droits d’archivage : MJ et admin', async () => {
@@ -87,7 +107,9 @@ describe('journal staff (04 §3.10, §5 ; audit 05 §3.9)', () => {
 								throw new Error('échec simulé');
 							};
 						}
-						return typeof value === 'function' ? (value as (...a: unknown[]) => unknown).bind(target) : value;
+						return typeof value === 'function'
+							? (value as (...a: unknown[]) => unknown).bind(target)
+							: value;
 					}
 				})
 		});

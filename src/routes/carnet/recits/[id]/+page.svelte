@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { chemin } from '$lib/ui/adresse';
 	// Un récit (03-vision §5.5 voix « Récits », §9.9) : le combat archivé tel que le serveur le laisse
 	// lire à ses participants — titre, date, journal du combat ligne à ligne, conséquences tamponnées.
 	// Aucun geste sur le combat : on lit, on exporte, on revient au journal.
@@ -10,6 +11,7 @@
 	import Vide from '$lib/ui/Vide.svelte';
 	import { dateCourte, dateHeure, dateLongue, heure } from '$lib/ui/dates';
 	import type { ConsequenceView } from '$lib/schemas/characters';
+	import { signature as signatureTampon } from '$lib/ui/tampons';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -28,10 +30,13 @@
 	});
 
 	const CHAMPS: Record<string, string> = { pv: 'PV', ep: 'EP', em: 'EM', xp: 'XP' };
-	const tampon = (c: ConsequenceView) => (c.stamp ? `${c.stamp.role} ${c.stamp.name} · ${dateCourte(c.at)}, ${heure(c.at)}` : null);
-	const signature = (c: ConsequenceView) => (c.stamp ? null : c.signature === 'regles' ? `règles · ${dateCourte(c.at)}` : dateCourte(c.at));
+	const tampon = (c: ConsequenceView) =>
+		c.stamp ? signatureTampon(c.stamp.role, c.stamp.name, c.at) : null;
+	const signature = (c: ConsequenceView) =>
+		c.stamp ? null : c.signature === 'regles' ? `règles · ${dateCourte(c.at)}` : dateCourte(c.at);
 	/** Une correction (rature d’une conséquence précédente) se lit « ~~120~~ 150 » ; sinon le texte dit déjà le changement. */
-	const avecRature = (c: ConsequenceView) => !!c.replacesId && c.oldValue !== null && c.newValue !== null && c.oldValue !== c.newValue;
+	const avecRature = (c: ConsequenceView) =>
+		!!c.replacesId && c.oldValue !== null && c.newValue !== null && c.oldValue !== c.newValue;
 	const lienTexte = $derived(`/carnet/recits/${encodeURIComponent(recit.id)}/texte`);
 </script>
 
@@ -40,18 +45,28 @@
 <Page repere="NP / 02 — Mon journal · récit" titre={recit.title}>
 	{#snippet marge()}
 		<p class="quand">{dateLongue(recit.at)}</p>
-		<p class="details chiffres">{recit.round} round{recit.round > 1 ? 's' : ''} · archivé à {heure(recit.at)}</p>
+		<p class="details chiffres">
+			{recit.round} round{recit.round > 1 ? 's' : ''} · archivé à {heure(recit.at)}
+		</p>
 		<p class="lisible">Lisible par ses participants. Les notes du MJ n’y figurent pas.</p>
 		<div class="gestes-marge">
-			<a class="lien-discret" href={lienTexte} download>Exporter (.txt)</a>
+			<a class="lien-discret" href={chemin(lienTexte)} download>Exporter (.txt)</a>
 			{#if recit.discordUrl}
-				<Bouton variante="texte" href={recit.discordUrl} fleche="↗" target="_blank" rel="noopener noreferrer">Ouvrir le salon</Bouton>
+				<Bouton
+					variante="texte"
+					href={recit.discordUrl}
+					fleche="↗"
+					target="_blank"
+					rel="noopener noreferrer">Ouvrir le salon</Bouton
+				>
 			{/if}
 			<Bouton variante="texte" href="/carnet/journal?voix=recits">← Retour au journal</Bouton>
 		</div>
 	{/snippet}
 	{#snippet bande()}
-		<p class="bande-ligne chiffres">{dateHeure(recit.at)} · {recit.round} round{recit.round > 1 ? 's' : ''}</p>
+		<p class="bande-ligne chiffres">
+			{dateHeure(recit.at)} · {recit.round} round{recit.round > 1 ? 's' : ''}
+		</p>
 	{/snippet}
 
 	{#if recit.name && recit.name !== recit.title}<p class="chapeau">{recit.name}</p>{/if}
@@ -66,7 +81,10 @@
 							<li class="ligne {l.kind}">
 								<span class="texte">{l.text}</span>
 								{#if l.field && l.oldValue !== undefined && l.newValue !== undefined && l.oldValue !== l.newValue}
-									<span class="valeur">{CHAMPS[l.field] ?? l.field} <Rature ancien={l.oldValue} nouveau={l.newValue} /></span>
+									<span class="valeur"
+										>{CHAMPS[l.field] ?? l.field}
+										<Rature ancien={l.oldValue} nouveau={l.newValue} /></span
+									>
 								{/if}
 							</li>
 						{/each}
@@ -78,12 +96,27 @@
 		{/if}
 	</Chapitre>
 
+	<section aria-label="Participants">
+		<p class="repere">Participants</p>
+		<p>{recit.participants.join(' · ')}</p>
+	</section>
 	<Chapitre numero="02" titre="Conséquences tamponnées" id="consequences">
 		{#if data.consequences.length}
 			<ul>
 				{#each data.consequences as c (c.id)}
-					<Consequence cle={c.id} tampon={tampon(c)} signature={signature(c)} motif={c.motif || null} rayee={c.struck}>
-						{c.text}{#if avecRature(c)}<span class="valeur">{c.field ? `${CHAMPS[c.field] ?? c.field} ` : ''}<Rature ancien={c.oldValue ?? ''} nouveau={c.newValue} /></span>{/if}
+					<Consequence
+						cle={c.id}
+						tampon={tampon(c)}
+						signature={signature(c)}
+						motif={c.motif || null}
+						rayee={c.struck}
+					>
+						{c.text}{#if avecRature(c)}<span class="valeur"
+								>{c.field ? `${CHAMPS[c.field] ?? c.field} ` : ''}<Rature
+									ancien={c.oldValue ?? ''}
+									nouveau={c.newValue}
+								/></span
+							>{/if}
 					</Consequence>
 				{/each}
 			</ul>

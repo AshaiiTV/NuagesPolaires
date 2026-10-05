@@ -184,6 +184,9 @@ export async function getBeast(db: Db, actor: Actor | null, input: string): Prom
 		.orderBy(asc(zones.position), asc(zones.name));
 	return {
 		...rowView(row),
+		qtyMin: row.qtyMin,
+		qtyMax: row.qtyMax,
+		spawnWeight: row.spawnWeight,
 		pv: row.pv,
 		ep: row.ep,
 		strike: row.strike,
@@ -276,6 +279,8 @@ export async function duplicateBeast(
 		if (!source) throw NpError.versionConflict();
 		// Audit 04 §2.7, legacy/assets/js/beast-admin.js:413-419 : visibilité conservée, archive remise à faux.
 		const { createdAt: _createdAt, updatedAt: _updatedAt, ...data } = source;
+		void _createdAt;
+		void _updatedAt;
 		const [copy] = await tx
 			.insert(beasts)
 			.values({

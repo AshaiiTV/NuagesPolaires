@@ -15,7 +15,13 @@ import { MEANING_COLORS } from './colors';
 
 export type EventType = 'combat' | 'exploration' | 'social' | 'evenement' | 'autre';
 
-export const EVENT_TYPES: readonly EventType[] = ['combat', 'exploration', 'social', 'evenement', 'autre'];
+export const EVENT_TYPES: readonly EventType[] = [
+	'combat',
+	'exploration',
+	'social',
+	'evenement',
+	'autre'
+];
 
 export interface EventTypeMeta {
 	icon: string;
@@ -71,11 +77,7 @@ export interface RegisteringCharacter {
 // ─── Résultats ───────────────────────────────────────────────────────────────
 
 export type RegistrationErrorCode =
-	| 'EVENT_CLOSED'
-	| 'EVENT_FULL'
-	| 'EVENT_UNAVAILABLE'
-	| 'EVENT_NOT_FOUND'
-	| 'CHARACTER_UNNAMED';
+	'EVENT_CLOSED' | 'EVENT_FULL' | 'EVENT_UNAVAILABLE' | 'EVENT_NOT_FOUND' | 'CHARACTER_UNNAMED';
 
 export interface RegistrationRefusal {
 	ok: false;
@@ -110,7 +112,11 @@ export const EVENT_MESSAGES = {
 	full: 'Événement complet.'
 } as const;
 
-function refuse(code: RegistrationErrorCode, message: string, status: 400 | 404 | 409): RegistrationRefusal {
+function refuse(
+	code: RegistrationErrorCode,
+	message: string,
+	status: 400 | 404 | 409
+): RegistrationRefusal {
 	return { ok: false, code, message, status };
 }
 
@@ -129,14 +135,18 @@ export function normalizeCapacity(capacity: number | null | undefined): number |
 }
 
 /** Vrai si `capacity > 0` et le nombre d'inscrits atteint la capacité (audit 08 §2.1). */
-export function isEventFull(capacity: number | null | undefined, participantCount: number): boolean {
+export function isEventFull(
+	capacity: number | null | undefined,
+	participantCount: number
+): boolean {
 	const max = normalizeCapacity(capacity) ?? 0;
 	return max > 0 && participantCount >= max;
 }
 
 /** Contrôles communs aux deux sens (legacy db.js:931-935). */
 function checkCharacter(character: RegisteringCharacter): RegistrationRefusal | null {
-	if (!character.name || !character.name.trim()) return refuse('CHARACTER_UNNAMED', EVENT_MESSAGES.unnamed, 400);
+	if (!character.name || !character.name.trim())
+		return refuse('CHARACTER_UNNAMED', EVENT_MESSAGES.unnamed, 400);
 	if (character.hasHomonym) return refuse('EVENT_UNAVAILABLE', EVENT_MESSAGES.homonym, 409);
 	return null;
 }
@@ -166,7 +176,8 @@ export function canRegister(
 
 	const max = normalizeCapacity(event.capacity);
 	if (max === null) return refuse('EVENT_UNAVAILABLE', EVENT_MESSAGES.badCapacity, 409);
-	if (max > 0 && event.participantIds.length >= max) return refuse('EVENT_FULL', EVENT_MESSAGES.full, 409);
+	if (max > 0 && event.participantIds.length >= max)
+		return refuse('EVENT_FULL', EVENT_MESSAGES.full, 409);
 
 	return { ok: true, alreadyRegistered: false };
 }
@@ -239,7 +250,10 @@ export function eventState(
 }
 
 /** Places restantes ; `null` si sans limite (« Sans limite de places. », audit 08 §2.1). */
-export function remainingSeats(capacity: number | null | undefined, participantCount: number): number | null {
+export function remainingSeats(
+	capacity: number | null | undefined,
+	participantCount: number
+): number | null {
 	const max = normalizeCapacity(capacity) ?? 0;
 	if (max <= 0) return null;
 	return Math.max(0, max - participantCount);

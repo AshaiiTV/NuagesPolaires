@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { SvelteDate } from 'svelte/reactivity';
+	import { chemin } from '$lib/ui/adresse';
 	// Registre › Données : ce qu'on emporte (export partiel, dit tel quel), ce qui a été repris de
 	// l'ancien carnet, ce que le serveur dit de lui-même (sans jamais livrer une valeur secrète), et
 	// les deux réglages du pied de page et des salons.
@@ -32,7 +34,9 @@
 
 	/** Le fichier exporté : un lien de téléchargement tenu par cette page seulement, ouvert une fois. */
 	const fichier = $derived(form && 'fichier' in form ? form.fichier : null);
-	const lienFichier = $derived(fichier ? 'data:application/json;charset=utf-8,' + encodeURIComponent(fichier.contenu) : null);
+	const lienFichier = $derived(
+		fichier ? 'data:application/json;charset=utf-8,' + encodeURIComponent(fichier.contenu) : null
+	);
 	let telechargement: HTMLAnchorElement | undefined = $state();
 	let dejaOuvert = '';
 	$effect(() => {
@@ -58,31 +62,73 @@
 
 	const env = $derived(data.diag.env);
 	const variables = $derived([
-		{ nom: 'Adresse de la base', ok: env.databaseConfigured || env.pgliteDriver, oui: env.pgliteDriver && !env.databaseConfigured ? 'base embarquée' : 'présente', non: 'absente', grave: true },
-		{ nom: 'Secret de session', ok: env.sessionSecretConfigured, oui: 'présent, assez long', non: 'absent ou trop court', grave: env.production },
-		{ nom: 'Adresse publique du site', ok: env.siteUrlConfigured, oui: 'présente', non: 'absente', grave: env.production },
-		{ nom: 'Administrateur initial', ok: env.adminBootstrapConfigured, oui: 'présent', non: 'absent', grave: false },
-		{ nom: 'Récupération d’administrateur', ok: !env.adminRecoveryEnabled, oui: 'fermée', non: 'ouverte — à refermer après usage', grave: true },
-		{ nom: 'Connexion Discord', ok: env.discordLoginConfigured, oui: 'configurée', non: 'désactivée', grave: false },
-		{ nom: 'Webhook des rendez-vous', ok: env.discordWebhookConfigured, oui: 'présent', non: 'absent', grave: false }
+		{
+			nom: 'Adresse de la base',
+			ok: env.databaseConfigured || env.pgliteDriver,
+			oui: env.pgliteDriver && !env.databaseConfigured ? 'base embarquée' : 'présente',
+			non: 'absente',
+			grave: true
+		},
+		{
+			nom: 'Secret de session',
+			ok: env.sessionSecretConfigured,
+			oui: 'présent, assez long',
+			non: 'absent ou trop court',
+			grave: env.production
+		},
+		{
+			nom: 'Adresse publique du site',
+			ok: env.siteUrlConfigured,
+			oui: 'présente',
+			non: 'absente',
+			grave: env.production
+		},
+		{
+			nom: 'Administrateur initial',
+			ok: env.adminBootstrapConfigured,
+			oui: 'présent',
+			non: 'absent',
+			grave: false
+		},
+		{
+			nom: 'Récupération d’administrateur',
+			ok: !env.adminRecoveryEnabled,
+			oui: 'fermée',
+			non: 'ouverte — à refermer après usage',
+			grave: true
+		},
+		{
+			nom: 'Connexion Discord',
+			ok: env.discordLoginConfigured,
+			oui: 'configurée',
+			non: 'désactivée',
+			grave: false
+		},
+		{
+			nom: 'Webhook des rendez-vous',
+			ok: env.discordWebhookConfigured,
+			oui: 'présent',
+			non: 'absent',
+			grave: false
+		}
 	]);
 
 	const REGLAGES = [
 		{
 			key: 'discord_invite_url',
 			libelle: 'Lien d’invitation du pied de page',
-			aide: 'https://discord.gg/… ou https://discord.com/invite/… ; vide, le lien disparaît du pied de page.',
+			aide: 'https://discord.gg/… ou https://discord.com/invite/…\u00a0; vide, le lien disparaît du pied de page.',
 			placeholder: 'https://discord.gg/…'
 		},
 		{
 			key: 'discord_default_channel_url',
 			libelle: 'Salon par défaut',
-			aide: 'Le lien d’un salon Discord ; vide, aucun salon n’est proposé par défaut.',
+			aide: 'Le lien d’un salon Discord\u00a0; vide, aucun salon n’est proposé par défaut.',
 			placeholder: 'https://discord.com/channels/…'
 		}
 	] as const;
 	const valeur = (key: string) => data.reglages.find((r) => r.key === key);
-	const jamais = (iso: string) => new Date(iso).getTime() <= 0;
+	const jamais = (iso: string) => new SvelteDate(iso).getTime() <= 0;
 </script>
 
 <svelte:head><title>Données — Le Registre</title></svelte:head>
@@ -97,7 +143,11 @@
 		<div class="export">
 			<div>
 				<p class="mention">{MENTION}</p>
-				<p class="texte">Un fichier JSON : les comptes sans leurs secrets, les personnages et leurs inventaires, les Serments, le bestiaire et ses zones, les rendez-vous et leurs inscriptions, les réglages.</p>
+				<p class="texte">
+					Un fichier JSON&nbsp;: les comptes sans leurs secrets, les personnages et leurs
+					inventaires, les Serments, le bestiaire et ses zones, les rendez-vous et leurs
+					inscriptions, les réglages.
+				</p>
 				<details class="exclus">
 					<summary>Ce que l’export ne contient pas</summary>
 					<ul>
@@ -105,13 +155,23 @@
 					</ul>
 				</details>
 			</div>
-			<form method="POST" action="?/exporter" use:enhance={pour('export', 'Exporté')} class="ordinateur">
+			<form
+				method="POST"
+				action="?/exporter"
+				use:enhance={pour('export', 'Exporté')}
+				class="ordinateur"
+			>
 				<Bouton variante="trait" type="submit" disabled={ecriture.enCours}>Exporter (.json)</Bouton>
 				{#if cible === 'export' && ecriture.note}
 					<NoteDeMarge ton={ecriture.note.ton}>{ecriture.note.texte}</NoteDeMarge>
 				{/if}
 				{#if fichier && lienFichier}
-					<a class="retelecharger" href={lienFichier} download={fichier.nom} bind:this={telechargement}>Télécharger à nouveau {fichier.nom}</a>
+					<a
+						class="retelecharger"
+						href={chemin(lienFichier)}
+						download={fichier.nom}
+						bind:this={telechargement}>Télécharger à nouveau {fichier.nom}</a
+					>
 				{/if}
 			</form>
 			<p class="sur-ordinateur">L’export se fait sur ordinateur.</p>
@@ -120,17 +180,24 @@
 
 	<Chapitre numero="02" titre="La reprise de l’ancien carnet" id="migration">
 		{#if !data.migration.migrated}
-			<Vide>Rien n’a été repris de l’ancien carnet : cette base est née ici.</Vide>
+			<Vide>Rien n’a été repris de l’ancien carnet&nbsp;: cette base est née ici.</Vide>
 		{:else}
 			<p class="reprise">
 				{#if fiches > 0}
-					<span class="voix-carnet">{fiches} {fiches > 1 ? 'fiches reprises' : 'fiche reprise'} sans rature.</span>
+					<span class="voix-carnet"
+						>{fiches} {fiches > 1 ? 'fiches reprises' : 'fiche reprise'} sans rature.</span
+					>
 				{:else}
 					<span class="voix-carnet">Aucune fiche de personnage reprise.</span>
 				{/if}
-				{#if data.migration.lastMigratedAt}<span class="gris">Dernière reprise le {leA(data.migration.lastMigratedAt)}.</span>{/if}
+				{#if data.migration.lastMigratedAt}<span class="gris"
+						>Dernière reprise le {leA(data.migration.lastMigratedAt)}.</span
+					>{/if}
 			</p>
-			<p class="texte">L’état courant a été recopié ; l’historique d’avant la reprise ne porte pas de rature. Chaque ligne reprise reste marquée « repris sans rature ».</p>
+			<p class="texte">
+				L’état courant a été recopié&nbsp;; l’historique d’avant la reprise ne porte pas de rature.
+				Chaque ligne reprise reste marquée « repris sans rature ».
+			</p>
 			<ul class="lignes">
 				{#each data.migration.tables as t (t.table)}
 					<li>
@@ -141,18 +208,28 @@
 				{/each}
 			</ul>
 			{#if data.migration.transformerVersions.length}
-				<p class="gris petit">Transformations appliquées : version{data.migration.transformerVersions.length > 1 ? 's' : ''} {data.migration.transformerVersions.join(', ')}.</p>
+				<p class="gris petit">
+					Transformations appliquées : version{data.migration.transformerVersions.length > 1
+						? 's'
+						: ''}
+					{data.migration.transformerVersions.join(', ')}.
+				</p>
 			{/if}
 		{/if}
 	</Chapitre>
 
 	<Chapitre numero="03" titre="Diagnostics" id="diagnostics">
-		<p class="texte">Ce que le serveur dit de lui-même à <span class="chiffres">{heure(data.diag.at)}</span>. Les variables d’environnement sont dites présentes ou absentes, jamais lues ici.</p>
+		<p class="texte">
+			Ce que le serveur dit de lui-même à <span class="chiffres">{heure(data.diag.at)}</span>. Les
+			variables d’environnement sont dites présentes ou absentes, jamais lues ici.
+		</p>
 		<dl class="diag">
 			<div class:alerte={!data.diag.dbReachable}>
 				<dt>Base de données</dt>
 				<dd>
-					{#if data.diag.dbReachable}joignable{#if data.diag.dbLatencyMs !== null}<span class="gris chiffres">{' · '}{data.diag.dbLatencyMs} ms</span>{/if}{:else}injoignable{/if}
+					{#if data.diag.dbReachable}joignable{#if data.diag.dbLatencyMs !== null}<span
+								class="gris chiffres">&nbsp;·&nbsp;{data.diag.dbLatencyMs} ms</span
+							>{/if}{:else}injoignable{/if}
 				</dd>
 			</div>
 			{#each variables as v (v.nom)}

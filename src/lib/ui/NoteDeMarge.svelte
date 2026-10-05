@@ -11,7 +11,11 @@
 	let { ton = 'info', children, action }: Props = $props();
 </script>
 
-<p class="note {ton}" role={ton === 'refus' ? 'alert' : 'status'} aria-live={ton === 'refus' ? 'assertive' : 'polite'}>
+<p
+	class="note {ton}"
+	role={ton === 'refus' ? 'alert' : 'status'}
+	aria-live={ton === 'refus' ? 'assertive' : 'polite'}
+>
 	<span class="trait" aria-hidden="true"></span>
 	<span class="texte">{@render children()}</span>
 	{#if action}<span class="action">{@render action()}</span>{/if}

@@ -228,7 +228,9 @@ export type TargetType = 'enemy' | 'ally' | 'none';
  * Option de capacité proposée au déclarant (legacy `opts` de cDeclareAction, construite par
  * cBuildAbilityOptionsForPalier / cParseMobSkillOption, audit 03 §4.4-4.5).
  */
-export interface AbilityOption extends Partial<Omit<CombatAction, 'action' | 'target' | 'healTarget'>> {
+export interface AbilityOption extends Partial<
+	Omit<CombatAction, 'action' | 'target' | 'healTarget'>
+> {
 	action: 'capacite' | 'soin' | 'frappe_dechainees';
 	kind: ActionKind;
 	label: string;
@@ -242,7 +244,9 @@ export interface AbilityOption extends Partial<Omit<CombatAction, 'action' | 'ta
 }
 
 /** Options acceptées par declareAction (cibles + surcharges de l'option de capacité). */
-export interface DeclareOptions extends Partial<Omit<CombatAction, 'action' | 'target' | 'healTarget'>> {
+export interface DeclareOptions extends Partial<
+	Omit<CombatAction, 'action' | 'target' | 'healTarget'>
+> {
 	target?: string | null;
 	healTarget?: string | null;
 }

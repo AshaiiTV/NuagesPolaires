@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteDate } from 'svelte/reactivity';
 	// /table/combat/[id] — la Table vue par le MJ (03-vision §5.8, §6 moments 3 et 7, P5, P7).
 	// L'état du combat vit côté client (TableMJ, fonctions PURES du moteur). Chaque « Sauvegarder » et
 	// chaque clôture de round envoient l'état complet à ?/sauver (JSON + expectedRevision) ; le relevé ne
@@ -19,7 +20,12 @@
 	import Consequences, { type Archive } from '$lib/ui/table/Consequences.svelte';
 	import { TableMJ, type RaisonSauvegarde } from '$lib/ui/table/table.svelte';
 	import { exportDiscord, ko } from '$lib/ui/table/texte';
-	import { PHRASE_ATTENTE, PHRASE_CONFLIT, PHRASE_FERME, PHRASE_REFUS } from '$lib/ui/ecriture.svelte';
+	import {
+		PHRASE_ATTENTE,
+		PHRASE_CONFLIT,
+		PHRASE_FERME,
+		PHRASE_REFUS
+	} from '$lib/ui/ecriture.svelte';
 	import { heure } from '$lib/ui/dates';
 	import Preparer from './Preparer.svelte';
 	import type { PageProps } from './$types';
@@ -28,7 +34,9 @@
 
 	// La Table est construite une fois : les rechargements de données (déclarations des joueurs) ne
 	// remplacent jamais l'état tenu à l'écran ; seul « Reprendre leur version » le fait.
-	const table = untrack(() => new TableMJ(data.table.state, data.table.revision, data.table.row.savedAt, data.pseudo));
+	const table = untrack(
+		() => new TableMJ(data.table.state, data.table.revision, data.table.row.savedAt, data.pseudo)
+	);
 	let chiffres = $state(untrack(() => data.table.row.showEnemyNumbers));
 
 	const etat = $derived(table.etat);
@@ -103,7 +111,10 @@
 					await invalidateAll();
 					return;
 				}
-				noteSauver = { ton: 'refus', texte: result.status === 401 ? PHRASE_FERME : (d.message ?? PHRASE_REFUS) };
+				noteSauver = {
+					ton: 'refus',
+					texte: result.status === 401 ? PHRASE_FERME : (d.message ?? PHRASE_REFUS)
+				};
 				return;
 			}
 			noteSauver = { ton: 'refus', texte: PHRASE_REFUS };
@@ -116,7 +127,8 @@
 		const leur = data.table.state;
 		const out: { quoi: string; leur: string; mien: string }[] = [];
 		if (leur.name !== etat.name) out.push({ quoi: 'Nom', leur: leur.name, mien: etat.name });
-		if (leur.round !== etat.round) out.push({ quoi: 'Round', leur: String(leur.round), mien: String(etat.round) });
+		if (leur.round !== etat.round)
+			out.push({ quoi: 'Round', leur: String(leur.round), mien: String(etat.round) });
 		for (const f of etat.fighters) {
 			const l = leur.fighters.find((x) => x.id === f.id);
 			if (!l) {
@@ -124,9 +136,16 @@
 				continue;
 			}
 			for (const k of ['pv', 'ep', 'em'] as const)
-				if (l[`${k}Cur`] !== f[`${k}Cur`]) out.push({ quoi: `${f.name} · ${k.toUpperCase()}`, leur: String(l[`${k}Cur`]), mien: String(f[`${k}Cur`]) });
+				if (l[`${k}Cur`] !== f[`${k}Cur`])
+					out.push({
+						quoi: `${f.name} · ${k.toUpperCase()}`,
+						leur: String(l[`${k}Cur`]),
+						mien: String(f[`${k}Cur`])
+					});
 		}
-		for (const l of leur.fighters) if (!etat.fighters.some((f) => f.id === l.id)) out.push({ quoi: l.name, leur: 'à la Table', mien: 'absent' });
+		for (const l of leur.fighters)
+			if (!etat.fighters.some((f) => f.id === l.id))
+				out.push({ quoi: l.name, leur: 'à la Table', mien: 'absent' });
 		return out;
 	});
 	function reprendreLeur() {
@@ -161,7 +180,10 @@
 		const texte = exportDiscord(etat);
 		try {
 			await navigator.clipboard.writeText(texte);
-			noteLocale = { ton: 'fait', texte: `Copié · ${heure(new Date())} — colle-le dans le salon.` };
+			noteLocale = {
+				ton: 'fait',
+				texte: `Copié · ${heure(new SvelteDate())} — colle-le dans le salon.`
+			};
 		} catch {
 			noteLocale = { ton: 'refus', texte: 'La copie n’a pas pris : ton navigateur la refuse ici.' };
 		}
@@ -186,8 +208,17 @@
 				chiffres = c.valeur;
 				return;
 			}
-			const d = result.type === 'failure' ? ((result.data ?? {}) as { code?: string; message?: string }) : {};
-			noteLocale = { ton: 'refus', texte: d.code === 'VERSION_CONFLICT' ? PHRASE_CONFLIT : `Les chiffres restent ${chiffres ? 'montrés' : 'cachés'}. ${d.message ?? ''}`.trim() };
+			const d =
+				result.type === 'failure'
+					? ((result.data ?? {}) as { code?: string; message?: string })
+					: {};
+			noteLocale = {
+				ton: 'refus',
+				texte:
+					d.code === 'VERSION_CONFLICT'
+						? PHRASE_CONFLIT
+						: `Les chiffres restent ${chiffres ? 'montrés' : 'cachés'}. ${d.message ?? ''}`.trim()
+			};
 		};
 	};
 
@@ -212,7 +243,9 @@
 
 	const relevé = $derived(table.releve ? `relevé ${heure(table.releve)}` : 'pas encore relevé');
 	type Ton = 'fait' | 'info' | 'refus' | 'attente';
-	const noteTete: { ton: Ton; texte: string } | null = $derived(noteSauver ?? table.note ?? noteLocale);
+	const noteTete: { ton: Ton; texte: string } | null = $derived(
+		noteSauver ?? table.note ?? noteLocale
+	);
 </script>
 
 <svelte:head><title>{etat.name || 'La Table'} — La Table — Nuages Polaires</title></svelte:head>
@@ -238,17 +271,26 @@
 			<p class="etat chiffres" aria-live="polite">
 				<span>{ligneEtat}</span>
 				<span class="releve" class:retard={table.echec}>
-					{relevé}{#if table.nonSauve !== null}{' · '}non sauvegardé depuis {heure(table.nonSauve)}{/if}
+					{relevé}{#if table.nonSauve !== null}&nbsp;·&nbsp;non sauvegardé depuis {heure(
+							table.nonSauve
+						)}{/if}
 				</span>
 				{#if table.echec && !conflit}
-					<button type="button" class="reessayer" onclick={() => sauver(table.raisonEnAttente)} disabled={enVol}>Réessayer</button>
+					<button
+						type="button"
+						class="reessayer"
+						onclick={() => sauver(table.raisonEnAttente)}
+						disabled={enVol}>Réessayer</button
+					>
 				{/if}
 			</p>
 		</div>
 
 		<div class="gestes">
 			{#if archive}
-				<Bouton variante="texte" href="/table/archives/{archive.id}" fleche="→">Lire le récit</Bouton>
+				<Bouton variante="texte" href="/table/archives/{archive.id}" fleche="→"
+					>Lire le récit</Bouton
+				>
 			{:else if !table.demarre}
 				<Bouton variante="ruban" onclick={demarrer} disabled={!combattants.length}>Démarrer</Bouton>
 				{#if nomInitiative}<span class="initiative">Initiative : {nomInitiative}</span>{/if}
@@ -257,20 +299,38 @@
 				<Bouton variante="trait" onclick={annuler}>Annuler le round</Bouton>
 			{:else if fini}
 				<Bouton variante="ruban" onclick={() => (feuilletOuvert = true)}>Terminer le combat</Bouton>
-				{#if table.peutAnnulerRound}<Bouton variante="trait" onclick={annuler}>Annuler le round</Bouton>{/if}
+				{#if table.peutAnnulerRound}<Bouton variante="trait" onclick={annuler}
+						>Annuler le round</Bouton
+					>{/if}
 			{:else}
-				<Bouton variante="ruban" onclick={resoudre} disabled={!table.peutResoudre} aria-describedby="etat-declarations">Résoudre le round</Bouton>
-				{#if table.peutAnnulerRound}<Bouton variante="trait" onclick={annuler}>Annuler le round</Bouton>{/if}
+				<Bouton
+					variante="ruban"
+					onclick={resoudre}
+					disabled={!table.peutResoudre}
+					aria-describedby="etat-declarations">Résoudre le round</Bouton
+				>
+				{#if table.peutAnnulerRound}<Bouton variante="trait" onclick={annuler}
+						>Annuler le round</Bouton
+					>{/if}
 			{/if}
 			{#if !archive}
-				<Bouton variante="trait" onclick={() => sauver('manual')} disabled={enVol}>Sauvegarder</Bouton>
+				<Bouton variante="trait" onclick={() => sauver('manual')} disabled={enVol}
+					>Sauvegarder</Bouton
+				>
 				{#if table.demarre && !fini}
-					<Bouton variante="trait" onclick={() => (feuilletOuvert = true)}>Terminer le combat</Bouton>
+					<Bouton variante="trait" onclick={() => (feuilletOuvert = true)}
+						>Terminer le combat</Bouton
+					>
 				{/if}
 			{/if}
 			<Bouton variante="texte" onclick={copier}>Copier pour Discord</Bouton>
 			{#if !archive}
-				<form method="POST" action="?/montrerChiffres" class="interrupteur" use:enhance={basculerChiffres}>
+				<form
+					method="POST"
+					action="?/montrerChiffres"
+					class="interrupteur"
+					use:enhance={basculerChiffres}
+				>
 					<button type="submit" role="switch" aria-checked={chiffres} disabled={chiffresEnVol}>
 						<span class="piste" aria-hidden="true"><span class="curseur"></span></span>
 						Montrer les chiffres des adversaires
@@ -278,17 +338,29 @@
 				</form>
 			{/if}
 		</div>
-		<p id="etat-declarations" class="sr-only">{compte.faits} sur {compte.vivants} combattants ont déclaré.</p>
+		<p id="etat-declarations" class="sr-only">
+			{compte.faits} sur {compte.vivants} combattants ont déclaré.
+		</p>
 
 		{#if conflit}
 			<div class="conflit" role="alert">
 				<p class="phrase">{PHRASE_CONFLIT}</p>
 				{#if differences.length}
 					<table>
-						<thead><tr><th scope="col">Champ</th><th scope="col">Leur version</th><th scope="col">La mienne</th></tr></thead>
+						<thead
+							><tr
+								><th scope="col">Champ</th><th scope="col">Leur version</th><th scope="col"
+									>La mienne</th
+								></tr
+							></thead
+						>
 						<tbody>
 							{#each differences.slice(0, 12) as d, i (i)}
-								<tr><th scope="row">{d.quoi}</th><td class="chiffres">{d.leur}</td><td class="chiffres">{d.mien}</td></tr>
+								<tr
+									><th scope="row">{d.quoi}</th><td class="chiffres">{d.leur}</td><td
+										class="chiffres">{d.mien}</td
+									></tr
+								>
 							{/each}
 						</tbody>
 					</table>
@@ -301,7 +373,9 @@
 				</div>
 			</div>
 		{:else if noteTete}
-			<div class="note" aria-live="polite"><NoteDeMarge ton={noteTete.ton}>{noteTete.texte}</NoteDeMarge></div>
+			<div class="note" aria-live="polite">
+				<NoteDeMarge ton={noteTete.ton}>{noteTete.texte}</NoteDeMarge>
+			</div>
 		{/if}
 	</header>
 
@@ -316,10 +390,13 @@
 			<h2 id="titre-combattants" class="colonne">Combattants</h2>
 			{#if combattants.length}
 				<div class="entetes" aria-hidden="true">
-					<span>Nom</span><span class="d">PV</span><span class="d">EP</span><span class="d">EM</span><span>Statuts</span><span>Déclaré</span><span></span>
+					<span>Nom</span><span class="d">PV</span><span class="d">EP</span><span class="d">EM</span
+					><span>Statuts</span><span>Déclaré</span><span></span>
 				</div>
 				<ul>
-					{#each table.demarre ? etat.order.map((id) => combattants.find((f) => f.id === id)).filter((f) => f !== undefined) : combattants as f (f.id)}
+					{#each table.demarre ? etat.order
+								.map((id) => combattants.find((f) => f.id === id))
+								.filter((f) => f !== undefined) : combattants as f (f.id)}
 						<Combattant
 							{table}
 							{f}
@@ -331,45 +408,87 @@
 					{/each}
 				</ul>
 			{:else}
-				<Vide>Aucun combattant. Coche des Élèves du Serment et des Adversaires pour commencer.</Vide>
+				<Vide>Aucun combattant. Coche des Élèves du Serment et des Adversaires pour commencer.</Vide
+				>
 			{/if}
 		</section>
 
 		{#if !table.demarre}
 			<section class="centre" aria-labelledby="titre-preparer">
 				<h2 id="titre-preparer" class="colonne"><span class="num">01</span> Avant démarrage</h2>
-				<Preparer {table} personnages={data.candidats.personnages} creatures={data.candidats.creatures} />
+				<Preparer
+					{table}
+					personnages={data.candidats.personnages}
+					creatures={data.candidats.creatures}
+				/>
 			</section>
 		{:else}
 			<div class="centre">
 				<div class="vues" role="tablist" aria-label="Partie de la Table">
-					<button type="button" role="tab" aria-selected={vue === 'declarations'} aria-controls="vue-declarations" onclick={() => (vue = 'declarations')}>Déclarations</button>
-					<button type="button" role="tab" aria-selected={vue === 'resolution'} aria-controls="vue-resolution" onclick={() => (vue = 'resolution')}>Résolution</button>
-					<button type="button" role="tab" aria-selected={vue === 'journal'} aria-controls="vue-journal" onclick={() => (vue = 'journal')}>Journal</button>
+					<button
+						type="button"
+						role="tab"
+						aria-selected={vue === 'declarations'}
+						aria-controls="vue-declarations"
+						onclick={() => (vue = 'declarations')}>Déclarations</button
+					>
+					<button
+						type="button"
+						role="tab"
+						aria-selected={vue === 'resolution'}
+						aria-controls="vue-resolution"
+						onclick={() => (vue = 'resolution')}>Résolution</button
+					>
+					<button
+						type="button"
+						role="tab"
+						aria-selected={vue === 'journal'}
+						aria-controls="vue-journal"
+						onclick={() => (vue = 'journal')}>Journal</button
+					>
 				</div>
-				<section id="vue-declarations" class="vue" class:actif={vue === 'declarations'} aria-labelledby="titre-declarations">
+				<section
+					id="vue-declarations"
+					class="vue"
+					class:actif={vue === 'declarations'}
+					aria-labelledby="titre-declarations"
+				>
 					<h2 id="titre-declarations" class="colonne"><span class="num">01</span> Déclarations</h2>
 					{#if fini && table.revue === null}
 						<Vide>
 							Le combat est fini : un camp est tombé.
 							{#snippet action()}
-								<Bouton variante="texte" onclick={() => (feuilletOuvert = true)} fleche="→">Ouvrir les Conséquences</Bouton>
+								<Bouton variante="texte" onclick={() => (feuilletOuvert = true)} fleche="→"
+									>Ouvrir les Conséquences</Bouton
+								>
 							{/snippet}
 						</Vide>
 					{:else if table.revue !== null}
-						<p class="attente">Le round {table.revue} est résolu. Relis la résolution, rature si besoin, puis clos le round.</p>
+						<p class="attente">
+							Le round {table.revue} est résolu. Relis la résolution, rature si besoin, puis clos le round.
+						</p>
 					{:else}
 						<Declarations {table} propositions={data.declarations} />
 					{/if}
 				</section>
-				<section id="vue-resolution" class="vue" class:actif={vue === 'resolution'} aria-labelledby="titre-resolution">
+				<section
+					id="vue-resolution"
+					class="vue"
+					class:actif={vue === 'resolution'}
+					aria-labelledby="titre-resolution"
+				>
 					<h2 id="titre-resolution" class="colonne"><span class="num">02</span> Résolution</h2>
 					<Resolution {table} />
 				</section>
 			</div>
 		{/if}
 
-		<aside id="vue-journal" class="droite" class:actif={vue === 'journal' || !table.demarre} aria-label="Journal, règle et notes">
+		<aside
+			id="vue-journal"
+			class="droite"
+			class:actif={vue === 'journal' || !table.demarre}
+			aria-label="Journal, règle et notes"
+		>
 			<Marge {table} />
 		</aside>
 	</div>
@@ -378,6 +497,7 @@
 <Consequences
 	{table}
 	fiches={data.fiches}
+	role={data.compte?.role ?? 'mj'}
 	pseudo={data.pseudo}
 	ouvert={feuilletOuvert}
 	fermer={() => (feuilletOuvert = false)}
@@ -391,22 +511,28 @@
 
 <style>
 	.table-mj {
-		--colonnes-combattants: minmax(0, 1.6fr) 52px 52px 52px minmax(0, 1fr) 36px 44px;
+		--colonnes-combattants: minmax(0, 1.6fr) 52px 52px 52px minmax(0, 1fr) 48px 44px;
 		width: 100%;
 		max-width: var(--page-max);
 		margin: 0 auto;
-		padding: var(--ligne) var(--ligne) calc(var(--ligne) * 2);
+		padding: 12px var(--ligne) calc(var(--ligne) * 2);
 		background: var(--page);
 		border: 1px solid var(--reglure);
 		box-shadow: var(--ombre-page);
 	}
 	.tete {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
 		gap: 8px;
 		padding-bottom: 12px;
 		border-bottom: 1px solid var(--reglure);
 	}
+	.tete > :not(.haut):not(.identite) {
+		grid-column: 1 / -1;
+	}
 	.haut {
+		grid-column: 2;
+		grid-row: 1;
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
@@ -424,6 +550,8 @@
 		margin-left: 0;
 	}
 	.identite {
+		grid-column: 1;
+		grid-row: 1;
 		display: flex;
 		flex-wrap: wrap;
 		align-items: baseline;
@@ -561,7 +689,7 @@
 
 	.colonnes {
 		display: grid;
-		grid-template-columns: minmax(0, 5.6fr) minmax(0, 4.4fr) minmax(0, 2.6fr);
+		grid-template-columns: minmax(0, 6fr) minmax(0, 4.6fr) minmax(0, 2.2fr);
 		gap: 0 24px;
 		padding-top: 12px;
 	}
@@ -610,6 +738,17 @@
 		pointer-events: none;
 	}
 
+	@media (min-width: 1100px) {
+		.colonnes {
+			height: calc(100svh - 250px);
+			min-height: 420px;
+		}
+		.centre,
+		.droite {
+			overflow-y: auto;
+			min-height: 0;
+		}
+	}
 	@media (max-width: 1099px) {
 		.colonnes {
 			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -632,8 +771,8 @@
 		.identite {
 			position: sticky;
 			top: 0;
-			z-index: 2;
-			padding: 8px 0 4px;
+			z-index: 1;
+			padding: 8px 104px 4px 0;
 			background: var(--page);
 			border-bottom: 1px solid var(--reglure);
 		}
@@ -641,7 +780,13 @@
 			padding: 12px 0;
 		}
 		.haut {
-			display: none;
+			display: grid;
+			grid-template-columns: minmax(0, 1fr);
+			padding-right: 0;
+		}
+		.haut .repere {
+			min-height: 56px;
+			padding-right: 104px;
 		}
 		.nom {
 			width: 100%;

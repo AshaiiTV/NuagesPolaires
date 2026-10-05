@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { adresse } from '$lib/ui/adresse';
 	// Feuillet ivoire posé de biais (accueil seulement, ordinateur seulement) : une page publiée.
 	import type { Snippet } from 'svelte';
 
@@ -20,7 +21,8 @@
 	{#if marge}<p class="marge">{marge}</p>{/if}
 	{#if titre}
 		<h3>
-			{#if href}<a {href}>{titre}</a>{:else}{titre}{/if}
+			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- adresse résout les chemins internes et conserve les URL externes. -->
+			{#if href}<a href={adresse(href)}>{titre}</a>{:else}{titre}{/if}
 		</h3>
 	{/if}
 	{#if children}<div class="texte">{@render children()}</div>{/if}

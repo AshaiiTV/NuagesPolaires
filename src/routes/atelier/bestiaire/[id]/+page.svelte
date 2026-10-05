@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
@@ -45,7 +46,11 @@
 		}
 		out.adminNote = String(values?.adminNote ?? beast?.reserved?.adminNote ?? '');
 		for (const key of ['qtyMin', 'qtyMax', 'spawnWeight'])
-			out[key] = String(values?.[key] ?? (beast ? '' : key === 'qtyMax' ? 3 : 1));
+			out[key] = String(
+				values?.[key] ??
+					beast?.[key as 'qtyMin' | 'qtyMax' | 'spawnWeight'] ??
+					(key === 'qtyMax' ? 3 : 1)
+			);
 		return out;
 	}
 	let draft = $state<Record<string, string>>(untrack(saisieInitiale));
@@ -95,6 +100,9 @@
 			BEHAVIOR_COLORS[draft.behavior as keyof typeof BEHAVIOR_COLORS] ?? 'var(--encre-2)',
 		level: Number(draft.level),
 		pv: Number(draft.pv),
+		qtyMin: Number(draft.qtyMin),
+		qtyMax: Number(draft.qtyMax),
+		spawnWeight: Number(draft.spawnWeight),
 		ep: Number(draft.ep),
 		strike: draft.strike,
 		skill: draft.skill,
@@ -125,7 +133,7 @@
 
 <svelte:head><title>{data.beast?.name ?? 'Nouvelle créature'} — L’Atelier</title></svelte:head>
 <PageAtelier titre={data.beast?.name ?? 'Nouvelle créature'} serments={data.atelierSerments}>
-	<a class="retour" href="/atelier/bestiaire">← Les créatures</a>
+	<a class="retour" href={resolve('/atelier/bestiaire')}>← Les créatures</a>
 	{#if ecriture.note}<NoteDeMarge ton={ecriture.note.ton}
 			>{ecriture.note.ton === 'refus' ? 'La créature n’est pas modifiée. ' : ''}{ecriture.note
 				.texte}</NoteDeMarge
@@ -161,13 +169,13 @@
 						/>
 						<label class="choix"
 							>Comportement<select name="behavior" bind:value={draft.behavior}
-								>{#each behaviorSchema.options as behavior}<option value={behavior}
+								>{#each behaviorSchema.options as behavior, index (index)}<option value={behavior}
 										>{behavior}</option
 									>{/each}</select
 							></label
 						>
 						<div class="champs trois">
-							{#each [{ key: 'level', label: 'Niveau', min: 1 }, { key: 'pv', label: 'PV', min: 1 }, { key: 'ep', label: 'EP', min: 0 }] as champ}<Champ
+							{#each [{ key: 'level', label: 'Niveau', min: 1 }, { key: 'pv', label: 'PV', min: 1 }, { key: 'ep', label: 'EP', min: 0 }] as champ (champ.key)}<Champ
 									libelle={champ.label}
 									name={champ.key}
 									type="number"
@@ -177,7 +185,7 @@
 									bind:value={draft[champ.key]}
 								/>{/each}
 						</div>
-						{#each textes as champ}<Champ
+						{#each textes as champ (champ.key)}<Champ
 								libelle={champ.label}
 								name={champ.key}
 								multiligne
@@ -196,7 +204,8 @@
 				<Chapitre numero="02" titre="Les rencontres">
 					<div class="saisie">
 						<fieldset>
-							<legend class="repere">Zones</legend>{#each data.zones as zone}<label class="coche"
+							<legend class="repere">Zones</legend>{#each data.zones as zone (zone.id)}<label
+									class="coche"
 									><input
 										type="checkbox"
 										name="zones"
@@ -210,7 +219,7 @@
 								lignes blanches.
 							</p>{/if}
 						<div class="champs trois">
-							{#each [{ key: 'qtyMin', label: 'Quantité minimale', min: 1 }, { key: 'qtyMax', label: 'Quantité maximale', min: 1 }, { key: 'spawnWeight', label: 'Poids d’apparition', min: 0 }] as champ}<Champ
+							{#each [{ key: 'qtyMin', label: 'Quantité minimale', min: 1 }, { key: 'qtyMax', label: 'Quantité maximale', min: 1 }, { key: 'spawnWeight', label: 'Poids d’apparition', min: 0 }] as champ (champ.key)}<Champ
 									libelle={champ.label}
 									name={champ.key}
 									type="number"

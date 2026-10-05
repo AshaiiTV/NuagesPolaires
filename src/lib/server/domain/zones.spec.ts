@@ -14,16 +14,14 @@ describe('Zones — intégration PGlite', () => {
 	});
 	beforeAll(async () => {
 		test = await createTestDb();
-		await test.db
-			.insert(accounts)
-			.values(
-				['joueur', 'mj', 'designer', 'admin'].map((role) => ({
-					id: `test_${role}`,
-					role: role as Role,
-					pseudo: role,
-					passwordHash: 'test'
-				}))
-			);
+		await test.db.insert(accounts).values(
+			['joueur', 'mj', 'designer', 'admin'].map((role) => ({
+				id: `test_${role}`,
+				role: role as Role,
+				pseudo: role,
+				passwordHash: 'test'
+			}))
+		);
 	}, 30000);
 	afterAll(async () => {
 		await test?.close();

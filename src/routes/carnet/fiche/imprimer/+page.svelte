@@ -5,10 +5,16 @@
 	import Bouton from '$lib/ui/Bouton.svelte';
 	import Losange from '$lib/ui/Losange.svelte';
 	import Portrait from '$lib/ui/Portrait.svelte';
+	import Sceau from '$lib/ui/Sceau.svelte';
 	import { dateCourte, dateHeure, heure } from '$lib/ui/dates';
 	import { palierAtteint, palierSuivant } from '$lib/ui/scene/paliers';
-	import { signataire } from '../signature';
-	import { EQUIPMENT_LABELS, EQUIPMENT_SLOTS, ITEM_CATEGORIES, RESOURCES } from '$lib/schemas/characters';
+	import { signature as signatureTampon } from '$lib/ui/tampons';
+	import {
+		EQUIPMENT_LABELS,
+		EQUIPMENT_SLOTS,
+		ITEM_CATEGORIES,
+		RESOURCES
+	} from '$lib/schemas/characters';
 	import type { ConsequenceView } from '$lib/schemas/characters';
 	import type { PageProps } from './$types';
 
@@ -18,21 +24,25 @@
 
 	const NOMS = { pv: 'Points de Vie', ep: 'Énergie Physique', em: 'Énergie Magique' } as const;
 	const signe = (n: number) => (n > 0 ? `+${n}` : `−${Math.abs(n)}`);
-	const part = (cur: number, max: number) => (max > 0 ? Math.max(0, Math.min(100, (cur / max) * 100)) : 0);
+	const part = (cur: number, max: number) =>
+		max > 0 ? Math.max(0, Math.min(100, (cur / max) * 100)) : 0;
 
 	const groupes = $derived.by(() => {
 		const ordre: string[] = [...ITEM_CATEGORIES];
 		for (const i of fiche.items) if (!ordre.includes(i.category)) ordre.push(i.category);
-		return ordre.map((c) => ({ categorie: c, objets: fiche.items.filter((i) => i.category === c) })).filter((g) => g.objets.length);
+		return ordre
+			.map((c) => ({ categorie: c, objets: fiche.items.filter((i) => i.category === c) }))
+			.filter((g) => g.objets.length);
 	});
 
 	function qui(c: ConsequenceView): string {
-		if (c.stamp) return `${signataire(c.stamp)} · ${heure(c.at)}`;
+		if (c.stamp) return signatureTampon(c.stamp.role, c.stamp.name, c.at);
 		if (c.signature === 'toi') return 'toi';
 		if (c.signature === 'regles') return 'règles';
 		return '';
 	}
-	const valeurs = (c: ConsequenceView) => !!c.replacesId && c.oldValue !== null && c.newValue !== null && c.oldValue !== c.newValue;
+	const valeurs = (c: ConsequenceView) =>
+		!!c.replacesId && c.oldValue !== null && c.newValue !== null && c.oldValue !== c.newValue;
 
 	function imprimer() {
 		window.print();
@@ -52,10 +62,20 @@
 			<div class="bandeau-texte">
 				<p class="coordonnee">Nuages Polaires · fiche de personnage</p>
 				<h1>{fiche.name}</h1>
-				<p class="serment">{fiche.oath.name} · <span class="rang">{fiche.oath.rankLabel}</span> · niveau <span class="chiffres">{fiche.level}</span></p>
-				<p class="exporte chiffres">Exportée le {dateHeure(data.vue.exportedAt)} · relevé du {dateCourte(fiche.releveAt)}, {heure(fiche.releveAt)}</p>
+				<p class="serment">
+					{fiche.oath.name} · <span class="rang">{fiche.oath.rankLabel}</span> · niveau
+					<span class="chiffres">{fiche.level}</span>
+				</p>
+				<p class="exporte chiffres">
+					Exportée le {dateHeure(data.vue.exportedAt)} · relevé du {dateCourte(fiche.releveAt)}, {heure(
+						fiche.releveAt
+					)}
+				</p>
 			</div>
-			<div class="portrait"><Portrait nom={fiche.name} src={fiche.portraitUrl || null} taille={104} /></div>
+			<div class="sceau-impression"><Sceau serment={fiche.oath.name} taille={76} /></div>
+			<div class="portrait">
+				<Portrait nom={fiche.name} src={fiche.portraitUrl || null} taille={104} />
+			</div>
 		</header>
 
 		<div class="deux">
@@ -66,31 +86,52 @@
 						{#each RESOURCES as r (r)}
 							<tr>
 								<th scope="row"><span class="abr">{r.toUpperCase()}</span> {NOMS[r]}</th>
-								<td class="chiffres valeur">{fiche[r].cur}<span class="max">/{fiche[r].max}</span></td>
+								<td class="chiffres valeur"
+									>{fiche[r].cur}<span class="max">/{fiche[r].max}</span></td
+								>
 							</tr>
 							<tr class="trait-ligne" aria-hidden="true">
-								<td colspan="2"><span class="trait"><span class="encre-trait" style:width="{part(fiche[r].cur, fiche[r].max)}%"></span></span></td>
+								<td colspan="2"
+									><span class="trait"
+										><span class="encre-trait" style:width="{part(fiche[r].cur, fiche[r].max)}%"
+										></span></span
+									></td
+								>
 							</tr>
 							{#if fiche.pendingDeclared[r] !== 0}
-								<tr class="declare"><td colspan="2" class="chiffres">{signe(fiche.pendingDeclared[r])} {r.toUpperCase()} déclaré, attend un MJ</td></tr>
+								<tr class="declare"
+									><td colspan="2" class="chiffres"
+										>{signe(fiche.pendingDeclared[r])} {r.toUpperCase()} déclaré, attend un MJ</td
+									></tr
+								>
 							{/if}
 						{/each}
 					</tbody>
 				</table>
-				<p class="xp chiffres">{#if fiche.xpMax > 0}{fiche.xp} / {fiche.xpMax} XP{:else}{fiche.xp} XP{/if}</p>
+				<p class="xp chiffres">
+					{#if fiche.xpMax > 0}{fiche.xp} / {fiche.xpMax} XP{:else}{fiche.xp} XP{/if}
+				</p>
 			</section>
 
 			<section class="bloc">
 				<h2>Statuts et gemmes</h2>
 				<p class="libelle">Statuts</p>
 				{#if fiche.statuses.length}
-					<ul class="sens">{#each fiche.statuses as s (s.id)}<li><Losange couleur={s.color} libelle={s.label} /></li>{/each}</ul>
+					<ul class="sens">
+						{#each fiche.statuses as s (s.id)}<li>
+								<Losange couleur={s.color} libelle={s.label} />
+							</li>{/each}
+					</ul>
 				{:else}
 					<p class="rien">Aucun statut en cours.</p>
 				{/if}
 				<p class="libelle">Gemmes</p>
 				{#if fiche.gems.length}
-					<ul class="sens">{#each fiche.gems as g (g.kind)}<li><Losange couleur={g.color} libelle={g.label} detail={`×${g.qty}`} /></li>{/each}</ul>
+					<ul class="sens">
+						{#each fiche.gems as g (g.kind)}<li>
+								<Losange couleur={g.color} libelle={g.label} detail={`×${g.qty}`} />
+							</li>{/each}
+					</ul>
 				{:else}
 					<p class="rien">Aucune gemme.</p>
 				{/if}
@@ -101,7 +142,10 @@
 			<h2><span class="num">02</span> Équipement et inventaire</h2>
 			<dl class="emplacements">
 				{#each EQUIPMENT_SLOTS as slot (slot)}
-					<div><dt>{EQUIPMENT_LABELS[slot]}</dt><dd class:rien={!fiche.equipment[slot]}>{fiche.equipment[slot] || 'rien'}</dd></div>
+					<div>
+						<dt>{EQUIPMENT_LABELS[slot]}</dt>
+						<dd class:rien={!fiche.equipment[slot]}>{fiche.equipment[slot] || 'rien'}</dd>
+					</div>
 				{/each}
 			</dl>
 			{#if groupes.length}
@@ -125,22 +169,42 @@
 		<section class="bloc">
 			<h2><span class="num">03</span> Serment</h2>
 			<dl class="emplacements serment-dl">
-				<div><dt>Arme</dt><dd>{fiche.oath.weapon || 'non notée'}</dd></div>
-				<div><dt>Rang</dt><dd>{fiche.oath.rankLabel}</dd></div>
-				<div><dt>Lignée</dt><dd>{fiche.oath.lineage ? `Évolution de ${fiche.oath.lineage}` : 'Serment premier'}</dd></div>
-				<div><dt>Branche</dt><dd class:rien={!fiche.branch}>{fiche.branch ?? 'aucune'}</dd></div>
+				<div>
+					<dt>Arme</dt>
+					<dd>{fiche.oath.weapon || 'non notée'}</dd>
+				</div>
+				<div>
+					<dt>Rang</dt>
+					<dd>{fiche.oath.rankLabel}</dd>
+				</div>
+				<div>
+					<dt>Lignée</dt>
+					<dd>{fiche.oath.lineage ? `Évolution de ${fiche.oath.lineage}` : 'Serment premier'}</dd>
+				</div>
+				<div>
+					<dt>Branche</dt>
+					<dd class:rien={!fiche.branch}>{fiche.branch ?? 'aucune'}</dd>
+				</div>
 			</dl>
 			{#if fiche.branch}
 				<ol class="paliers">
 					{#each fiche.tiers.reached as t, n (t.level + t.name)}
 						<li>
-							<p class="palier-tete"><span class="libelle">{palierAtteint(n, t.level, t.stage)}</span> <strong>{t.name}</strong>{#if t.cost} <span class="cout">{t.cost}</span>{/if}</p>
+							<p class="palier-tete">
+								<span class="libelle">{palierAtteint(n, t.level, t.stage)}</span>
+								<strong>{t.name}</strong>{#if t.cost}
+									<span class="cout">{t.cost}</span>{/if}
+							</p>
 							{#if t.description}<p class="palier-texte">{t.description}</p>{/if}
 						</li>
 					{/each}
 					{#each fiche.tiers.next as t, n (t.level + t.name)}
 						<li class="suivant">
-							<p class="palier-tete"><span class="libelle">{palierSuivant(fiche.tiers.reached.length + n, t.level, t.stage)}</span> <strong>{t.name}</strong></p>
+							<p class="palier-tete">
+								<span class="libelle"
+									>{palierSuivant(fiche.tiers.reached.length + n, t.level, t.stage)}</span
+								> <strong>{t.name}</strong>
+							</p>
 						</li>
 					{/each}
 				</ol>
@@ -152,13 +216,20 @@
 			{#if consequences.length}
 				<table class="consequences">
 					<thead>
-						<tr><th scope="col">Date</th><th scope="col">Ce qui a changé</th><th scope="col">Signé</th><th scope="col">Motif</th></tr>
+						<tr
+							><th scope="col">Date</th><th scope="col">Ce qui a changé</th><th scope="col"
+								>Signé</th
+							><th scope="col">Motif</th></tr
+						>
 					</thead>
 					<tbody>
 						{#each consequences as c (c.id)}
 							<tr class:rayee={c.struck}>
 								<td class="chiffres date">{dateCourte(c.at)}</td>
-								<td>{c.text}{#if valeurs(c)} <span class="chiffres valeurs"><s>{c.oldValue}</s> {c.newValue}</span>{/if}</td>
+								<td
+									>{c.text}{#if valeurs(c)}
+										<span class="chiffres valeurs"><s>{c.oldValue}</s> {c.newValue}</span>{/if}</td
+								>
 								<td class:tampon={!!c.stamp}>{qui(c)}</td>
 								<td class="motif">{c.motif}</td>
 							</tr>
@@ -171,7 +242,10 @@
 		</section>
 
 		<footer class="pied">
-			<p>Nuages Polaires — le compagnon du serveur. Rien ne s’efface : les ratures restent lisibles, les tampons portent leur motif.</p>
+			<p>
+				Nuages Polaires — le compagnon du serveur. Rien ne s’efface : les ratures restent lisibles,
+				les tampons portent leur motif.
+			</p>
 		</footer>
 	</article>
 </div>
@@ -214,13 +288,16 @@
 		--page-2: color-mix(in srgb, var(--papier) 10%, var(--papier-encre));
 		--reglure: color-mix(in srgb, var(--papier) 18%, var(--papier-encre));
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-columns: minmax(0, 1fr) auto auto;
 		gap: 16px 24px;
 		align-items: center;
 		padding: 28px 32px 24px;
 		background: var(--papier-encre);
 		border-bottom: 3px solid var(--encre-humide);
 		color: var(--encre);
+	}
+	.sceau-impression {
+		color: var(--tampon);
 	}
 	.coordonnee {
 		font: var(--t-repere);
@@ -238,7 +315,7 @@
 		font: 500 20px/28px var(--voix);
 	}
 	.rang {
-		color: var(--tampon);
+		color: var(--encre-2);
 	}
 	.exporte {
 		margin-top: 6px;
@@ -272,7 +349,7 @@
 	.num {
 		font: var(--t-repere);
 		letter-spacing: 0.12em;
-		color: var(--tampon);
+		color: var(--encre-2);
 	}
 	.libelle {
 		margin-top: 8px;
@@ -434,7 +511,7 @@
 		color: var(--encre-grise);
 	}
 	.tampon {
-		color: var(--tampon);
+		color: var(--encre-2);
 		font-weight: 600;
 		white-space: nowrap;
 	}
@@ -461,11 +538,19 @@
 			padding: 0 var(--gouttiere);
 		}
 		.bandeau {
-			grid-template-columns: 1fr;
+			grid-template-columns: 1fr auto;
 			padding: 22px var(--gouttiere);
 		}
 		.portrait {
 			grid-row: 1;
+			grid-column: 1;
+		}
+		.sceau-impression {
+			grid-row: 1;
+			grid-column: 2;
+		}
+		.bandeau-texte {
+			grid-column: 1 / -1;
 		}
 		h1 {
 			font-size: 36px;

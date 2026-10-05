@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteDate } from 'svelte/reactivity';
 	// « Dernières pages » (03-vision §5.2). L'ordre des zones est imposé : ligne d'état (marge),
 	// marque-page, ce qui attend ta main, depuis ta dernière lecture, ce qui vient.
 	// Trois états de plus : compte en attente de liaison, fiche introuvable, synchronisation interrompue.
@@ -17,7 +18,16 @@
 	import Portrait from '$lib/ui/Portrait.svelte';
 	import { creerEcriture, PHRASE_REFUS } from '$lib/ui/ecriture.svelte';
 	import { LIBELLES_ROLE } from '$lib/ui/navigation';
-	import { dateCourte, dateLongue, heure, heureRonde, jourSemaine, joursCalendaires, mois, parisParts } from '$lib/ui/dates';
+	import {
+		dateCourte,
+		dateLongue,
+		heure,
+		heureRonde,
+		jourSemaine,
+		joursCalendaires,
+		mois,
+		parisParts
+	} from '$lib/ui/dates';
 	import { phrasePlaces, teinte } from '../agenda/agenda';
 	import type { EventRowView } from '$lib/schemas/events';
 	import type { PageLineView } from '$lib/schemas/reading';
@@ -36,7 +46,9 @@
 	const declare = $derived.by(() => {
 		if (!fiche) return '';
 		const p = fiche.pendingDeclared;
-		const parts = (['pv', 'ep', 'em'] as const).filter((r) => p[r] !== 0).map((r) => `${signe(p[r])} ${r.toUpperCase()}`);
+		const parts = (['pv', 'ep', 'em'] as const)
+			.filter((r) => p[r] !== 0)
+			.map((r) => `${signe(p[r])} ${r.toUpperCase()}`);
 		return parts.length ? `${parts.join(' · ')} déclaré depuis le relevé` : '';
 	});
 	const absence = $derived(vue.state === 'linked' && vue.daysAway > 30);
@@ -85,7 +97,10 @@
 					return;
 				}
 				ouvertes.delete(ligne.id);
-				const message = result.type === 'failure' ? (result.data as { message?: string } | undefined)?.message : undefined;
+				const message =
+					result.type === 'failure'
+						? (result.data as { message?: string } | undefined)?.message
+						: undefined;
 				refusLigne = { id: ligne.id, texte: message ?? PHRASE_REFUS };
 			};
 		};
@@ -132,7 +147,10 @@
 	}
 	function noteRdv(e: EventRowView): string {
 		const fait = form && 'participation' in form ? form.participation : null;
-		if (fait && fait.eventId === e.id) return fait.viens ? 'Tu viens. Le rendez-vous est en marge de ton carnet.' : 'Rayé. Ta place est libre.';
+		if (fait && fait.eventId === e.id)
+			return fait.viens
+				? 'Tu viens. Le rendez-vous est en marge de ton carnet.'
+				: 'Rayé. Ta place est libre.';
 		return ecriture.note?.texte ?? '';
 	}
 
@@ -141,7 +159,7 @@
 	async function copierPseudo() {
 		try {
 			await navigator.clipboard.writeText(vue.pseudo);
-			copie = heure(new Date());
+			copie = heure(new SvelteDate());
 			setTimeout(() => (copie = null), 4000);
 		} catch {
 			copie = null;
@@ -161,10 +179,18 @@
 			<p class="rdv-titre">{e.title}</p>
 			<p class="rdv-details">
 				<Losange couleur={teinte(e.typeColor)} libelle={e.typeLabel} />
-				{#if e.startsAt}<span class="chiffres">{jourSemaine(e.startsAt)} {dateLongue(e.startsAt)}, {heureRonde(e.startsAt)}</span>{/if}
+				{#if e.startsAt}<span class="chiffres"
+						>{jourSemaine(e.startsAt)} {dateLongue(e.startsAt)}, {heureRonde(e.startsAt)}</span
+					>{/if}
 				<span class="chiffres">{phrasePlaces(e.count, e.capacity)}</span>
 				{#if e.discordUrl}
-					<a class="rdv-salon" href={e.discordUrl} target="_blank" rel="noopener noreferrer">Ouvrir le salon<span class="fleche" aria-hidden="true">↗</span></a>
+					<a
+						class="rdv-salon"
+						href={e.discordUrl}
+						target="_blank"
+						rel="external noopener noreferrer"
+						>Ouvrir le salon<span class="fleche" aria-hidden="true">↗</span></a
+					>
 				{/if}
 			</p>
 		</div>
@@ -172,20 +198,28 @@
 			{#if lecture || (!e.canRegister && !e.registered)}
 				{#if e.closedReason === 'unlinked'}
 					<!-- Le staff sans personnage mène les rendez-vous, il ne s'y inscrit pas : rien à dire. -->
-					{#if vue.state !== 'staff'}<p class="ferme">Ton compte attend sa liaison pour venir.</p>{/if}
+					{#if vue.state !== 'staff'}<p class="ferme">
+							Ton compte attend sa liaison pour venir.
+						</p>{/if}
 				{:else if e.closedReason === 'full'}
 					<p class="ferme">Complet</p>
 				{:else if e.closedReason === 'undated'}
 					<p class="ferme">Date à confirmer · inscriptions fermées</p>
 				{/if}
 			{:else}
-				<form method="POST" action="?/participer" use:enhance={ecrire(`rdv:${e.id}`, e.registered ? 'Rayé' : 'Noté')}>
+				<form
+					method="POST"
+					action="?/participer"
+					use:enhance={ecrire(`rdv:${e.id}`, e.registered ? 'Rayé' : 'Noté')}
+				>
 					<input type="hidden" name="eventId" value={e.id} />
 					<input type="hidden" name="participating" value={e.registered ? 'false' : 'true'} />
 					<input type="hidden" name="expectedRevision" value={e.revision} />
 					{#if e.registered}
 						<p class="viens">
-							<Encre etat={cible === `rdv:${e.id}` ? ecriture.etat : 'prise'}><span class="tu-viens">Tu viens</span></Encre>
+							<Encre etat={cible === `rdv:${e.id}` ? ecriture.etat : 'prise'}
+								><span class="tu-viens">Tu viens</span></Encre
+							>
 							<span class="point" aria-hidden="true">·</span>
 							<button class="rayer" type="submit">Rayer ma place</button>
 						</p>
@@ -199,7 +233,9 @@
 		</div>
 		{#if cible === `rdv:${e.id}` && ecriture.note}
 			<div class="rdv-note">
-				<NoteDeMarge ton={ecriture.note.ton}>{ecriture.note.ton === 'fait' ? noteRdv(e) : ecriture.note.texte}</NoteDeMarge>
+				<NoteDeMarge ton={ecriture.note.ton}
+					>{ecriture.note.ton === 'fait' ? noteRdv(e) : ecriture.note.texte}</NoteDeMarge
+				>
 			</div>
 		{/if}
 	</li>
@@ -207,7 +243,10 @@
 
 {#snippet deplier()}
 	<form method="POST" action="?/deplier" use:enhance={ecrire('deplier', 'Déplié')}>
-		<button class="lien-discret" type="submit"><Encre etat={cible === 'deplier' ? ecriture.etat : 'prise'}>Déplier toutes les cornes</Encre></button>
+		<button class="lien-discret" type="submit"
+			><Encre etat={cible === 'deplier' ? ecriture.etat : 'prise'}>Déplier toutes les cornes</Encre
+			></button
+		>
 	</form>
 {/snippet}
 
@@ -229,23 +268,45 @@
 			<div class="identite">
 				<Portrait nom={fiche.name} src={fiche.portraitUrl || null} taille={72} />
 				<p class="nom">{fiche.name}</p>
-				<p class="serment">{fiche.oathName} · <span class="rang">{fiche.rankLabel}</span> · niveau {fiche.level}</p>
+				<p class="serment">
+					{fiche.oathName} · <span class="rang">{fiche.rankLabel}</span> · niveau {fiche.level}
+				</p>
 			</div>
-			<LigneEtat pv={fiche.pv} ep={fiche.ep} em={fiche.em} releve={releve(fiche.releveAt)} enRetard={horsLigne} />
+			<LigneEtat
+				pv={fiche.pv}
+				ep={fiche.ep}
+				em={fiche.em}
+				releve={releve(fiche.releveAt)}
+				enRetard={horsLigne}
+			/>
 			{#if declare}<p class="declare chiffres">{declare}</p>{/if}
-			{#if horsLigne}<p class="retard" role="status">Le carnet n’a pas pu se mettre à jour depuis {heure(fiche.releveAt)}.</p>{/if}
+			{#if horsLigne}<p class="retard" role="status">
+					Le carnet n’a pas pu se mettre à jour depuis {heure(fiche.releveAt)}.
+				</p>{/if}
 			<p class="lu">Lu pour la dernière fois le {dateLongue(vue.lastReadAt)}.</p>
 		{/snippet}
 		{#snippet bande()}
-			<p class="bande-nom">{fiche.name} · {fiche.oathName} · <span class="rang">{fiche.rankLabel}</span> · niv. {fiche.level}</p>
-			<LigneEtat pv={fiche.pv} ep={fiche.ep} em={fiche.em} releve={releve(fiche.releveAt)} enRetard={horsLigne} />
+			<p class="bande-nom">
+				{fiche.name} · {fiche.oathName} · <span class="rang">{fiche.rankLabel}</span> · niv. {fiche.level}
+			</p>
+			<LigneEtat
+				pv={fiche.pv}
+				ep={fiche.ep}
+				em={fiche.em}
+				releve={releve(fiche.releveAt)}
+				enRetard={horsLigne}
+			/>
 			{#if declare}<p class="declare chiffres">{declare}</p>{/if}
-			{#if horsLigne}<p class="retard" role="status">Le carnet n’a pas pu se mettre à jour depuis {heure(fiche.releveAt)}.</p>{/if}
+			{#if horsLigne}<p class="retard" role="status">
+					Le carnet n’a pas pu se mettre à jour depuis {heure(fiche.releveAt)}.
+				</p>{/if}
 			<p class="bande-lu">Lu pour la dernière fois le {dateLongue(vue.lastReadAt)}.</p>
 		{/snippet}
 
 		{#if absence}
-			<p class="absence">Le carnet t’a gardé {vue.daysAway} jours de pages. Commence par ce qui attend ta main.</p>
+			<p class="absence">
+				Le carnet t’a gardé {vue.daysAway} jours de pages. Commence par ce qui attend ta main.
+			</p>
 		{/if}
 
 		{#if vue.bookmark}
@@ -254,21 +315,60 @@
 				{#if vue.bookmark.text}<p class="phrase">« {vue.bookmark.text} »</p>{/if}
 				<div class="gestes">
 					{#if vue.bookmark.url}
-						<Bouton variante="texte" href={vue.bookmark.url} fleche="↗" target="_blank" rel="noopener noreferrer">Reprendre sur Discord</Bouton>
+						<Bouton
+							variante="texte"
+							href={vue.bookmark.url}
+							fleche="↗"
+							target="_blank"
+							rel="noopener noreferrer">Reprendre sur Discord</Bouton
+						>
 					{/if}
-					<button class="lien-discret" type="button" aria-expanded={marqueOuvert} aria-controls="marque-form" onclick={() => (marqueOuvert = !marqueOuvert)}>
+					<button
+						class="lien-discret"
+						type="button"
+						aria-expanded={marqueOuvert}
+						aria-controls="marque-form"
+						onclick={() => (marqueOuvert = !marqueOuvert)}
+					>
 						{marqueOuvert ? 'Laisser le marque-page tel quel' : 'Réécrire le marque-page'}
 					</button>
 				</div>
 				{#if marqueOuvert}
-					<form id="marque-form" class="marque-form" method="POST" action="?/marquePage" use:enhance={ecrire('marque', 'Noté', () => (marqueOuvert = false))}>
-						<Champ libelle="Où j’en suis" name="text" bind:value={marqueTexte} maxlength={280} placeholder="Une phrase pour reprendre le fil…" />
-						<Champ libelle="Lien du message Discord" name="url" type="url" inputmode="url" bind:value={marqueLien} placeholder="https://discord.com/channels/…" aide="Facultatif." />
+					<form
+						id="marque-form"
+						class="marque-form"
+						method="POST"
+						action="?/marquePage"
+						use:enhance={ecrire('marque', 'Noté', () => (marqueOuvert = false))}
+					>
+						<Champ
+							libelle="Où j’en suis"
+							name="text"
+							bind:value={marqueTexte}
+							maxlength={280}
+							placeholder="Une phrase pour reprendre le fil…"
+						/>
+						<Champ
+							libelle="Lien du message Discord"
+							name="url"
+							type="url"
+							inputmode="url"
+							bind:value={marqueLien}
+							placeholder="https://discord.com/channels/…"
+							aide="Facultatif."
+						/>
 						<div class="gestes">
-							<Bouton variante="ruban" type="submit"><Encre etat={cible === 'marque' ? ecriture.etat : 'prise'}>Noter</Encre></Bouton>
+							<Bouton variante="ruban" type="submit"
+								><Encre etat={cible === 'marque' ? ecriture.etat : 'prise'}>Noter</Encre></Bouton
+							>
 						</div>
 					</form>
-					<form class="retirer" method="POST" action="?/marquePage" use:enhance={ecrire('marque', 'Retiré', () => (marqueOuvert = false))}>
+					<form
+						class="retirer"
+						method="POST"
+						action="?/marquePage"
+						use:enhance={ecrire('marque', 'Retiré', () => (marqueOuvert = false))}
+					>
 						<input type="hidden" name="text" value="" />
 						<input type="hidden" name="url" value="" />
 						<button class="lien-discret" type="submit">Retirer le marque-page</button>
@@ -286,24 +386,47 @@
 					{#each vue.waiting as w (w.kind + w.id)}
 						<li class="attente {w.kind}">
 							{#if w.kind === 'scene'}
-								<p class="quoi"><span class="repere">Scène ouverte</span> <span class="lieu">{w.channel ?? apres(w.text, ' · ')}</span></p>
+								<p class="quoi">
+									<span class="repere">Scène ouverte</span>
+									<span class="lieu">{w.channel ?? apres(w.text, ' · ')}</span>
+								</p>
 								<div class="gestes">
 									{#if w.discordUrl}
-										<Bouton variante="ruban" href={w.discordUrl} fleche="↗" target="_blank" rel="noopener noreferrer">Ouvrir sur Discord</Bouton>
+										<Bouton
+											variante="ruban"
+											href={w.discordUrl}
+											fleche="↗"
+											target="_blank"
+											rel="noopener noreferrer">Ouvrir sur Discord</Bouton
+										>
 									{/if}
 									<Bouton variante="trait" href="/carnet/scene">Préparer ma réponse</Bouton>
 								</div>
 							{:else if w.kind === 'table'}
-								<p class="quoi"><span class="repere">La Table est ouverte</span> <span class="lieu">{apres(w.text, ' : ')}</span></p>
+								<p class="quoi">
+									<span class="repere">La Table est ouverte</span>
+									<span class="lieu">{apres(w.text, ' : ')}</span>
+								</p>
 								<div class="gestes">
 									<Bouton variante="texte" href={w.href} fleche="→">Suivre</Bouton>
-									{#if !sceneEnTete}<Bouton variante="trait" href="/carnet/scene">Préparer ma réponse</Bouton>{/if}
+									{#if !sceneEnTete}<Bouton variante="trait" href="/carnet/scene"
+											>Préparer ma réponse</Bouton
+										>{/if}
 								</div>
 							{:else}
-								<p class="quoi"><span class="repere">Rendez-vous</span> <span class="lieu">{apres(w.text, 'Rendez-vous ')}</span></p>
+								<p class="quoi">
+									<span class="repere">Rendez-vous</span>
+									<span class="lieu">{apres(w.text, 'Rendez-vous ')}</span>
+								</p>
 								<div class="gestes">
 									{#if w.discordUrl}
-										<Bouton variante="texte" href={w.discordUrl} fleche="↗" target="_blank" rel="noopener noreferrer">Ouvrir le salon</Bouton>
+										<Bouton
+											variante="texte"
+											href={w.discordUrl}
+											fleche="↗"
+											target="_blank"
+											rel="noopener noreferrer">Ouvrir le salon</Bouton
+										>
 									{:else}
 										<Bouton variante="texte" href="/agenda" fleche="→">Agenda</Bouton>
 									{/if}
@@ -336,10 +459,13 @@
 									<button class="ligne" class:cornee type="submit">
 										<span class="date">{dateCourte(l.at)}</span>
 										<span class="texte">{l.text}</span>
-										{#if l.cornered}<span class="corne" class:depliee={!cornee} aria-hidden="true"></span><span class="sr-only"> — page non lue</span>{/if}
+										{#if l.cornered}<span class="corne" class:depliee={!cornee} aria-hidden="true"
+											></span><span class="sr-only"> — page non lue</span>{/if}
 									</button>
 								</form>
-								{#if refusLigne?.id === l.id}<NoteDeMarge ton="refus">{refusLigne.texte}</NoteDeMarge>{/if}
+								{#if refusLigne?.id === l.id}<NoteDeMarge ton="refus"
+										>{refusLigne.texte}</NoteDeMarge
+									>{/if}
 							</li>
 						{/each}
 					</ol>
@@ -347,8 +473,14 @@
 				{#if cornees}<div class="deplier-bas">{@render deplier()}</div>{/if}
 				{#if vue.sincePages > 1}
 					<nav class="tourner" aria-label="Pages depuis ta dernière lecture">
-						{#if vue.sincePage > 1}<Bouton variante="texte" href="?page={vue.sincePage - 1}">← Page précédente</Bouton>{:else}<span></span>{/if}
-						{#if vue.sincePage < vue.sincePages}<Bouton variante="texte" href="?page={vue.sincePage + 1}" fleche="→">Page suivante</Bouton>{/if}
+						{#if vue.sincePage > 1}<Bouton variante="texte" href="?page={vue.sincePage - 1}"
+								>← Page précédente</Bouton
+							>{:else}<span></span>{/if}
+						{#if vue.sincePage < vue.sincePages}<Bouton
+								variante="texte"
+								href="?page={vue.sincePage + 1}"
+								fleche="→">Page suivante</Bouton
+							>{/if}
 					</nav>
 				{/if}
 			{:else}
@@ -377,7 +509,9 @@
 			<p class="lu">Lu pour la dernière fois le {dateLongue(vue.lastReadAt)}.</p>
 		{/snippet}
 		{#snippet bande()}
-			<p class="bande-nom">{vue.pseudo}{#if role}{' · '}<span class="rang">{role}</span>{/if}</p>
+			<p class="bande-nom">
+				{vue.pseudo}{#if role}&nbsp;·&nbsp;<span class="rang">{role}</span>{/if}
+			</p>
 			<p class="bande-lu">Lu pour la dernière fois le {dateLongue(vue.lastReadAt)}.</p>
 		{/snippet}
 
@@ -386,11 +520,20 @@
 				<ul class="attend">
 					{#each vue.waiting as w (w.kind + w.id)}
 						<li class="attente {w.kind}">
-							<p class="quoi"><span class="repere">La Table est ouverte</span> <span class="lieu">{apres(w.text, ' : ')}</span></p>
+							<p class="quoi">
+								<span class="repere">La Table est ouverte</span>
+								<span class="lieu">{apres(w.text, ' : ')}</span>
+							</p>
 							<div class="gestes">
 								<Bouton variante="texte" href={w.href} fleche="→">Suivre</Bouton>
 								{#if w.discordUrl}
-									<Bouton variante="texte" href={w.discordUrl} fleche="↗" target="_blank" rel="noopener noreferrer">Ouvrir le salon</Bouton>
+									<Bouton
+										variante="texte"
+										href={w.discordUrl}
+										fleche="↗"
+										target="_blank"
+										rel="noopener noreferrer">Ouvrir le salon</Bouton
+									>
 								{/if}
 							</div>
 						</li>
@@ -419,32 +562,55 @@
 			<div class="identite">
 				<Portrait nom={vue.pseudo} taille={72} />
 				<p class="nom">{vue.pseudo}</p>
-				<p class="serment">{vue.state === 'pending' ? 'en attente de liaison' : 'liaison sans fiche'}</p>
+				<p class="serment">
+					{vue.state === 'pending' ? 'en attente de liaison' : 'liaison sans fiche'}
+				</p>
 			</div>
 		{/snippet}
 		{#snippet bande()}
-			<p class="bande-nom">{vue.pseudo} · {vue.state === 'pending' ? 'en attente de liaison' : 'liaison sans fiche'}</p>
+			<p class="bande-nom">
+				{vue.pseudo} · {vue.state === 'pending' ? 'en attente de liaison' : 'liaison sans fiche'}
+			</p>
 		{/snippet}
 
 		{#if vue.state === 'pending'}
-			<p class="attente-lead">Ton compte existe. Ta fiche attend qu’un administrateur la relie à ton personnage. Transmets ton pseudo sur Discord : {vue.pseudo}.</p>
+			<p class="attente-lead">
+				Ton compte existe. Ta fiche attend qu’un administrateur la relie à ton personnage. Transmets
+				ton pseudo sur Discord : {vue.pseudo}.
+			</p>
 			<div class="pseudo-bloc">
 				<p class="repere">Ton pseudo, à transmettre</p>
 				<p class="pseudo">{vue.pseudo}</p>
 				<div class="gestes">
 					<Bouton variante="trait" onclick={copierPseudo}>Copier mon pseudo</Bouton>
-					<p class="copie" aria-live="polite">{#if copie}Copié · {copie} — colle-le sur Discord.{/if}</p>
+					<p class="copie" aria-live="polite">
+						{#if copie}Copié · {copie} — colle-le sur Discord.{/if}
+					</p>
 				</div>
 			</div>
 		{:else if vue.state === 'unavailable'}
-			<p class="attente-lead">Une liaison existe, mais ta fiche n’a pas pu s’ouvrir. Recharge ; si ça persiste, donne ton pseudo à un administrateur sur Discord.</p>
+			<p class="attente-lead">
+				Une liaison existe, mais ta fiche n’a pas pu s’ouvrir. Recharge ; si ça persiste, donne ton
+				pseudo à un administrateur sur Discord.
+			</p>
 		{/if}
 
 		<Chapitre titre="En attendant">
 			<ul class="liens">
-				<li><Bouton variante="texte" href="/univers/premiers-pas" fleche="→">Premiers pas</Bouton><span>Comment une histoire commence ici.</span></li>
-				<li><Bouton variante="texte" href="/univers/serments" fleche="→">Les Serments</Bouton><span>Choisir sa voie avant d’entrer en scène.</span></li>
-				<li><Bouton variante="texte" href="/agenda" fleche="→">Agenda</Bouton><span>Les rendez-vous de la table, en lecture.</span></li>
+				<li>
+					<Bouton variante="texte" href="/univers/premiers-pas" fleche="→">Premiers pas</Bouton
+					><span>Comment une histoire commence ici.</span>
+				</li>
+				<li>
+					<Bouton variante="texte" href="/univers/serments" fleche="→">Les Serments</Bouton><span
+						>Choisir sa voie avant d’entrer en scène.</span
+					>
+				</li>
+				<li>
+					<Bouton variante="texte" href="/agenda" fleche="→">Agenda</Bouton><span
+						>Les rendez-vous de la table, en lecture.</span
+					>
+				</li>
 			</ul>
 			<div class="recharger">
 				<Bouton variante="trait" href="/carnet" data-sveltekit-reload>Recharger cette page</Bouton>
@@ -473,7 +639,7 @@
 		color: var(--encre-2);
 	}
 	.rang {
-		color: var(--tampon);
+		color: var(--encre-2);
 	}
 	.declare {
 		font: var(--t-libelle);

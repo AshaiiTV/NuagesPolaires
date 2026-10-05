@@ -132,7 +132,15 @@ export function versChampLocal(value: DateInput): string {
 /** « samedi 26 septembre » (jour de la semaine, jour, mois). */
 export function jour(value: DateInput): string {
 	const d = toDate(value);
-	return d ? formatter({ weekday: 'long', day: 'numeric', month: 'long' }).format(d) : '';
+	return d ? premier(formatter({ weekday: 'long', day: 'numeric', month: 'long' }), d) : '';
+}
+
+/** Le premier jour du mois est ordinal en français, dans tous les formats du carnet. */
+function premier(f: Intl.DateTimeFormat, d: Date): string {
+	return f
+		.formatToParts(d)
+		.map((p) => (p.type === 'day' && p.value === '1' ? '1er' : p.value))
+		.join('');
 }
 
 /** « samedi » (jour de la semaine seul). */
@@ -165,11 +173,14 @@ export function dateLongue(value: DateInput, now: DateInput = Date.now()): strin
 	const p = parisParts(d);
 	const n = parisParts(now);
 	const sameYear = !!p && !!n && p.year === n.year;
-	return formatter(
-		sameYear
-			? { day: 'numeric', month: 'long' }
-			: { day: 'numeric', month: 'long', year: 'numeric' }
-	).format(d);
+	return premier(
+		formatter(
+			sameYear
+				? { day: 'numeric', month: 'long' }
+				: { day: 'numeric', month: 'long', year: 'numeric' }
+		),
+		d
+	);
 }
 
 /** « 26 sept. » (marge, tampons, agenda). L'année s'ajoute si elle diffère de l'année en cours. */
@@ -179,11 +190,14 @@ export function dateCourte(value: DateInput, now: DateInput = Date.now()): strin
 	const p = parisParts(d);
 	const n = parisParts(now);
 	const sameYear = !!p && !!n && p.year === n.year;
-	return formatter(
-		sameYear
-			? { day: 'numeric', month: 'short' }
-			: { day: 'numeric', month: 'short', year: 'numeric' }
-	).format(d);
+	return premier(
+		formatter(
+			sameYear
+				? { day: 'numeric', month: 'short' }
+				: { day: 'numeric', month: 'short', year: 'numeric' }
+		),
+		d
+	);
 }
 
 /** « 26 septembre, 21:47 » — format du tampon (03-vision §8, micro-texte 16). */

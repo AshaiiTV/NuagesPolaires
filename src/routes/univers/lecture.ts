@@ -83,9 +83,8 @@ export function preparer(
 	//    (après une éventuelle épigraphe), c'est la marge qui s'efface.
 	const premier = /^\s*<p>([\s\S]*?)<\/p>\s*/.exec(html);
 	if (premier && pareil(lire(premier[1]), resume)) html = html.slice(premier[0].length);
-	const attaque = /^\s*(?:<blockquote>[\s\S]*?<\/blockquote>\s*)?<p><strong>([\s\S]*?)<\/strong>/.exec(
-		html
-	);
+	const attaque =
+		/^\s*(?:<blockquote>[\s\S]*?<\/blockquote>\s*)?<p><strong>([\s\S]*?)<\/strong>/.exec(html);
 	const resumeDansCorps = !!attaque && pareil(lire(attaque[1]), resume);
 
 	// 3. Un filet de la source juste avant un chapitre ferait doublon avec le filet du chapitre.
@@ -165,6 +164,15 @@ export function preparer(
 		}
 	);
 	//    Partout ailleurs : retiré.
+	html = html.replace(
+		/<li><strong>(Gibier|Passif|Neutre|Agressif|Très agressif)<\/strong>/g,
+		(tout, nom: string) => {
+			const teinte = teintes[nom.toLowerCase()];
+			return teinte
+				? `<li class="comportement"><span class="signe" style="--teinte:${attribut(teinte)}" aria-hidden="true"></span><strong>${nom}</strong>`
+				: tout;
+		}
+	);
 	html = html.replace(/<[^>]*>|[^<]+/g, (morceau) =>
 		morceau.startsWith('<') ? morceau : morceau.replace(new RegExp(`${PICTO}[ \\xA0]*`, 'gu'), '')
 	);
@@ -175,7 +183,8 @@ export function preparer(
 		/<table>\s*(<thead>(?:(?!<\/thead>)[\s\S])*<\/thead>)\s*<\/table>\s*<ul>((?:(?!<\/ul>)[\s\S])*)<\/ul>/g,
 		(tout, tete: string, liste: string) => {
 			const entreesListe = [...liste.matchAll(/<li>([\s\S]*?)<\/li>/g)].map((m) => m[1]);
-			if (!entreesListe.length || !entreesListe.every((entree) => entree.includes('|'))) return tout;
+			if (!entreesListe.length || !entreesListe.every((entree) => entree.includes('|')))
+				return tout;
 			const colonnes = (tete.match(/<th\b/g) ?? []).length;
 			const lignes = entreesListe.map((entree) => {
 				const lu = /^\s*(<strong>[\s\S]*?<\/strong>)\s*[—–-]\s*([\s\S]*)$/.exec(entree);
@@ -213,7 +222,7 @@ export function preparer(
 				(_ligne: string, libelle: string) =>
 					`<tr class="rubrique"><th colspan="${colonnes}">${titreFr(libelle.replace(/<[^>]+>/g, '').trim())}</th></tr>`
 			)
-			.replace(/<tr>([\s\S]*?)<\/tr>/g, (rangee: string, cellules: string) => {
+			.replace(/<tr>([\s\S]*?)<\/tr>/g, (rangee: string) => {
 				let rangCellule = 0;
 				return rangee.replace(/<td>([\s\S]*?)<\/td>/g, (_cellule, contenu: string) => {
 					const libelle = libelles[rangCellule] ?? '';
@@ -235,9 +244,9 @@ export function preparer(
 		// Empilé, le tableau ne s'affiche plus comme un tableau : ses rôles restent écrits.
 		const roles = corps
 			.replace(/<(thead|tbody)>/g, '<$1 role="rowgroup">')
-			.replace(/<tr/g, '<tr role="row"')
-			.replace(/<th/g, '<th role="columnheader"')
-			.replace(/<td/g, '<td role="cell"');
+			.replace(/<tr\b/g, '<tr role="row"')
+			.replace(/<th\b/g, '<th role="columnheader"')
+			.replace(/<td\b/g, '<td role="cell"');
 		return `${cadre} data-pile="${pile}"><table role="table">${roles}</table></div>`;
 	});
 

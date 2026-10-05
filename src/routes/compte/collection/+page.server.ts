@@ -31,7 +31,9 @@ export const load: PageServerLoad = async (event) => {
 export const actions: Actions = {
 	theme: action(async (event, data) => {
 		const actor = requireAccount(event);
-		const choisi = await selectTheme(event.locals.db, actor, { themeId: String(data.themeId ?? '') });
+		const choisi = await selectTheme(event.locals.db, actor, {
+			themeId: String(data.themeId ?? '')
+		});
 		return { theme: choisi };
 	})
 };

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteDate } from 'svelte/reactivity';
 	// Avant démarrage : ajouter des « Élèves du Serment » (cases) et des « Adversaires » (quantités).
 	// Les fiches et les créatures sont relues côté serveur (?/ajouter) : la page ne fabrique jamais
 	// un combattant. Les combattants déjà posés se règlent dans la colonne de gauche (initiative,
@@ -17,7 +18,13 @@
 	interface Props {
 		table: TableMJ;
 		personnages: { id: string; nom: string; serment: string; niveau: number }[];
-		creatures: { id: string; nom: string; niveau: number; comportement: string | null; couleur: string }[];
+		creatures: {
+			id: string;
+			nom: string;
+			niveau: number;
+			comportement: string | null;
+			couleur: string;
+		}[];
 	}
 	let { table, personnages, creatures }: Props = $props();
 
@@ -27,9 +34,13 @@
 	let quantites = $state<Record<string, number>>({});
 	let filtre = $state('');
 	const visibles = $derived(
-		filtre.trim() ? creatures.filter((c) => c.nom.toLowerCase().includes(filtre.trim().toLowerCase())) : creatures
+		filtre.trim()
+			? creatures.filter((c) => c.nom.toLowerCase().includes(filtre.trim().toLowerCase()))
+			: creatures
 	);
-	const total = $derived(choisis.length + Object.values(quantites).reduce((n, q) => n + (q > 0 ? q : 0), 0));
+	const total = $derived(
+		choisis.length + Object.values(quantites).reduce((n, q) => n + (q > 0 ? q : 0), 0)
+	);
 	function changer(id: string, delta: number) {
 		quantites = { ...quantites, [id]: Math.max(0, Math.min(30, (quantites[id] ?? 0) + delta)) };
 	}
@@ -48,16 +59,26 @@
 		return async ({ result }) => {
 			enCours = false;
 			if (result.type === 'success' && result.data && 'ajoute' in result.data) {
-				const a = result.data.ajoute as { state: CombatState; revision: number; releve: string | null };
+				const a = result.data.ajoute as {
+					state: CombatState;
+					revision: number;
+					releve: string | null;
+				};
 				table.remplacer(a.state, a.revision, a.releve);
 				choisis = [];
 				quantites = {};
-				note = { ton: 'fait', texte: `Ajoutés · ${heure(new Date())} — l’encre a pris.` };
+				note = { ton: 'fait', texte: `Ajoutés · ${heure(new SvelteDate())} — l’encre a pris.` };
 				return;
 			}
 			if (result.type === 'failure') {
 				const d = (result.data ?? {}) as { code?: string; message?: string };
-				note = { ton: 'refus', texte: result.status === 409 && d.code === 'VERSION_CONFLICT' ? PHRASE_CONFLIT : `Personne n’a été ajouté. ${d.message ?? ''}`.trim() };
+				note = {
+					ton: 'refus',
+					texte:
+						result.status === 409 && d.code === 'VERSION_CONFLICT'
+							? PHRASE_CONFLIT
+							: `Personne n’a été ajouté. ${d.message ?? ''}`.trim()
+				};
 				return;
 			}
 			note = { ton: 'refus', texte: PHRASE_REFUS };
@@ -92,7 +113,12 @@
 		{#if creatures.length > 6}
 			<label class="filtre">
 				<span class="sr-only">Chercher une créature</span>
-				<input type="search" bind:value={filtre} placeholder="Chercher une créature…" autocomplete="off" />
+				<input
+					type="search"
+					bind:value={filtre}
+					placeholder="Chercher une créature…"
+					autocomplete="off"
+				/>
 			</label>
 		{/if}
 		{#if visibles.length}
@@ -102,10 +128,21 @@
 					<li class="creature" class:pris={q > 0}>
 						<span class="qui">
 							<span class="nom">{c.nom}</span>
-							<span class="detail">niv. {c.niveau}{#if c.comportement}<Losange couleur={c.couleur} libelle={c.comportement} />{/if}</span>
+							<span class="detail"
+								>niv. {c.niveau}{#if c.comportement}<Losange
+										couleur={c.couleur}
+										libelle={c.comportement}
+									/>{/if}</span
+							>
 						</span>
 						<span class="quantite">
-							<button type="button" class="pas" onclick={() => changer(c.id, -1)} disabled={q === 0} aria-label="Un {c.nom} de moins">−</button>
+							<button
+								type="button"
+								class="pas"
+								onclick={() => changer(c.id, -1)}
+								disabled={q === 0}
+								aria-label="Un {c.nom} de moins">−</button
+							>
 							<input
 								class="chiffres"
 								type="number"
@@ -114,10 +151,19 @@
 								max="30"
 								inputmode="numeric"
 								value={q}
-								oninput={(e) => (quantites = { ...quantites, [c.id]: Math.max(0, Math.min(30, Number(e.currentTarget.value) || 0)) })}
+								oninput={(e) =>
+									(quantites = {
+										...quantites,
+										[c.id]: Math.max(0, Math.min(30, Number(e.currentTarget.value) || 0))
+									})}
 								aria-label="Quantité de {c.nom}"
 							/>
-							<button type="button" class="pas" onclick={() => changer(c.id, 1)} aria-label="Un {c.nom} de plus">+</button>
+							<button
+								type="button"
+								class="pas"
+								onclick={() => changer(c.id, 1)}
+								aria-label="Un {c.nom} de plus">+</button
+							>
 						</span>
 					</li>
 				{/each}
@@ -130,7 +176,9 @@
 	</fieldset>
 
 	<div class="valider">
-		<Bouton variante="texte" href="/table/apparitions" fleche="→">Transférer depuis Apparitions</Bouton>
+		<Bouton variante="texte" href="/table/apparitions" fleche="→"
+			>Transférer depuis Apparitions</Bouton
+		>
 		<Bouton variante="trait" type="submit" disabled={enCours || total === 0}>
 			{total ? `Ajouter ${total} combattant${total > 1 ? 's' : ''}` : 'Ajouter à la Table'}
 		</Bouton>

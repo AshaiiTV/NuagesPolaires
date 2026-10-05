@@ -1,4 +1,5 @@
 <script lang="ts" module>
+	import { chemin } from '$lib/ui/adresse';
 	// Bord supérieur dentelé du feuillet volant : un `clip-path` statique, seule marque de papier du
 	// régime scène (03-vision §3). Quarante-huit dents de 6 px, calculées une fois.
 	const DENTS = 48;
@@ -65,11 +66,19 @@
 	});
 </script>
 
-<div class="feuille {disposition}" data-feuillet class:gauche class:avec-ruban={!!ruban} style:--dentelure={DENTELURE}>
+<div
+	class="feuille {disposition}"
+	data-feuillet
+	class:gauche
+	class:avec-ruban={!!ruban}
+	style:--dentelure={DENTELURE}
+>
 	{#if ruban}
-		<a class="ruban" href={ruban.href}>
+		<a class="ruban" href={chemin(ruban.href)}>
 			{ruban.libelle}
-			{#if ruban.corne}<span class="corne" aria-hidden="true"></span><span class="sr-only"> — pages non lues</span>{/if}
+			{#if ruban.corne}<span class="corne" aria-hidden="true"></span><span class="sr-only">
+					— pages non lues</span
+				>{/if}
 		</a>
 	{/if}
 	<div class="papier">
@@ -194,7 +203,7 @@
 		display: grid;
 		/* Chaque geste tient sur une ligne (« Copier pour Discord » prend sa largeur), le reste se partage. */
 		grid-auto-flow: column;
-		grid-auto-columns: minmax(max-content, 1fr);
+		grid-template-columns: minmax(0, 1fr) minmax(max-content, 1.5fr) minmax(0, 1fr);
 		min-height: 56px;
 		background: var(--page-2);
 		border-top: 1px solid var(--reglure);
@@ -215,10 +224,17 @@
 		text-align: center;
 		text-decoration: none;
 		white-space: nowrap;
+		min-width: 0;
 		cursor: pointer;
 	}
 	.barre :global(:is(a, button):first-child) {
 		border-left: 0;
+	}
+	.centre .barre {
+		grid-template-columns: minmax(max-content, 1.5fr) minmax(0, 1fr) minmax(0, 1.2fr);
+	}
+	.centre .barre :global(a) {
+		white-space: normal;
 	}
 	.barre :global(:is(a, button):hover) {
 		background: color-mix(in srgb, var(--encre-humide) 7%, transparent);
@@ -255,6 +271,17 @@
 
 	/* ── Téléphone : la colonne prend l'écran, bande et barre ancrées ── */
 	@media (max-width: 760px) {
+		.feuille {
+			animation-name: poser;
+		}
+		@keyframes poser {
+			from {
+				opacity: 0;
+			}
+			to {
+				opacity: 1;
+			}
+		}
 		.papier {
 			min-height: 100svh;
 		}
@@ -338,7 +365,7 @@
 
 	@media (prefers-reduced-motion: reduce) {
 		.feuille {
-			animation: fondu 120ms backwards;
+			animation: none;
 		}
 		@keyframes fondu {
 			from {

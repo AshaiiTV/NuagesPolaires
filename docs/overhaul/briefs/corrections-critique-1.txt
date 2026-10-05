@@ -1,0 +1,41 @@
+PAQUET CORRECTIONS-1 — APPLIQUER LES QUATRE CRITIQUES VISUELLES, PUIS STABILISER LES PARCOURS.
+Tu es integrateur senior (SvelteKit 2.63, Svelte 5 runes, TypeScript strict) sur le depot C:\Users\sacha\NuagesPolaires. Produit : Nuages Polaires, compagnon d'un serveur de roleplay textuel Discord. Vision : docs/overhaul/03-vision.md (« Carnet d'encre ») ; contrats : docs/overhaul/06-contrats.md. Ecris en UTF-8 avec apply_patch (accents, ’ « » intacts ; aucun U+FFFD). Pas de git, pas de npm install, aucune dependance nouvelle. Tu es SEUL a modifier le depot pendant ce paquet : tu peux toucher src/routes/**, src/lib/ui/**, src/lib/server/**, src/lib/schemas/**, src/lib/game/** (rules.ts, colors.ts), src/content/premiers-pas.md, tests/**, playwright.config.ts. Ne change aucun nom de fonction exportee ni de champ de vue existant (ajouts permis).
+
+A LIRE : les quatre critiques d'un directeur artistique (Claude), chacune un tableau numerote de defauts avec la correction demandee :
+- docs/overhaul/revues/claude-critique-carnet-1.md (15 defauts)
+- docs/overhaul/revues/claude-critique-table-1.md (15)
+- docs/overhaul/revues/claude-critique-entree-agenda-registre-1.md (15)
+- docs/overhaul/revues/claude-critique-accueil-univers-1.md (13)
+Des correcteurs precedents ont ete interrompus : CERTAINS defauts sont deja corriges (par exemple l'etat desactive de Bouton.svelte, le contour de Losange.svelte, la couleur des numeros de Chapitre.svelte et du role dans Cahier.svelte). Pour CHAQUE defaut : verifie d'abord dans le code s'il est deja corrige ; sinon corrige-le comme demande.
+
+ARBITRAGES DU LEAD (ils priment sur les critiques) :
+1. Carnet n°5 : UN SEUL marque-page, celui du compte (getLastPages().bookmark) ; le feuillet En scene affiche le meme. Une derniere ligne propre a la scene s'appelle autrement (« Dernière ligne de la scène »).
+2. Table n°9 : un compte sans le droit combat.run qui ouvre /table/combat/[id] est redirige (303) vers /carnet/table/[id].
+3. Accueil n°6 (accent circonflexe de Cormorant) : CE N'EST PAS UN DEFAUT, c'est le dessin de la police (verifie par le lead). Ne touche pas aux polices : le lead a deja installe des fichiers complets et IBM Plex Mono (var(--mono), src/lib/ui/styles/fonts.css). Utilise var(--t-mono) / var(--mono) pour le journal de combat et les blocs a coller.
+4. Accueil n°10 : ne renumerote PAS le contenu du proprietaire (src/content/systeme-de-jeu.md reste verbatim) ; applique seulement les losanges de couleur des comportements.
+5. Entree n°4 (themes) : 'dark' s'appelle « Carnet de nuit », 'light' « Papier » ; les autres gardent leur nom herite (Galactique, Sylvan, Aquaris, Printemps Éveillé, Nuit des Âmes, Veillée Hivernale, Lune de Sang) ; chaque description est reecrite en une phrase de couleurs, sans ambiance animee (≤ 70 caracteres). Mets a jour src/lib/ui/themes.ts ET le semis (src/lib/server/db/referentials.ts ou seed) de facon coherente.
+6. Entree n°6 : garde l'acces du designer aux rendez-vous masques et change le libelle : « Masqué : visible de ceux qui organisent (MJ, designers, administrateurs) ».
+7. Entree n°15 : le ruban s'appelle TOUJOURS « En scène » (seule sa destination change pour un MJ avec une Table ouverte ; aria-label « En scène — mène à la Table ouverte »).
+8. Le laiton (--tampon) est reserve aux tampons et au rang d'un Serment : numeros de chapitre, lettres de branche, sommaires, role sous le portrait passent en --encre-2 (l'accueil public garde sa palette de marque).
+9. Premiers pas (accueil n°1) : page dediee selon l'etat du compte (visiteur, en attente, relie, indisponible, staff), avec de vrais liens et le vrai pseudo / nom du personnage ; adapte le lexique du guide dans src/content/premiers-pas.md (« l'équipe » -> « un MJ ou un administrateur », « événements » -> « rendez-vous », « tableau de bord » -> « Mon carnet », « site » -> « compagnon »), retire « menu Outils » et les glyphes isoles.
+10. Confirmation de consommation, formulation unique sans article (fiche ET feuillet) : « Tu déclares avoir utilisé « <nom de l'objet> » ? » puis « Oui, je le note. » / « Laisser ».
+11. Tampons : format unique via un petit module partage src/lib/ui/tampons.ts — signature(role, pseudo, date) -> « MJ Maitre · 26 sept. 21:47 » ; si le pseudo est identique au libelle du role (insensible a la casse), n'ecrire que le role ; phrase longue : « tamponné par MJ Maitre le 26 septembre, 21:47 — motif : combat archivé ». Utilise-le partout ou un tampon est ecrit (fiche, imprimer, Table, agenda, registre, personnages, accueil).
+12. dates.ts : le premier jour du mois s'ecrit « 1er » dans dateCourte, dateLongue, jour (tests a jour).
+
+AUTRES POINTS OUVERTS A TRAITER DANS LE MEME PAQUET (remontes par les agents d'interface) :
+- /table accepte ?creature=<beastId> (lien « Envoyer à la Table → » du calque du bestiaire) et preselectionne la creature dans « Ouvrir une Table ».
+- BeastView (pour l'Atelier) expose qtyMin, qtyMax, spawnWeight ; le formulaire de l'Atelier les affiche.
+- Le calque reserve des Serments (administrateur) est rendu sur /univers/serments et /univers/serments/[nom] : Serments hors vitrine marques, ancre « Modifier dans l'Atelier → ».
+- /carnet/recits/[id] affiche les participants (RecitView.participants) et lit ses consequences par listConsequences({ combatId }).
+- /table/archives/[id] utilise listPublications(db, actor, { combatId }) et RecitView.notes au lieu de requetes directes.
+- /carnet/table/[id] et le feuillet utilisent PlayerTableView.status pour l'etat « Table repliée ».
+- « Ce qui attend » du Registre affiche migrationStatus().anomalies quand il y en a.
+- Journal d'audit et journal des decisions : chaque action nommee par les domaines (grep recordAudit / appendStaffLog dans src/lib/server/domain) a un libelle lisible dans src/routes/registre/format.ts ; aucune cle technique affichee.
+
+PUIS STABILISER LES PARCOURS (tests/e2e/*.e2e.ts, ecrits par plusieurs agents, jamais lances ensemble) :
+- npx playwright test (config : serveur vite dev dedie sur le port 4173, base PGlite de demonstration, un seul worker). Corrige les tests instables ou faux ET les vrais defauts qu'ils revelent. Les tests qui modifient la base doivent rester independants de l'ordre (la base est re-semee au demarrage du serveur ; si necessaire, ajoute une route de test reservee a NP_DB_DRIVER=pglite hors production pour re-semer, ou ordonne les fichiers).
+- Ajoute tests/e2e/parcours.e2e.ts : les parcours P1 a P9 de docs/overhaul/03-vision.md §10, un test par parcours, avec leurs criteres observables (adapte P3 a l'adresse /carnet/table/[id] et au selecteur [data-regime="scene"]).
+- Ajoute un test transversal : pour chaque page de l'arbre des routes (06-contrats §C) et chaque role de demonstration autorise, a 390 et 1440 px : pas de debordement horizontal, aucun texte visible sous 12 px, aucune erreur de console, aucune reponse 5xx.
+
+VERIFICATION FINALE OBLIGATOIRE (rapporte les resultats exacts) : npx svelte-check --tsconfig ./tsconfig.json (0 erreur, 0 avertissement) ; npx vitest run --project server (vert) ; npx playwright test (vert) ; npm run lint (corrige avec npm run format si besoin ; exclus legacy/ et docs/ du formatage si ce n'est pas deja le cas via .prettierignore) ; npm run build ; npx tsx scripts/check-bundle.ts. Lance aussi `MSYS_NO_PATHCONV=1 node scripts/capture.mjs` sur les pages que tu as modifiees (signale debordements, textes < 12 px, erreurs console) si un serveur repond sur http://localhost:5173.
+RAPPORT FINAL en francais dans ta reponse : un tableau par critique (n° du defaut : deja corrige / corrige / non corrige + raison) ; points ouverts traites ; resultats exacts des commandes ; ce qui reste.

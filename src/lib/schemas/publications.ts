@@ -34,6 +34,7 @@ export type PublicationView = {
 	beastIds: string[];
 	at: string;
 	struck: boolean;
+	struckAt?: string | null;
 };
 // Forme exacte de src/routes/+page.server.ts ; aucune donnée de compte ou de participant.
 export type HomeLeaf = {

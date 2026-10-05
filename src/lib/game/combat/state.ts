@@ -46,7 +46,12 @@ export function snapshotGesture(draft: CombatState): void {
 export function undoLastGesture(state: CombatState): CombatState {
 	if (state.ended) throw new CombatError('COMBAT_ALREADY_ENDED', 'Ce combat est clos.');
 	const snapshot = state.gestureHistory?.at(-1);
-	return snapshot ? { ...structuredClone(snapshot), gestureHistory: structuredClone(state.gestureHistory!.slice(0, -1)) } : cloneState(state);
+	return snapshot
+		? {
+				...structuredClone(snapshot),
+				gestureHistory: structuredClone(state.gestureHistory!.slice(0, -1))
+			}
+		: cloneState(state);
 }
 
 export function findFighter(state: CombatState, fighterId: string): Fighter | null {
@@ -71,7 +76,14 @@ export function pushLog(
 	actorId: string | null = null,
 	targetId: string | null = null
 ): CombatLogEntry {
-	const entry: CombatLogEntry = { n: draft.log.length + 1, round: draft.round, kind, text, actorId, targetId };
+	const entry: CombatLogEntry = {
+		n: draft.log.length + 1,
+		round: draft.round,
+		kind,
+		text,
+		actorId,
+		targetId
+	};
 	draft.log.push(entry);
 	return entry;
 }
@@ -135,7 +147,8 @@ export interface CreateCombatOptions {
 
 /** État vierge (legacy combatBlankState). */
 export function createCombat(opts: CreateCombatOptions): CombatState {
-	if (!opts.id || typeof opts.id !== 'string') throw new CombatError('COMBAT_INVALID_INPUT', 'Identifiant de combat requis.');
+	if (!opts.id || typeof opts.id !== 'string')
+		throw new CombatError('COMBAT_INVALID_INPUT', 'Identifiant de combat requis.');
 	return {
 		version: 2,
 		schemaVersion: 2,
@@ -237,7 +250,11 @@ export function strikeDamage(strike: string | null | undefined): number {
 }
 
 /** Combattant créature (legacy combatAddBeast, audit 03 §2.3) ; `displayName` déjà numéroté. */
-export function makeBeastFighter(draft: CombatState, input: BeastFighterInput, displayName: string): Fighter {
+export function makeBeastFighter(
+	draft: CombatState,
+	input: BeastFighterInput,
+	displayName: string
+): Fighter {
 	const f = baseFighter(newFighterId(draft), 'beast', displayName, toInt(input.level, 1) || 1);
 	f.baseName = input.name;
 	f.beastId = input.beastId;
@@ -267,15 +284,26 @@ export function addFighter(state: CombatState, input: FighterInput): CombatState
 	const draft = cloneState(state);
 	let fighter: Fighter;
 	if (input.type === 'player') {
-		if (!input.characterId || !input.name) throw new CombatError('COMBAT_INVALID_INPUT', 'Personnage incomplet.');
-		const dup = draft.fighters.some((f) => f.type === 'player' && !f.isSummon && f.characterId === input.characterId);
-		if (dup) throw new CombatError('COMBAT_FIGHTER_ALREADY_PRESENT', `${input.name} est déjà dans le combat.`);
+		if (!input.characterId || !input.name)
+			throw new CombatError('COMBAT_INVALID_INPUT', 'Personnage incomplet.');
+		const dup = draft.fighters.some(
+			(f) => f.type === 'player' && !f.isSummon && f.characterId === input.characterId
+		);
+		if (dup)
+			throw new CombatError(
+				'COMBAT_FIGHTER_ALREADY_PRESENT',
+				`${input.name} est déjà dans le combat.`
+			);
 		fighter = makePlayerFighter(draft, input);
 	} else {
-		if (!input.beastId || !input.name) throw new CombatError('COMBAT_INVALID_INPUT', 'Créature incomplète.');
-		const existing = draft.fighters.filter((f) => f.type === 'beast' && f.beastId === input.beastId);
+		if (!input.beastId || !input.name)
+			throw new CombatError('COMBAT_INVALID_INPUT', 'Créature incomplète.');
+		const existing = draft.fighters.filter(
+			(f) => f.type === 'beast' && f.beastId === input.beastId
+		);
 		// Renommer rétroactivement le premier si c'est le deuxième ajout (legacy main.js:12426-12428)
-		if (existing.length === 1 && existing[0]!.name === input.name) existing[0]!.name = `${input.name} 1`;
+		if (existing.length === 1 && existing[0]!.name === input.name)
+			existing[0]!.name = `${input.name} 1`;
 		const displayName = existing.length > 0 ? `${input.name} ${existing.length + 1}` : input.name;
 		fighter = makeBeastFighter(draft, input, displayName);
 	}
@@ -286,7 +314,7 @@ export function addFighter(state: CombatState, input: FighterInput): CombatState
 
 /**
  * Retire un combattant (legacy combatRemoveFighter) : toutes les déclarations sont vidées.
-	 * L'ordre est réinitialisé à l'ordre d'ajout, comme le simulateur.
+ * L'ordre est réinitialisé à l'ordre d'ajout, comme le simulateur.
  * En combat actif, phase conservée ; curseur remis à 0 seulement s’il sort de l’ordre.
  */
 export function removeFighter(state: CombatState, fighterId: string): CombatState {
@@ -322,10 +350,15 @@ export function setInitiative(state: CombatState, fighterId: string): CombatStat
  * `rng` est accepté pour le contrat inter-paquets mais n'est PAS utilisé : l'initiative est un
  * choix du MJ, il n'existe aucun tirage d'initiative dans les règles implémentées (audit 03 §3.2).
  */
-export function startCombat(state: CombatState, _rng?: Rng, opts: { now?: number } = {}): CombatState {
+export function startCombat(
+	state: CombatState,
+	_rng?: Rng,
+	opts: { now?: number } = {}
+): CombatState {
 	if (state.active) throw new CombatError('COMBAT_ALREADY_ACTIVE', 'Combat déjà en cours.');
 	if (state.ended) throw new CombatError('COMBAT_ALREADY_ENDED', 'Ce combat est clos.');
-	if (!state.fighters.length) throw new CombatError('COMBAT_NO_FIGHTERS', 'Ajoute des combattants.');
+	if (!state.fighters.length)
+		throw new CombatError('COMBAT_NO_FIGHTERS', 'Ajoute des combattants.');
 	const draft = cloneState(state);
 	const now = opts.now ?? 0;
 	draft.active = true;
@@ -337,7 +370,8 @@ export function startCombat(state: CombatState, _rng?: Rng, opts: { now?: number
 	draft.turn = 0;
 	draft.startedAt = now;
 	const first = draft.fighters[0]!;
-	const initId = draft.initiative && findFighter(draft, draft.initiative) ? draft.initiative : first.id;
+	const initId =
+		draft.initiative && findFighter(draft, draft.initiative) ? draft.initiative : first.id;
 	draft.initiative = initId;
 	draft.order = [initId, ...draft.fighters.map((f) => f.id).filter((id) => id !== initId)];
 	if (!draft.name) draft.name = `Combat du ${formatDateFr(now)}`;
@@ -350,12 +384,17 @@ export function startCombat(state: CombatState, _rng?: Rng, opts: { now?: number
  * Réordonne un combattant en cours de combat (legacy combatMovePos, position 1-based).
  * Vide toutes les déclarations ; journal « ↕ X → pos N ».
  */
-export function moveFighterPosition(state: CombatState, fighterId: string, position: number): CombatState {
+export function moveFighterPosition(
+	state: CombatState,
+	fighterId: string,
+	position: number
+): CombatState {
 	const draft = cloneState(state);
 	const f = findFighterOrThrow(draft, fighterId);
 	const o = draft.order;
 	const cur = o.indexOf(fighterId);
-	if (cur < 0) throw new CombatError('COMBAT_NOT_ACTIVE', "L'ordre n'est fixé qu'une fois le combat démarré.");
+	if (cur < 0)
+		throw new CombatError('COMBAT_NOT_ACTIVE', "L'ordre n'est fixé qu'une fois le combat démarré.");
 	const newPos = Math.max(0, Math.min(o.length - 1, Math.trunc(position) - 1));
 	if (newPos === cur) return draft;
 	o.splice(cur, 1);
@@ -373,16 +412,31 @@ export function moveFighterPosition(state: CombatState, fighterId: string, posit
  * Ajustement manuel ±N (legacy cAdj) : un retrait de PV consomme d'abord le bouclier pvMaxBonus ;
  * sinon clamp [0, max || 999].
  */
-export function adjustResource(state: CombatState, fighterId: string, stat: ResourceKey, delta: number, motif = 'Ajustement MJ'): CombatState {
-	if (!Number.isFinite(delta)) throw new CombatError('COMBAT_INVALID_INPUT', 'Ajustement invalide.');
-	if (!['pv', 'ep', 'em'].includes(stat) || !motif.trim()) throw new CombatError('COMBAT_INVALID_INPUT', 'Ressource et motif requis.');
+export function adjustResource(
+	state: CombatState,
+	fighterId: string,
+	stat: ResourceKey,
+	delta: number,
+	motif = 'Ajustement MJ'
+): CombatState {
+	if (!Number.isFinite(delta))
+		throw new CombatError('COMBAT_INVALID_INPUT', 'Ajustement invalide.');
+	if (!['pv', 'ep', 'em'].includes(stat) || !motif.trim())
+		throw new CombatError('COMBAT_INVALID_INPUT', 'Ressource et motif requis.');
 	const draft = cloneState(state);
 	const f = findFighterOrThrow(draft, fighterId);
 	snapshotGesture(draft);
 	const old = f[`${stat}Cur`];
 	const journal = () => {
-		const entry = pushLog(draft, 'info', `${f.name} : ${stat.toUpperCase()} ${old} → ${f[`${stat}Cur`]} — ${motif}`, f.id);
-		entry.field = stat; entry.oldValue = old; entry.newValue = f[`${stat}Cur`];
+		const entry = pushLog(
+			draft,
+			'info',
+			`${f.name} : ${stat.toUpperCase()} ${old} → ${f[`${stat}Cur`]} — ${motif}`,
+			f.id
+		);
+		entry.field = stat;
+		entry.oldValue = old;
+		entry.newValue = f[`${stat}Cur`];
 	};
 	const d = Math.trunc(delta);
 	if (stat === 'pv' && d < 0 && f.pvMaxBonus > 0) {
@@ -406,7 +460,13 @@ export function adjustResource(state: CombatState, fighterId: string, stat: Reso
 /** Bouton « ↺ » : EP et EM au maximum (audit 03 §7.2). */
 export function restoreEnergy(state: CombatState, fighterId: string): CombatState {
 	const f = findFighterOrThrow(state, fighterId);
-	return adjustResource(adjustResource(state, fighterId, 'ep', f.epMax - f.epCur, 'Restauration'), fighterId, 'em', f.emMax - f.emCur, 'Restauration');
+	return adjustResource(
+		adjustResource(state, fighterId, 'ep', f.epMax - f.epCur, 'Restauration'),
+		fighterId,
+		'em',
+		f.emMax - f.emCur,
+		'Restauration'
+	);
 }
 
 /** Notes privées du MJ (jamais projetées vers les joueurs). */

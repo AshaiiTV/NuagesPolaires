@@ -38,7 +38,15 @@
 			class="diagonales"
 			d="M82-82 27-17 12-12 17-27zM82 82 17 27 12 12 27 17zM-82 82-27 17-12 12-17 27zM-82-82-17-27-12-12-27-17z"
 		/>
-		<rect class="coeur" x="-22" y="-22" width="44" height="44" transform="rotate(45)" stroke-width="4" />
+		<rect
+			class="coeur"
+			x="-22"
+			y="-22"
+			width="44"
+			height="44"
+			transform="rotate(45)"
+			stroke-width="4"
+		/>
 		<rect class="eclat" x="-10" y="-10" width="20" height="20" transform="rotate(45)" />
 	</g>
 </svg>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	// Entrer : rouvrir le carnet. Une page sobre, une seule action principale ; les refus disent ce qui
 	// n'a pas été fait et gardent la saisie (03-vision §4, §8 ; P6).
 	import { untrack } from 'svelte';
@@ -19,14 +20,21 @@
 	// Un refus de connexion est un 401 « Identifiant ou mot de passe incorrect » : c'est le message du
 	// serveur qui s'écrit, pas la phrase de session refermée.
 	const refus = $derived(
-		ecriture.note?.ton === 'refus' ? (form?.message ?? ecriture.note.texte) : !ecriture.note && form?.message ? form.message : null
+		ecriture.note?.ton === 'refus'
+			? (form?.message ?? ecriture.note.texte)
+			: !ecriture.note && form?.message
+				? form.message
+				: null
 	);
 	const chapeau = 'Ton personnage, tes rendez-vous, la suite de ton histoire.';
 </script>
 
 <svelte:head>
 	<title>Entrer — Nuages Polaires</title>
-	<meta name="description" content="Rouvre ton carnet de Nuages Polaires : ton personnage, tes rendez-vous, la suite de ton histoire." />
+	<meta
+		name="description"
+		content="Rouvre ton carnet de Nuages Polaires : ton personnage, tes rendez-vous, la suite de ton histoire."
+	/>
 </svelte:head>
 
 <Enveloppe compte={data.compte} discord={data.discord}>
@@ -37,7 +45,10 @@
 				<dt class="repere">Sur cet appareil</dt>
 				<dd>Le carnet reste ouvert trente jours. « Quitter le carnet » le referme partout.</dd>
 				<dt class="repere">Code temporaire</dt>
-				<dd>Un administrateur te l’a donné sur Discord : entre-le comme mot de passe, le carnet te demande aussitôt d’en choisir un nouveau.</dd>
+				<dd>
+					Un administrateur te l’a donné sur Discord : entre-le comme mot de passe, le carnet te
+					demande aussitôt d’en choisir un nouveau.
+				</dd>
 			</dl>
 		{/snippet}
 		{#snippet bande()}
@@ -51,7 +62,12 @@
 			<NoteDeMarge ton="refus">{data.discordRefus}</NoteDeMarge>
 		{/if}
 
-		<form method="POST" action="?/entrer" use:enhance={ecriture.enhance({ verbe: 'Ouvert' })} class="formulaire">
+		<form
+			method="POST"
+			action="?/entrer"
+			use:enhance={ecriture.enhance({ verbe: 'Ouvert' })}
+			class="formulaire"
+		>
 			{#if data.retour}<input type="hidden" name="retour" value={data.retour} />{/if}
 			<Champ
 				libelle="Pseudo"
@@ -74,7 +90,8 @@
 			</div>
 
 			<div class="gestes">
-				<Bouton variante="ruban" type="submit" fleche="→" disabled={ecriture.enCours}>Entrer</Bouton>
+				<Bouton variante="ruban" type="submit" fleche="→" disabled={ecriture.enCours}>Entrer</Bouton
+				>
 			</div>
 		</form>
 
@@ -86,17 +103,19 @@
 		{/if}
 
 		<div class="suite">
-			<Bouton variante="texte" href="/entrer/inscription" fleche="→">Pas encore de compte ? Rejoindre l’aventure</Bouton>
+			<Bouton variante="texte" href="/entrer/inscription" fleche="→"
+				>Pas encore de compte ? Rejoindre l’aventure</Bouton
+			>
 			<p class="aide">
 				L’inscription passe par le règlement. Avant d’entrer, tu peux lire
-				<a href="/univers/premiers-pas">les premiers pas</a>.
+				<a href={resolve('/univers/premiers-pas')}>les premiers pas</a>.
 			</p>
 			<p class="aide mobile">
 				<span class="repere">Code temporaire</span>
-				Reçu d’un administrateur sur Discord : entre-le comme mot de passe, le carnet te demande aussitôt d’en choisir un nouveau.
+				Reçu d’un administrateur sur Discord : entre-le comme mot de passe, le carnet te demande aussitôt
+				d’en choisir un nouveau.
 			</p>
 		</div>
-
 	</Page>
 </Enveloppe>
 

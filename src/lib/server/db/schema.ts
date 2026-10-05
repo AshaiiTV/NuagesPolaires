@@ -1242,7 +1242,10 @@ export const migrationRegistry = pgTable(
 		targetTable: text('target_table').notNull(),
 		targetId: text('target_id').notNull(),
 		checksum: text('checksum').notNull(),
-		anomalies: jsonb('anomalies').$type<import('../legacy/report').MigrationAnomaly[]>().notNull().default([]),
+		anomalies: jsonb('anomalies')
+			.$type<import('../legacy/report').MigrationAnomaly[]>()
+			.notNull()
+			.default([]),
 		migratedAt: timestamp('migrated_at', { withTimezone: true }).notNull().defaultNow()
 	},
 	(t) => [

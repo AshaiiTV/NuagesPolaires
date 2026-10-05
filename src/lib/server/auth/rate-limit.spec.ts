@@ -42,8 +42,11 @@ describe('limitation des tentatives (04 §3.1, audit 05 §4.3)', () => {
 
 	it('compte chaque clé séparément ; une seule clé dépassée suffit au refus', async () => {
 		const ip = rateLimitKey('ip', '9.9.9.9');
-		for (let i = 0; i < RATE_LIMIT_MAX; i++) await consumeRateLimit(t.db, [ip, rateLimitKey('login', `p${i}`)]);
-		await expect(consumeRateLimit(t.db, [ip, rateLimitKey('login', 'neuf')])).rejects.toMatchObject({ status: 429 });
+		for (let i = 0; i < RATE_LIMIT_MAX; i++)
+			await consumeRateLimit(t.db, [ip, rateLimitKey('login', `p${i}`)]);
+		await expect(consumeRateLimit(t.db, [ip, rateLimitKey('login', 'neuf')])).rejects.toMatchObject(
+			{ status: 429 }
+		);
 	});
 
 	it('incrémentation atomique sous concurrence : 20 appels simultanés ⇒ compteur 20', async () => {
@@ -64,7 +67,11 @@ describe('limitation des tentatives (04 §3.1, audit 05 §4.3)', () => {
 		await hitRateLimit(t.db, key);
 		await resetRateLimit(t.db, key);
 		expect(await hitRateLimit(t.db, key)).toBe(1);
-		await hitRateLimit(t.db, rateLimitKey('ip', 'x'), new Date(Date.now() - RATE_LIMIT_WINDOW_MS - 5000));
+		await hitRateLimit(
+			t.db,
+			rateLimitKey('ip', 'x'),
+			new Date(Date.now() - RATE_LIMIT_WINDOW_MS - 5000)
+		);
 		expect(await purgeRateLimits(t.db)).toBe(1);
 	});
 });

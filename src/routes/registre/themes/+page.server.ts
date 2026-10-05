@@ -26,7 +26,10 @@ export const load: PageServerLoad = async (event) => {
 	const themes = await listThemes(db, actor);
 	const comptes = await listAccounts(db, actor);
 	return {
-		themes: themes.map((t) => ({ ...libelleTheme(t), toujours: ALWAYS_GRANTED_THEME_IDS.includes(t.id) })),
+		themes: themes.map((t) => ({
+			...libelleTheme(t),
+			toujours: ALWAYS_GRANTED_THEME_IDS.includes(t.id)
+		})),
 		// Le don est réservé aux joueurs (règle du serveur) : on ne propose qu'eux.
 		joueurs: comptes
 			.filter((c) => c.role === 'joueur')
@@ -42,32 +45,56 @@ export const actions: Actions = {
 			accountId: texte(data.accountId),
 			themeId: texte(data.themeId)
 		});
-		return { geste: { themeId: texte(data.themeId), quoi: r.granted ? 'donne' : 'deja', at: new Date().toISOString() } };
+		return {
+			geste: {
+				themeId: texte(data.themeId),
+				quoi: r.granted ? 'donne' : 'deja',
+				at: new Date().toISOString()
+			}
+		};
 	}),
 	retirer: action(async (event, data) => {
 		const r = await revokeTheme(event.locals.db, event.locals.actor, {
 			accountId: texte(data.accountId),
 			themeId: texte(data.themeId)
 		});
-		return { geste: { themeId: texte(data.themeId), quoi: r.revoked ? 'retire' : 'absent', at: new Date().toISOString() } };
+		return {
+			geste: {
+				themeId: texte(data.themeId),
+				quoi: r.revoked ? 'retire' : 'absent',
+				at: new Date().toISOString()
+			}
+		};
 	}),
 	tous: action(async (event, data) => {
-		const r = await grantThemeToAll(event.locals.db, event.locals.actor, { themeId: texte(data.themeId) });
-		return { geste: { themeId: texte(data.themeId), quoi: r.changed > 0 ? 'tous' : 'tous-deja', at: new Date().toISOString() } };
+		const r = await grantThemeToAll(event.locals.db, event.locals.actor, {
+			themeId: texte(data.themeId)
+		});
+		return {
+			geste: {
+				themeId: texte(data.themeId),
+				quoi: r.changed > 0 ? 'tous' : 'tous-deja',
+				at: new Date().toISOString()
+			}
+		};
 	}),
 	visibilite: action(async (event, data) => {
 		await setThemeVisibility(event.locals.db, event.locals.actor, {
 			themeId: texte(data.themeId),
 			visible: texte(data.visible)
 		});
-		return { geste: { themeId: texte(data.themeId), quoi: 'visibilite', at: new Date().toISOString() } };
+		return {
+			geste: { themeId: texte(data.themeId), quoi: 'visibilite', at: new Date().toISOString() }
+		};
 	}),
 	distribution: action(async (event, data) => {
 		await setThemeAutoGrant(event.locals.db, event.locals.actor, {
 			themeId: texte(data.themeId),
 			enabled: texte(data.enabled)
 		});
-		return { geste: { themeId: texte(data.themeId), quoi: 'distribution', at: new Date().toISOString() } };
+		return {
+			geste: { themeId: texte(data.themeId), quoi: 'distribution', at: new Date().toISOString() }
+		};
 	}),
 	creer: action(async (event, data) => {
 		const tokens = Object.fromEntries(THEME_TOKEN_KEYS.map((k) => [k, texte(data[k])])) as Record<
@@ -80,6 +107,13 @@ export const actions: Actions = {
 			description: texte(data.description),
 			tokens
 		});
-		return { cree: { id: theme.id, name: theme.name, par: event.locals.actor?.pseudo ?? '', at: new Date().toISOString() } };
+		return {
+			cree: {
+				id: theme.id,
+				name: theme.name,
+				par: event.locals.actor?.pseudo ?? '',
+				at: new Date().toISOString()
+			}
+		};
 	})
 };

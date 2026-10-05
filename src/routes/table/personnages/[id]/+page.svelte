@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
+	import { chemin } from '$lib/ui/adresse';
+	import { signature, phraseTampon } from '$lib/ui/tampons';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount, tick, untrack } from 'svelte';
@@ -160,7 +162,7 @@
 		reviewed = true;
 	}
 	function lien(params: Record<string, string>, hash: string): string {
-		const query = new URLSearchParams(page.url.searchParams);
+		const query = new SvelteURLSearchParams(page.url.searchParams);
 		for (const [key, value] of Object.entries(params)) {
 			if (value) query.set(key, value);
 			else query.delete(key);
@@ -187,12 +189,14 @@
 		<p class="repere">Conséquences</p>
 		<nav aria-label="Filtrer les conséquences">
 			{#each filters as f (f[0])}<a
-					href={lien({ filtre: f[0], page: '' }, 'consequences')}
+					href={chemin(lien({ filtre: f[0], page: '' }, 'consequences'))}
 					class:courant={data.filter === f[0]}
 					aria-current={data.filter === f[0] ? 'true' : undefined}>{f[1]}</a
 				>{/each}
 		</nav>
-		<a class="ratures" href={lien({ ratures: data.showStruck ? '' : 'oui' }, 'consequences')}
+		<a
+			class="ratures"
+			href={chemin(lien({ ratures: data.showStruck ? '' : 'oui' }, 'consequences'))}
 			>{data.showStruck ? 'Replier les ratures' : 'Voir les ratures'}</a
 		>
 	</div>
@@ -208,13 +212,17 @@
 						>{/if}{/snippet}
 			</NoteDeMarge>
 			{#if conflit && lastStamp?.stamp}<p class="dernier-tampon">
-					Écrit entre-temps : <Tampon cle={lastStamp.id}
-						>tamponné par {lastStamp.stamp.role}
-						{lastStamp.stamp.name} le {dateHeure(lastStamp.at)}</Tampon
-					><span>{lastStamp.text} — motif : {lastStamp.motif}</span>
+					Écrit entre-temps&nbsp;: <Tampon cle={lastStamp.id}
+						>{phraseTampon(
+							lastStamp.stamp.role,
+							lastStamp.stamp.name,
+							lastStamp.at,
+							lastStamp.motif ?? ''
+						)}</Tampon
+					><span>{lastStamp.text} — motif&nbsp;: {lastStamp.motif}</span>
 				</p>{/if}
 			{#if conflit && reviewed}<p class="aide">
-					Le relevé est relu. Ta saisie reste ici ; relis-la avant de tamponner.
+					Le relevé est relu. Ta saisie reste ici&nbsp;; relis-la avant de tamponner.
 				</p>{/if}
 		</div>
 	{:else if !ecriture.note && values.operation === id && failure}<NoteDeMarge ton="refus"
@@ -347,9 +355,7 @@
 		{#if visibleConsequences.length}<ul class="consequences">
 				{#each visibleConsequences as c (c.id)}<Consequence
 						cle={c.id}
-						tampon={c.stamp
-							? `tamponné par ${c.stamp.role} ${c.stamp.name} le ${dateHeure(c.at)}`
-							: null}
+						tampon={c.stamp ? signature(c.stamp.role, c.stamp.name, c.at) : null}
 						signature={c.signature
 							? `${c.signature === 'regles' ? 'règles' : 'toi'} · ${dateHeure(c.at)}`
 							: null}
@@ -357,11 +363,11 @@
 						rayee={c.struck}
 						>{c.text}{#if c.oldValue !== null && c.newValue !== null && c.oldValue !== c.newValue}<span
 								class="variation"
-								><span class="sr-only">Valeurs du relevé : </span><Rature
+								><span class="sr-only">Valeurs du relevé&nbsp;: </span><Rature
 									ancien={c.oldValue}
 									nouveau={c.newValue}
 								/></span
-							>{/if}{#if c.combatId}<a href="/table/archives/{c.combatId}" class="recit"
+							>{/if}{#if c.combatId}<a href={chemin(`/table/archives/${c.combatId}`)} class="recit"
 								>Lire le récit →</a
 							>{/if}</Consequence
 					>{/each}
@@ -417,7 +423,7 @@
 						enhancement={enhancer('reporter-' + d.id)}
 						etat={ecriture.etat}
 						humide={ecriture.enCours}
-						motifInitial={'Report de déclaration : ' + d.word + '.'}
+						motifInitial={'Report de déclaration : ' + d.word + '.'}
 						{values}
 					>
 						<input type="hidden" name="id" value={d.id} />
@@ -464,13 +470,11 @@
 										: 'refusé'}
 						</p>
 						<p class="texte-fait">{f.text}</p>
-						{#if f.witness}<p class="aide">Témoin : {f.witness}</p>{/if}{#if f.stamp}<div
+						{#if f.witness}<p class="aide">Témoin&nbsp;: {f.witness}</p>{/if}{#if f.stamp}<div
 								class="signature-fait"
 							>
-								<Tampon cle={f.id}
-									>tamponné par {f.stamp.role} {f.stamp.name} le {dateHeure(f.stamp.at)}</Tampon
-								>
-								<p class="aide">motif : {f.stamp.motif}</p>
+								<Tampon cle={f.id}>{signature(f.stamp.role, f.stamp.name, f.stamp.at)}</Tampon>
+								<p class="aide">motif&nbsp;: {f.stamp.motif}</p>
 							</div>{/if}{#if data.canValidate && (f.status === 'proposed' || f.status === 'validated')}<SaisieTampon
 								titre={f.status === 'proposed' ? 'Tamponner ou refuser ce fait' : 'Régler ce fait'}
 								operation={'fait-' + f.id}

@@ -226,7 +226,13 @@ const stateBody = z
 	})
 	.strict();
 export const combatStateSchema = stateBody
-	.extend({ history: z.array(stateBody).max(30), gestureHistory: z.array(stateBody.extend({ history: z.array(stateBody).max(30) })).max(30).optional() })
+	.extend({
+		history: z.array(stateBody).max(30),
+		gestureHistory: z
+			.array(stateBody.extend({ history: z.array(stateBody).max(30) }))
+			.max(30)
+			.optional()
+	})
 	.refine((state) => {
 		const ids = state.fighters.map((f) => f.id);
 		const players = state.fighters
@@ -352,4 +358,9 @@ export type RecitRowView = {
 	visibleToParticipants: boolean;
 	revision: number;
 };
-export type RecitView = RecitRowView & { log: CombatLogEntry[]; discordUrl: string; participants: string[]; notes?: string };
+export type RecitView = RecitRowView & {
+	log: CombatLogEntry[];
+	discordUrl: string;
+	participants: string[];
+	notes?: string;
+};

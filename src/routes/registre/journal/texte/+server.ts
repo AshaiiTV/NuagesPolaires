@@ -11,7 +11,8 @@ const JOUR = /^\d{4}-\d{2}-\d{2}$/;
 export const GET: RequestHandler = async (event) => {
 	const actor = requireCapability(event, 'admin.audit');
 	const params = event.url.searchParams;
-	const jour = (k: string) => (JOUR.test(params.get(k) ?? '') ? (params.get(k) as string) : undefined);
+	const jour = (k: string) =>
+		JOUR.test(params.get(k) ?? '') ? (params.get(k) as string) : undefined;
 	let texte: string;
 	try {
 		texte = await auditAsText(event.locals.db, actor, {

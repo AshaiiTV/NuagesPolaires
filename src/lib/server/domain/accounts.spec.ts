@@ -68,7 +68,6 @@ let alice: Actor;
 let bob: Actor;
 let mj: Actor;
 let designer: Actor;
-let nova: Actor;
 
 beforeAll(() => ensureTestEnv());
 beforeEach(async () => {
@@ -78,7 +77,6 @@ beforeEach(async () => {
 	bob = await actorFor(t.db, A.bob);
 	mj = await actorFor(t.db, A.mj);
 	designer = await actorFor(t.db, A.designer);
-	nova = await actorFor(t.db, A.nova);
 });
 afterEach(async () => {
 	await t.close();

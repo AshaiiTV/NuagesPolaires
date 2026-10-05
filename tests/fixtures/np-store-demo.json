@@ -1,134 +1,134 @@
 {
-  "format": "np-store-backup-v1",
-  "exportedAt": "2026-09-30T12:00:00.000Z",
-  "valueEncoding": "postgresql-jsonb-text",
-  "count": 25,
-  "rows": [
-    {
-      "key": "accounts",
-      "value": "[{\"id\":\"fixture_a_0\",\"pseudo\":\"Admin\",\"role\":\"admin\",\"pid\":\"fixture_p_0\",\"pass\":\"sha256:63a7d9ce1666cf49a9eb7e8f8c9a414b242189011ba091496089b9de5e776ebc\",\"createdAt\":1700000000000,\"lastSeen\":1700000000000,\"selectedTheme\":\"dark\",\"unlockedThemes\":[],\"blockedThemes\":[],\"opaque\":{\"fiction\":true}},{\"id\":\"fixture_a_1\",\"pseudo\":\"Alice\",\"role\":\"joueur\",\"pid\":\"fixture_p_1\",\"pass\":\"pbkdf2:abababababababababababababababababababababababababababababababab:b436662be708e3b637915602d297bb6279960acb1b67f4f52f4d0f0b400197a0de1515a0721e91cda9a61b728904f943e2348f1e33163c6e0747494783517197\",\"createdAt\":1700000000000,\"lastSeen\":1700000000000,\"selectedTheme\":\"theme-violet\",\"unlockedThemes\":[\"violet\"],\"blockedThemes\":[],\"sessionVersion\":1,\"opaque\":{\"fiction\":true}},{\"id\":\"fixture_a_2\",\"pseudo\":\"Bob\",\"role\":\"joueur\",\"pid\":\"fixture_p_2\",\"pass\":\"024fb4ce44642b8814e0102f8cdd8e4dba2e2a4cf70768bb16452889d77a8086\",\"createdAt\":1700000000000,\"lastSeen\":1700000000000,\"selectedTheme\":\"dark\",\"unlockedThemes\":[],\"blockedThemes\":[],\"opaque\":{\"fiction\":true}},{\"id\":\"fixture_a_3\",\"pseudo\":\"Maitre\",\"role\":\"mj\",\"pid\":null,\"pass\":\"sha256:b135a387e2cb51cbbbf5ac1ade13cb8b1c3ad6a0f18bd57dfd54a7882bf4ce14\",\"createdAt\":1700000000000,\"lastSeen\":1700000000000,\"selectedTheme\":\"dark\",\"unlockedThemes\":[],\"blockedThemes\":[],\"sessionVersion\":3,\"opaque\":{\"fiction\":true}},{\"id\":\"fixture_a_4\",\"pseudo\":\"Designer\",\"role\":\"designer\",\"pid\":null,\"pass\":\"sha256:56ec38b97af7229c8de15d82b9eb4ffb8fd33276834cfc0ccb59ad7bbdb159bf\",\"createdAt\":1700000000000,\"lastSeen\":1700000000000,\"selectedTheme\":\"dark\",\"unlockedThemes\":[],\"blockedThemes\":[],\"opaque\":{\"fiction\":true}},{\"id\":\"fixture_a_5\",\"pseudo\":\"Nova\",\"role\":\"inconnu\",\"pid\":\"fixture_p_5\",\"pass\":\"sha256:91ab8644db8edc7dab0b22229f4259aacfb1e877429d017896bf1f7f9879dd69\",\"createdAt\":1700000000000,\"lastSeen\":1700000000000,\"selectedTheme\":\"dark\",\"unlockedThemes\":[],\"blockedThemes\":[],\"sessionVersion\":5,\"opaque\":{\"fiction\":true}},{\"id\":\"fixture_a_6\",\"pseudo\":\"Echo\",\"role\":\"joueur\",\"pid\":\"fixture_p_6\",\"pass\":\"sha256:4a906c965ba696ac3750a0f65fcbd277463a5d6d8f8faa7da0279b58994a91f9\",\"createdAt\":1700000000000,\"lastSeen\":1700000000000,\"selectedTheme\":\"dark\",\"unlockedThemes\":[],\"blockedThemes\":[],\"opaque\":{\"fiction\":true}},{\"id\":\"fixture_a_7\",\"pseudo\":\"SansFiche\",\"role\":\"joueur\",\"pid\":null,\"pass\":\"sha256:ffda30707c6e713faaf20afcfc79db47041782c219406750e3c66f5c4e4aa9bc\",\"createdAt\":1700000000000,\"lastSeen\":1700000000000,\"selectedTheme\":\"dark\",\"unlockedThemes\":[],\"blockedThemes\":[],\"sessionVersion\":7,\"opaque\":{\"fiction\":true}}]",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "beasts",
-      "value": "[{\"id\":\"fixture_b_0\",\"nom\":\"Loup fictif 0\",\"name\":\"Alias divergent 0\",\"beh\":\"Neutre\",\"niv\":3,\"pv\":40,\"ep\":20,\"frappe\":\"8 + Niv.\",\"comp\":\"Morsure\",\"drops\":\"Fourrure\",\"gem\":\"1–60 : Aucune\",\"desc\":\"Créature fictive\",\"img\":\"\",\"sub\":\"Prédateur\",\"hidden\":false,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"Grotte fictive\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":0,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_1\",\"name\":\"Créature fictive 1\",\"behavior\":\"Agressif\",\"level\":2,\"hp\":30,\"energy\":10,\"attack\":\"Frappe\",\"ability\":\"Trace\",\"loot\":\"Crocs\",\"gemme\":\"Gemme Blanche\",\"description\":\"Fiction\",\"image\":\"\",\"subtitle\":\"Alias anglais\",\"hidden\":false,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"[🌳]-forêt-centre\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_2\",\"catalog\":{\"name\":\"Catalogue fictif 2\",\"comportement\":\"Passif\",\"level\":1,\"pv\":20,\"ep\":10,\"skill\":\"Souffle\"},\"hidden\":false,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"Grotte fictive\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_3\",\"nom\":\"Loup fictif 3\",\"name\":\"Alias divergent 3\",\"beh\":\"Neutre\",\"niv\":3,\"pv\":40,\"ep\":20,\"frappe\":\"8 + Niv.\",\"comp\":\"Morsure\",\"drops\":\"Fourrure\",\"gem\":\"1–60 : Aucune\",\"desc\":\"Créature fictive\",\"img\":\"\",\"sub\":\"Prédateur\",\"hidden\":false,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"[🌳]-forêt-centre\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_4\",\"name\":\"Créature fictive 4\",\"behavior\":\"Agressif\",\"level\":2,\"hp\":30,\"energy\":10,\"attack\":\"Frappe\",\"ability\":\"Trace\",\"loot\":\"Crocs\",\"gemme\":\"Gemme Blanche\",\"description\":\"Fiction\",\"image\":\"\",\"subtitle\":\"Alias anglais\",\"hidden\":false,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"Grotte fictive\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_5\",\"catalog\":{\"name\":\"Catalogue fictif 5\",\"comportement\":\"Passif\",\"level\":1,\"pv\":20,\"ep\":10,\"skill\":\"Souffle\"},\"hidden\":false,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"[🌳]-forêt-centre\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_6\",\"nom\":\"Loup fictif 6\",\"name\":\"Alias divergent 6\",\"beh\":\"Neutre\",\"niv\":3,\"pv\":40,\"ep\":20,\"frappe\":\"8 + Niv.\",\"comp\":\"Morsure\",\"drops\":\"Fourrure\",\"gem\":\"1–60 : Aucune\",\"desc\":\"Créature fictive\",\"img\":\"\",\"sub\":\"Prédateur\",\"hidden\":false,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"Grotte fictive\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_7\",\"name\":\"Créature fictive 7\",\"behavior\":\"Agressif\",\"level\":2,\"hp\":30,\"energy\":10,\"attack\":\"Frappe\",\"ability\":\"Trace\",\"loot\":\"Crocs\",\"gemme\":\"Gemme Blanche\",\"description\":\"Fiction\",\"image\":\"\",\"subtitle\":\"Alias anglais\",\"hidden\":false,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"[🌳]-forêt-centre\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_8\",\"catalog\":{\"name\":\"Catalogue fictif 8\",\"comportement\":\"Passif\",\"level\":1,\"pv\":20,\"ep\":10,\"skill\":\"Souffle\"},\"hidden\":false,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"Grotte fictive\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_9\",\"nom\":\"Loup fictif 9\",\"name\":\"Alias divergent 9\",\"beh\":\"Neutre\",\"niv\":3,\"pv\":40,\"ep\":20,\"frappe\":\"8 + Niv.\",\"comp\":\"Morsure\",\"drops\":\"Fourrure\",\"gem\":\"1–60 : Aucune\",\"desc\":\"Créature fictive\",\"img\":\"\",\"sub\":\"Prédateur\",\"hidden\":false,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"[🌳]-forêt-centre\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_10\",\"name\":\"Créature fictive 10\",\"behavior\":\"Agressif\",\"level\":2,\"hp\":30,\"energy\":10,\"attack\":\"Frappe\",\"ability\":\"Trace\",\"loot\":\"Crocs\",\"gemme\":\"Gemme Blanche\",\"description\":\"Fiction\",\"image\":\"\",\"subtitle\":\"Alias anglais\",\"hidden\":true,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"Grotte fictive\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_11\",\"catalog\":{\"name\":\"Catalogue fictif 11\",\"comportement\":\"Passif\",\"level\":1,\"pv\":20,\"ep\":10,\"skill\":\"Souffle\"},\"hidden\":false,\"archived\":true,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"[🌳]-forêt-centre\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}}]",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "combat_arc_Alice",
-      "value": "[{\"id\":\"arc3\",\"name\":\"Récit fictif 3\",\"savedAt\":1700000000003,\"round\":2,\"phase\":\"idle\",\"active\":false,\"_inProgress\":false,\"_draft\":true,\"_manualSaved\":true,\"fighters\":[{\"type\":\"player\",\"pid\":\"fixture_p_1\",\"name\":\"Alice\",\"pvCur\":12,\"pvMax\":30,\"epCur\":20,\"epMax\":50,\"emCur\":7,\"emMax\":20},{\"type\":\"beast\",\"bid\":\"fixture_b_0\",\"name\":\"Loup\",\"pvCur\":0,\"pvMax\":40}],\"log\":[\"Tour 1\",\"Tour 2\"]}]",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "combat_arc_Maitre",
-      "value": "[{\"id\":\"arc0\",\"name\":\"Récit fictif 0\",\"savedAt\":1700000000000,\"round\":2,\"phase\":\"idle\",\"active\":false,\"_inProgress\":false,\"_draft\":false,\"_manualSaved\":true,\"fighters\":[{\"type\":\"player\",\"pid\":\"fixture_p_1\",\"name\":\"Alice\",\"pvCur\":12,\"pvMax\":30,\"epCur\":20,\"epMax\":50,\"emCur\":7,\"emMax\":20},{\"type\":\"beast\",\"bid\":\"fixture_b_0\",\"name\":\"Loup\",\"pvCur\":0,\"pvMax\":40}],\"log\":[{\"text\":\"Une trace <b>polaire</b>.\"},{\"text\":\"<img src=x onerror=\\\"fiction\\\">Fin.\"}]},{\"id\":\"arc1\",\"name\":\"Récit fictif 1\",\"savedAt\":1700000000001,\"round\":2,\"phase\":\"idle\",\"active\":true,\"_inProgress\":false,\"_draft\":false,\"_manualSaved\":true,\"fighters\":[{\"type\":\"player\",\"pid\":\"fixture_p_1\",\"name\":\"Alice\",\"pvCur\":12,\"pvMax\":30,\"epCur\":20,\"epMax\":50,\"emCur\":7,\"emMax\":20},{\"type\":\"beast\",\"bid\":\"fixture_b_0\",\"name\":\"Loup\",\"pvCur\":0,\"pvMax\":40}],\"log\":[\"Tour 1\",\"Tour 2\"]}]",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "combat_arc_fixture_a_2",
-      "value": "[{\"id\":\"arc4\",\"name\":\"Récit fictif 4\",\"savedAt\":1700000000004,\"round\":2,\"phase\":\"idle\",\"active\":false,\"_inProgress\":false,\"_draft\":false,\"_manualSaved\":true,\"fighters\":[{\"type\":\"player\",\"pid\":\"fixture_p_1\",\"name\":\"Alice\",\"pvCur\":12,\"pvMax\":30,\"epCur\":20,\"epMax\":50,\"emCur\":7,\"emMax\":20},{\"type\":\"beast\",\"bid\":\"fixture_b_0\",\"name\":\"Loup\",\"pvCur\":0,\"pvMax\":40}],\"log\":[{\"text\":\"Une trace <b>polaire</b>.\"},{\"text\":\"<img src=x onerror=\\\"fiction\\\">Fin.\"}]}]",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "combat_arc_idx_Maitre",
-      "value": "[{\"id\":\"arc0\",\"name\":\"Récit fictif 0\",\"savedAt\":1700000000000,\"round\":2,\"phase\":\"idle\",\"active\":false,\"_inProgress\":false,\"_draft\":false,\"_manualSaved\":true,\"fighters\":[{\"type\":\"player\",\"pid\":\"fixture_p_1\",\"name\":\"Alice\",\"pvCur\":12,\"pvMax\":30,\"epCur\":20,\"epMax\":50,\"emCur\":7,\"emMax\":20},{\"type\":\"beast\",\"bid\":\"fixture_b_0\",\"name\":\"Loup\",\"pvCur\":0,\"pvMax\":40}],\"log\":[],\"_stub\":true},{\"id\":\"arc2\",\"name\":\"Index seul\",\"_stub\":true,\"_inProgress\":true,\"fighters\":[{\"type\":\"player\",\"pid\":\"fixture_p_1\",\"name\":\"Alice\",\"pvCur\":12,\"pvMax\":30,\"epCur\":20,\"epMax\":50,\"emCur\":7,\"emMax\":20}]}]",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "combat_arc_rec_Maitre__arc0",
-      "value": "{\"id\":\"arc0\",\"name\":\"Détail prioritaire\",\"savedAt\":1700000000000,\"round\":2,\"phase\":\"idle\",\"active\":false,\"_inProgress\":false,\"_draft\":false,\"_manualSaved\":true,\"fighters\":[{\"type\":\"player\",\"pid\":\"fixture_p_1\",\"name\":\"Alice\",\"pvCur\":12,\"pvMax\":30,\"epCur\":20,\"epMax\":50,\"emCur\":7,\"emMax\":20},{\"type\":\"beast\",\"bid\":\"fixture_b_0\",\"name\":\"Loup\",\"pvCur\":0,\"pvMax\":40}],\"log\":[{\"text\":\"Une trace <b>polaire</b>.\"},{\"text\":\"<img src=x onerror=\\\"fiction\\\">Fin.\"}]}",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "combat_arc_rec_Orphelin__arc5",
-      "value": "{\"id\":\"arc5\",\"name\":\"Récit fictif 5\",\"savedAt\":1700000000005,\"round\":2,\"phase\":\"idle\",\"active\":false,\"_inProgress\":false,\"_draft\":false,\"_manualSaved\":true,\"fighters\":[{\"type\":\"player\",\"pid\":\"fixture_p_1\",\"name\":\"Alice\",\"pvCur\":12,\"pvMax\":30,\"epCur\":20,\"epMax\":50,\"emCur\":7,\"emMax\":20},{\"type\":\"beast\",\"bid\":\"fixture_b_0\",\"name\":\"Loup\",\"pvCur\":0,\"pvMax\":40}],\"log\":[\"Tour 1\",\"Tour 2\"]}",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "event_themes",
-      "value": "{\"halloween\":{\"name\":\"Nuit fictive\",\"cls\":\"theme-halloween\",\"event\":true,\"availableUntil\":1793577600000},\"fixture_theme\":{\"name\":\"Papier fictif\",\"preview\":[\"#102327\",\"#95CDBB\",\"#C6B38B\"],\"desc\":\"Fiction\",\"event\":true,\"autoGrantAll\":true}}",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "events",
-      "value": "[{\"id\":\"fixture_e_0\",\"nom\":\"Rendez-vous 0\",\"date\":1700000000000,\"type\":\"combat\",\"max\":0,\"desc\":\"Rendez-vous fictif\",\"createdBy\":\"Maitre\",\"inscrits\":[\"Alice\",\"Bob\"],\"extra\":{\"kept\":true},\"arbitrary\":\"keep\"},{\"id\":\"fixture_e_1\",\"titre\":\"Ancien rendez-vous 1\",\"dateTs\":1700086400000,\"published\":true,\"type\":\"exploration\",\"max\":4,\"desc\":\"Rendez-vous fictif\",\"createdBy\":\"Auteur disparu\",\"inscrits\":[\"Alice\",\"Bob\"],\"extra\":{\"kept\":true},\"arbitrary\":\"keep\"},{\"id\":\"fixture_e_2\",\"nom\":\"Rendez-vous 2\",\"date\":null,\"type\":\"social\",\"max\":4,\"desc\":\"Rendez-vous fictif\",\"createdBy\":\"Auteur disparu\",\"inscrits\":[\"Alice\",\"Bob\"],\"extra\":{\"kept\":true},\"arbitrary\":\"keep\"},{\"id\":\"fixture_e_3\",\"titre\":\"Ancien rendez-vous 3\",\"dateTs\":1700259200000,\"published\":false,\"hidden\":false,\"type\":\"evenement\",\"max\":4,\"desc\":\"Rendez-vous fictif\",\"createdBy\":\"Auteur disparu\",\"inscrits\":[\"Alice\",\"Bob\"],\"extra\":{\"kept\":true},\"arbitrary\":\"keep\"},{\"id\":\"fixture_e_4\",\"nom\":\"Rendez-vous 4\",\"date\":1700345600000,\"hidden\":true,\"type\":\"autre\",\"max\":4,\"desc\":\"Rendez-vous fictif\",\"createdBy\":\"Auteur disparu\",\"inscrits\":[\"Alice\",\"Bob\"],\"extra\":{\"kept\":true},\"arbitrary\":\"keep\"},{\"id\":\"fixture_e_5\",\"titre\":\"Ancien rendez-vous 5\",\"dateTs\":1700432000000,\"published\":true,\"type\":\"combat\",\"max\":4,\"desc\":\"Rendez-vous fictif\",\"createdBy\":\"Auteur disparu\",\"inscrits\":[\"Alice\",\"Bob\"],\"extra\":{\"kept\":true},\"arbitrary\":\"keep\"},{\"id\":\"fixture_e_6\",\"nom\":\"Rendez-vous 6\",\"date\":1700518400000,\"type\":\"exploration\",\"max\":4,\"desc\":\"Rendez-vous fictif\",\"createdBy\":\"Auteur disparu\",\"inscrits\":[\"Homonyme\",\"Absent\"],\"extra\":{\"kept\":true},\"arbitrary\":\"keep\"},{\"id\":\"fixture_e_7\",\"titre\":\"Ancien rendez-vous 7\",\"dateTs\":1700604800000,\"published\":true,\"type\":\"social\",\"max\":4,\"desc\":\"Rendez-vous fictif\",\"createdBy\":\"Auteur disparu\",\"inscrits\":[\"Alice\",\"Bob\"],\"extra\":{\"kept\":true},\"arbitrary\":\"keep\"}]",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "lieux",
-      "value": "[{\"id\":\"lieu_fictif\",\"nom\":\"Havre fictif\",\"notes\":\"Fiction\",\"visible\":false}]",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "np_admin_recovery_consumed",
-      "value": "{\"fingerprint\":\"ed861bd9d703fb8f99c02010c7be9ad626f3ec7f778f5d0667ebcca4b5953262\",\"pseudo\":\"Admin\",\"consumedAt\":1700000000000}",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "np_audit_log",
-      "value": "[{\"ts\":1700000000000,\"source\":\"auth\",\"action\":\"login_success\",\"actor\":{\"pseudo\":\"Admin\",\"role\":\"admin\"},\"ip\":\"192.0.2.1\",\"details\":{\"fixture\":true}}]",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "np_rate_auth",
-      "value": "{\"ip:192.0.2.1\":{\"count\":3,\"first\":1700000000000}}",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "np_syslog",
-      "value": "[{\"ts\":1700000000000,\"action\":\"liaison\",\"detail\":\"Liaison fictive\",\"actor\":\"Admin\"}]",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "np_syslog_archive",
-      "value": "[{\"archivedAt\":1700000000000,\"label\":\"Lot fictif\",\"filename\":\"archive-fictive\",\"entries\":[{\"ts\":0,\"action\":\"history_delete\",\"detail\":\"Trace conservée\",\"actor\":\"Maitre\",\"target\":\"Alice (Duelliste)\",\"src\":\"history\"}]}]",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "page_content",
-      "value": "{\"mort\":true}",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "players",
-      "value": "[{\"id\":\"fixture_p_0\",\"name\":\"Admin\",\"classe\":\"Mizu\",\"level\":1,\"xp\":0,\"xpMax\":30,\"progressionVersion\":1,\"pvMax\":30,\"pvCur\":30,\"epMax\":50,\"epCur\":20,\"emMax\":20,\"emCur\":7,\"branch\":\"Aucune\",\"arme\":\"Épée\",\"journal\":\"Note fictive Admin\",\"avatar\":\"\",\"equipment\":{\"helmet\":null,\"chest\":null,\"legs\":null},\"inventory\":[{\"id\":\"potion\",\"name\":\"Potion\",\"category\":\"Consommable\",\"qty\":2,\"effect\":\"+20 PV\",\"arbitrary\":\"keep\"},{\"id\":\"gemme-blanche\",\"name\":\"Gemme Blanche\",\"category\":\"Gemme\",\"qty\":3},{\"id\":\"invalid-zero\",\"name\":\"Objet vide\",\"qty\":0},{\"id\":\"invalid-neg\",\"name\":\"Quantité négative\",\"qty\":-1},{\"id\":\"invalid-float\",\"name\":\"Fraction\",\"qty\":1.5},{\"id\":\"invalid-string\",\"name\":\"Chaîne\",\"qty\":\"2\"}],\"history\":[{\"ts\":101,\"type\":\"item\",\"text\":\"Consommé : &lt;potion&gt; &amp;lt;trace&amp;gt;\",\"by\":\"MJ Maitre\"},{\"ts\":1700000000000,\"type\":\"combat\",\"text\":\"Récit fictif\",\"by\":\"Maitre\"}],\"notifDeleted\":[101],\"statuts\":[],\"opaque\":{\"kept\":true}},{\"id\":\"fixture_p_1\",\"name\":\"Alice\",\"classe\":\"Duelliste\",\"level\":2,\"xp\":15,\"xpMax\":60,\"sLevel\":5,\"sXp\":25,\"sXpMax\":50,\"pvMax\":41,\"pvCur\":31,\"epMax\":50,\"epCur\":20,\"emMax\":20,\"emCur\":7,\"branch\":\"Aucune\",\"arme\":\"Épée\",\"journal\":\"Note fictive Alice\",\"avatar\":\"\",\"equipment\":{\"helmet\":null,\"chest\":null,\"legs\":null},\"inventory\":[{\"id\":\"potion\",\"name\":\"Potion\",\"category\":\"Consommable\",\"qty\":2,\"effect\":\"+20 PV\",\"arbitrary\":\"keep\"},{\"id\":\"gemme-blanche\",\"name\":\"Gemme Blanche\",\"category\":\"Gemme\",\"qty\":3}],\"history\":[{\"ts\":101,\"type\":\"item\",\"text\":\"Consommé : &lt;potion&gt; &amp;lt;trace&amp;gt;\",\"by\":\"MJ Maitre\"},{\"ts\":1700000000000,\"type\":\"combat\",\"text\":\"Récit fictif\",\"by\":\"Maitre\",\"combatId\":\"arc0\"}],\"notifDeleted\":[101],\"statuts\":[],\"opaque\":{\"kept\":true}},{\"id\":\"fixture_p_2\",\"name\":\"Bob\",\"class\":\"Duelliste\",\"level\":1,\"xp\":0,\"xpMax\":30,\"progressionVersion\":1,\"pvMax\":30,\"pvCur\":30,\"epMax\":50,\"epCur\":20,\"emMax\":20,\"emCur\":7,\"branch\":\"Aucune\",\"arme\":\"Épée\",\"journal\":\"Note fictive Bob\",\"avatar\":\"\",\"equipment\":{\"helmet\":null,\"chest\":null,\"legs\":null},\"inventory\":[{\"id\":\"potion\",\"name\":\"Potion boréale\",\"category\":\"Consommable\",\"qty\":4,\"effect\":\"+20 PV\",\"arbitrary\":\"keep\"},{\"id\":\"gemme-blanche\",\"name\":\"Gemme Blanche\",\"category\":\"Gemme\",\"qty\":3}],\"history\":[{\"ts\":101,\"type\":\"item\",\"text\":\"Consommé : &lt;potion&gt; &amp;lt;trace&amp;gt;\",\"by\":\"MJ Maitre\"},{\"ts\":1700000000000,\"type\":\"combat\",\"text\":\"Récit fictif\",\"by\":\"Maitre\"}],\"notifDeleted\":[101],\"statuts\":[],\"unlockedThemes\":[\"halloween\"],\"blockedThemes\":[\"green\"],\"opaque\":{\"kept\":true}},{\"id\":\"fixture_p_3\",\"name\":\"Maitre\",\"classe\":\"Mizu\",\"level\":1,\"xp\":0,\"xpMax\":30,\"progressionVersion\":1,\"pvMax\":30,\"pvCur\":30,\"epMax\":50,\"epCur\":20,\"emMax\":20,\"emCur\":7,\"branch\":\"Aucune\",\"arme\":\"Épée\",\"journal\":\"Note fictive Maitre\",\"avatar\":\"\",\"equipment\":{\"helmet\":null,\"chest\":null,\"legs\":null},\"inventory\":[],\"history\":[{\"ts\":101,\"type\":\"item\",\"text\":\"Consommé : &lt;potion&gt; &amp;lt;trace&amp;gt;\",\"by\":\"MJ Maitre\"},{\"ts\":1700000000000,\"type\":\"combat\",\"text\":\"Récit fictif\",\"by\":\"Maitre\"}],\"notifDeleted\":[101],\"statuts\":[],\"opaque\":{\"kept\":true}},{\"id\":\"fixture_p_4\",\"name\":\"Designer\",\"classe\":\"Mizu\",\"level\":1,\"xp\":0,\"xpMax\":30,\"progressionVersion\":1,\"pvMax\":30,\"pvCur\":30,\"epMax\":50,\"epCur\":20,\"emMax\":20,\"emCur\":7,\"branch\":\"Aucune\",\"arme\":\"Épée\",\"journal\":\"Note fictive Designer\",\"avatar\":\"\",\"equipment\":{\"helmet\":null,\"chest\":null,\"legs\":null},\"inventory\":[],\"history\":[{\"ts\":101,\"type\":\"item\",\"text\":\"Consommé : &lt;potion&gt; &amp;lt;trace&amp;gt;\",\"by\":\"MJ Maitre\"},{\"ts\":1700000000000,\"type\":\"combat\",\"text\":\"Récit fictif\",\"by\":\"Maitre\"}],\"notifDeleted\":[101],\"statuts\":[],\"opaque\":{\"kept\":true}},{\"id\":\"fixture_p_5\",\"name\":\"Homonyme\",\"classe\":\"Mizu\",\"level\":1,\"xp\":0,\"xpMax\":30,\"progressionVersion\":1,\"pvMax\":30,\"pvCur\":30,\"epMax\":50,\"epCur\":20,\"emMax\":20,\"emCur\":7,\"branch\":\"Aucune\",\"arme\":\"Épée\",\"journal\":\"Note fictive Nova\",\"avatar\":\"\",\"equipment\":{\"helmet\":null,\"chest\":null,\"legs\":null},\"inventory\":[],\"history\":[{\"ts\":101,\"type\":\"item\",\"text\":\"Consommé : &lt;potion&gt; &amp;lt;trace&amp;gt;\",\"by\":\"MJ Maitre\"},{\"ts\":1700000000000,\"type\":\"combat\",\"text\":\"Récit fictif\",\"by\":\"Maitre\"}],\"notifDeleted\":[101],\"statuts\":[],\"opaque\":{\"kept\":true}},{\"id\":\"fixture_p_6\",\"name\":\"Homonyme\",\"classe\":\"Mizu\",\"level\":1,\"xp\":0,\"xpMax\":30,\"progressionVersion\":1,\"pvMax\":30,\"pvCur\":30,\"epMax\":50,\"epCur\":20,\"emMax\":20,\"emCur\":7,\"branch\":\"Aucune\",\"arme\":\"Épée\",\"journal\":\"Note fictive Echo\",\"avatar\":\"\",\"equipment\":{\"helmet\":null,\"chest\":null,\"legs\":null},\"inventory\":[],\"history\":[{\"ts\":101,\"type\":\"item\",\"text\":\"Consommé : &lt;potion&gt; &amp;lt;trace&amp;gt;\",\"by\":\"MJ Maitre\"},{\"ts\":1700000000000,\"type\":\"combat\",\"text\":\"Récit fictif\",\"by\":\"Maitre\"}],\"notifDeleted\":[101],\"statuts\":[],\"opaque\":{\"kept\":true}},{\"id\":\"fixture_p_7\",\"name\":\"SansFiche\",\"classe\":\"Mizu\",\"level\":1,\"xp\":0,\"xpMax\":30,\"progressionVersion\":1,\"pvMax\":30,\"pvCur\":0,\"epMax\":50,\"epCur\":20,\"emMax\":20,\"emCur\":7,\"branch\":\"Aucune\",\"arme\":\"Épée\",\"journal\":\"Note fictive SansFiche\",\"avatar\":\"\",\"equipment\":{\"helmet\":null,\"chest\":null,\"legs\":null},\"inventory\":[],\"history\":[{\"ts\":101,\"type\":\"item\",\"text\":\"Consommé : &lt;potion&gt; &amp;lt;trace&amp;gt;\",\"by\":\"MJ Maitre\"},{\"ts\":1700000000000,\"type\":\"combat\",\"text\":null,\"by\":\"Maitre\"}],\"notifDeleted\":[101],\"statuts\":[],\"opaque\":{\"kept\":true}},null]",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "rpg_characters",
-      "value": "[{\"id\":\"rpg_fictif\",\"ownerId\":\"fixture_a_1\",\"schemaVersion\":4}]",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "serment_catalog",
-      "value": "{\"mort\":true}",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "serments_custom",
-      "value": "{\"Duelliste\":{\"pvN\":7,\"lore\":\"Surcharge fictive\"},\"Serment fictif\":{\"pvN\":3,\"epN\":5,\"emN\":2,\"bA\":{\"nom\":\"Branche fictive\",\"paliers\":[{\"niv\":2,\"nom\":\"Trace\",\"cout\":\"2 EP\",\"desc\":\"Fiction\"}]}}}",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "spawn_lab_staff",
-      "value": "{\"schemaVersion\":2,\"totals\":{\"fixture_b_0\":12,\"fixture_b_1\":7},\"totalDraws\":57,\"customZones\":[\"Ruines fictives\",\"[🌳]-forêt-centre\"],\"lastGeneratedBy\":\"Maitre\",\"lastRuns\":[{\"id\":\"fixture_run\",\"ts\":1700000000000,\"zone\":\"Ruines fictives\",\"packs\":[{\"id\":\"fixture_b_0\",\"qty\":2}],\"by\":\"Maitre\"}]}",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "theme_catalog",
-      "value": "{\"mort\":true}",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "theme_visibility",
-      "value": "{\"halloween\":false}",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    },
-    {
-      "key": "themes_admin_store",
-      "value": "{\"meta\":{\"private\":true}}",
-      "updated_at": "2026-09-30 12:00:00.123456+00"
-    }
-  ],
-  "sha256": "f51abffaac328ece508ddd4366d7fc98dec675aeb064a316166f43c8729bce0a"
+	"format": "np-store-backup-v1",
+	"exportedAt": "2026-09-30T12:00:00.000Z",
+	"valueEncoding": "postgresql-jsonb-text",
+	"count": 25,
+	"rows": [
+		{
+			"key": "accounts",
+			"value": "[{\"id\":\"fixture_a_0\",\"pseudo\":\"Admin\",\"role\":\"admin\",\"pid\":\"fixture_p_0\",\"pass\":\"sha256:63a7d9ce1666cf49a9eb7e8f8c9a414b242189011ba091496089b9de5e776ebc\",\"createdAt\":1700000000000,\"lastSeen\":1700000000000,\"selectedTheme\":\"dark\",\"unlockedThemes\":[],\"blockedThemes\":[],\"opaque\":{\"fiction\":true}},{\"id\":\"fixture_a_1\",\"pseudo\":\"Alice\",\"role\":\"joueur\",\"pid\":\"fixture_p_1\",\"pass\":\"pbkdf2:abababababababababababababababababababababababababababababababab:b436662be708e3b637915602d297bb6279960acb1b67f4f52f4d0f0b400197a0de1515a0721e91cda9a61b728904f943e2348f1e33163c6e0747494783517197\",\"createdAt\":1700000000000,\"lastSeen\":1700000000000,\"selectedTheme\":\"theme-violet\",\"unlockedThemes\":[\"violet\"],\"blockedThemes\":[],\"sessionVersion\":1,\"opaque\":{\"fiction\":true}},{\"id\":\"fixture_a_2\",\"pseudo\":\"Bob\",\"role\":\"joueur\",\"pid\":\"fixture_p_2\",\"pass\":\"024fb4ce44642b8814e0102f8cdd8e4dba2e2a4cf70768bb16452889d77a8086\",\"createdAt\":1700000000000,\"lastSeen\":1700000000000,\"selectedTheme\":\"dark\",\"unlockedThemes\":[],\"blockedThemes\":[],\"opaque\":{\"fiction\":true}},{\"id\":\"fixture_a_3\",\"pseudo\":\"Maitre\",\"role\":\"mj\",\"pid\":null,\"pass\":\"sha256:b135a387e2cb51cbbbf5ac1ade13cb8b1c3ad6a0f18bd57dfd54a7882bf4ce14\",\"createdAt\":1700000000000,\"lastSeen\":1700000000000,\"selectedTheme\":\"dark\",\"unlockedThemes\":[],\"blockedThemes\":[],\"sessionVersion\":3,\"opaque\":{\"fiction\":true}},{\"id\":\"fixture_a_4\",\"pseudo\":\"Designer\",\"role\":\"designer\",\"pid\":null,\"pass\":\"sha256:56ec38b97af7229c8de15d82b9eb4ffb8fd33276834cfc0ccb59ad7bbdb159bf\",\"createdAt\":1700000000000,\"lastSeen\":1700000000000,\"selectedTheme\":\"dark\",\"unlockedThemes\":[],\"blockedThemes\":[],\"opaque\":{\"fiction\":true}},{\"id\":\"fixture_a_5\",\"pseudo\":\"Nova\",\"role\":\"inconnu\",\"pid\":\"fixture_p_5\",\"pass\":\"sha256:91ab8644db8edc7dab0b22229f4259aacfb1e877429d017896bf1f7f9879dd69\",\"createdAt\":1700000000000,\"lastSeen\":1700000000000,\"selectedTheme\":\"dark\",\"unlockedThemes\":[],\"blockedThemes\":[],\"sessionVersion\":5,\"opaque\":{\"fiction\":true}},{\"id\":\"fixture_a_6\",\"pseudo\":\"Echo\",\"role\":\"joueur\",\"pid\":\"fixture_p_6\",\"pass\":\"sha256:4a906c965ba696ac3750a0f65fcbd277463a5d6d8f8faa7da0279b58994a91f9\",\"createdAt\":1700000000000,\"lastSeen\":1700000000000,\"selectedTheme\":\"dark\",\"unlockedThemes\":[],\"blockedThemes\":[],\"opaque\":{\"fiction\":true}},{\"id\":\"fixture_a_7\",\"pseudo\":\"SansFiche\",\"role\":\"joueur\",\"pid\":null,\"pass\":\"sha256:ffda30707c6e713faaf20afcfc79db47041782c219406750e3c66f5c4e4aa9bc\",\"createdAt\":1700000000000,\"lastSeen\":1700000000000,\"selectedTheme\":\"dark\",\"unlockedThemes\":[],\"blockedThemes\":[],\"sessionVersion\":7,\"opaque\":{\"fiction\":true}}]",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "beasts",
+			"value": "[{\"id\":\"fixture_b_0\",\"nom\":\"Loup fictif 0\",\"name\":\"Alias divergent 0\",\"beh\":\"Neutre\",\"niv\":3,\"pv\":40,\"ep\":20,\"frappe\":\"8 + Niv.\",\"comp\":\"Morsure\",\"drops\":\"Fourrure\",\"gem\":\"1–60 : Aucune\",\"desc\":\"Créature fictive\",\"img\":\"\",\"sub\":\"Prédateur\",\"hidden\":false,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"Grotte fictive\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":0,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_1\",\"name\":\"Créature fictive 1\",\"behavior\":\"Agressif\",\"level\":2,\"hp\":30,\"energy\":10,\"attack\":\"Frappe\",\"ability\":\"Trace\",\"loot\":\"Crocs\",\"gemme\":\"Gemme Blanche\",\"description\":\"Fiction\",\"image\":\"\",\"subtitle\":\"Alias anglais\",\"hidden\":false,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"[🌳]-forêt-centre\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_2\",\"catalog\":{\"name\":\"Catalogue fictif 2\",\"comportement\":\"Passif\",\"level\":1,\"pv\":20,\"ep\":10,\"skill\":\"Souffle\"},\"hidden\":false,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"Grotte fictive\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_3\",\"nom\":\"Loup fictif 3\",\"name\":\"Alias divergent 3\",\"beh\":\"Neutre\",\"niv\":3,\"pv\":40,\"ep\":20,\"frappe\":\"8 + Niv.\",\"comp\":\"Morsure\",\"drops\":\"Fourrure\",\"gem\":\"1–60 : Aucune\",\"desc\":\"Créature fictive\",\"img\":\"\",\"sub\":\"Prédateur\",\"hidden\":false,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"[🌳]-forêt-centre\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_4\",\"name\":\"Créature fictive 4\",\"behavior\":\"Agressif\",\"level\":2,\"hp\":30,\"energy\":10,\"attack\":\"Frappe\",\"ability\":\"Trace\",\"loot\":\"Crocs\",\"gemme\":\"Gemme Blanche\",\"description\":\"Fiction\",\"image\":\"\",\"subtitle\":\"Alias anglais\",\"hidden\":false,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"Grotte fictive\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_5\",\"catalog\":{\"name\":\"Catalogue fictif 5\",\"comportement\":\"Passif\",\"level\":1,\"pv\":20,\"ep\":10,\"skill\":\"Souffle\"},\"hidden\":false,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"[🌳]-forêt-centre\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_6\",\"nom\":\"Loup fictif 6\",\"name\":\"Alias divergent 6\",\"beh\":\"Neutre\",\"niv\":3,\"pv\":40,\"ep\":20,\"frappe\":\"8 + Niv.\",\"comp\":\"Morsure\",\"drops\":\"Fourrure\",\"gem\":\"1–60 : Aucune\",\"desc\":\"Créature fictive\",\"img\":\"\",\"sub\":\"Prédateur\",\"hidden\":false,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"Grotte fictive\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_7\",\"name\":\"Créature fictive 7\",\"behavior\":\"Agressif\",\"level\":2,\"hp\":30,\"energy\":10,\"attack\":\"Frappe\",\"ability\":\"Trace\",\"loot\":\"Crocs\",\"gemme\":\"Gemme Blanche\",\"description\":\"Fiction\",\"image\":\"\",\"subtitle\":\"Alias anglais\",\"hidden\":false,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"[🌳]-forêt-centre\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_8\",\"catalog\":{\"name\":\"Catalogue fictif 8\",\"comportement\":\"Passif\",\"level\":1,\"pv\":20,\"ep\":10,\"skill\":\"Souffle\"},\"hidden\":false,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"Grotte fictive\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_9\",\"nom\":\"Loup fictif 9\",\"name\":\"Alias divergent 9\",\"beh\":\"Neutre\",\"niv\":3,\"pv\":40,\"ep\":20,\"frappe\":\"8 + Niv.\",\"comp\":\"Morsure\",\"drops\":\"Fourrure\",\"gem\":\"1–60 : Aucune\",\"desc\":\"Créature fictive\",\"img\":\"\",\"sub\":\"Prédateur\",\"hidden\":false,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"[🌳]-forêt-centre\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_10\",\"name\":\"Créature fictive 10\",\"behavior\":\"Agressif\",\"level\":2,\"hp\":30,\"energy\":10,\"attack\":\"Frappe\",\"ability\":\"Trace\",\"loot\":\"Crocs\",\"gemme\":\"Gemme Blanche\",\"description\":\"Fiction\",\"image\":\"\",\"subtitle\":\"Alias anglais\",\"hidden\":true,\"archived\":false,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"Grotte fictive\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}},{\"id\":\"fixture_b_11\",\"catalog\":{\"name\":\"Catalogue fictif 11\",\"comportement\":\"Passif\",\"level\":1,\"pv\":20,\"ep\":10,\"skill\":\"Souffle\"},\"hidden\":false,\"archived\":true,\"adminNotes\":\"Note réservée fictive\",\"zones\":[\"Ruines fictives\",\"[🌳]-forêt-centre\"],\"qtyMin\":1,\"qtyMax\":3,\"spawnWeight\":1,\"tags\":[\"fictif\"],\"unknown\":{\"kept\":true}}]",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "combat_arc_Alice",
+			"value": "[{\"id\":\"arc3\",\"name\":\"Récit fictif 3\",\"savedAt\":1700000000003,\"round\":2,\"phase\":\"idle\",\"active\":false,\"_inProgress\":false,\"_draft\":true,\"_manualSaved\":true,\"fighters\":[{\"type\":\"player\",\"pid\":\"fixture_p_1\",\"name\":\"Alice\",\"pvCur\":12,\"pvMax\":30,\"epCur\":20,\"epMax\":50,\"emCur\":7,\"emMax\":20},{\"type\":\"beast\",\"bid\":\"fixture_b_0\",\"name\":\"Loup\",\"pvCur\":0,\"pvMax\":40}],\"log\":[\"Tour 1\",\"Tour 2\"]}]",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "combat_arc_Maitre",
+			"value": "[{\"id\":\"arc0\",\"name\":\"Récit fictif 0\",\"savedAt\":1700000000000,\"round\":2,\"phase\":\"idle\",\"active\":false,\"_inProgress\":false,\"_draft\":false,\"_manualSaved\":true,\"fighters\":[{\"type\":\"player\",\"pid\":\"fixture_p_1\",\"name\":\"Alice\",\"pvCur\":12,\"pvMax\":30,\"epCur\":20,\"epMax\":50,\"emCur\":7,\"emMax\":20},{\"type\":\"beast\",\"bid\":\"fixture_b_0\",\"name\":\"Loup\",\"pvCur\":0,\"pvMax\":40}],\"log\":[{\"text\":\"Une trace <b>polaire</b>.\"},{\"text\":\"<img src=x onerror=\\\"fiction\\\">Fin.\"}]},{\"id\":\"arc1\",\"name\":\"Récit fictif 1\",\"savedAt\":1700000000001,\"round\":2,\"phase\":\"idle\",\"active\":true,\"_inProgress\":false,\"_draft\":false,\"_manualSaved\":true,\"fighters\":[{\"type\":\"player\",\"pid\":\"fixture_p_1\",\"name\":\"Alice\",\"pvCur\":12,\"pvMax\":30,\"epCur\":20,\"epMax\":50,\"emCur\":7,\"emMax\":20},{\"type\":\"beast\",\"bid\":\"fixture_b_0\",\"name\":\"Loup\",\"pvCur\":0,\"pvMax\":40}],\"log\":[\"Tour 1\",\"Tour 2\"]}]",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "combat_arc_fixture_a_2",
+			"value": "[{\"id\":\"arc4\",\"name\":\"Récit fictif 4\",\"savedAt\":1700000000004,\"round\":2,\"phase\":\"idle\",\"active\":false,\"_inProgress\":false,\"_draft\":false,\"_manualSaved\":true,\"fighters\":[{\"type\":\"player\",\"pid\":\"fixture_p_1\",\"name\":\"Alice\",\"pvCur\":12,\"pvMax\":30,\"epCur\":20,\"epMax\":50,\"emCur\":7,\"emMax\":20},{\"type\":\"beast\",\"bid\":\"fixture_b_0\",\"name\":\"Loup\",\"pvCur\":0,\"pvMax\":40}],\"log\":[{\"text\":\"Une trace <b>polaire</b>.\"},{\"text\":\"<img src=x onerror=\\\"fiction\\\">Fin.\"}]}]",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "combat_arc_idx_Maitre",
+			"value": "[{\"id\":\"arc0\",\"name\":\"Récit fictif 0\",\"savedAt\":1700000000000,\"round\":2,\"phase\":\"idle\",\"active\":false,\"_inProgress\":false,\"_draft\":false,\"_manualSaved\":true,\"fighters\":[{\"type\":\"player\",\"pid\":\"fixture_p_1\",\"name\":\"Alice\",\"pvCur\":12,\"pvMax\":30,\"epCur\":20,\"epMax\":50,\"emCur\":7,\"emMax\":20},{\"type\":\"beast\",\"bid\":\"fixture_b_0\",\"name\":\"Loup\",\"pvCur\":0,\"pvMax\":40}],\"log\":[],\"_stub\":true},{\"id\":\"arc2\",\"name\":\"Index seul\",\"_stub\":true,\"_inProgress\":true,\"fighters\":[{\"type\":\"player\",\"pid\":\"fixture_p_1\",\"name\":\"Alice\",\"pvCur\":12,\"pvMax\":30,\"epCur\":20,\"epMax\":50,\"emCur\":7,\"emMax\":20}]}]",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "combat_arc_rec_Maitre__arc0",
+			"value": "{\"id\":\"arc0\",\"name\":\"Détail prioritaire\",\"savedAt\":1700000000000,\"round\":2,\"phase\":\"idle\",\"active\":false,\"_inProgress\":false,\"_draft\":false,\"_manualSaved\":true,\"fighters\":[{\"type\":\"player\",\"pid\":\"fixture_p_1\",\"name\":\"Alice\",\"pvCur\":12,\"pvMax\":30,\"epCur\":20,\"epMax\":50,\"emCur\":7,\"emMax\":20},{\"type\":\"beast\",\"bid\":\"fixture_b_0\",\"name\":\"Loup\",\"pvCur\":0,\"pvMax\":40}],\"log\":[{\"text\":\"Une trace <b>polaire</b>.\"},{\"text\":\"<img src=x onerror=\\\"fiction\\\">Fin.\"}]}",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "combat_arc_rec_Orphelin__arc5",
+			"value": "{\"id\":\"arc5\",\"name\":\"Récit fictif 5\",\"savedAt\":1700000000005,\"round\":2,\"phase\":\"idle\",\"active\":false,\"_inProgress\":false,\"_draft\":false,\"_manualSaved\":true,\"fighters\":[{\"type\":\"player\",\"pid\":\"fixture_p_1\",\"name\":\"Alice\",\"pvCur\":12,\"pvMax\":30,\"epCur\":20,\"epMax\":50,\"emCur\":7,\"emMax\":20},{\"type\":\"beast\",\"bid\":\"fixture_b_0\",\"name\":\"Loup\",\"pvCur\":0,\"pvMax\":40}],\"log\":[\"Tour 1\",\"Tour 2\"]}",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "event_themes",
+			"value": "{\"halloween\":{\"name\":\"Nuit fictive\",\"cls\":\"theme-halloween\",\"event\":true,\"availableUntil\":1793577600000},\"fixture_theme\":{\"name\":\"Papier fictif\",\"preview\":[\"#102327\",\"#95CDBB\",\"#C6B38B\"],\"desc\":\"Fiction\",\"event\":true,\"autoGrantAll\":true}}",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "events",
+			"value": "[{\"id\":\"fixture_e_0\",\"nom\":\"Rendez-vous 0\",\"date\":1700000000000,\"type\":\"combat\",\"max\":0,\"desc\":\"Rendez-vous fictif\",\"createdBy\":\"Maitre\",\"inscrits\":[\"Alice\",\"Bob\"],\"extra\":{\"kept\":true},\"arbitrary\":\"keep\"},{\"id\":\"fixture_e_1\",\"titre\":\"Ancien rendez-vous 1\",\"dateTs\":1700086400000,\"published\":true,\"type\":\"exploration\",\"max\":4,\"desc\":\"Rendez-vous fictif\",\"createdBy\":\"Auteur disparu\",\"inscrits\":[\"Alice\",\"Bob\"],\"extra\":{\"kept\":true},\"arbitrary\":\"keep\"},{\"id\":\"fixture_e_2\",\"nom\":\"Rendez-vous 2\",\"date\":null,\"type\":\"social\",\"max\":4,\"desc\":\"Rendez-vous fictif\",\"createdBy\":\"Auteur disparu\",\"inscrits\":[\"Alice\",\"Bob\"],\"extra\":{\"kept\":true},\"arbitrary\":\"keep\"},{\"id\":\"fixture_e_3\",\"titre\":\"Ancien rendez-vous 3\",\"dateTs\":1700259200000,\"published\":false,\"hidden\":false,\"type\":\"evenement\",\"max\":4,\"desc\":\"Rendez-vous fictif\",\"createdBy\":\"Auteur disparu\",\"inscrits\":[\"Alice\",\"Bob\"],\"extra\":{\"kept\":true},\"arbitrary\":\"keep\"},{\"id\":\"fixture_e_4\",\"nom\":\"Rendez-vous 4\",\"date\":1700345600000,\"hidden\":true,\"type\":\"autre\",\"max\":4,\"desc\":\"Rendez-vous fictif\",\"createdBy\":\"Auteur disparu\",\"inscrits\":[\"Alice\",\"Bob\"],\"extra\":{\"kept\":true},\"arbitrary\":\"keep\"},{\"id\":\"fixture_e_5\",\"titre\":\"Ancien rendez-vous 5\",\"dateTs\":1700432000000,\"published\":true,\"type\":\"combat\",\"max\":4,\"desc\":\"Rendez-vous fictif\",\"createdBy\":\"Auteur disparu\",\"inscrits\":[\"Alice\",\"Bob\"],\"extra\":{\"kept\":true},\"arbitrary\":\"keep\"},{\"id\":\"fixture_e_6\",\"nom\":\"Rendez-vous 6\",\"date\":1700518400000,\"type\":\"exploration\",\"max\":4,\"desc\":\"Rendez-vous fictif\",\"createdBy\":\"Auteur disparu\",\"inscrits\":[\"Homonyme\",\"Absent\"],\"extra\":{\"kept\":true},\"arbitrary\":\"keep\"},{\"id\":\"fixture_e_7\",\"titre\":\"Ancien rendez-vous 7\",\"dateTs\":1700604800000,\"published\":true,\"type\":\"social\",\"max\":4,\"desc\":\"Rendez-vous fictif\",\"createdBy\":\"Auteur disparu\",\"inscrits\":[\"Alice\",\"Bob\"],\"extra\":{\"kept\":true},\"arbitrary\":\"keep\"}]",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "lieux",
+			"value": "[{\"id\":\"lieu_fictif\",\"nom\":\"Havre fictif\",\"notes\":\"Fiction\",\"visible\":false}]",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "np_admin_recovery_consumed",
+			"value": "{\"fingerprint\":\"ed861bd9d703fb8f99c02010c7be9ad626f3ec7f778f5d0667ebcca4b5953262\",\"pseudo\":\"Admin\",\"consumedAt\":1700000000000}",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "np_audit_log",
+			"value": "[{\"ts\":1700000000000,\"source\":\"auth\",\"action\":\"login_success\",\"actor\":{\"pseudo\":\"Admin\",\"role\":\"admin\"},\"ip\":\"192.0.2.1\",\"details\":{\"fixture\":true}}]",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "np_rate_auth",
+			"value": "{\"ip:192.0.2.1\":{\"count\":3,\"first\":1700000000000}}",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "np_syslog",
+			"value": "[{\"ts\":1700000000000,\"action\":\"liaison\",\"detail\":\"Liaison fictive\",\"actor\":\"Admin\"}]",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "np_syslog_archive",
+			"value": "[{\"archivedAt\":1700000000000,\"label\":\"Lot fictif\",\"filename\":\"archive-fictive\",\"entries\":[{\"ts\":0,\"action\":\"history_delete\",\"detail\":\"Trace conservée\",\"actor\":\"Maitre\",\"target\":\"Alice (Duelliste)\",\"src\":\"history\"}]}]",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "page_content",
+			"value": "{\"mort\":true}",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "players",
+			"value": "[{\"id\":\"fixture_p_0\",\"name\":\"Admin\",\"classe\":\"Mizu\",\"level\":1,\"xp\":0,\"xpMax\":30,\"progressionVersion\":1,\"pvMax\":30,\"pvCur\":30,\"epMax\":50,\"epCur\":20,\"emMax\":20,\"emCur\":7,\"branch\":\"Aucune\",\"arme\":\"Épée\",\"journal\":\"Note fictive Admin\",\"avatar\":\"\",\"equipment\":{\"helmet\":null,\"chest\":null,\"legs\":null},\"inventory\":[{\"id\":\"potion\",\"name\":\"Potion\",\"category\":\"Consommable\",\"qty\":2,\"effect\":\"+20 PV\",\"arbitrary\":\"keep\"},{\"id\":\"gemme-blanche\",\"name\":\"Gemme Blanche\",\"category\":\"Gemme\",\"qty\":3},{\"id\":\"invalid-zero\",\"name\":\"Objet vide\",\"qty\":0},{\"id\":\"invalid-neg\",\"name\":\"Quantité négative\",\"qty\":-1},{\"id\":\"invalid-float\",\"name\":\"Fraction\",\"qty\":1.5},{\"id\":\"invalid-string\",\"name\":\"Chaîne\",\"qty\":\"2\"}],\"history\":[{\"ts\":101,\"type\":\"item\",\"text\":\"Consommé : &lt;potion&gt; &amp;lt;trace&amp;gt;\",\"by\":\"MJ Maitre\"},{\"ts\":1700000000000,\"type\":\"combat\",\"text\":\"Récit fictif\",\"by\":\"Maitre\"}],\"notifDeleted\":[101],\"statuts\":[],\"opaque\":{\"kept\":true}},{\"id\":\"fixture_p_1\",\"name\":\"Alice\",\"classe\":\"Duelliste\",\"level\":2,\"xp\":15,\"xpMax\":60,\"sLevel\":5,\"sXp\":25,\"sXpMax\":50,\"pvMax\":41,\"pvCur\":31,\"epMax\":50,\"epCur\":20,\"emMax\":20,\"emCur\":7,\"branch\":\"Aucune\",\"arme\":\"Épée\",\"journal\":\"Note fictive Alice\",\"avatar\":\"\",\"equipment\":{\"helmet\":null,\"chest\":null,\"legs\":null},\"inventory\":[{\"id\":\"potion\",\"name\":\"Potion\",\"category\":\"Consommable\",\"qty\":2,\"effect\":\"+20 PV\",\"arbitrary\":\"keep\"},{\"id\":\"gemme-blanche\",\"name\":\"Gemme Blanche\",\"category\":\"Gemme\",\"qty\":3}],\"history\":[{\"ts\":101,\"type\":\"item\",\"text\":\"Consommé : &lt;potion&gt; &amp;lt;trace&amp;gt;\",\"by\":\"MJ Maitre\"},{\"ts\":1700000000000,\"type\":\"combat\",\"text\":\"Récit fictif\",\"by\":\"Maitre\",\"combatId\":\"arc0\"}],\"notifDeleted\":[101],\"statuts\":[],\"opaque\":{\"kept\":true}},{\"id\":\"fixture_p_2\",\"name\":\"Bob\",\"class\":\"Duelliste\",\"level\":1,\"xp\":0,\"xpMax\":30,\"progressionVersion\":1,\"pvMax\":30,\"pvCur\":30,\"epMax\":50,\"epCur\":20,\"emMax\":20,\"emCur\":7,\"branch\":\"Aucune\",\"arme\":\"Épée\",\"journal\":\"Note fictive Bob\",\"avatar\":\"\",\"equipment\":{\"helmet\":null,\"chest\":null,\"legs\":null},\"inventory\":[{\"id\":\"potion\",\"name\":\"Potion boréale\",\"category\":\"Consommable\",\"qty\":4,\"effect\":\"+20 PV\",\"arbitrary\":\"keep\"},{\"id\":\"gemme-blanche\",\"name\":\"Gemme Blanche\",\"category\":\"Gemme\",\"qty\":3}],\"history\":[{\"ts\":101,\"type\":\"item\",\"text\":\"Consommé : &lt;potion&gt; &amp;lt;trace&amp;gt;\",\"by\":\"MJ Maitre\"},{\"ts\":1700000000000,\"type\":\"combat\",\"text\":\"Récit fictif\",\"by\":\"Maitre\"}],\"notifDeleted\":[101],\"statuts\":[],\"unlockedThemes\":[\"halloween\"],\"blockedThemes\":[\"green\"],\"opaque\":{\"kept\":true}},{\"id\":\"fixture_p_3\",\"name\":\"Maitre\",\"classe\":\"Mizu\",\"level\":1,\"xp\":0,\"xpMax\":30,\"progressionVersion\":1,\"pvMax\":30,\"pvCur\":30,\"epMax\":50,\"epCur\":20,\"emMax\":20,\"emCur\":7,\"branch\":\"Aucune\",\"arme\":\"Épée\",\"journal\":\"Note fictive Maitre\",\"avatar\":\"\",\"equipment\":{\"helmet\":null,\"chest\":null,\"legs\":null},\"inventory\":[],\"history\":[{\"ts\":101,\"type\":\"item\",\"text\":\"Consommé : &lt;potion&gt; &amp;lt;trace&amp;gt;\",\"by\":\"MJ Maitre\"},{\"ts\":1700000000000,\"type\":\"combat\",\"text\":\"Récit fictif\",\"by\":\"Maitre\"}],\"notifDeleted\":[101],\"statuts\":[],\"opaque\":{\"kept\":true}},{\"id\":\"fixture_p_4\",\"name\":\"Designer\",\"classe\":\"Mizu\",\"level\":1,\"xp\":0,\"xpMax\":30,\"progressionVersion\":1,\"pvMax\":30,\"pvCur\":30,\"epMax\":50,\"epCur\":20,\"emMax\":20,\"emCur\":7,\"branch\":\"Aucune\",\"arme\":\"Épée\",\"journal\":\"Note fictive Designer\",\"avatar\":\"\",\"equipment\":{\"helmet\":null,\"chest\":null,\"legs\":null},\"inventory\":[],\"history\":[{\"ts\":101,\"type\":\"item\",\"text\":\"Consommé : &lt;potion&gt; &amp;lt;trace&amp;gt;\",\"by\":\"MJ Maitre\"},{\"ts\":1700000000000,\"type\":\"combat\",\"text\":\"Récit fictif\",\"by\":\"Maitre\"}],\"notifDeleted\":[101],\"statuts\":[],\"opaque\":{\"kept\":true}},{\"id\":\"fixture_p_5\",\"name\":\"Homonyme\",\"classe\":\"Mizu\",\"level\":1,\"xp\":0,\"xpMax\":30,\"progressionVersion\":1,\"pvMax\":30,\"pvCur\":30,\"epMax\":50,\"epCur\":20,\"emMax\":20,\"emCur\":7,\"branch\":\"Aucune\",\"arme\":\"Épée\",\"journal\":\"Note fictive Nova\",\"avatar\":\"\",\"equipment\":{\"helmet\":null,\"chest\":null,\"legs\":null},\"inventory\":[],\"history\":[{\"ts\":101,\"type\":\"item\",\"text\":\"Consommé : &lt;potion&gt; &amp;lt;trace&amp;gt;\",\"by\":\"MJ Maitre\"},{\"ts\":1700000000000,\"type\":\"combat\",\"text\":\"Récit fictif\",\"by\":\"Maitre\"}],\"notifDeleted\":[101],\"statuts\":[],\"opaque\":{\"kept\":true}},{\"id\":\"fixture_p_6\",\"name\":\"Homonyme\",\"classe\":\"Mizu\",\"level\":1,\"xp\":0,\"xpMax\":30,\"progressionVersion\":1,\"pvMax\":30,\"pvCur\":30,\"epMax\":50,\"epCur\":20,\"emMax\":20,\"emCur\":7,\"branch\":\"Aucune\",\"arme\":\"Épée\",\"journal\":\"Note fictive Echo\",\"avatar\":\"\",\"equipment\":{\"helmet\":null,\"chest\":null,\"legs\":null},\"inventory\":[],\"history\":[{\"ts\":101,\"type\":\"item\",\"text\":\"Consommé : &lt;potion&gt; &amp;lt;trace&amp;gt;\",\"by\":\"MJ Maitre\"},{\"ts\":1700000000000,\"type\":\"combat\",\"text\":\"Récit fictif\",\"by\":\"Maitre\"}],\"notifDeleted\":[101],\"statuts\":[],\"opaque\":{\"kept\":true}},{\"id\":\"fixture_p_7\",\"name\":\"SansFiche\",\"classe\":\"Mizu\",\"level\":1,\"xp\":0,\"xpMax\":30,\"progressionVersion\":1,\"pvMax\":30,\"pvCur\":0,\"epMax\":50,\"epCur\":20,\"emMax\":20,\"emCur\":7,\"branch\":\"Aucune\",\"arme\":\"Épée\",\"journal\":\"Note fictive SansFiche\",\"avatar\":\"\",\"equipment\":{\"helmet\":null,\"chest\":null,\"legs\":null},\"inventory\":[],\"history\":[{\"ts\":101,\"type\":\"item\",\"text\":\"Consommé : &lt;potion&gt; &amp;lt;trace&amp;gt;\",\"by\":\"MJ Maitre\"},{\"ts\":1700000000000,\"type\":\"combat\",\"text\":null,\"by\":\"Maitre\"}],\"notifDeleted\":[101],\"statuts\":[],\"opaque\":{\"kept\":true}},null]",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "rpg_characters",
+			"value": "[{\"id\":\"rpg_fictif\",\"ownerId\":\"fixture_a_1\",\"schemaVersion\":4}]",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "serment_catalog",
+			"value": "{\"mort\":true}",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "serments_custom",
+			"value": "{\"Duelliste\":{\"pvN\":7,\"lore\":\"Surcharge fictive\"},\"Serment fictif\":{\"pvN\":3,\"epN\":5,\"emN\":2,\"bA\":{\"nom\":\"Branche fictive\",\"paliers\":[{\"niv\":2,\"nom\":\"Trace\",\"cout\":\"2 EP\",\"desc\":\"Fiction\"}]}}}",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "spawn_lab_staff",
+			"value": "{\"schemaVersion\":2,\"totals\":{\"fixture_b_0\":12,\"fixture_b_1\":7},\"totalDraws\":57,\"customZones\":[\"Ruines fictives\",\"[🌳]-forêt-centre\"],\"lastGeneratedBy\":\"Maitre\",\"lastRuns\":[{\"id\":\"fixture_run\",\"ts\":1700000000000,\"zone\":\"Ruines fictives\",\"packs\":[{\"id\":\"fixture_b_0\",\"qty\":2}],\"by\":\"Maitre\"}]}",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "theme_catalog",
+			"value": "{\"mort\":true}",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "theme_visibility",
+			"value": "{\"halloween\":false}",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		},
+		{
+			"key": "themes_admin_store",
+			"value": "{\"meta\":{\"private\":true}}",
+			"updated_at": "2026-09-30 12:00:00.123456+00"
+		}
+	],
+	"sha256": "f51abffaac328ece508ddd4366d7fc98dec675aeb064a316166f43c8729bce0a"
 }

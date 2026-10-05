@@ -34,7 +34,15 @@ export function typoHtml(html: string): string {
 }
 
 // Mots qui gardent leur capitale à l'intérieur d'un titre : noms propres et termes du monde.
-const PROPRES = new Set(['Serment', 'Serments', 'Sang', 'Discord', 'Nuages', 'Polaires', 'Netlify']);
+const PROPRES = new Set([
+	'Serment',
+	'Serments',
+	'Sang',
+	'Discord',
+	'Nuages',
+	'Polaires',
+	'Netlify'
+]);
 
 /**
  * Capitales à la française : seul le premier mot d'un titre porte la capitale

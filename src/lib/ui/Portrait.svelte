@@ -12,7 +12,13 @@
 
 <span class="portrait" style:--taille="{taille}px">
 	{#if src && !echec}
-		<img {src} alt="Portrait de {nom}" width={taille} height={taille} onerror={() => (echec = true)} />
+		<img
+			{src}
+			alt="Portrait de {nom}"
+			width={taille}
+			height={taille}
+			onerror={() => (echec = true)}
+		/>
 	{:else}
 		<span class="initiale" aria-hidden="true">{initiale}</span>
 	{/if}

@@ -315,7 +315,14 @@ function definitionOf(oath: Oath): OathDefinition {
 		icon: oath.icon,
 		category: oath.category,
 		lore: oath.lore,
-		branches: { bA: branch(oath.branches?.bA), bB: branch(oath.branches?.bB), extraBranches: (oath.branches.extraBranches ?? []).map((b) => ({ ...b, style: b.style ?? '' })) },
+		branches: {
+			bA: branch(oath.branches?.bA),
+			bB: branch(oath.branches?.bB),
+			extraBranches: (oath.branches.extraBranches ?? []).map((b) => ({
+				...b,
+				style: b.style ?? ''
+			}))
+		},
 		isBuiltin: oath.isBuiltin
 	};
 }
@@ -637,7 +644,11 @@ export async function listConsequences(
 	assertCanReadCharacter(present, characterId);
 	await loadCharacter(db, characterId);
 
-	const where = and(eq(characterHistory.characterId, characterId), filterCondition(data.filter), data.combatId ? eq(characterHistory.combatId, data.combatId) : undefined);
+	const where = and(
+		eq(characterHistory.characterId, characterId),
+		filterCondition(data.filter),
+		data.combatId ? eq(characterHistory.combatId, data.combatId) : undefined
+	);
 	const [{ total }] = await db.select({ total: count() }).from(characterHistory).where(where);
 	const pages = Math.max(1, Math.ceil(total / CONSEQUENCES_PAGE_SIZE));
 	const page = Math.min(Math.max(1, data.page ?? 1), pages);
@@ -1160,12 +1171,15 @@ export async function setStatus(
 		if (!previous && statuses.length >= LIMITS.statuses) {
 			throw new NpError('INVALID', `${LIMITS.statuses} statuts au plus.`, 400);
 		}
-		const next: CharacterStatus = previous && !data.note?.trim() ? previous : {
-			id: data.statusId,
-			desc: note,
-			posedBy: author.actorName,
-			posedAt: Date.now()
-		};
+		const next: CharacterStatus =
+			previous && !data.note?.trim()
+				? previous
+				: {
+						id: data.statusId,
+						desc: note,
+						posedBy: author.actorName,
+						posedAt: Date.now()
+					};
 		if (previous) statuses[index] = next;
 		else statuses.push(next);
 		await updateCharacterChecked(tx, c.id, data.expectedRevision, { statuses });

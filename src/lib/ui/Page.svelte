@@ -19,7 +19,17 @@
 		children: Snippet;
 		pied?: Snippet;
 	}
-	let { repere, titre, titreVoix, grain = false, reglure = false, marge, bande, children, pied }: Props = $props();
+	let {
+		repere,
+		titre,
+		titreVoix,
+		grain = false,
+		reglure = false,
+		marge,
+		bande,
+		children,
+		pied
+	}: Props = $props();
 </script>
 
 <article class="page" class:grain class:reglure>
@@ -30,7 +40,9 @@
 	<div class="corps">
 		<header class="tete">
 			<p class="repere mobile">{repere}</p>
-			<h1>{titre}{#if titreVoix}{' '}<em>{titreVoix}</em>{/if}</h1>
+			<h1>
+				{titre}{#if titreVoix}&nbsp;<em>{titreVoix}</em>{/if}
+			</h1>
 			{#if bande}<div class="bande">{@render bande()}</div>{/if}
 		</header>
 		{@render children()}
@@ -105,6 +117,7 @@
 	}
 
 	:global([data-regime='serre']) .page {
+		align-content: start;
 		grid-template-columns: 1fr;
 		padding: var(--ligne);
 	}
@@ -114,6 +127,14 @@
 	}
 	:global([data-regime='serre']) .corps {
 		max-width: none;
+	}
+	:global([data-regime='serre']) .bande {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px 12px;
+		margin-top: 12px;
+		font: var(--t-libelle);
+		color: var(--encre-2);
 	}
 
 	@media (max-width: 1100px) {

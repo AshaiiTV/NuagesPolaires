@@ -8,7 +8,9 @@
 </script>
 
 <span class="rature chiffres">
-	<s><span class="sr-only">ancienne valeur : </span>{ancien}</s>{#if nouveau !== null}{' '}<ins><span class="sr-only">nouvelle valeur : </span>{nouveau}</ins>{/if}
+	<s><span class="sr-only">ancienne valeur : </span>{ancien}</s>{#if nouveau !== null}&nbsp;<ins
+			><span class="sr-only">nouvelle valeur : </span>{nouveau}</ins
+		>{/if}
 </span>
 
 <style>

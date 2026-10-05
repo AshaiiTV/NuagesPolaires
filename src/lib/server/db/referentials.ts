@@ -475,7 +475,10 @@ export function buildReferentialsSql(oathDefinitions: readonly OathSeedDefinitio
 	].join('\n');
 	// Les tokens ne figurent pas dans 0001 : la colonne `themes.tokens` naît en 0002 ; ils sont
 	// écrits par la migration de données 0003 (buildThemeTokensSql).
-	const themeRows = THEME_SEED.map(({ tokens: _tokens, ...row }) => row);
+	const themeRows = THEME_SEED.map(({ tokens: _tokens, ...row }) => {
+		void _tokens;
+		return row;
+	});
 	const statements = [
 		renderInsert(themes, themeRows as readonly Record<string, unknown>[]),
 		renderInsert(zones, ZONE_SEED as readonly Record<string, unknown>[]),

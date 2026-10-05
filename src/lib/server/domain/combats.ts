@@ -31,9 +31,7 @@ import {
 	createCombat,
 	endCombat,
 	projectForPlayer,
-	STATUS_IDS,
-	type CombatState,
-	type StatusId
+	type CombatState
 } from '../../game/combat';
 import { applyXp } from '../../game/progression';
 import {
@@ -80,6 +78,8 @@ function newId(prefix: string): string {
 }
 function stateOf(row: Combat): CombatState {
 	const { characterRevisions: _revisions, legacy: _legacy, ...state } = row.state;
+	void _revisions;
+	void _legacy;
 	return parse(combatStateSchema, state);
 }
 function revisionsOf(row: Combat): Record<string, number> {
@@ -866,22 +866,27 @@ export async function getRecit(db: Db, actor: Actor | null, id: string): Promise
 	const state = stateOf(row);
 	// Journal intégral pour le staff ; liste blanche et filtrage pour les participants.
 	const log = staff
-		? state.log
-				.map((e) => ({
-					n: e.n,
-					round: e.round,
-					kind: e.kind,
-					text: e.text,
-					actorId: e.actorId,
-					targetId: e.targetId
-				}))
+		? state.log.map((e) => ({
+				n: e.n,
+				round: e.round,
+				kind: e.kind,
+				text: e.text,
+				actorId: e.actorId,
+				targetId: e.targetId
+			}))
 		: state.log.flatMap(
 				(entry) =>
 					projectForPlayer({ ...state, log: [entry] }, present.characterId!, {
 						showEnemyNumbers: row.showEnemyNumbers
 					}).log
 			);
-	return { ...recitRow(row), log, discordUrl: row.discordUrl, participants: state.fighters.map((f) => f.name), ...(staff ? { notes: state.notes } : {}) };
+	return {
+		...recitRow(row),
+		log,
+		discordUrl: row.discordUrl,
+		participants: state.fighters.map((f) => f.name),
+		...(staff ? { notes: state.notes } : {})
+	};
 }
 export async function recitAsText(db: Db, actor: Actor | null, id: string): Promise<string> {
 	const recit = await getRecit(db, actor, id);

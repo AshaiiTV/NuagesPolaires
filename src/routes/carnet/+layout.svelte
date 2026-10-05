@@ -8,7 +8,9 @@
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps = $props();
-	const feuillet = $derived(/^\/carnet\/((scene|table)(\/|$)|fiche\/imprimer\/?$)/.test(page.url.pathname));
+	const feuillet = $derived(
+		/^\/carnet\/((scene|table)(\/|$)|fiche\/imprimer\/?$)/.test(page.url.pathname)
+	);
 </script>
 
 {#if feuillet}

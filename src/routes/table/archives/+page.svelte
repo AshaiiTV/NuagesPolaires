@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
+	import { chemin } from '$lib/ui/adresse';
 	// /table/archives — les récits de toutes les Tables repliées, du plus récent au plus ancien ;
 	// recherche par titre ou nom de combat ; 20 par page. 03-vision §5.8.
 	import Page from '$lib/ui/Page.svelte';
@@ -12,7 +14,7 @@
 	let { data }: PageProps = $props();
 
 	const lien = (page: number) => {
-		const p = new URLSearchParams();
+		const p = new SvelteURLSearchParams();
 		if (data.recherche) p.set('q', data.recherche);
 		if (page > 1) p.set('page', String(page));
 		const s = p.toString();
@@ -32,7 +34,14 @@
 
 	<form class="recherche" method="GET" role="search">
 		<label for="q" class="sr-only">Chercher un récit</label>
-		<input id="q" type="search" name="q" value={data.recherche} placeholder="Chercher un récit par son titre…" autocomplete="off" />
+		<input
+			id="q"
+			type="search"
+			name="q"
+			value={data.recherche}
+			placeholder="Chercher un récit par son titre…"
+			autocomplete="off"
+		/>
 		<Bouton variante="trait" type="submit">Chercher</Bouton>
 		{#if data.recherche}<Bouton variante="texte" href="/table/archives">Tout relire</Bouton>{/if}
 	</form>
@@ -42,32 +51,42 @@
 			<ol class="recits">
 				{#each data.recits as r (r.id)}
 					<li>
-						<a class="titre" href="/table/archives/{r.id}">{r.titre}</a>
+						<a class="titre" href={chemin(`/table/archives/${r.id}`)}>{r.titre}</a>
 						<span class="combat">{r.titre !== r.nom ? r.nom : ''}</span>
 						<span class="quand chiffres">{dateCourte(r.at)} · {heure(r.at)}</span>
 						<span class="rounds chiffres">{r.rounds} round{r.rounds > 1 ? 's' : ''}</span>
-						<span class="lisible">{r.lisible ? 'lisible par ses participants' : 'réservé à la Table'}</span>
-						<Bouton variante="texte" href="/table/archives/{r.id}" fleche="→">Ouvrir</Bouton>
+						<span class="lisible"
+							>{r.lisible ? 'lisible par ses participants' : 'réservé à la Table'}</span
+						>
+						<Bouton variante="texte" href="/table/archives/{r.id}" fleche="→">Lire le récit</Bouton>
 					</li>
 				{/each}
 			</ol>
 		{:else if data.recherche}
 			<Vide>
 				Aucun récit ne porte ce titre.
-				{#snippet action()}<Bouton variante="texte" href="/table/archives" fleche="→">Relire tous les récits</Bouton>{/snippet}
+				{#snippet action()}<Bouton variante="texte" href="/table/archives" fleche="→"
+						>Relire tous les récits</Bouton
+					>{/snippet}
 			</Vide>
 		{:else}
 			<Vide>
 				Aucun récit encore. Une Table repliée s’écrit ici.
-				{#snippet action()}<Bouton variante="texte" href="/table" fleche="→">Ouvrir une Table</Bouton>{/snippet}
+				{#snippet action()}<Bouton variante="texte" href="/table" fleche="→"
+						>Ouvrir une Table</Bouton
+					>{/snippet}
 			</Vide>
 		{/if}
 
 		{#if data.page > 1 || data.suivante}
 			<nav class="pages" aria-label="Pages des récits">
-				{#if data.page > 1}<Bouton variante="texte" href={lien(data.page - 1)}>← Plus récents</Bouton>{:else}<span></span>{/if}
+				{#if data.page > 1}<Bouton variante="texte" href={lien(data.page - 1)}
+						>← Plus récents</Bouton
+					>{:else}<span></span>{/if}
 				<span class="numero chiffres">page {data.page}</span>
-				{#if data.suivante}<Bouton variante="texte" href={lien(data.page + 1)} fleche="→">Plus anciens</Bouton>{:else}<span></span>{/if}
+				{#if data.suivante}<Bouton variante="texte" href={lien(data.page + 1)} fleche="→"
+						>Plus anciens</Bouton
+					>{:else}<span></span>{/if}
 			</nav>
 		{/if}
 	</Chapitre>

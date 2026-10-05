@@ -13,11 +13,18 @@
 	const statut = $derived(page.status);
 
 	/** Les messages génériques de SvelteKit ou des gardes ne disent rien de plus que la phrase. */
-	const GENERIQUES = new Set(['Not Found', 'Page introuvable.', 'Ressource introuvable.', 'Internal Error', 'Error']);
+	const GENERIQUES = new Set([
+		'Not Found',
+		'Page introuvable.',
+		'Ressource introuvable.',
+		'Internal Error',
+		'Error'
+	]);
 
 	const texte = $derived.by(() => {
 		if (statut === 404 || statut === 403) {
-			const precis = page.error?.message && !GENERIQUES.has(page.error.message) ? page.error.message : null;
+			const precis =
+				page.error?.message && !GENERIQUES.has(page.error.message) ? page.error.message : null;
 			return {
 				repere: 'NP / 404 — Hors du carnet',
 				titre: 'Une page',
@@ -40,16 +47,19 @@
 			titre: 'Une page',
 			voix: 'froissée.',
 			phrase: 'Le carnet n’a pas pu ouvrir cette page.',
-			precis: 'Ce qui est écrit ailleurs reste écrit. Reviens en arrière, ou recharge dans un instant.'
+			precis:
+				'Ce qui est écrit ailleurs reste écrit. Reviens en arrière, ou recharge dans un instant.'
 		};
 	});
 
 	/** La première page d'un compte selon son rôle (même règle que le serveur, 03-vision §4). */
 	const accueil = $derived.by(() => {
 		if (!compte) return { href: '/', libelle: 'Revenir à l’accueil' };
-		if (compte.role === 'joueur' || compte.relie) return { href: '/carnet', libelle: 'Rouvrir mon carnet' };
+		if (compte.role === 'joueur' || compte.relie)
+			return { href: '/carnet', libelle: 'Rouvrir mon carnet' };
 		if (compte.role === 'mj') return { href: '/table', libelle: 'Revenir à La Table' };
-		if (compte.role === 'designer') return { href: '/atelier/bestiaire', libelle: 'Revenir à L’Atelier' };
+		if (compte.role === 'designer')
+			return { href: '/atelier/bestiaire', libelle: 'Revenir à L’Atelier' };
 		return { href: '/registre', libelle: 'Revenir au Registre' };
 	});
 	const entrer = $derived(page.url.pathname + page.url.search);
@@ -60,7 +70,9 @@
 <Enveloppe {compte} {discord}>
 	<Page repere={texte.repere} titre={texte.titre} titreVoix={texte.voix}>
 		{#snippet marge()}
-			<p class="adresse"><span class="repere">Adresse demandée</span><span class="chemin">{page.url.pathname}</span></p>
+			<p class="adresse">
+				<span class="repere">Adresse demandée</span><span class="chemin">{page.url.pathname}</span>
+			</p>
 		{/snippet}
 
 		<p class="phrase">{texte.phrase}</p>
@@ -68,7 +80,9 @@
 
 		<div class="gestes">
 			{#if statut === 401}
-				<Bouton variante="ruban" href={`/entrer?retour=${encodeURIComponent(entrer)}`} fleche="→">Entrer</Bouton>
+				<Bouton variante="ruban" href={`/entrer?retour=${encodeURIComponent(entrer)}`} fleche="→"
+					>Entrer</Bouton
+				>
 			{:else}
 				<Bouton variante="ruban" href={accueil.href} fleche="→">{accueil.libelle}</Bouton>
 			{/if}

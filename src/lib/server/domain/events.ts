@@ -105,15 +105,6 @@ export function parseStartsAt(value: string | null): Date | null {
 	throw new NpError('INVALID', EVENT_EDITOR_MESSAGES.dateInvalid, 400);
 }
 
-function extraOf(row: Pick<EventRecord, 'extra'>): Record<string, unknown> {
-	return row.extra && typeof row.extra === 'object' ? { ...row.extra } : {};
-}
-
-function stringField(extra: Record<string, unknown>, key: string): string | null {
-	const v = extra[key];
-	return typeof v === 'string' && v !== '' ? v : null;
-}
-
 /** Récit rattaché à un rendez-vous (`recit_combat_id`, champ de l'agenda). */
 export function recitIdOf(row: Pick<EventRecord, 'recitCombatId'>): string | null {
 	return row.recitCombatId;
@@ -189,12 +180,16 @@ export async function buildEventRows(
 
 	const creatorIds = [...new Set(rows.map((r) => r.createdBy).filter((v): v is string => !!v))];
 	const pseudoById = new Map<string, string>();
+	const roleById = new Map<string, 'joueur' | 'mj' | 'designer' | 'admin'>();
 	if (creatorIds.length > 0) {
 		const creators = await db
-			.select({ id: accounts.id, pseudo: accounts.pseudo })
+			.select({ id: accounts.id, pseudo: accounts.pseudo, role: accounts.role })
 			.from(accounts)
 			.where(inArray(accounts.id, creatorIds));
-		for (const c of creators) pseudoById.set(c.id, c.pseudo);
+		for (const c of creators) {
+			pseudoById.set(c.id, c.pseudo);
+			roleById.set(c.id, c.role);
+		}
 	}
 
 	// Récits : servis à qui peut les lire (staff de la Table : tout récit clos ; joueur : récit clos,
@@ -261,6 +256,16 @@ export async function buildEventRows(
 			closedReason,
 			discordUrl: row.discordUrl,
 			hidden: row.hidden,
+			organizerStamp:
+				row.createdBy && pseudoById.has(row.createdBy)
+					? {
+							role: roleById.get(row.createdBy)!,
+							pseudo: pseudoById.get(row.createdBy)!,
+							at: row.createdAt.toISOString()
+						}
+					: row.createdByLabel
+						? { role: 'mj' as const, pseudo: row.createdByLabel, at: row.createdAt.toISOString() }
+						: null,
 			organizer:
 				(row.createdBy ? pseudoById.get(row.createdBy) : undefined) ?? (row.createdByLabel || null),
 			recitId: recitId && readableRecits.has(recitId) ? recitId : null,

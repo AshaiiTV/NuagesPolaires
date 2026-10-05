@@ -3,11 +3,18 @@
 // simulateur ; le carnet ne parle jamais en émoji (03-vision §8) : tout texte du moteur passe ici avant
 // d'être affiché. Module pur, importable côté client.
 import { STATUS_EFFECTS } from '$lib/game/combat/statuses';
-import type { CombatAction, CombatLogEntry, CombatState, Fighter, StatusId } from '$lib/game/combat/types';
+import type {
+	CombatAction,
+	CombatLogEntry,
+	CombatState,
+	Fighter,
+	StatusId
+} from '$lib/game/combat/types';
 import { ACTION_RULES } from '$lib/game/rules';
 
 /** Pictogrammes, sélecteurs de variante et liants : retirés de tout texte du moteur. */
-const PICTOGRAMMES = /[\p{Extended_Pictographic}\u{FE0F}\u{FE0E}\u{200D}\u{20E3}\u{2605}\u{2713}\u{2726}\u{25CC}]/gu;
+const PICTOGRAMMES =
+	/\p{Extended_Pictographic}|\u{FE0F}|\u{FE0E}|\u{200D}|\u{20E3}|\u{2605}|\u{2713}|\u{2726}|\u{25CC}/gu;
 
 /** « 💥 Kael → Loup : −12 PV (24→12) 💀 KO! » → « Kael → Loup : −12 PV (24→12) KO ». */
 export function sansEmoji(texte: string | null | undefined): string {
@@ -15,6 +22,11 @@ export function sansEmoji(texte: string | null | undefined): string {
 		.replace(PICTOGRAMMES, '')
 		.replace(/\s*!+/g, '')
 		.replace(/\((\d+)T\)/g, '($1 t.)')
+		.replace(
+			/saigne −(\d+) PV \(→(\d+)\)/g,
+			(_tout, perte: string, apres: string) =>
+				`saigne −${perte} PV (${Number(apres) + Number(perte)}→${apres})`
+		)
 		.replace(/\s{2,}/g, ' ')
 		.trim();
 }
@@ -72,14 +84,20 @@ export function statut(id: StatusId): { libelle: string; couleur: string } {
 
 /** Statut d'une Table dans la liste. */
 export function statutTable(status: 'preparation' | 'en_cours' | 'termine'): string {
-	return status === 'preparation' ? 'avant démarrage' : status === 'en_cours' ? 'en cours' : 'repliée';
+	return status === 'preparation'
+		? 'avant démarrage'
+		: status === 'en_cours'
+			? 'en cours'
+			: 'repliée';
 }
 
 /** Combattant KO. */
 export const ko = (f: Pick<Fighter, 'pvCur'>) => f.pvCur <= 0;
 
 /** Chiffres d'une ligne de journal qui a changé une valeur (ajustement MJ) : « PV 24 → 18 ». */
-export function changement(e: CombatLogEntry): { champ: string; ancien: number; nouveau: number } | null {
+export function changement(
+	e: CombatLogEntry
+): { champ: string; ancien: number; nouveau: number } | null {
 	if (!e.field || e.oldValue === undefined || e.newValue === undefined) return null;
 	return { champ: e.field.toUpperCase(), ancien: e.oldValue, nouveau: e.newValue };
 }
@@ -105,7 +123,9 @@ export function lignesRayees(log: readonly CombatLogEntry[]): Set<number> {
  * appliquer. Seules les lignes écrites par le moteur avec un chiffre lisible sont rayables
  * (dégâts « (24→12) », soins « +6 PV », pertes « perd 8 EP ») ; les autres restent du récit.
  */
-export function correctionDe(e: CombatLogEntry): { cible: string; ressource: 'pv' | 'ep'; delta: number } | null {
+export function correctionDe(
+	e: CombatLogEntry
+): { cible: string; ressource: 'pv' | 'ep'; delta: number } | null {
 	if (!e.targetId) return null;
 	if (e.kind === 'damage') {
 		const m = /\((\d+)→(\d+)\)/.exec(e.text);
@@ -116,7 +136,8 @@ export function correctionDe(e: CombatLogEntry): { cible: string; ressource: 'pv
 		if (m && Number(m[1]) > 0) return { cible: e.targetId, ressource: 'pv', delta: -Number(m[1]) };
 	}
 	const perte = /perd (\d+) EP/.exec(e.text);
-	if (perte && Number(perte[1]) > 0) return { cible: e.targetId, ressource: 'ep', delta: Number(perte[1]) };
+	if (perte && Number(perte[1]) > 0)
+		return { cible: e.targetId, ressource: 'ep', delta: Number(perte[1]) };
 	return null;
 }
 
@@ -143,9 +164,13 @@ export function dernierRoundResolu(log: readonly CombatLogEntry[]): number {
 }
 
 const jourLong = (ms: number) =>
-	new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(
-		new Date(ms)
-	);
+	new Intl.DateTimeFormat('fr-FR', {
+		timeZone: 'Europe/Paris',
+		weekday: 'long',
+		day: 'numeric',
+		month: 'long',
+		year: 'numeric'
+	}).format(new Date(ms));
 
 /**
  * Bloc « Copier pour Discord » : format de l'export du simulateur (audit 03 §8.5), sans pictogramme
@@ -159,8 +184,14 @@ export function exportDiscord(s: CombatState, maintenant = Date.now()): string {
 	lignes.push(`## ${s.name || 'La Table'}`);
 	lignes.push(`*${jourLong(s.startedAt || maintenant)} · ${rounds} round${rounds > 1 ? 's' : ''}*`);
 	lignes.push('---', '');
-	if (joueurs.length) lignes.push(`**Élèves du Serment :** ${joueurs.map((f) => `${f.name} (niv. ${f.level})`).join(' · ')}`);
-	if (adversaires.length) lignes.push(`**Adversaires :** ${adversaires.map((f) => `${f.name}${ko(f) ? ' (KO)' : ''}`).join(' · ')}`);
+	if (joueurs.length)
+		lignes.push(
+			`**Élèves du Serment :** ${joueurs.map((f) => `${f.name} (niv. ${f.level})`).join(' · ')}`
+		);
+	if (adversaires.length)
+		lignes.push(
+			`**Adversaires :** ${adversaires.map((f) => `${f.name}${ko(f) ? ' (KO)' : ''}`).join(' · ')}`
+		);
 	lignes.push('');
 	for (const e of s.log) {
 		const texte = e.text;
@@ -169,7 +200,9 @@ export function exportDiscord(s: CombatState, maintenant = Date.now()): string {
 	}
 	lignes.push('', '**État final :**');
 	for (const f of s.fighters) {
-		lignes.push(`**${f.name}** · PV \`${f.pvCur}/${f.pvMax}\` EP \`${f.epCur}/${f.epMax}\`${f.emMax ? ` EM \`${f.emCur}/${f.emMax}\`` : ''}${ko(f) ? ' · **KO**' : ''}`);
+		lignes.push(
+			`**${f.name}** · PV \`${f.pvCur}/${f.pvMax}\` EP \`${f.epCur}/${f.epMax}\`${f.emMax ? ` EM \`${f.emCur}/${f.emMax}\`` : ''}${ko(f) ? ' · **KO**' : ''}`
+		);
 	}
 	const joueursDebout = joueurs.some((f) => !f.isSummon && !ko(f));
 	const adversairesDebout = adversaires.some((f) => !ko(f));

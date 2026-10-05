@@ -1,8 +1,11 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+	import { chemin } from '$lib/ui/adresse';
 	// Les Serments : un chapitre par catégorie, une ligne par Serment (nom, arme, rang en laiton).
 	// En marge : les catégories et le filtre de rang, l'état courant marqué d'un losange aurore.
 	import Page from '$lib/ui/Page.svelte';
 	import Chapitre from '$lib/ui/Chapitre.svelte';
+	import Sceau from '$lib/ui/Sceau.svelte';
 	import Vide from '$lib/ui/Vide.svelte';
 	import Depliant from '../Depliant.svelte';
 	import { typo } from '../typo';
@@ -52,7 +55,7 @@
 			<li>
 				<a
 					class:courant={!data.rank}
-					href="/univers/serments"
+					href={resolve('/univers/serments')}
 					aria-current={!data.rank ? 'true' : undefined}
 					><span class="marque" aria-hidden="true"></span>Tous les rangs</a
 				>
@@ -62,7 +65,7 @@
 					<a
 						class="rang"
 						class:courant={data.rank === rank}
-						href={'/univers/serments?rang=' + rank}
+						href={chemin('/univers/serments?rang=' + rank)}
 						aria-current={data.rank === rank ? 'true' : undefined}
 						><span class="marque" aria-hidden="true"></span>{OATH_RANK_LABELS[rank]}</a
 					>
@@ -85,12 +88,19 @@
 			<ul class="serments">
 				{#each groupe.serments as oath (oath.id)}
 					<li>
-						<a class="serment" href={'/univers/serments/' + oath.id}>
+						<a class="serment" href={chemin('/univers/serments/' + oath.id)}>
+							<span class="sceau-ligne"><Sceau serment={oath.name} taille={28} nu /></span>
 							<span class="nom">{typo(oath.name)}</span>
 							<span class="arme">{typo(oath.weapon)}</span>
 							<span class="rang-serment">{OATH_RANK_LABELS[oath.rank]}</span>
 							<span class="fleche" aria-hidden="true">→</span>
 						</a>
+						{#if oath.reservedVisibility}
+							<p class="repere">
+								{oath.reservedVisibility.outsideShowcase ? 'Hors vitrine' : 'En vitrine'} ·
+								<a href={chemin(`/atelier/serments/${oath.id}`)}>Modifier dans l’Atelier →</a>
+							</p>
+						{/if}
 					</li>
 				{/each}
 			</ul>
@@ -144,13 +154,21 @@
 	/* Corps : une ligne de registre par Serment */
 	.serment {
 		display: grid;
-		grid-template-columns: minmax(0, 200px) minmax(0, 1fr) auto var(--ligne);
+		grid-template-columns: var(--ligne) minmax(0, 200px) minmax(0, 1fr) auto var(--ligne);
 		column-gap: 16px;
 		align-items: baseline;
 		min-height: calc(var(--ligne) * 2);
 		padding: calc(var(--ligne) / 2) 0 calc(var(--ligne) / 2 - 1px);
 		border-bottom: 1px solid var(--reglure);
 		text-decoration: none;
+	}
+	.sceau-ligne {
+		align-self: center;
+		color: var(--encre-2);
+		transition: color 160ms;
+	}
+	.serment:hover .sceau-ligne {
+		color: var(--encre);
 	}
 	.nom {
 		font: 500 22px / var(--ligne) var(--voix);
@@ -187,10 +205,10 @@
 
 	@media (max-width: 760px) {
 		.serment {
-			grid-template-columns: minmax(0, 1fr) auto var(--ligne);
+			grid-template-columns: var(--ligne) minmax(0, 1fr) auto var(--ligne);
 		}
 		.arme {
-			grid-column: 1 / -1;
+			grid-column: 2 / -1;
 			grid-row: 2;
 		}
 		nav:last-child {

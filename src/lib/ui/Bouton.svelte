@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { adresse } from '$lib/ui/adresse';
 	// Trois gestes d'écriture : `ruban` (action principale, sauge — seule surface pleine de couleur),
 	// `trait` (action secondaire, cadre fin), `texte` (lien fléché souligné).
 	// Les décisions du staff utilisent `tampon` (laiton) : quand on voit du laiton, quelqu'un a décidé.
@@ -15,11 +16,19 @@
 		children: Snippet;
 	} & Omit<HTMLButtonAttributes & HTMLAnchorAttributes, 'children'>;
 
-	let { variante = 'trait', href, fleche = null, large = false, children, ...reste }: Props = $props();
+	let {
+		variante = 'trait',
+		href,
+		fleche = null,
+		large = false,
+		children,
+		...reste
+	}: Props = $props();
 </script>
 
 {#if href}
-	<a class="bouton {variante}" class:large {href} {...reste}>
+	<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- adresse résout les chemins internes et conserve les URL externes. -->
+	<a class="bouton {variante}" class:large href={adresse(href)} {...reste}>
 		<span>{@render children()}</span>
 		{#if fleche}<span class="fleche" aria-hidden="true">{fleche}</span>{/if}
 	</a>

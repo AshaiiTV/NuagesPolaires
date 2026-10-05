@@ -9,10 +9,31 @@
  * Un stub n'est pas un détail et ne peut pas être migré comme un combat complet.
  */
 export * from './types';
-export { createCombat, addFighter, removeFighter, setInitiative, startCombat, adjustResource,
- restoreEnergy, setNotes, renameCombat, moveFighterPosition, currentDeclarantId, undoLastGesture } from './state';
+export {
+	createCombat,
+	addFighter,
+	removeFighter,
+	setInitiative,
+	startCombat,
+	adjustResource,
+	restoreEnergy,
+	setNotes,
+	renameCombat,
+	moveFighterPosition,
+	currentDeclarantId,
+	undoLastGesture
+} from './state';
 export type { CreateCombatOptions } from './state';
-export { declareAction, buildDeclaration, emptyAction, passTurn, actionsMax, actionsLeft, undoLastDeclaration, editDeclaration } from './actions';
+export {
+	declareAction,
+	buildDeclaration,
+	emptyAction,
+	passTurn,
+	actionsMax,
+	actionsLeft,
+	undoLastDeclaration,
+	editDeclaration
+} from './actions';
 export { STATUS_EFFECTS, STATUS_IDS, describeStatus, addStatus, removeStatus } from './statuses';
 export { resolveRound, undoRound, isFinished, addSummon, disableShieldCall } from './resolve';
 export * from './outcomes';

@@ -47,13 +47,19 @@ export type RegisterInput = z.input<typeof registerInput>;
 
 export const loginInput = z.object({
 	pseudo: z.string({ error: 'Champs manquants.' }).trim().min(1, 'Champs manquants.').max(64),
-	password: z.string({ error: 'Champs manquants.' }).min(1, 'Champs manquants.').max(MAX_PASSWORD_LENGTH),
+	password: z
+		.string({ error: 'Champs manquants.' })
+		.min(1, 'Champs manquants.')
+		.max(MAX_PASSWORD_LENGTH),
 	...requestFields
 });
 export type LoginInput = z.input<typeof loginInput>;
 
 export const changeOwnPasswordInput = z.object({
-	current: z.string({ error: 'Mot de passe actuel requis.' }).min(1, 'Mot de passe actuel requis.').max(MAX_PASSWORD_LENGTH),
+	current: z
+		.string({ error: 'Mot de passe actuel requis.' })
+		.min(1, 'Mot de passe actuel requis.')
+		.max(MAX_PASSWORD_LENGTH),
 	next: newPasswordSchema
 });
 export type ChangeOwnPasswordInput = z.input<typeof changeOwnPasswordInput>;
@@ -62,7 +68,10 @@ export const completeForcedResetInput = z.object({ next: newPasswordSchema });
 export type CompleteForcedResetInput = z.input<typeof completeForcedResetInput>;
 
 export const deleteOwnAccountInput = z.object({
-	password: z.string({ error: 'Mot de passe requis.' }).min(1, 'Mot de passe requis.').max(MAX_PASSWORD_LENGTH)
+	password: z
+		.string({ error: 'Mot de passe requis.' })
+		.min(1, 'Mot de passe requis.')
+		.max(MAX_PASSWORD_LENGTH)
 });
 export type DeleteOwnAccountInput = z.input<typeof deleteOwnAccountInput>;
 

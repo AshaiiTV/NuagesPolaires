@@ -109,39 +109,33 @@ it('personnage rayé exclu de toutes les pages, conservé dans l’export admin'
 });
 it('entretien : purge par âge, échéances et deuxième passage sans effet', async () => {
 	const now = new Date();
-	await t.db
-		.insert(s.sessions)
-		.values({
-			id: 'expired',
-			accountId: DEMO_IDS.accounts.admin,
-			scope: 'full',
-			sessionVersion: 0,
-			createdAt: new Date(0),
-			expiresAt: new Date(1)
-		});
+	await t.db.insert(s.sessions).values({
+		id: 'expired',
+		accountId: DEMO_IDS.accounts.admin,
+		scope: 'full',
+		sessionVersion: 0,
+		createdAt: new Date(0),
+		expiresAt: new Date(1)
+	});
 	await t.db
 		.insert(s.authRateLimits)
 		.values({ scope: 'ip', subject: 'expired', count: 1, windowStart: new Date(0) });
 	await t.db
 		.insert(s.auditLog)
 		.values({ source: 'test', action: 'old', ts: new Date(now.getTime() - 181 * 86_400_000) });
-	await t.db
-		.insert(s.scenes)
-		.values({
-			id: 'idle',
-			title: 'Inactive',
-			lastActivityAt: new Date(now.getTime() - 15 * 86_400_000)
-		});
-	await t.db
-		.insert(s.declarations)
-		.values({
-			id: 'expired',
-			characterId: DEMO_IDS.characters.kael,
-			resource: 'ep',
-			delta: -1,
-			word: 'Esquive',
-			createdAt: new Date(now.getTime() - 8 * 86_400_000)
-		});
+	await t.db.insert(s.scenes).values({
+		id: 'idle',
+		title: 'Inactive',
+		lastActivityAt: new Date(now.getTime() - 15 * 86_400_000)
+	});
+	await t.db.insert(s.declarations).values({
+		id: 'expired',
+		characterId: DEMO_IDS.characters.kael,
+		resource: 'ep',
+		delta: -1,
+		word: 'Esquive',
+		createdAt: new Date(now.getTime() - 8 * 86_400_000)
+	});
 	const first = await maintainDatabase(t.db, now);
 	expect(first.sessions).toBe(1);
 	expect(first.rateLimits).toBe(1);

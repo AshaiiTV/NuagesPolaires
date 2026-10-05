@@ -31,26 +31,22 @@ const actor = (role: Role): Actor => {
 const mj = actor('mj');
 beforeEach(async () => {
 	testDb = await createTestDb();
-	await testDb.db
-		.insert(accounts)
-		.values(
-			(['mj', 'admin', 'designer', 'joueur'] as const).map((role) => ({
-				id: `a_${role}`,
-				pseudo: role,
-				role,
-				passwordHash: 'fixture'
-			}))
-		);
-	await testDb.db
-		.insert(sessions)
-		.values(
-			(['mj', 'admin'] as const).map((role) => ({
-				id: `session_${role}`,
-				accountId: `a_${role}`,
-				sessionVersion: 0,
-				expiresAt: new Date(Date.now() + 3600000)
-			}))
-		);
+	await testDb.db.insert(accounts).values(
+		(['mj', 'admin', 'designer', 'joueur'] as const).map((role) => ({
+			id: `a_${role}`,
+			pseudo: role,
+			role,
+			passwordHash: 'fixture'
+		}))
+	);
+	await testDb.db.insert(sessions).values(
+		(['mj', 'admin'] as const).map((role) => ({
+			id: `session_${role}`,
+			accountId: `a_${role}`,
+			sessionVersion: 0,
+			expiresAt: new Date(Date.now() + 3600000)
+		}))
+	);
 	await testDb.db.insert(beasts).values([
 		{ id: 'b_loup', name: 'Loup' },
 		{ id: 'b_ours', name: 'Ours' }

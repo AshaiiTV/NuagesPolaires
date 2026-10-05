@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { chemin } from '$lib/ui/adresse';
 	import { enhance } from '$app/forms';
 	import PageAtelier from '../PageAtelier.svelte';
 	import Chapitre from '$lib/ui/Chapitre.svelte';
@@ -31,8 +32,8 @@
 	</div>
 	<Chapitre numero="01" titre="Les créatures">
 		{#if !data.beasts.length}<Vide>Aucune créature ne correspond.</Vide>{:else}<ul class="lignes">
-				{#each data.beasts as beast}<li>
-						<a class="ligne-lien" href="/atelier/bestiaire/{beast.id}">
+				{#each data.beasts as beast (beast.id)}<li>
+						<a class="ligne-lien" href={chemin(`/atelier/bestiaire/${beast.id}`)}>
 							<span class="nom"
 								>{beast.name}{#if beast.subtitle}<span class="sous-titre">{beast.subtitle}</span
 									>{/if}</span
@@ -55,8 +56,8 @@
 				>L’observation reste en attente. {form.message}</NoteDeMarge
 			>{/if}
 		{#if !data.pending.length}<Vide>Aucune observation n’attend de tampon.</Vide>{:else}<ul>
-				{#each data.pending as observation}<li class="observation">
-						<a class="retour" href="/univers/bestiaire/{observation.beastId}"
+				{#each data.pending as observation (observation.id)}<li class="observation">
+						<a class="retour" href={chemin(`/univers/bestiaire/${observation.beastId}`)}
 							>{data.beasts.find((b) => b.id === observation.beastId)?.name ?? 'Lire la créature'} →</a
 						>
 						<p class="voix">{observation.text}</p>

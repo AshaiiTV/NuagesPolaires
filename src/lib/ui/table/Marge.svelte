@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { chemin } from '$lib/ui/adresse';
 	// Colonne droite de la Table du MJ : Journal du combat (le journal du moteur, sans pictogramme,
 	// le plus récent en bas), Règle (la même carte que sous le pouce du joueur : ruleCardFor) et Notes
 	// du MJ (réglure visible, encre laiton ; elles ne quittent jamais la Table). 03-vision §5.8.
@@ -21,7 +22,9 @@
 		tick().then(() => fil && (fil.scrollTop = fil.scrollHeight));
 	});
 
-	const declarant = $derived(table.declarant ? table.etat.fighters.find((f) => f.id === table.declarant) : undefined);
+	const declarant = $derived(
+		table.declarant ? table.etat.fighters.find((f) => f.id === table.declarant) : undefined
+	);
 	const carte: RuleCard = $derived(
 		ruleCardFor({
 			phase: table.etat.phase,
@@ -48,7 +51,12 @@
 			<h3 id="titre-journal" class="repere">Journal du combat</h3>
 			{#if log.length}
 				<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-				<ol class="journal" bind:this={fil} tabindex="0" aria-label="Journal du combat, le plus récent en bas">
+				<ol
+					class="journal"
+					bind:this={fil}
+					tabindex="0"
+					aria-label="Journal du combat, le plus récent en bas"
+				>
 					{#each log as e (e.n)}
 						<li class={e.kind} class:prive={e.private}>
 							{sansEmoji(e.text)}{#if e.private}<span class="sr-only"> (réservé au MJ)</span>{/if}
@@ -63,13 +71,17 @@
 
 	{#if parties.includes('regle')}
 		<details class="regle">
-			<summary><span class="repere">Règle</span><span class="titre-regle">{carte.title}</span></summary>
+			<summary
+				><span class="repere">Règle</span><span class="titre-regle">{carte.title}</span></summary
+			>
 			{#if carte.id === 'actions'}
 				<ul class="regles">
 					{#each carte.actions.filter((a) => a.cost !== null || a.resource === null) as a (a.id)}
 						<li>
 							<span class="nom-regle">{a.name}</span>
-							<span class="chiffres cout">{a.cost ? `${a.cost} ${a.resource?.toUpperCase()}` : 'sans coût'}</span>
+							<span class="chiffres cout"
+								>{a.cost ? `${a.cost} ${a.resource?.toUpperCase()}` : 'sans coût'}</span
+							>
 							<span class="effet">{a.effect}</span>
 						</li>
 					{/each}
@@ -79,7 +91,7 @@
 			{:else}
 				<p class="texte-regle">{carte.text}</p>
 			{/if}
-			<a class="lien" href={carte.anchor}>Lire dans le Système de jeu →</a>
+			<a class="lien" href={chemin(carte.anchor)}>Lire dans le Système de jeu →</a>
 		</details>
 	{/if}
 
@@ -94,8 +106,7 @@
 				onchange={noter}
 				maxlength={20000}
 				rows="5"
-				placeholder="Ce que tu veux garder pour toi. Les joueurs ne le lisent jamais."
-			></textarea>
+				placeholder="Ce que tu veux garder pour toi. Les joueurs ne le lisent jamais."></textarea>
 		</section>
 	{/if}
 </div>
@@ -125,6 +136,8 @@
 		line-height: 24px;
 	}
 	.journal {
+		scroll-snap-type: y proximity;
+		padding-top: 4px;
 		max-height: calc(var(--ligne) * 11);
 		overflow-y: auto;
 		overscroll-behavior: contain;
@@ -132,7 +145,8 @@
 	}
 	.journal li {
 		padding: 0;
-		font: 500 13px/24px var(--corps);
+		font: 400 14px/28px var(--mono);
+		scroll-snap-align: end;
 		color: var(--encre-2);
 		border-bottom: 1px solid color-mix(in srgb, var(--reglure) 60%, transparent);
 		overflow-wrap: anywhere;
@@ -179,9 +193,7 @@
 	}
 	.titre-regle {
 		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		white-space: normal;
 		font: 500 13px/24px var(--corps);
 		color: var(--encre);
 	}
@@ -231,7 +243,7 @@
 		);
 		background-attachment: local;
 		font: 500 14px/24px var(--corps);
-		color: var(--tampon);
+		color: var(--encre-2);
 		resize: vertical;
 	}
 	textarea::placeholder {

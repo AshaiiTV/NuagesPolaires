@@ -18,14 +18,17 @@ import { requestContextOf } from './context';
 import { actorFor, ensureTestEnv } from './testing';
 
 const SITE = 'https://np.test';
-const APP_HTML = '<html lang="fr" data-regime="carnet" data-theme="dark" data-ton="sombre"><head></head><body></body></html>';
+const APP_HTML =
+	'<html lang="fr" data-regime="carnet" data-theme="dark" data-ton="sombre"><head></head><body></body></html>';
 
 interface Fake {
 	event: RequestEvent;
 	deleted: string[];
 }
 
-function fakeEvent(options: { method?: string; path?: string; origin?: string; token?: string } = {}): Fake {
+function fakeEvent(
+	options: { method?: string; path?: string; origin?: string; token?: string } = {}
+): Fake {
 	const url = new URL(SITE + (options.path ?? '/'));
 	const headers: Record<string, string> = { 'user-agent': 'vitest' };
 	if (options.origin) headers.origin = options.origin;
@@ -58,7 +61,9 @@ function fakeEvent(options: { method?: string; path?: string; origin?: string; t
 }
 
 const resolve = vi.fn(async (_event: RequestEvent, opts?: ResolveOptions) => {
-	const html = opts?.transformPageChunk ? ((await opts.transformPageChunk({ html: APP_HTML, done: true })) ?? APP_HTML) : APP_HTML;
+	const html = opts?.transformPageChunk
+		? ((await opts.transformPageChunk({ html: APP_HTML, done: true })) ?? APP_HTML)
+		: APP_HTML;
 	return new Response(html, { headers: { 'content-type': 'text/html' } });
 });
 
@@ -111,15 +116,26 @@ describe('fonctions pures', () => {
 			'Referrer-Policy': 'strict-origin-when-cross-origin',
 			'Cross-Origin-Opener-Policy': 'same-origin'
 		});
-		expect(securityHeaders({ dev: true, authenticated: false })).not.toHaveProperty('Cache-Control');
-		expect(securityHeaders({ dev: true, authenticated: false })).not.toHaveProperty('Strict-Transport-Security');
+		expect(securityHeaders({ dev: true, authenticated: false })).not.toHaveProperty(
+			'Cache-Control'
+		);
+		expect(securityHeaders({ dev: true, authenticated: false })).not.toHaveProperty(
+			'Strict-Transport-Security'
+		);
 	});
 
 	it('thème dans app.html, tokens d’un thème créé injectés, identifiant hostile ignoré', () => {
-		expect(applyThemeToHtml(APP_HTML, { id: 'light', ton: 'clair' })).toContain('data-theme="light" data-ton="clair"');
+		expect(applyThemeToHtml(APP_HTML, { id: 'light', ton: 'clair' })).toContain(
+			'data-theme="light" data-ton="clair"'
+		);
 		expect(applyThemeToHtml(APP_HTML, { id: 'dark', ton: 'sombre' })).toBe(APP_HTML);
-		const custom = applyThemeToHtml(APP_HTML, { id: 'veillee', ton: 'sombre' }, { '--page': '#141414', '--encre': '#f5f5f5' } as never);
-		expect(custom).toContain('<style>html[data-theme="veillee"]{--page:#141414;--encre:#f5f5f5}</style></head>');
+		const custom = applyThemeToHtml(APP_HTML, { id: 'veillee', ton: 'sombre' }, {
+			'--page': '#141414',
+			'--encre': '#f5f5f5'
+		} as never);
+		expect(custom).toContain(
+			'<style>html[data-theme="veillee"]{--page:#141414;--encre:#f5f5f5}</style></head>'
+		);
 		expect(applyThemeToHtml(APP_HTML, { id: '"><script>', ton: 'sombre' })).toBe(APP_HTML);
 	});
 });
@@ -127,8 +143,16 @@ describe('fonctions pures', () => {
 describe('handle', () => {
 	it('refuse en 403 un POST d’une autre origine, sans ouvrir la base', async () => {
 		const opened = vi.fn();
-		const handle = createHandle({ dev: false, env: () => env, openDb: async () => (opened(), { db: t.db, close }) });
-		const { event } = fakeEvent({ method: 'POST', path: '/entrer', origin: 'https://ailleurs.test' });
+		const handle = createHandle({
+			dev: false,
+			env: () => env,
+			openDb: async () => (opened(), { db: t.db, close })
+		});
+		const { event } = fakeEvent({
+			method: 'POST',
+			path: '/entrer',
+			origin: 'https://ailleurs.test'
+		});
 		const res = await handle({ event, resolve });
 		expect(res.status).toBe(403);
 		expect(opened).not.toHaveBeenCalled();
@@ -138,7 +162,14 @@ describe('handle', () => {
 	it('visiteur : locals vides, thème dark, en-têtes de sécurité, base fermée', async () => {
 		const { event } = fakeEvent({ method: 'POST', path: '/entrer', origin: SITE });
 		const res = await handleFor()({ event, resolve });
-		expect(event.locals).toMatchObject({ session: null, account: null, character: null, actor: null, compteNav: null, theme: { id: 'dark', ton: 'sombre' } });
+		expect(event.locals).toMatchObject({
+			session: null,
+			account: null,
+			character: null,
+			actor: null,
+			compteNav: null,
+			theme: { id: 'dark', ton: 'sombre' }
+		});
 		expect(event.locals.db).toBe(t.db);
 		expect(res.headers.get('x-content-type-options')).toBe('nosniff');
 		expect(res.headers.get('strict-transport-security')).toBeTruthy();
@@ -147,20 +178,37 @@ describe('handle', () => {
 	});
 
 	it('session pleine : acteur, navigation, thème du compte, Cache-Control privé', async () => {
-		await t.db.update(accounts).set({ selectedTheme: 'violet' }).where(eq(accounts.id, DEMO_IDS.accounts.alice));
+		await t.db
+			.update(accounts)
+			.set({ selectedTheme: 'violet' })
+			.where(eq(accounts.id, DEMO_IDS.accounts.alice));
 		const { sessionToken } = await login(t.db, { pseudo: 'alice', password: DEMO_PASSWORDS.alice });
 		const { event } = fakeEvent({ path: '/carnet', token: sessionToken });
 		const res = await handleFor()({ event, resolve });
-		expect(event.locals.actor).toEqual({ accountId: DEMO_IDS.accounts.alice, role: 'joueur', characterId: DEMO_IDS.characters.aria, pseudo: 'alice' });
+		expect(event.locals.actor).toEqual({
+			accountId: DEMO_IDS.accounts.alice,
+			role: 'joueur',
+			characterId: DEMO_IDS.characters.aria,
+			pseudo: 'alice'
+		});
 		// `cornes` vient de `hasCorners` (domain/reading.ts, import tolérant) quand ce module est livré.
-		expect(event.locals.compteNav).toMatchObject({ pseudo: 'alice', role: 'joueur', relie: true, cornes: expect.any(Boolean), tableOuverte: null });
+		expect(event.locals.compteNav).toMatchObject({
+			pseudo: 'alice',
+			role: 'joueur',
+			relie: true,
+			cornes: expect.any(Boolean),
+			tableOuverte: null
+		});
 		expect(event.locals.character?.id).toBe(DEMO_IDS.characters.aria);
 		expect(event.locals.session?.scope).toBe('full');
 		expect(event.locals.theme).toEqual({ id: 'violet', ton: 'sombre' });
 		expect(await res.text()).toContain('data-theme="violet" data-ton="sombre"');
 		expect(res.headers.get('cache-control')).toBe('private, no-store');
 		// Le contexte (session, ip) accompagne l'acteur pour les relectures sous verrou.
-		expect(requestContextOf(event.locals.actor)).toMatchObject({ ip: '9.9.9.9', sessionId: event.locals.session?.id });
+		expect(requestContextOf(event.locals.actor)).toMatchObject({
+			ip: '9.9.9.9',
+			sessionId: event.locals.session?.id
+		});
 	});
 
 	it('cookie invalide : effacé, visiteur, réponse privée', async () => {
@@ -174,7 +222,10 @@ describe('handle', () => {
 	it('session reset : redirection vers la fin de réinitialisation, aucun acteur', async () => {
 		const admin = await actorFor(t.db, DEMO_IDS.accounts.admin);
 		const reset = await adminResetPassword(t.db, admin, { accountId: DEMO_IDS.accounts.bob });
-		const { sessionToken } = await login(t.db, { pseudo: 'bob', password: reset.temporaryPassword });
+		const { sessionToken } = await login(t.db, {
+			pseudo: 'bob',
+			password: reset.temporaryPassword
+		});
 
 		const blocked = fakeEvent({ path: '/carnet', token: sessionToken });
 		const res = await handleFor()({ event: blocked.event, resolve });
@@ -192,12 +243,24 @@ describe('handle', () => {
 	});
 
 	it('MJ avec une Table ouverte : le ruban y mène ; lien d’invitation Discord lu dans les réglages', async () => {
-		await t.db.insert(combats).values({ id: 'c_ouverte', ownerAccountId: DEMO_IDS.accounts.mj, status: 'en_cours', name: 'Col des brumes' });
-		await t.db.update(settings).set({ value: 'https://discord.gg/nuages' }).where(eq(settings.key, SETTING_KEYS.discordInviteUrl));
+		await t.db.insert(combats).values({
+			id: 'c_ouverte',
+			ownerAccountId: DEMO_IDS.accounts.mj,
+			status: 'en_cours',
+			name: 'Col des brumes'
+		});
+		await t.db
+			.update(settings)
+			.set({ value: 'https://discord.gg/nuages' })
+			.where(eq(settings.key, SETTING_KEYS.discordInviteUrl));
 		const { sessionToken } = await login(t.db, { pseudo: 'mj', password: DEMO_PASSWORDS.mj });
 		const { event } = fakeEvent({ path: '/table', token: sessionToken });
 		await handleFor()({ event, resolve });
-		expect(event.locals.compteNav).toMatchObject({ role: 'mj', relie: false, tableOuverte: 'c_ouverte' });
+		expect(event.locals.compteNav).toMatchObject({
+			role: 'mj',
+			relie: false,
+			tableOuverte: 'c_ouverte'
+		});
 		expect(event.locals.discordInvite).toBe('https://discord.gg/nuages');
 	});
 
@@ -212,7 +275,12 @@ describe('handle', () => {
 
 	it('prérendu : aucune base ouverte', async () => {
 		const opened = vi.fn();
-		const handle = createHandle({ dev: false, building: true, env: () => env, openDb: async () => (opened(), { db: t.db, close }) });
+		const handle = createHandle({
+			dev: false,
+			building: true,
+			env: () => env,
+			openDb: async () => (opened(), { db: t.db, close })
+		});
 		const { event } = fakeEvent({ path: '/' });
 		await handle({ event, resolve });
 		expect(opened).not.toHaveBeenCalled();

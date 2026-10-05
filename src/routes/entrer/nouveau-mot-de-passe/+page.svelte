@@ -19,7 +19,15 @@
 		const code = note?.code ?? form?.code;
 		const texte = note ? (form?.message ?? note.texte) : form?.message;
 		if (!texte) return null;
-		return { champ: code === 'MISMATCH' ? 'passwordConfirm' : code === 'INVALID_PASSWORD' || code === 'INVALID' ? 'next' : null, texte };
+		return {
+			champ:
+				code === 'MISMATCH'
+					? 'passwordConfirm'
+					: code === 'INVALID_PASSWORD' || code === 'INVALID'
+						? 'next'
+						: null,
+			texte
+		};
 	});
 	const echeance = $derived(data.echeance ? heure(data.echeance) : '');
 </script>
@@ -29,22 +37,45 @@
 <Enveloppe compte={null} discord={data.discord}>
 	<Page repere="NP / 00 — Entrer" titre="Un nouveau" titreVoix="mot de passe.">
 		{#snippet marge()}
-			<p class="voix">Le code temporaire t’a ouvert le carnet une dernière fois. Choisis ton mot de passe : le code ne servira plus.</p>
+			<p class="voix">
+				Le code temporaire t’a ouvert le carnet une dernière fois. Choisis ton mot de passe : le
+				code ne servira plus.
+			</p>
 			{#if echeance}
-				<p class="echeance"><span class="repere">Code valable</span> jusqu’à <span class="chiffres">{echeance}</span></p>
+				<p class="echeance">
+					<span class="repere">Code valable</span> jusqu’à <span class="chiffres">{echeance}</span>
+				</p>
 			{/if}
 		{/snippet}
 		{#snippet bande()}
-			<p class="voix">Le code temporaire t’a ouvert le carnet une dernière fois. Choisis ton mot de passe : le code ne servira plus.</p>
+			<p class="voix">
+				Le code temporaire t’a ouvert le carnet une dernière fois. Choisis ton mot de passe : le
+				code ne servira plus.
+			</p>
 		{/snippet}
 
 		{#if data.pseudo}
-			<p class="compte"><span class="repere">Compte</span> <span class="pseudo">{data.pseudo}</span></p>
+			<p class="compte">
+				<span class="repere">Compte</span> <span class="pseudo">{data.pseudo}</span>
+			</p>
 		{/if}
 
-		<form method="POST" action="?/terminer" use:enhance={ecriture.enhance({ verbe: 'Noté' })} class="formulaire" novalidate>
+		<form
+			method="POST"
+			action="?/terminer"
+			use:enhance={ecriture.enhance({ verbe: 'Noté' })}
+			class="formulaire"
+			novalidate
+		>
 			<!-- Le gestionnaire de mots de passe rattache le nouveau mot de passe au bon compte. -->
-			<input type="text" name="username" value={data.pseudo} autocomplete="username" hidden readonly />
+			<input
+				type="text"
+				name="username"
+				value={data.pseudo}
+				autocomplete="username"
+				hidden
+				readonly
+			/>
 			<MotDePasse
 				libelle="Nouveau mot de passe"
 				name="next"
@@ -67,18 +98,26 @@
 				{#if ecriture.note?.ton === 'attente'}
 					<NoteDeMarge ton="attente">{ecriture.note.texte}</NoteDeMarge>
 				{:else if refus}
-					<NoteDeMarge ton="refus">{refus.champ ? 'Le mot de passe n’est pas changé : corrige la ligne marquée.' : refus.texte}</NoteDeMarge>
+					<NoteDeMarge ton="refus"
+						>{refus.champ
+							? 'Le mot de passe n’est pas changé : corrige la ligne marquée.'
+							: refus.texte}</NoteDeMarge
+					>
 				{/if}
 			</div>
 
 			<div class="gestes">
-				<Bouton variante="ruban" type="submit" fleche="→" disabled={ecriture.enCours}>Écrire ce mot de passe</Bouton>
+				<Bouton variante="ruban" type="submit" fleche="→" disabled={ecriture.enCours}
+					>Écrire ce mot de passe</Bouton
+				>
 			</div>
 		</form>
 
 		<form method="POST" action="/entrer/quitter" class="quitter">
 			<p class="aide">
-				{#if echeance}Pas maintenant ? Le code reste valable jusqu’à <span class="chiffres">{echeance}</span>.{:else}Pas maintenant ?{/if}
+				{#if echeance}Pas maintenant ? Le code reste valable jusqu’à <span class="chiffres"
+						>{echeance}</span
+					>.{:else}Pas maintenant ?{/if}
 			</p>
 			<Bouton variante="texte" type="submit">Refermer le carnet</Bouton>
 		</form>

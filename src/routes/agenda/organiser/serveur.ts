@@ -19,6 +19,7 @@ import { can } from '$lib/server/permissions';
 import type { AgendaView, EventRowView, EventType } from '$lib/schemas/events';
 
 export interface DonneesOrganiser {
+	signataire: { role: string; pseudo: string };
 	agenda: AgendaView;
 	pagePasses: number;
 	peutPrevenir: boolean;
@@ -37,6 +38,7 @@ export async function lireOrganiser(event: Evenement): Promise<DonneesOrganiser>
 	const agenda = await listAgenda(event.locals.db, actor, { pastPage });
 	const raye = event.url.searchParams.get('raye');
 	return {
+		signataire: { role: actor.role, pseudo: actor.pseudo },
 		agenda,
 		pagePasses: Math.min(pastPage, agenda.pastPages),
 		peutPrevenir: can(actor.role, 'events.notify'),
@@ -135,7 +137,9 @@ export const actionsOrganiser = {
 	}),
 
 	prevenir: action(async (event, data) => {
-		const resultat = await notifyEvent(event.locals.db, event.locals.actor, { eventId: texte(data.eventId) });
+		const resultat = await notifyEvent(event.locals.db, event.locals.actor, {
+			eventId: texte(data.eventId)
+		});
 		return { geste: 'prevenir' as const, eventId: resultat.eventId, at: resultat.announcedAt };
 	})
 };

@@ -5,7 +5,15 @@
 
 import type { ActionId, CombatAction, CombatState, DeclareOptions, Fighter } from './types';
 import { CombatError } from './types';
-import { advanceDeclarant, cloneState, findFighter, findFighterOrThrow, isAlive, pushLog, snapshotGesture } from './state';
+import {
+	advanceDeclarant,
+	cloneState,
+	findFighter,
+	findFighterOrThrow,
+	isAlive,
+	pushLog,
+	snapshotGesture
+} from './state';
 import { statusActionMalus } from './statuses';
 import { forcedTargetInfo } from './resolve';
 
@@ -13,7 +21,7 @@ import { forcedTargetInfo } from './resolve';
 export const BASE_ACTIONS = 3;
 
 export { ACTION_COSTS } from '../rules';
-import { ACTION_COSTS, actionRule } from '../rules';
+import { ACTION_COSTS } from '../rules';
 
 /** Pugilat : 4 + niveau (legacy main.js:11955 ; la page règles et le bouton disent 3 + Niv : divergence, audit 03 §4.3). */
 export const PUGILAT_BASE = 4;
@@ -22,7 +30,9 @@ export const BLOCK_PCT_PLAYER = 50;
 export const BLOCK_PCT_BEAST = 25;
 
 /** Dégâts d'une frappe : dmgBase + niveau (niveau 0 → 1, legacy `f.level||1`). */
-export function baseDamage(f: Pick<Fighter, 'dmgBase' | 'level'> & Partial<Pick<Fighter, 'oathDamage'>>): number {
+export function baseDamage(
+	f: Pick<Fighter, 'dmgBase' | 'level'> & Partial<Pick<Fighter, 'oathDamage'>>
+): number {
 	return (f.oathDamage ?? (f.dmgBase || 6)) + (f.level || 1);
 }
 
@@ -131,7 +141,11 @@ function num(v: number | undefined, fallback = 0): number {
  * Construit la déclaration à partir de l'action et des options (port de la table de
  * cDeclareAction). Ne vérifie pas la phase : voir declareAction.
  */
-export function buildDeclaration(f: Fighter, action: DeclarableAction, opts: DeclareOptions = {}): CombatAction {
+export function buildDeclaration(
+	f: Fighter,
+	action: DeclarableAction,
+	opts: DeclareOptions = {}
+): CombatAction {
 	const posture = f.claymorePosture;
 	const dmg = action === 'frappe' && posture && posture.damage ? posture.damage : baseDamage(f);
 	const pugDmg = pugilatDamage(f);
@@ -278,31 +292,44 @@ export function declareAction(
 	opts: DeclareOptions = {}
 ): CombatState {
 	const action = typeof declaration === 'string' ? declaration : declaration.action;
-	if (action === 'annule') throw new CombatError('COMBAT_INVALID_INPUT', 'Une annulation ne se déclare pas.');
+	if (action === 'annule')
+		throw new CombatError('COMBAT_INVALID_INPUT', 'Une annulation ne se déclare pas.');
 	if (typeof declaration !== 'string') opts = declaration;
 	for (const [key, value] of Object.entries(opts)) {
 		if (typeof value === 'number' && (!Number.isFinite(value) || value < 0))
 			throw new CombatError('COMBAT_INVALID_INPUT', `Valeur invalide : ${key}`);
 	}
 	const f0 = findFighterOrThrow(state, fighterId);
-	if (state.phase !== 'declaration') throw new CombatError('COMBAT_NOT_DECLARATION_PHASE', 'Phase de déclaration terminée.');
+	if (state.phase !== 'declaration')
+		throw new CombatError('COMBAT_NOT_DECLARATION_PHASE', 'Phase de déclaration terminée.');
 	if (state.order[state.turn] !== fighterId)
-		throw new CombatError('COMBAT_WRONG_DECLARANT', `Ce n'est pas le tour de déclaration de ${f0.name}.`);
+		throw new CombatError(
+			'COMBAT_WRONG_DECLARANT',
+			`Ce n'est pas le tour de déclaration de ${f0.name}.`
+		);
 	const left = actionsLeft(state, fighterId);
 	const consume = Math.max(1, Math.trunc(num(opts.consumeActions, 1)) || 1);
-	if (left <= 0 && action !== 'passer') throw new CombatError('COMBAT_NO_ACTIONS_LEFT', `${f0.name} n'a plus d'actions à déclarer.`);
+	if (left <= 0 && action !== 'passer')
+		throw new CombatError('COMBAT_NO_ACTIONS_LEFT', `${f0.name} n'a plus d'actions à déclarer.`);
 	if (action !== 'passer' && consume > left)
-		throw new CombatError('COMBAT_NOT_ENOUGH_ACTIONS', "Pas assez d'actions restantes pour cette compétence.");
+		throw new CombatError(
+			'COMBAT_NOT_ENOUGH_ACTIONS',
+			"Pas assez d'actions restantes pour cette compétence."
+		);
 	if (action === 'deplacer' && f0.noFreeRepositionRound === state.round)
 		throw new CombatError('COMBAT_MOVE_LOCKED', `${f0.name} ne peut pas se déplacer ce round.`);
-	if (opts.target != null && !findFighter(state, opts.target)) throw new CombatError('COMBAT_INVALID_INPUT', 'Cible inconnue.');
-	if (opts.healTarget != null && !findFighter(state, opts.healTarget)) throw new CombatError('COMBAT_INVALID_INPUT', 'Cible de soin inconnue.');
+	if (opts.target != null && !findFighter(state, opts.target))
+		throw new CombatError('COMBAT_INVALID_INPUT', 'Cible inconnue.');
+	if (opts.healTarget != null && !findFighter(state, opts.healTarget))
+		throw new CombatError('COMBAT_INVALID_INPUT', 'Cible de soin inconnue.');
 
 	const draft = cloneState(state);
 	const f = findFighterOrThrow(draft, fighterId);
 	const entry = buildDeclaration(f, action, opts);
-	const isSingleTargetAttack = entry.kind === 'attack' && !entry.aoe && (ATTACK_ACTIONS.has(action) || action === 'capacite');
-	if (isSingleTargetAttack && entry.target === null) throw new CombatError('COMBAT_INVALID_INPUT', 'Choisis une cible.');
+	const isSingleTargetAttack =
+		entry.kind === 'attack' && !entry.aoe && (ATTACK_ACTIONS.has(action) || action === 'capacite');
+	if (isSingleTargetAttack && entry.target === null)
+		throw new CombatError('COMBAT_INVALID_INPUT', 'Choisis une cible.');
 
 	// Cible forcée par l'Appel du Bouclier (audit 03 §7.3)
 	const forced = forcedTargetInfo(draft, f);
@@ -337,7 +364,10 @@ export function passTurn(state: CombatState, fighterId: string): CombatState {
 export function undoLastDeclaration(state: CombatState, fighterId: string): CombatState {
 	const f = findFighterOrThrow(state, fighterId);
 	if (state.phase !== 'declaration' || state.order[state.turn] !== fighterId)
-		throw new CombatError('COMBAT_WRONG_DECLARANT', `Ce n'est pas le tour de déclaration de ${f.name}.`);
+		throw new CombatError(
+			'COMBAT_WRONG_DECLARANT',
+			`Ce n'est pas le tour de déclaration de ${f.name}.`
+		);
 	const draft = cloneState(state);
 	const decls = draft.declarations[fighterId];
 	if (decls && decls.length) decls.pop();
@@ -354,7 +384,11 @@ export function editDeclaration(state: CombatState, fighterId: string): CombatSt
 	if (state.phase !== 'declaration' && state.phase !== 'resolution')
 		throw new CombatError('COMBAT_NOT_ACTIVE', 'Aucune déclaration en cours.');
 	const pos = state.order.indexOf(fighterId);
-	if (pos < 0) throw new CombatError('COMBAT_UNKNOWN_FIGHTER', "Ce combattant n'est pas dans l'ordre de déclaration.");
+	if (pos < 0)
+		throw new CombatError(
+			'COMBAT_UNKNOWN_FIGHTER',
+			"Ce combattant n'est pas dans l'ordre de déclaration."
+		);
 	const draft = cloneState(state);
 	snapshotGesture(draft);
 	for (let i = pos; i < draft.order.length; i++) draft.declarations[draft.order[i]!] = [];

@@ -3,7 +3,12 @@
 // saisis par un administrateur (lien d'invitation du colophon, salon par défaut).
 import { requireCapability } from '$lib/server/guards';
 import { action } from '$lib/server/actions';
-import { EXPORT_EXCLUDED, diagnostics, exportData, migrationStatus } from '$lib/server/domain/admin';
+import {
+	EXPORT_EXCLUDED,
+	diagnostics,
+	exportData,
+	migrationStatus
+} from '$lib/server/domain/admin';
 import { listSettings, setSetting } from '$lib/server/domain/settings';
 import type { SettingKey } from '$lib/schemas/admin';
 import type { Actions, PageServerLoad } from './$types';
@@ -16,7 +21,13 @@ export const load: PageServerLoad = async (event) => {
 	const migration = await migrationStatus(db, actor);
 	const diag = await diagnostics(db, actor);
 	const reglages = await listSettings(db, actor);
-	return { migration, diag, reglages, exclus: [...EXPORT_EXCLUDED], releve: new Date().toISOString() };
+	return {
+		migration,
+		diag,
+		reglages,
+		exclus: [...EXPORT_EXCLUDED],
+		releve: new Date().toISOString()
+	};
 };
 
 export const actions: Actions = {
@@ -25,7 +36,11 @@ export const actions: Actions = {
 		const jour = donnees.exportedAt.slice(0, 10);
 		// Le fichier part une fois vers la page qui l'a demandé ; il n'est gardé nulle part ailleurs.
 		return {
-			fichier: { nom: `nuages-polaires-export-${jour}.json`, contenu: JSON.stringify(donnees, null, 2), at: donnees.exportedAt }
+			fichier: {
+				nom: `nuages-polaires-export-${jour}.json`,
+				contenu: JSON.stringify(donnees, null, 2),
+				at: donnees.exportedAt
+			}
 		};
 	}),
 	reglage: action(async (event, data) => {

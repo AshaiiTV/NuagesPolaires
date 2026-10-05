@@ -20,7 +20,9 @@ export function parseInput<S extends z.ZodType>(schema: S, input: unknown): z.ou
 /** `expectedRevision` absent (ou vide) ⇒ 428 VERSION_REQUIRED (04 §6), avant toute validation. */
 export function requireExpectedRevision(input: unknown): void {
 	const value =
-		input && typeof input === 'object' ? (input as { expectedRevision?: unknown }).expectedRevision : undefined;
+		input && typeof input === 'object'
+			? (input as { expectedRevision?: unknown }).expectedRevision
+			: undefined;
 	if (value === undefined || value === null || value === '') throw NpError.versionRequired();
 }
 
@@ -28,7 +30,12 @@ export function requireExpectedRevision(input: unknown): void {
 export function isUniqueViolation(error: unknown, constraint?: string): boolean {
 	let current: unknown = error;
 	for (let depth = 0; depth < 5 && current; depth++) {
-		const e = current as { code?: unknown; constraint?: unknown; message?: unknown; cause?: unknown };
+		const e = current as {
+			code?: unknown;
+			constraint?: unknown;
+			message?: unknown;
+			cause?: unknown;
+		};
 		if (e.code === '23505') {
 			if (!constraint) return true;
 			const where = `${String(e.constraint ?? '')} ${String(e.message ?? '')}`;

@@ -39,11 +39,42 @@ function seq(values: number[]): () => number {
 	return () => values[i++ % values.length]!;
 }
 
-const wolf: SpawnBeast = { id: 'b_loup', name: 'Loup', level: 3, behavior: 'Agressif', zones: [DEFAULT_ZONES[0]!] };
-const bear: SpawnBeast = { id: 'b_ours', name: 'Ours', level: 5, behavior: 'Neutre', zones: [DEFAULT_ZONES[0]!] };
-const rabbit: SpawnBeast = { id: 'b_lapin', name: 'Lapin', level: 1, behavior: 'Gibier', zones: [DEFAULT_ZONES[0]!] };
-const boss: SpawnBeast = { id: 'b_boss', name: 'Vieux Roi', level: 9, behavior: 'Boss', zones: [DEFAULT_ZONES[1]!] };
-const ghost: SpawnBeast = { id: 'b_spectre', name: 'Spectre', level: 4, behavior: 'Passif', hidden: true, zones: [DEFAULT_ZONES[0]!] };
+const wolf: SpawnBeast = {
+	id: 'b_loup',
+	name: 'Loup',
+	level: 3,
+	behavior: 'Agressif',
+	zones: [DEFAULT_ZONES[0]!]
+};
+const bear: SpawnBeast = {
+	id: 'b_ours',
+	name: 'Ours',
+	level: 5,
+	behavior: 'Neutre',
+	zones: [DEFAULT_ZONES[0]!]
+};
+const rabbit: SpawnBeast = {
+	id: 'b_lapin',
+	name: 'Lapin',
+	level: 1,
+	behavior: 'Gibier',
+	zones: [DEFAULT_ZONES[0]!]
+};
+const boss: SpawnBeast = {
+	id: 'b_boss',
+	name: 'Vieux Roi',
+	level: 9,
+	behavior: 'Boss',
+	zones: [DEFAULT_ZONES[1]!]
+};
+const ghost: SpawnBeast = {
+	id: 'b_spectre',
+	name: 'Spectre',
+	level: 4,
+	behavior: 'Passif',
+	hidden: true,
+	zones: [DEFAULT_ZONES[0]!]
+};
 
 describe('coefficients (audit 03 §10.3)', () => {
 	it('expose les valeurs exactes du legacy', () => {
@@ -126,10 +157,22 @@ describe('baseWeight (audit 03 §10.3)', () => {
 
 describe('qtyRange (audit 03 §10.4)', () => {
 	it('utilise les bornes saisies si valides', () => {
-		expect(qtyRange({ level: 3, behavior: 'Neutre', qtyMin: 2, qtyMax: 5 })).toEqual({ min: 2, max: 5 });
-		expect(qtyRange({ level: 3, behavior: 'Neutre', qtyMin: 0, qtyMax: 5 })).toEqual({ min: 1, max: 3 });
-		expect(qtyRange({ level: 3, behavior: 'Neutre', qtyMin: 4, qtyMax: 2 })).toEqual({ min: 1, max: 3 });
-		expect(qtyRange({ level: 3, behavior: 'Neutre', qtyMin: null, qtyMax: null })).toEqual({ min: 1, max: 3 });
+		expect(qtyRange({ level: 3, behavior: 'Neutre', qtyMin: 2, qtyMax: 5 })).toEqual({
+			min: 2,
+			max: 5
+		});
+		expect(qtyRange({ level: 3, behavior: 'Neutre', qtyMin: 0, qtyMax: 5 })).toEqual({
+			min: 1,
+			max: 3
+		});
+		expect(qtyRange({ level: 3, behavior: 'Neutre', qtyMin: 4, qtyMax: 2 })).toEqual({
+			min: 1,
+			max: 3
+		});
+		expect(qtyRange({ level: 3, behavior: 'Neutre', qtyMin: null, qtyMax: null })).toEqual({
+			min: 1,
+			max: 3
+		});
 	});
 
 	it('table par comportement au niveau 3..6', () => {
@@ -155,13 +198,22 @@ describe('qtyRange (audit 03 §10.4)', () => {
 		expect(qtyRange({ level: 9, behavior: 'Gibier' })).toEqual({ min: 1, max: 1 });
 		expect(qtyRange({ level: 1, behavior: 'Boss' })).toEqual({ min: 1, max: 1 });
 		// même avec des bornes saisies invalides
-		expect(qtyRange({ level: 12, behavior: 'Neutre', qtyMin: 0, qtyMax: 9 })).toEqual({ min: 1, max: 1 });
+		expect(qtyRange({ level: 12, behavior: 'Neutre', qtyMin: 0, qtyMax: 9 })).toEqual({
+			min: 1,
+			max: 1
+		});
 	});
 });
 
 describe('zones (audit 03 §10.2)', () => {
 	it('normalizeZoneList : défauts en tête, dédoublonnage, 80 max', () => {
-		const list = normalizeZoneList(['  grotte ', DEFAULT_ZONES[2]!, '', 'grotte', null as unknown as string]);
+		const list = normalizeZoneList([
+			'  grotte ',
+			DEFAULT_ZONES[2]!,
+			'',
+			'grotte',
+			null as unknown as string
+		]);
 		expect(list.slice(0, 5)).toEqual([...DEFAULT_ZONES]);
 		expect(list).toHaveLength(6);
 		expect(list[5]).toBe('grotte');
@@ -191,12 +243,13 @@ describe('zones (audit 03 §10.2)', () => {
 
 	it('zonePool : créatures visibles de la zone ; masquées et archivées exclues', () => {
 		const archived: SpawnBeast = { ...bear, id: 'b_arch', archived: true };
-		expect(zonePool(DEFAULT_ZONES[0]!, [wolf, bear, rabbit, boss, ghost, archived]).map((b) => b.id)).toEqual([
+		expect(
+			zonePool(DEFAULT_ZONES[0]!, [wolf, bear, rabbit, boss, ghost, archived]).map((b) => b.id)
+		).toEqual(['b_loup', 'b_ours', 'b_lapin']);
+		expect(zonePool(ALL_ZONES_VALUE, [wolf, boss, ghost]).map((b) => b.id)).toEqual([
 			'b_loup',
-			'b_ours',
-			'b_lapin'
+			'b_boss'
 		]);
-		expect(zonePool(ALL_ZONES_VALUE, [wolf, boss, ghost]).map((b) => b.id)).toEqual(['b_loup', 'b_boss']);
 		const nowhere: SpawnBeast = { id: 'b_x', name: 'X', level: 1, behavior: 'Neutre' };
 		expect(zonePool(NO_ZONE_VALUE, [wolf, nowhere]).map((b) => b.id)).toEqual(['b_x']);
 	});
@@ -207,7 +260,15 @@ describe('adjustedWeight (audit 03 §10.3)', () => {
 
 	it('sans historique : poids = base, fatigue = rattrapage = 1', () => {
 		const w = adjustedWeight(wolf, pool, {});
-		expect(w).toMatchObject({ base: 133, count: 0, avg: 0, fatigue: 1, catchup: 1, weight: 133, eligible: true });
+		expect(w).toMatchObject({
+			base: 133,
+			count: 0,
+			avg: 0,
+			fatigue: 1,
+			catchup: 1,
+			weight: 133,
+			eligible: true
+		});
 	});
 
 	it('fatigue et rattrapage autour de la moyenne du pool', () => {
@@ -234,7 +295,13 @@ describe('adjustedWeight (audit 03 §10.3)', () => {
 
 	it('un poids ≤ 0.5 rend le candidat inéligible', () => {
 		// base 8 (plancher) avec une fatigue énorme : totals 100 contre une moyenne de 50
-		const tiny: SpawnBeast = { id: 'b_tiny', name: 'T', level: 20, behavior: 'Boss', spawnWeight: 1 };
+		const tiny: SpawnBeast = {
+			id: 'b_tiny',
+			name: 'T',
+			level: 20,
+			behavior: 'Boss',
+			spawnWeight: 1
+		};
 		const other: SpawnBeast = { id: 'b_o', name: 'O', level: 1, behavior: 'Neutre' };
 		const w = adjustedWeight(tiny, [tiny, other], { b_tiny: 100, b_o: 0 });
 		// fatigue = 1 + 50 × 0.22 = 12 ; weight = 1/12 ≈ 0.083
@@ -276,20 +343,44 @@ describe('drawEncounter (audit 03 §10.5)', () => {
 	});
 
 	it('exclut du tirage un candidat sous le seuil 0.5 (jamais tiré, prob 0)', () => {
-		const tiny: SpawnBeast = { id: 'b_tiny', name: 'T', level: 20, behavior: 'Boss', spawnWeight: 1, zones: ['Z'] };
-		const other: SpawnBeast = { id: 'b_o', name: 'O', level: 20, behavior: 'Boss', spawnWeight: 1, zones: ['Z'] };
+		const tiny: SpawnBeast = {
+			id: 'b_tiny',
+			name: 'T',
+			level: 20,
+			behavior: 'Boss',
+			spawnWeight: 1,
+			zones: ['Z']
+		};
+		const other: SpawnBeast = {
+			id: 'b_o',
+			name: 'O',
+			level: 20,
+			behavior: 'Boss',
+			spawnWeight: 1,
+			zones: ['Z']
+		};
 		// moyenne 50 ; tiny over 50 → 1/12 ≈ 0.083 (inéligible) ; other under 50 → 1 × 8 = 8
 		const rng = lcg(3);
 		for (let i = 0; i < 200; i++) {
 			const r = drawEncounter('Z', [tiny, other], { totals: { b_tiny: 100 } }, rng)!;
 			expect(r.packs[0]!.id).toBe('b_o');
-			expect(r.weights.find((w) => w.beastId === 'b_tiny')).toMatchObject({ eligible: false, prob: 0 });
+			expect(r.weights.find((w) => w.beastId === 'b_tiny')).toMatchObject({
+				eligible: false,
+				prob: 0
+			});
 			expect(r.weights.find((w) => w.beastId === 'b_o')).toMatchObject({ eligible: true, prob: 1 });
 		}
 		// Note : avec un pool non vide, « Aucun tirage possible » n'est atteignable que si tous les
 		// poids explicites sont dans ]0, 0.5[ (arrondis à 0) : la moyenne du pool garantit sinon
 		// au moins un membre sans fatigue, donc de poids ≥ base ≥ 1 > 0.5.
-		const zero: SpawnBeast = { id: 'b_z', name: 'Z', level: 1, behavior: 'Neutre', spawnWeight: 0.3, zones: ['Z'] };
+		const zero: SpawnBeast = {
+			id: 'b_z',
+			name: 'Z',
+			level: 1,
+			behavior: 'Neutre',
+			spawnWeight: 0.3,
+			zones: ['Z']
+		};
 		expect(drawEncounter('Z', [zero], { totals: {} }, () => 0)).toBeNull();
 	});
 
@@ -394,6 +485,8 @@ describe('présentation', () => {
 				{ qty: 2, name: 'Loup' },
 				{ qty: 1, name: 'Ours' }
 			])
-		).toBe("**Générateur d'apparitions**\nZone [🌳]-forêt-aux-lianes\n**Roll** — 2x Loup • 1x Ours");
+		).toBe(
+			"**Générateur d'apparitions**\nZone [🌳]-forêt-aux-lianes\n**Roll** — 2x Loup • 1x Ours"
+		);
 	});
 });

@@ -444,7 +444,15 @@ export function oathFromLegacyCustom(
 				? (native?.category ?? 'melee')
 				: normalizeOathCategory(custom.cat),
 		lore: textOr(custom.lore, native?.lore ?? ''),
-		branches: { bA, bB, extraBranches: fromArray.length ? fromArray.slice(2) : hasOwnBranches ? [] : (native?.branches.extraBranches ?? []) },
+		branches: {
+			bA,
+			bB,
+			extraBranches: fromArray.length
+				? fromArray.slice(2)
+				: hasOwnBranches
+					? []
+					: (native?.branches.extraBranches ?? [])
+		},
 		isBuiltin: false
 	};
 }
@@ -711,7 +719,7 @@ export const BUILTIN_OATHS: readonly OathDefinition[] = [
 					niv: 20,
 					nom: 'Posture Haute',
 					cout: '6 EM — 1 action',
-					desc: 'Frappe Haute : 32+Niv dégâts, 10 EP. Si la cible bloque, elle perd 20 EP. Sur défense réussie, la cible subit tout de même 25% des dégâts sous forme d\'impact.'
+					desc: "Frappe Haute : 32+Niv dégâts, 10 EP. Si la cible bloque, elle perd 20 EP. Sur défense réussie, la cible subit tout de même 25% des dégâts sous forme d'impact."
 				}
 			]
 		},
@@ -1070,7 +1078,7 @@ export const BUILTIN_OATHS: readonly OathDefinition[] = [
 			nom: 'Branche A — Lance Drainante',
 			style: 'Épuisement',
 			descPhys:
-				'La lance entre, ressort. Mais quelque chose reste — une douleur sourde, diffuse, qui court dans les membres. La cible bouge encore, mais chaque geste lui coûte un peu plus qu\'avant.',
+				"La lance entre, ressort. Mais quelque chose reste — une douleur sourde, diffuse, qui court dans les membres. La cible bouge encore, mais chaque geste lui coûte un peu plus qu'avant.",
 			flavor:
 				"Lance Drainante est une blessure qui continue de parler après l'impact. La cible bouge encore, mais chaque geste devient plus lourd, chaque défense moins naturelle. Le Traqueur ne vole pas seulement de l'énergie : il vole la durée du combat.",
 			paliers: [
@@ -1385,7 +1393,7 @@ export const BUILTIN_OATHS: readonly OathDefinition[] = [
 		6,
 		'Contondant',
 		{ icon: '⛓', category: 'soutien' },
-		"Le Conjurateur est le serment des liens qui refusent de rompre. Il choisit les porteurs capables de sentir ce qui lâche chez les autres avant que la chute soit visible : une respiration trop courte, une posture qui tremble, une volonté qui se fend. Sa chaîne du serment est froide, lourde, presque brutale, mais elle ne sert pas seulement à frapper. Chaque maillon est un passage. La douleur peut y circuler, la force aussi, la vie parfois. Le Conjurateur combat rarement pour prendre la lumière. Il combat pour que les autres restent dans la scène assez longtemps pour gagner. Là où le champ de bataille disperse, il rattache. Là où les corps cèdent, il insiste.",
+		'Le Conjurateur est le serment des liens qui refusent de rompre. Il choisit les porteurs capables de sentir ce qui lâche chez les autres avant que la chute soit visible : une respiration trop courte, une posture qui tremble, une volonté qui se fend. Sa chaîne du serment est froide, lourde, presque brutale, mais elle ne sert pas seulement à frapper. Chaque maillon est un passage. La douleur peut y circuler, la force aussi, la vie parfois. Le Conjurateur combat rarement pour prendre la lumière. Il combat pour que les autres restent dans la scène assez longtemps pour gagner. Là où le champ de bataille disperse, il rattache. Là où les corps cèdent, il insiste.',
 		{
 			nom: 'Branche A — Frappe Déchaînée',
 			style: 'Offensif',
@@ -1538,7 +1546,9 @@ export const BUILTIN_OATHS: readonly OathDefinition[] = [
 ];
 
 /** Serments visibles dans la vitrine publique (`isSermVisibleInLibrary`, legacy main.js:6149-6152). */
-export function visibleOaths(catalogue: readonly OathDefinition[] = BUILTIN_OATHS): OathDefinition[] {
+export function visibleOaths(
+	catalogue: readonly OathDefinition[] = BUILTIN_OATHS
+): OathDefinition[] {
 	return catalogue.filter((o) => !o.hidden);
 }
 

@@ -33,7 +33,12 @@ export const load: PageServerLoad = async (event) => {
 	const lecture = preparer(renderMarkdown(content.body), content.title, content.resume);
 	return {
 		etape: 'reglement' as const,
-		reglement: { titre: content.title, resume: content.resume, html: lecture.html, entrees: lecture.entrees }
+		reglement: {
+			titre: content.title,
+			resume: content.resume,
+			html: lecture.html,
+			entrees: lecture.entrees
+		}
 	};
 };
 
@@ -43,8 +48,10 @@ export const actions: Actions = {
 		const password = String(data.password ?? '');
 		// Même ordre que la lecture du formulaire : pseudo, mot de passe, confirmation.
 		if (!PSEUDO_RE.test(pseudo)) throw new NpError('INVALID_PSEUDO', PSEUDO_INVALID_MESSAGE, 400);
-		if (password.length < MIN_PASSWORD_LENGTH) throw new NpError('INVALID_PASSWORD', PASSWORD_TOO_SHORT_MESSAGE, 400);
-		if (password !== String(data.passwordConfirm ?? '')) throw new NpError('MISMATCH', CONFIRMATION_MESSAGE, 400);
+		if (password.length < MIN_PASSWORD_LENGTH)
+			throw new NpError('INVALID_PASSWORD', PASSWORD_TOO_SHORT_MESSAGE, 400);
+		if (password !== String(data.passwordConfirm ?? ''))
+			throw new NpError('MISMATCH', CONFIRMATION_MESSAGE, 400);
 		const result = await register(event.locals.db, {
 			pseudo,
 			password,

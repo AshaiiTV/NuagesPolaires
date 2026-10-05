@@ -293,8 +293,13 @@ export async function migrateSnapshot(
 				if (result !== 'arbitration') zoneMap.set(name, row.id);
 			}
 			for (const b of beastRows) {
-				if (b.quantityRecalculated) anomaly('BEAST_QUANTITY_RECALCULATED', 'beasts', b.row.id,
-					`${b.row.name} : quantité saisie ${b.enteredQuantity.min ?? 'absente'}–${b.enteredQuantity.max ?? 'absente'}, plage effective héritée ${b.row.qtyMin}–${b.row.qtyMax}.`);
+				if (b.quantityRecalculated)
+					anomaly(
+						'BEAST_QUANTITY_RECALCULATED',
+						'beasts',
+						b.row.id,
+						`${b.row.name} : quantité saisie ${b.enteredQuantity.min ?? 'absente'}–${b.enteredQuantity.max ?? 'absente'}, plage effective héritée ${b.row.qtyMin}–${b.row.qtyMax}.`
+					);
 				if ((await importId(s.beasts, b.row, 'beasts', b.row.id, b.raw)) === 'arbitration')
 					continue;
 				for (const name of b.zones) {
@@ -577,7 +582,11 @@ export async function migrateSnapshot(
 						a.id,
 						'Détail indisponible : archive brute conservée avec schemaVersion 0.'
 					);
-				if (!c.rawState) row.state = { ...await enrichCombatState(tx, row.state as unknown as CombatState), legacy: n.object(a.raw) };
+				if (!c.rawState)
+					row.state = {
+						...(await enrichCombatState(tx, row.state as unknown as CombatState)),
+						legacy: n.object(a.raw)
+					};
 				if ((await importId(s.combats, row, 'combat_archives', identity, a.raw)) === 'arbitration')
 					continue;
 				combatReferences.push({ legacyId: a.id, targetId: row.id, participants: c.participants });
@@ -881,11 +890,18 @@ export async function migrateSnapshot(
 					);
 			}
 			// Même un import sans écriture cible peut produire une quarantaine à arbitrer.
-			await tx.insert(s.migrationRegistry).values({
-				sourceKey: 'migration_report', sourceId: valid.sha256, transformerVersion: TRANSFORMER_VERSION,
-				targetTable: 'migration_report', targetId: valid.sha256, checksum: checksum(report.anomalies),
-				anomalies: report.anomalies
-			}).onConflictDoNothing();
+			await tx
+				.insert(s.migrationRegistry)
+				.values({
+					sourceKey: 'migration_report',
+					sourceId: valid.sha256,
+					transformerVersion: TRANSFORMER_VERSION,
+					targetTable: 'migration_report',
+					targetId: valid.sha256,
+					checksum: checksum(report.anomalies),
+					anomalies: report.anomalies
+				})
+				.onConflictDoNothing();
 			if (report.writes) {
 				await appendStaffLog(tx, {
 					action: 'migration_legacy',

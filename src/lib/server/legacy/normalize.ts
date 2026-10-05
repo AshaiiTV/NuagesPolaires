@@ -45,6 +45,7 @@ export function stableId(prefix: string, value: unknown): string {
 	return `${prefix}_${checksum(value).slice(0, 24)}`;
 }
 export function sourceId(raw: LegacyRecord, prefix: string, _identity: unknown): string {
+	void _identity;
 	return text(raw.id).trim() || stableId(prefix, raw);
 }
 function extra(raw: LegacyRecord, known: string[]): LegacyRecord {
@@ -334,8 +335,11 @@ export function normalizeBeast(value: unknown, identity: unknown = value) {
 	const level = integer(pick('niv', 'level'), 1, 1);
 	const rawBehavior = pick('beh', 'behavior', 'comportement', 'behaviour') ?? 'Neutre';
 	const range = legacyQtyRange(level, rawBehavior, pick('spawnMin'), pick('spawnMax'));
-	const enteredMin = pick('qtyMin', 'minQty'), enteredMax = pick('qtyMax', 'maxQty');
-	const quantityRecalculated = (enteredMin !== undefined && Number(enteredMin) !== range.min) || (enteredMax !== undefined && Number(enteredMax) !== range.max);
+	const enteredMin = pick('qtyMin', 'minQty'),
+		enteredMax = pick('qtyMax', 'maxQty');
+	const quantityRecalculated =
+		(enteredMin !== undefined && Number(enteredMin) !== range.min) ||
+		(enteredMax !== undefined && Number(enteredMax) !== range.max);
 	const row = {
 		id: sourceId(r, 'b', identity),
 		name: text(pick('nom', 'name', 'label'), 'Créature héritée').slice(0, 80),
@@ -365,7 +369,12 @@ export function normalizeBeast(value: unknown, identity: unknown = value) {
 		// Le brut permet d'arbitrer les alias divergents sans perdre leurs valeurs.
 		extra: { legacy: r }
 	} satisfies typeof s.beasts.$inferInsert;
-	return { row, zones: strings(pick('zones')), quantityRecalculated, enteredQuantity: { min: enteredMin, max: enteredMax } };
+	return {
+		row,
+		zones: strings(pick('zones')),
+		quantityRecalculated,
+		enteredQuantity: { min: enteredMin, max: enteredMax }
+	};
 }
 export function normalizeEvent(value: unknown, identity: unknown = value) {
 	const r = object(value);
@@ -414,7 +423,9 @@ export function normalizeCombat(value: unknown, owner: string, identity: unknown
 		state = { ...r, schemaVersion: 0 };
 		rawState = true;
 	}
-	const ongoing = !state.ended && (r.active === true || r._inProgress === true || r._draft === true || state.startedAt != null);
+	const ongoing =
+		!state.ended &&
+		(r.active === true || r._inProgress === true || r._draft === true || state.startedAt != null);
 	const closed = state.ended === true;
 	const targetId = stableId('c', [owner, legacyId]);
 	state.id = targetId;

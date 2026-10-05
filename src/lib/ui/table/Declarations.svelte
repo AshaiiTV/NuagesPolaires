@@ -23,12 +23,23 @@
 	let { table, propositions }: Props = $props();
 
 	const etat = $derived(table.etat);
-	const ordre = $derived(etat.order.map((id) => etat.fighters.find((f) => f.id === id)).filter((f): f is Fighter => !!f));
+	const ordre = $derived(
+		etat.order.map((id) => etat.fighters.find((f) => f.id === id)).filter((f): f is Fighter => !!f)
+	);
 	const declarant = $derived(table.declarant);
-	const nom = (id: string | null) => (id ? (etat.fighters.find((f) => f.id === id)?.name ?? 'cible partie') : '');
+	const nom = (id: string | null) =>
+		id ? (etat.fighters.find((f) => f.id === id)?.name ?? 'cible partie') : '';
 
 	// ── Formulaire du déclarant ──────────────────────────────────────────────────────────────────
-	type Choix = { cle: string; libelle: string; cout: string; cible: 'ennemi' | 'allie' | null; soin: boolean; base?: ActionId; option?: AbilityOption };
+	type Choix = {
+		cle: string;
+		libelle: string;
+		cout: string;
+		cible: 'ennemi' | 'allie' | null;
+		soin: boolean;
+		base?: ActionId;
+		option?: AbilityOption;
+	};
 	/** Action pré-choisie par « Reprendre » pour un combattant qui n'a pas encore la main. */
 	let preselection = $state<Record<string, string>>({});
 	let choix = $state('');
@@ -42,7 +53,9 @@
 		return actionRule(id);
 	}
 	function choixPour(f: Fighter): Choix[] {
-		const base: Choix[] = ACTIONS_DE_BASE.filter((a) => !('joueur' in a) || f.type === 'player').map((a) => {
+		const base: Choix[] = ACTIONS_DE_BASE.filter(
+			(a) => !('joueur' in a) || f.type === 'player'
+		).map((a) => {
 			const r = regleDe(f, a.id);
 			const c = r.id === 'frappe_haute' && f.claymorePosture ? f.claymorePosture.epCost : r.cost;
 			return {
@@ -64,12 +77,18 @@
 		}));
 		return [...base, ...capacites];
 	}
-	const fDeclarant = $derived(declarant ? etat.fighters.find((f) => f.id === declarant) : undefined);
+	const fDeclarant = $derived(
+		declarant ? etat.fighters.find((f) => f.id === declarant) : undefined
+	);
 	const options = $derived(fDeclarant ? choixPour(fDeclarant) : []);
 	const choisi = $derived(options.find((o) => o.cle === choix));
 	const camp = (f: Fighter) => (f.type === 'beast' ? 'beast' : 'player');
-	const ennemis = $derived(fDeclarant ? etat.fighters.filter((x) => camp(x) !== camp(fDeclarant) && !ko(x)) : []);
-	const allies = $derived(fDeclarant ? etat.fighters.filter((x) => camp(x) === camp(fDeclarant) && !ko(x)) : []);
+	const ennemis = $derived(
+		fDeclarant ? etat.fighters.filter((x) => camp(x) !== camp(fDeclarant) && !ko(x)) : []
+	);
+	const allies = $derived(
+		fDeclarant ? etat.fighters.filter((x) => camp(x) === camp(fDeclarant) && !ko(x)) : []
+	);
 	const restantes = $derived(declarant ? table.actionsRestantes(declarant) : 0);
 
 	// Le formulaire change de main : l'action reprend la préselection ou la Frappe, la cible la première.
@@ -81,15 +100,20 @@
 		choix = (id && preselection[id]) || 'frappe';
 	});
 	$effect(() => {
-		if (choisi?.cible === 'ennemi' && !ennemis.some((x) => x.id === cible)) cible = ennemis[0]?.id ?? '';
-		if (choisi?.cible === 'allie' && !allies.some((x) => x.id === cible)) cible = allies[0]?.id ?? '';
+		if (choisi?.cible === 'ennemi' && !ennemis.some((x) => x.id === cible))
+			cible = ennemis[0]?.id ?? '';
+		if (choisi?.cible === 'allie' && !allies.some((x) => x.id === cible))
+			cible = allies[0]?.id ?? '';
 		if (choisi?.soin && !allies.some((x) => x.id === cibleSoin)) cibleSoin = allies[0]?.id ?? '';
 	});
 
 	function declarer(e: SubmitEvent) {
 		e.preventDefault();
 		if (!declarant || !choisi) return;
-		const opts = { target: choisi.cible ? cible || null : null, healTarget: choisi.soin ? cibleSoin || null : null };
+		const opts = {
+			target: choisi.cible ? cible || null : null,
+			healTarget: choisi.soin ? cibleSoin || null : null
+		};
 		const ok = choisi.option
 			? table.declarer(declarant, choisi.option.action, { ...choisi.option, ...opts })
 			: table.declarer(declarant, choisi.base!, opts);
@@ -103,9 +127,13 @@
 
 	// ── Propositions des joueurs ─────────────────────────────────────────────────────────────────
 	let reprises = $state<string[]>([]);
-	const proposees = $derived(propositions.filter((d) => d.status === 'proposee' && !reprises.includes(d.id)));
+	const proposees = $derived(
+		propositions.filter((d) => d.status === 'proposee' && !reprises.includes(d.id))
+	);
 	function propositionsDe(f: Fighter) {
-		return f.characterId && f.type === 'player' && !f.isSummon ? proposees.filter((d) => d.characterId === f.characterId) : [];
+		return f.characterId && f.type === 'player' && !f.isSummon
+			? proposees.filter((d) => d.characterId === f.characterId)
+			: [];
 	}
 	/** Le mot de la déclaration (« Esquive ») retrouve l'action de base de rules.ts, sinon rien. */
 	function actionDuMot(mot: string): string | null {
@@ -127,7 +155,9 @@
 		preselection = { ...preselection, [f.id]: id };
 		if (declarant === f.id) {
 			choix = id;
-			queueMicrotask(() => formulaire?.querySelector<HTMLElement>('select, button[type="submit"]')?.focus());
+			queueMicrotask(() =>
+				formulaire?.querySelector<HTMLElement>('select, button[type="submit"]')?.focus()
+			);
 		}
 	}
 	const ecritureIgnorer = creerEcriture();
@@ -135,12 +165,17 @@
 
 	function ligneAction(a: CombatAction) {
 		const cibleNom = a.target ? nom(a.target) : a.healTarget ? nom(a.healTarget) : '';
-		return { libelle: libelleAction(a), cible: cibleNom, cout: a.action === 'passer' ? '' : cout(a) };
+		return {
+			libelle: libelleAction(a),
+			cible: cibleNom,
+			cout: a.action === 'passer' ? '' : cout(a)
+		};
 	}
 	function regroupe(actions: CombatAction[]) {
 		// « Passer » remplit les actions restantes : une seule mention.
 		const out: CombatAction[] = [];
-		for (const a of actions) if (!(a.action === 'passer' && out.at(-1)?.action === 'passer')) out.push(a);
+		for (const a of actions)
+			if (!(a.action === 'passer' && out.at(-1)?.action === 'passer')) out.push(a);
 		return out;
 	}
 </script>
@@ -169,7 +204,10 @@
 							{@const l = ligneAction(a)}
 							<li class:passe={a.action === 'passer'}>
 								<span class="action">{l.libelle}</span>
-								{#if l.cible}<span class="cible"><span aria-hidden="true">→</span><span class="sr-only">sur</span> {l.cible}</span>{/if}
+								{#if l.cible}<span class="cible"
+										><span aria-hidden="true">→</span><span class="sr-only">sur</span>
+										{l.cible}</span
+									>{/if}
 								{#if l.cout}<span class="cout chiffres">{l.cout}</span>{/if}
 							</li>
 						{/each}
@@ -178,7 +216,12 @@
 					<span class="actions" aria-hidden="true"></span>
 				{/if}
 				{#if fait && !ko(f) && table.revue === null && etat.active}
-					<button type="button" class="geste" onclick={() => table.reprendreDeclaration(f.id)} aria-label="Modifier la déclaration de {f.name}">Modifier</button>
+					<button
+						type="button"
+						class="geste"
+						onclick={() => table.reprendreDeclaration(f.id)}
+						aria-label="Modifier la déclaration de {f.name}">Modifier</button
+					>
 				{/if}
 			</div>
 
@@ -187,17 +230,27 @@
 					<p class="joueur">{d.text} <span class="quand">proposée à {heure(d.at)}</span></p>
 					<div class="gestes-proposition">
 						<button type="button" class="geste" onclick={() => reprendre(f, d)}>Reprendre</button>
-						<form method="POST" action="?/ignorer" use:enhance={ecritureIgnorer.enhance({ verbe: 'Ignorée' })}>
+						<form
+							method="POST"
+							action="?/ignorer"
+							use:enhance={ecritureIgnorer.enhance({ verbe: 'Ignorée' })}
+						>
 							<input type="hidden" name="declaration" value={d.id} />
 							<input type="hidden" name="motif" value={motifIgnorer} />
-							<button type="submit" class="geste" disabled={ecritureIgnorer.enCours}>Ignorer</button>
+							<button type="submit" class="geste" disabled={ecritureIgnorer.enCours}>Ignorer</button
+							>
 						</form>
 					</div>
 				</div>
 			{/each}
 
 			{#if courant && fDeclarant}
-				<form class="declarer" bind:this={formulaire} onsubmit={declarer} aria-label="Déclaration de {f.name}">
+				<form
+					class="declarer"
+					bind:this={formulaire}
+					onsubmit={declarer}
+					aria-label="Déclaration de {f.name}"
+				>
 					<label class="champ action-champ">
 						<span>Action</span>
 						<select bind:value={choix}>
@@ -228,7 +281,9 @@
 						<Bouton variante="trait" type="submit">Déclarer</Bouton>
 						<button type="button" class="geste" onclick={() => table.passer(f.id)}>Passer</button>
 						{#if (etat.declarations[f.id] ?? []).length}
-							<button type="button" class="geste" onclick={() => table.retirerDerniere(f.id)}>Retirer la dernière</button>
+							<button type="button" class="geste" onclick={() => table.retirerDerniere(f.id)}
+								>Retirer la dernière</button
+							>
 						{/if}
 					</div>
 					{#if choisi?.option?.descText}
@@ -243,7 +298,9 @@
 {#if noteReprise}
 	<NoteDeMarge ton="info">{noteReprise}</NoteDeMarge>
 {:else if ecritureIgnorer.note && ecritureIgnorer.note.ton !== 'attente'}
-	<div aria-live="polite"><NoteDeMarge ton={ecritureIgnorer.note.ton}>{ecritureIgnorer.note.texte}</NoteDeMarge></div>
+	<div aria-live="polite">
+		<NoteDeMarge ton={ecritureIgnorer.note.ton}>{ecritureIgnorer.note.texte}</NoteDeMarge>
+	</div>
 {/if}
 
 <style>
@@ -266,8 +323,8 @@
 	}
 	.tete {
 		display: grid;
-		grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1.7fr) auto;
-		align-items: center;
+		grid-template-columns: 20px minmax(0, 1fr) auto;
+		align-items: start;
 		gap: 0 10px;
 		min-height: 44px;
 		padding: 2px 0;
@@ -282,9 +339,8 @@
 	}
 	.nom {
 		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		white-space: normal;
+		overflow-wrap: anywhere;
 		font: 600 14px/22px var(--corps);
 		color: var(--encre);
 	}
@@ -313,12 +369,14 @@
 		color: var(--rouille);
 	}
 	.actions {
+		grid-row: 2;
+		grid-column: 2 / -1;
 		display: grid;
 		min-width: 0;
 	}
 	.actions li {
 		display: flex;
-		flex-wrap: nowrap;
+		flex-wrap: wrap;
 		gap: 0 8px;
 		align-items: baseline;
 		min-width: 0;
@@ -333,11 +391,10 @@
 		white-space: nowrap;
 	}
 	.cible {
-		flex: 0 1 auto;
+		flex-basis: 100%;
 		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		white-space: normal;
+		overflow-wrap: anywhere;
 		color: var(--encre-2);
 	}
 	.cout {

@@ -48,7 +48,10 @@ export const actions: Actions = {
 	/** Corriger : l'ancienne version reste en rature dessous. */
 	corriger: action(async (event, data) => {
 		const { actor } = requireCharacter(event);
-		const entree = await amendEntry(event.locals.db, actor, { entryId: texte(data.entryId), text: texte(data.text) });
+		const entree = await amendEntry(event.locals.db, actor, {
+			entryId: texte(data.entryId),
+			text: texte(data.text)
+		});
 		return { corrigee: entree.id };
 	}),
 	/** Rayer : l'entrée entière est barrée, et reste lisible. */
@@ -60,7 +63,8 @@ export const actions: Actions = {
 	/** Proposer un fait (type · envers · texte) : il attend le tampon d'un MJ. */
 	proposerFait: action(async (event, data) => {
 		const { actor } = requireCharacter(event);
-		const kind = FACT_KINDS.find((k) => k === texte(data.kind)) ?? (texte(data.kind) as FactKindKey);
+		const kind =
+			FACT_KINDS.find((k) => k === texte(data.kind)) ?? (texte(data.kind) as FactKindKey);
 		const counterpart = texte(data.counterpart).trim();
 		const fait = await proposeFact(event.locals.db, actor, {
 			kind,

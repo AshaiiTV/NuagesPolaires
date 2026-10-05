@@ -23,16 +23,14 @@ describe('Serments — intégration PGlite', () => {
 	});
 	beforeAll(async () => {
 		test = await createTestDb();
-		await test.db
-			.insert(accounts)
-			.values(
-				['joueur', 'mj', 'designer', 'admin'].map((role) => ({
-					id: `test_${role}`,
-					role: role as Role,
-					pseudo: role,
-					passwordHash: 'test'
-				}))
-			);
+		await test.db.insert(accounts).values(
+			['joueur', 'mj', 'designer', 'admin'].map((role) => ({
+				id: `test_${role}`,
+				role: role as Role,
+				pseudo: role,
+				passwordHash: 'test'
+			}))
+		);
 	}, 30000);
 	afterAll(async () => {
 		await test?.close();
@@ -139,18 +137,16 @@ describe('Serments — intégration PGlite', () => {
 		});
 	it('synchronise les porteurs et conserve les conséquences brutes motivées', async () => {
 		const row = await getOath(test.db, actor('admin'), 'duelliste');
-		await test.db
-			.insert(characters)
-			.values({
-				id: 'carrier',
-				name: 'Porteur',
-				oathId: row.id,
-				level: 3,
-				weapon: 'Ancienne arme',
-				branch: row.branches[0].label,
-				pvMax: 100,
-				pvCur: 90
-			});
+		await test.db.insert(characters).values({
+			id: 'carrier',
+			name: 'Porteur',
+			oathId: row.id,
+			level: 3,
+			weapon: 'Ancienne arme',
+			branch: row.branches[0].label,
+			pvMax: 100,
+			pvCur: 90
+		});
 		const branches = { bA: { nom: 'Branche renommée', paliers: [] }, bB: null };
 		await updateOath(test.db, actor('admin'), {
 			id: row.id,

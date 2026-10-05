@@ -32,7 +32,9 @@ export const load: PageServerLoad = async (event) => {
 			waiting:
 				vue.state === 'staff'
 					? vue.waiting
-					: composerAttente(vue.waiting, vue.upcoming, new Date(), contexte?.table ?? null).map((w) => (w.kind === 'table' ? { ...w, href: `/carnet/table/${w.id}` } : w)),
+					: composerAttente(vue.waiting, vue.upcoming, new Date(), contexte?.table ?? null).map(
+							(w) => (w.kind === 'table' ? { ...w, href: `/carnet/table/${w.id}` } : w)
+						),
 			since: vue.since.map((l) => ({ ...l, href: versPage(l.href) }))
 		}
 	};

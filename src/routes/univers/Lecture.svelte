@@ -1,6 +1,7 @@
 <script lang="ts">
 	// Une page de lecture de L'univers : résumé et sommaire en marge, texte à largeur de lecture,
 	// chapitres numérotés, tableaux sur la réglure, pied « Tourner ».
+	import NoteDeMarge from '$lib/ui/NoteDeMarge.svelte';
 	import Page from '$lib/ui/Page.svelte';
 	import Depliant from './Depliant.svelte';
 	import Sommaire from './Sommaire.svelte';
@@ -77,6 +78,9 @@
 
 <Page repere="NP / 05 — L’univers" titre={titre.debut} titreVoix={titre.voix} grain>
 	{#snippet marge()}
+		{#if slug === 'systeme'}<NoteDeMarge
+				>Valeurs appliquées à la Table : voir la règle sous le pouce</NoteDeMarge
+			>{/if}
 		{#if enMarge}<p class="voix">{resume}</p>{/if}
 		{#if lecture.entrees.length}
 			<div class="sommaire" class:seul={!enMarge}><Sommaire sections={lecture.entrees} /></div>
@@ -92,10 +96,36 @@
 		<!-- eslint-disable-next-line svelte/no-at-html-tags -- HTML issu de renderMarkdown : les balises brutes de la source y sont échappées -->
 		{@html lecture.html}
 	</div>
-	{#snippet pied()}<Tourner {previous} {next} />{/snippet}
+	{#snippet pied()}
+		{#if slug === 'systeme'}<div class="annotation-systeme">
+				<NoteDeMarge>Valeurs appliquées à la Table : voir la règle sous le pouce</NoteDeMarge>
+			</div>{/if}<Tourner {previous} {next} />{/snippet}
 </Page>
 
 <style>
+	.lecture :global(li.comportement) {
+		list-style: none;
+	}
+	.lecture :global(li.comportement)::before {
+		display: none;
+	}
+	.lecture :global(li.comportement .signe) {
+		position: absolute;
+		left: 2px;
+		top: 12px;
+	}
+	.annotation-systeme {
+		display: none;
+	}
+	@media (max-width: 760px) {
+		.annotation-systeme {
+			display: block;
+		}
+	}
+	.lecture :global(td:nth-child(2)),
+	.lecture :global(td:nth-child(3)) {
+		white-space: nowrap;
+	}
 	/* Le sommaire collant commence vers 200 px du haut de la fenêtre : huit lignes de réserve
 	   lui laissent toute la hauteur restante, moins une ligne de marge basse. */
 	.sommaire {

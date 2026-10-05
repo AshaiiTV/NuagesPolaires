@@ -215,7 +215,8 @@ export const grantCombatXpSchema = z.object({
 	participationPct: z
 		.number({ error: 'Participation invalide.' })
 		.min(0, { error: 'Participation invalide.' })
-		.max(100, { error: 'Participation invalide.' }).transform(Math.trunc),
+		.max(100, { error: 'Participation invalide.' })
+		.transform(Math.trunc),
 	/** Nom de la créature pour la ligne « +X XP (<créature>, <part>%) » (audit 02 §8). */
 	beastName: z.string().trim().max(LIMITS.name).optional(),
 	combatId: z.string().trim().min(1).max(LIMITS.actionId).optional(),

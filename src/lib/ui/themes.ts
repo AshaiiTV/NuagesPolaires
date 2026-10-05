@@ -83,7 +83,7 @@ export const THEMES: Theme[] = [
 	},
 	{
 		id: 'aquaris',
-		name: 'Aquaris — Royaume englouti',
+		name: 'Aquaris',
 		ton: 'sombre',
 		tokens: {
 			'--bureau': '#011018',
@@ -99,7 +99,7 @@ export const THEMES: Theme[] = [
 	},
 	{
 		id: 'easter',
-		name: 'Pâques enchantées',
+		name: 'Printemps Éveillé',
 		ton: 'clair',
 		tokens: {
 			'--bureau': '#effbe9',
@@ -115,7 +115,7 @@ export const THEMES: Theme[] = [
 	},
 	{
 		id: 'halloween',
-		name: 'Veille d’Halloween',
+		name: 'Nuit des Âmes',
 		ton: 'sombre',
 		tokens: {
 			'--bureau': '#0a0911',
@@ -131,7 +131,7 @@ export const THEMES: Theme[] = [
 	},
 	{
 		id: 'noel',
-		name: 'Noël en fête',
+		name: 'Veillée Hivernale',
 		ton: 'sombre',
 		tokens: {
 			'--bureau': '#08140d',
@@ -147,7 +147,7 @@ export const THEMES: Theme[] = [
 	},
 	{
 		id: 'bloodmoon',
-		name: 'Lune de sang',
+		name: 'Lune de Sang',
 		ton: 'sombre',
 		tokens: {
 			'--bureau': '#050102',
@@ -169,7 +169,9 @@ const NATIFS = new Map(THEMES.map((t) => [t.id, t]));
  * Nom et description d'un thème natif tels que le carnet les écrit (03-vision §7) : huit couleurs,
  * sans ambiance ni mouvement. Un thème créé dans le Registre garde les siens.
  */
-export function libelleTheme<T extends { id: string; name: string; description?: string | null }>(theme: T): T {
+export function libelleTheme<T extends { id: string; name: string; description?: string | null }>(
+	theme: T
+): T {
 	const natif = NATIFS.get(theme.id);
 	return natif ? { ...theme, name: natif.name, description: natif.description } : theme;
 }

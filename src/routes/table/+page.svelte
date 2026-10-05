@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { chemin } from '$lib/ui/adresse';
 	// /table — les Tables ouvertes et récentes, et « Ouvrir une Table » (03-vision §5.8).
 	import { enhance } from '$app/forms';
 	import Page from '$lib/ui/Page.svelte';
@@ -11,6 +12,7 @@
 	import Encre from '$lib/ui/Encre.svelte';
 	import Sommaire from '$lib/ui/table/Sommaire.svelte';
 	import { creerEcriture } from '$lib/ui/ecriture.svelte';
+	import { untrack } from 'svelte';
 	import { dateCourte, heure } from '$lib/ui/dates';
 	import { statutTable } from '$lib/ui/table/texte';
 	import type { PageProps } from './$types';
@@ -18,13 +20,17 @@
 	let { data, form }: PageProps = $props();
 
 	const ecriture = creerEcriture();
-	const valeurs = $derived((form as { values?: Record<string, string | string[]> } | null)?.values ?? {});
+	const valeurs = $derived(
+		(form as { values?: Record<string, string | string[]> } | null)?.values ?? {}
+	);
 
 	// La saisie survit à un refus : les cases et les quantités sont tenues ici.
 	let nom = $state('');
 	let salon = $state('');
 	let choisis = $state<string[]>([]);
-	let quantites = $state<Record<string, number>>({});
+	let quantites = $state<Record<string, number>>(
+		untrack(() => (data.creature ? { [data.creature]: 1 } : {}))
+	);
 	let filtre = $state('');
 	$effect(() => {
 		if (valeurs.nom && !nom) nom = String(valeurs.nom);
@@ -33,14 +39,17 @@
 
 	const creaturesVisibles = $derived(
 		filtre.trim()
-			? data.creatures.filter((c) => `${c.nom} ${c.sousTitre}`.toLowerCase().includes(filtre.trim().toLowerCase()))
+			? data.creatures.filter((c) =>
+					`${c.nom} ${c.sousTitre}`.toLowerCase().includes(filtre.trim().toLowerCase())
+				)
 			: data.creatures
 	);
 	const nbAdversaires = $derived(Object.values(quantites).reduce((n, q) => n + (q > 0 ? q : 0), 0));
 	const resume = $derived.by(() => {
 		const e = choisis.length;
 		const a = nbAdversaires;
-		if (!e && !a) return 'Une Table peut s’ouvrir vide : tu ajoutes les combattants avant de démarrer.';
+		if (!e && !a)
+			return 'Une Table peut s’ouvrir vide : tu ajoutes les combattants avant de démarrer.';
 		const parts = [];
 		if (e) parts.push(`${e} Élève${e > 1 ? 's' : ''} du Serment`);
 		if (a) parts.push(`${a} adversaire${a > 1 ? 's' : ''}`);
@@ -51,7 +60,8 @@
 		const q = Math.max(0, Math.min(30, (quantites[id] ?? 0) + delta));
 		quantites = { ...quantites, [id]: q };
 	}
-	const releve = (iso: string | null) => (iso ? `relevé ${heure(iso)} · ${dateCourte(iso)}` : 'jamais sauvegardée');
+	const releve = (iso: string | null) =>
+		iso ? `relevé ${heure(iso)} · ${dateCourte(iso)}` : 'jamais sauvegardée';
 </script>
 
 <svelte:head><title>La Table — Nuages Polaires</title></svelte:head>
@@ -69,9 +79,11 @@
 			<ul class="tables">
 				{#each data.ouvertes as t (t.id)}
 					<li>
-						<a class="nom" href="/table/combat/{t.id}">{t.name}</a>
+						<a class="nom" href={chemin(`/table/combat/${t.id}`)}>{t.name}</a>
 						<span class="statut">{statutTable(t.status)}</span>
-						<span class="round chiffres">{t.status === 'preparation' ? 'avant le round 1' : `Round ${t.round}`}</span>
+						<span class="round chiffres"
+							>{t.status === 'preparation' ? 'avant le round 1' : `Round ${t.round}`}</span
+						>
 						<span class="releve chiffres">{releve(t.savedAt)}</span>
 						<Bouton variante="texte" href="/table/combat/{t.id}" fleche="→">Reprendre</Bouton>
 					</li>
@@ -92,9 +104,11 @@
 			<ul class="tables">
 				{#each data.recentes as t (t.id)}
 					<li class="repliee">
-						<a class="nom" href="/table/archives/{t.id}">{t.label || t.name}</a>
+						<a class="nom" href={chemin(`/table/archives/${t.id}`)}>{t.label || t.name}</a>
 						<span class="statut">{statutTable(t.status)}</span>
-						<span class="round chiffres">{t.round > 1 ? `${t.round - 1} rounds` : '1 round'}</span>
+						<span class="round chiffres"
+							>{Math.max(1, t.round - 1)} round{t.round > 2 ? 's' : ''}</span
+						>
 						<span class="releve chiffres">{releve(t.savedAt)}</span>
 						<Bouton variante="texte" href="/table/archives/{t.id}" fleche="→">Lire le récit</Bouton>
 					</li>
@@ -111,7 +125,15 @@
 			use:enhance={ecriture.enhance({ verbe: 'Ouverte' })}
 		>
 			<div class="identite">
-				<Champ libelle="Nom de la Table" name="nom" bind:value={nom} required maxlength={200} placeholder="Col des brumes" autocomplete="off" />
+				<Champ
+					libelle="Nom de la Table"
+					name="nom"
+					bind:value={nom}
+					required
+					maxlength={200}
+					placeholder="Col des brumes"
+					autocomplete="off"
+				/>
 				<Champ
 					libelle="Salon Discord"
 					name="salon"
@@ -134,9 +156,15 @@
 										<input type="checkbox" name="personnages" value={p.id} bind:group={choisis} />
 										<span class="qui">
 											<span class="nom-ligne">{p.nom}</span>
-											<span class="detail">{p.serment} · niv. {p.niveau}{#if !p.relie} · non relié{/if}</span>
+											<span class="detail"
+												>{p.serment} · niv. {p.niveau}{#if !p.relie}
+													· non relié{/if}</span
+											>
 										</span>
-										<span class="chiffres res">PV {p.pv.cur}/{p.pv.max} · EP {p.ep.cur}/{p.ep.max} · EM {p.em.cur}/{p.em.max}</span>
+										<span class="chiffres res"
+											>PV {p.pv.cur}/{p.pv.max} · EP {p.ep.cur}/{p.ep.max} · EM {p.em.cur}/{p.em
+												.max}</span
+										>
 									</label>
 								</li>
 							{/each}
@@ -151,7 +179,12 @@
 					{#if data.creatures.length > 8}
 						<label class="filtre">
 							<span class="sr-only">Chercher une créature</span>
-							<input type="search" bind:value={filtre} placeholder="Chercher une créature…" autocomplete="off" />
+							<input
+								type="search"
+								bind:value={filtre}
+								placeholder="Chercher une créature…"
+								autocomplete="off"
+							/>
 						</label>
 					{/if}
 					{#if creaturesVisibles.length}
@@ -163,11 +196,20 @@
 										<span class="nom-ligne">{c.nom}</span>
 										<span class="detail">
 											niv. {c.niveau}
-											{#if c.comportement}<Losange couleur={c.couleur} libelle={c.comportement} />{/if}
+											{#if c.comportement}<Losange
+													couleur={c.couleur}
+													libelle={c.comportement}
+												/>{/if}
 										</span>
 									</span>
 									<span class="quantite">
-										<button type="button" class="pas" onclick={() => changerQuantite(c.id, -1)} disabled={q === 0} aria-label="Un {c.nom} de moins">−</button>
+										<button
+											type="button"
+											class="pas"
+											onclick={() => changerQuantite(c.id, -1)}
+											disabled={q === 0}
+											aria-label="Un {c.nom} de moins">−</button
+										>
 										<input
 											class="chiffres"
 											type="number"
@@ -176,10 +218,19 @@
 											max="30"
 											inputmode="numeric"
 											value={q}
-											oninput={(e) => (quantites = { ...quantites, [c.id]: Math.max(0, Math.min(30, Number(e.currentTarget.value) || 0)) })}
+											oninput={(e) =>
+												(quantites = {
+													...quantites,
+													[c.id]: Math.max(0, Math.min(30, Number(e.currentTarget.value) || 0))
+												})}
 											aria-label="Quantité de {c.nom}"
 										/>
-										<button type="button" class="pas" onclick={() => changerQuantite(c.id, 1)} aria-label="Un {c.nom} de plus">+</button>
+										<button
+											type="button"
+											class="pas"
+											onclick={() => changerQuantite(c.id, 1)}
+											aria-label="Un {c.nom} de plus">+</button
+										>
 									</span>
 								</li>
 							{/each}

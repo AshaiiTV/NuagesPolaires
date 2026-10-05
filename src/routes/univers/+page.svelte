@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { chemin } from '$lib/ui/adresse';
 	// Sommaire du cahier « L'univers » : une ligne par chapitre, numéro à l’encre, résumé, flèche.
 	import Page from '$lib/ui/Page.svelte';
 	import { typo } from './typo';
@@ -22,7 +23,7 @@
 	<ol class="sommaire">
 		{#each data.chapters as chapter, i (chapter.href)}
 			<li>
-				<a href={chapter.href}>
+				<a href={chemin(chapter.href)}>
 					<span class="numero chiffres">{String(i + 1).padStart(2, '0')}</span>
 					<span class="titre">{chapter.title}</span>
 					<span class="fleche" aria-hidden="true">→</span>

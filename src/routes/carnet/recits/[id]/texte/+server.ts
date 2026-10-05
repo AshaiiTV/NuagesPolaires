@@ -30,7 +30,8 @@ export const GET: RequestHandler = async (event) => {
 			}
 		});
 	} catch (e) {
-		if (isNpError(e) && e.status >= 400 && e.status < 500) error(404, { message: 'Ce récit n’est pas dans ton carnet.', code: 'NOT_FOUND' });
+		if (isNpError(e) && e.status >= 400 && e.status < 500)
+			error(404, { message: 'Ce récit n’est pas dans ton carnet.', code: 'NOT_FOUND' });
 		throw e;
 	}
 };

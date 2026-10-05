@@ -24,7 +24,8 @@
 
 <span class="sens">
 	<span class="losange" class:contour style:background={couleur} aria-hidden="true"></span>
-	<span class="libelle">{libelle}</span>{#if detail}<span class="detail chiffres">{detail}</span>{/if}
+	<span class="libelle">{libelle}</span>{#if detail}<span class="detail chiffres">{detail}</span
+		>{/if}
 </span>
 
 <style>

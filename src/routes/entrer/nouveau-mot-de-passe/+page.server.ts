@@ -26,8 +26,10 @@ export const actions: Actions = {
 	terminer: action(async (event, data) => {
 		const resetActor = requireResetSession(event);
 		const next = String(data.next ?? '');
-		if (next.length < MIN_PASSWORD_LENGTH) throw new NpError('INVALID_PASSWORD', PASSWORD_TOO_SHORT_MESSAGE, 400);
-		if (next !== String(data.passwordConfirm ?? '')) throw new NpError('MISMATCH', CONFIRMATION_MESSAGE, 400);
+		if (next.length < MIN_PASSWORD_LENGTH)
+			throw new NpError('INVALID_PASSWORD', PASSWORD_TOO_SHORT_MESSAGE, 400);
+		if (next !== String(data.passwordConfirm ?? ''))
+			throw new NpError('MISMATCH', CONFIRMATION_MESSAGE, 400);
 		const result = await completeForcedReset(event.locals.db, resetActor, { next });
 		setSessionCookie(event.cookies, result.sessionToken, new Date(result.expiresAt));
 		const lu = await readSession(event.locals.db, result.sessionToken);

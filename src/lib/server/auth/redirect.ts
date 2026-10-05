@@ -1,6 +1,10 @@
 /** Retour de connexion normalisé à l'origine de la requête. */
 export function safeLoginReturn(value: unknown, origin: string): string | null {
-	if (typeof value !== 'string' || value.length > 512 || /[\u0000-\u001f\u007f]/.test(value))
+	if (
+		typeof value !== 'string' ||
+		value.length > 512 ||
+		[...value].some((c) => c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127)
+	)
 		return null;
 	try {
 		const url = new URL(value, origin);

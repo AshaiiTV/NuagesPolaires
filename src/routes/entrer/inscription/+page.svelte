@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	// Rejoindre l'aventure : le règlement d'abord (« J'accepte — Continuer »), puis le compte.
 	// Après l'inscription, le carnet s'ouvre en attente de liaison (03-vision §4, §5.2 ; P6).
 	import { untrack } from 'svelte';
@@ -44,8 +45,13 @@
 </script>
 
 <svelte:head>
-	<title>{data.etape === 'compte' ? 'Ton compte' : 'Le règlement'} — Rejoindre — Nuages Polaires</title>
-	<meta name="description" content="Rejoindre Nuages Polaires : lire le règlement, puis ouvrir ton carnet." />
+	<title
+		>{data.etape === 'compte' ? 'Ton compte' : 'Le règlement'} — Rejoindre — Nuages Polaires</title
+	>
+	<meta
+		name="description"
+		content="Rejoindre Nuages Polaires : lire le règlement, puis ouvrir ton carnet."
+	/>
 </svelte:head>
 
 {#snippet suivi()}
@@ -71,28 +77,44 @@
 				{@render suivi()}
 				<p class="voix chapeau">L’inscription passe toujours par le règlement.</p>
 				{#if reglement.entrees.length}
-					<div class="sommaire"><Sommaire sections={reglement.entrees} libelle="Sommaire du règlement" /></div>
+					<div class="sommaire">
+						<Sommaire sections={reglement.entrees} libelle="Sommaire du règlement" />
+					</div>
 				{/if}
 			{/snippet}
 			{#snippet bande()}
 				{@render suivi()}
 				{#if reglement.entrees.length}
-					<Depliant libelle="Sommaire du règlement"><Sommaire sections={reglement.entrees} libelle="Sommaire du règlement" /></Depliant>
+					<Depliant libelle="Sommaire du règlement"
+						><Sommaire sections={reglement.entrees} libelle="Sommaire du règlement" /></Depliant
+					>
 				{/if}
 			{/snippet}
 
 			<header class="ouverture">
 				<p class="repere">I · {typo(reglement.titre)}</p>
 				<p class="voix">Lis-le jusqu’au bout : ton accord se donne en bas de la page.</p>
-				<p class="aller"><Bouton variante="texte" href="#accord" fleche="↓">Aller à l’accord</Bouton></p>
+				<p class="aller">
+					<Bouton variante="texte" href="#accord" fleche="↓">Aller à l’accord</Bouton>
+				</p>
 			</header>
 
 			<TexteReglement html={reglement.html} />
 
-			<form method="GET" action="/entrer/inscription" class="accord" id="accord" tabindex="-1" aria-label="Accord au règlement">
+			<form
+				method="GET"
+				action="/entrer/inscription"
+				class="accord"
+				id="accord"
+				tabindex="-1"
+				aria-label="Accord au règlement"
+			>
 				<input type="hidden" name="etape" value="compte" />
 				<input type="hidden" name="reglement" value="accepte" />
-				<p class="voix">En continuant, tu acceptes ce règlement, sans réserve. Il se relit à tout moment dans L’univers.</p>
+				<p class="voix">
+					En continuant, tu acceptes ce règlement, sans réserve. Il se relit à tout moment dans
+					L’univers.
+				</p>
 				<div class="gestes">
 					<Bouton variante="ruban" type="submit" fleche="→">J’accepte — Continuer</Bouton>
 					<Bouton variante="texte" href="/">Pas maintenant</Bouton>
@@ -103,13 +125,22 @@
 		<Page repere="NP / 00 — Rejoindre" titre="Ton" titreVoix="compte.">
 			{#snippet marge()}
 				{@render suivi()}
-				<p class="voix chapeau">Ton compte ouvre le carnet. Il ne crée pas ta fiche : un administrateur la relie à ton personnage.</p>
+				<p class="voix chapeau">
+					Ton compte ouvre le carnet. Il ne crée pas ta fiche : un administrateur la relie à ton
+					personnage.
+				</p>
 			{/snippet}
 			{#snippet bande()}
 				{@render suivi()}
 			{/snippet}
 
-			<form method="POST" action="?/inscrire" use:enhance={ecriture.enhance({ verbe: 'Ouvert' })} class="formulaire" novalidate>
+			<form
+				method="POST"
+				action="?/inscrire"
+				use:enhance={ecriture.enhance({ verbe: 'Ouvert' })}
+				class="formulaire"
+				novalidate
+			>
 				<input type="hidden" name="acceptRules" value="on" />
 				<Champ
 					libelle="Pseudo"
@@ -145,12 +176,18 @@
 					{#if ecriture.note?.ton === 'attente'}
 						<NoteDeMarge ton="attente">{ecriture.note.texte}</NoteDeMarge>
 					{:else if refus}
-						<NoteDeMarge ton="refus">{refus.champ ? 'Ton compte n’est pas encore ouvert : corrige la ligne marquée.' : refus.texte}</NoteDeMarge>
+						<NoteDeMarge ton="refus"
+							>{refus.champ
+								? 'Ton compte n’est pas encore ouvert : corrige la ligne marquée.'
+								: refus.texte}</NoteDeMarge
+						>
 					{/if}
 				</div>
 
 				<div class="gestes">
-					<Bouton variante="ruban" type="submit" fleche="→" disabled={ecriture.enCours}>Ouvrir mon carnet</Bouton>
+					<Bouton variante="ruban" type="submit" fleche="→" disabled={ecriture.enCours}
+						>Ouvrir mon carnet</Bouton
+					>
 					<Bouton variante="texte" href="/entrer/inscription">Relire le règlement</Bouton>
 				</div>
 			</form>
@@ -159,10 +196,14 @@
 				<h2 id="titre-ensuite" class="repere">Ensuite</h2>
 				<ol>
 					<li><span class="numero">01</span>Ton carnet s’ouvre, en attente de liaison.</li>
-					<li><span class="numero">02</span>Tu transmets ton pseudo à un administrateur, sur Discord.</li>
-					<li><span class="numero">03</span>Il relie ton compte à ton personnage : ta fiche apparaît.</li>
+					<li>
+						<span class="numero">02</span>Tu transmets ton pseudo à un administrateur, sur Discord.
+					</li>
+					<li>
+						<span class="numero">03</span>Il relie ton compte à ton personnage : ta fiche apparaît.
+					</li>
 				</ol>
-				<p class="aide">Déjà un compte ? <a href="/entrer">Rouvrir le carnet</a></p>
+				<p class="aide">Déjà un compte ? <a href={resolve('/entrer')}>Rouvrir le carnet</a></p>
 			</section>
 		</Page>
 	{/if}
@@ -196,7 +237,7 @@
 	}
 	.numero {
 		font: 500 18px / var(--ligne) var(--voix);
-		color: var(--tampon);
+		color: var(--encre-2);
 	}
 	.ici .titre {
 		color: var(--encre);
@@ -288,7 +329,7 @@
 		font: var(--t-repere);
 		line-height: var(--ligne);
 		letter-spacing: var(--approche-repere);
-		color: var(--tampon);
+		color: var(--encre-2);
 	}
 	.aide {
 		margin-top: var(--ligne);

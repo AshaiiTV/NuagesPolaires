@@ -14,42 +14,42 @@ Les fichiers de ce dossier importent un snapshot **local vérifié**, hors des f
 
 Les lignes normalisées utilisent les types d’insertion du schéma Drizzle existant ; aucun type de vue de l’interface n’est ajouté. `LegacyRecord = Record<string, unknown>`.
 
-| Fonction | Signature et résultat |
-|---|---|
-| `readSnapshot` | `(filename: string): Promise<Snapshot>` |
-| `validateSnapshot` | `(value: unknown): Snapshot` |
-| `makeSnapshot` | `(rows: SnapshotRow[], exportedAt?: string): Snapshot` |
-| `canonicalJson` | `(value: unknown): string` |
-| `checksum` | `(value: unknown): string` |
-| `normalizeAccount` | `(value: unknown, identity?: unknown)` → `{ row, characterId, unlocked, blocked }` |
-| `normalizeOaths` | `(value: unknown): OathDefinition[]` ; réutilise `mergeOathCatalogue` |
-| `unknownOath` | `(name: string): OathDefinition` |
-| `normalizeOath` | `(o: OathDefinition, catalogue: readonly OathDefinition[])` → ligne `oaths` |
-| `normalizeCharacter` | `(value: unknown, catalogue: readonly OathDefinition[], identity?: unknown)` → `{ row, oath, items, history, unlocked, blocked }` ; réutilise `normalizeLegacyProgression` |
-| `normalizeItem` | `(value: unknown, characterId: string, position: number)` → ligne `character_items` |
-| `normalizeHistory` | `(value: unknown, characterId: string, position: number, dismissed?: unknown[])` → ligne `character_history` |
-| `normalizeBeast` | `(value: unknown, identity?: unknown)` → `{ row, zones }` |
-| `normalizeEvent` | `(value: unknown, identity?: unknown)` → `{ row, participants }` |
-| `normalizeCombat` | `(value: unknown, owner: string, identity?: unknown)` → `{ row, legacyId, rawState, participants }` ; réutilise `fromLegacyArchive` |
-| `normalizeStaffLog` | `(value: unknown, identity: unknown, archiveId?: string \| null)` → ligne `staff_log` |
-| `normalizeStaffArchive` | `(value: unknown, identity: unknown)` → `{ row, entries }` |
-| `normalizeAudit` | `(value: unknown, identity: unknown)` → ligne `audit_log` |
-| `normalizeSpawn` | `(value: unknown)` → `{ totals, totalDraws, zones, runs }` |
-| `normalizeThemes` | `(value: unknown, visibility: unknown)` → lignes `themes` fusionnées avec `THEME_SEED` |
-| `normalizeThemeId` | `(value: unknown): string` |
-| `decodeEntities` | `(value: string): string` ; un seul décodage |
-| `object` | `(value: unknown): LegacyRecord` ; validation Zod |
-| `list` | `(value: unknown): unknown[]` |
-| `text` | `(value: unknown, fallback?: string): string` |
-| `integer` | `(value: unknown, fallback?: number, min?: number): number` |
-| `strings` | `(value: unknown): string[]` |
-| `date` | `(value: unknown, fallback?: Date \| null): Date \| null` |
-| `stableId` | `(prefix: string, value: unknown): string` |
-| `sourceId` | `(raw: LegacyRecord, prefix: string, identity: unknown): string` ; id source, sinon hash du contenu |
-| `migrateSnapshot` | `(db: Db, snapshot: Snapshot, options: MigrationOptions): Promise<MigrationReport>` ; `MigrationOptions = { dryRun: boolean }` |
-| `createReport` | `(dryRun: boolean): MigrationReport` |
-| `tableCounts` | `(report: MigrationReport, table: string): TableCounts` |
-| `renderReport` | `(report: MigrationReport): string` ; Markdown |
+| Fonction                | Signature et résultat                                                                                                                                                      |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `readSnapshot`          | `(filename: string): Promise<Snapshot>`                                                                                                                                    |
+| `validateSnapshot`      | `(value: unknown): Snapshot`                                                                                                                                               |
+| `makeSnapshot`          | `(rows: SnapshotRow[], exportedAt?: string): Snapshot`                                                                                                                     |
+| `canonicalJson`         | `(value: unknown): string`                                                                                                                                                 |
+| `checksum`              | `(value: unknown): string`                                                                                                                                                 |
+| `normalizeAccount`      | `(value: unknown, identity?: unknown)` → `{ row, characterId, unlocked, blocked }`                                                                                         |
+| `normalizeOaths`        | `(value: unknown): OathDefinition[]` ; réutilise `mergeOathCatalogue`                                                                                                      |
+| `unknownOath`           | `(name: string): OathDefinition`                                                                                                                                           |
+| `normalizeOath`         | `(o: OathDefinition, catalogue: readonly OathDefinition[])` → ligne `oaths`                                                                                                |
+| `normalizeCharacter`    | `(value: unknown, catalogue: readonly OathDefinition[], identity?: unknown)` → `{ row, oath, items, history, unlocked, blocked }` ; réutilise `normalizeLegacyProgression` |
+| `normalizeItem`         | `(value: unknown, characterId: string, position: number)` → ligne `character_items`                                                                                        |
+| `normalizeHistory`      | `(value: unknown, characterId: string, position: number, dismissed?: unknown[])` → ligne `character_history`                                                               |
+| `normalizeBeast`        | `(value: unknown, identity?: unknown)` → `{ row, zones }`                                                                                                                  |
+| `normalizeEvent`        | `(value: unknown, identity?: unknown)` → `{ row, participants }`                                                                                                           |
+| `normalizeCombat`       | `(value: unknown, owner: string, identity?: unknown)` → `{ row, legacyId, rawState, participants }` ; réutilise `fromLegacyArchive`                                        |
+| `normalizeStaffLog`     | `(value: unknown, identity: unknown, archiveId?: string \| null)` → ligne `staff_log`                                                                                      |
+| `normalizeStaffArchive` | `(value: unknown, identity: unknown)` → `{ row, entries }`                                                                                                                 |
+| `normalizeAudit`        | `(value: unknown, identity: unknown)` → ligne `audit_log`                                                                                                                  |
+| `normalizeSpawn`        | `(value: unknown)` → `{ totals, totalDraws, zones, runs }`                                                                                                                 |
+| `normalizeThemes`       | `(value: unknown, visibility: unknown)` → lignes `themes` fusionnées avec `THEME_SEED`                                                                                     |
+| `normalizeThemeId`      | `(value: unknown): string`                                                                                                                                                 |
+| `decodeEntities`        | `(value: string): string` ; un seul décodage                                                                                                                               |
+| `object`                | `(value: unknown): LegacyRecord` ; validation Zod                                                                                                                          |
+| `list`                  | `(value: unknown): unknown[]`                                                                                                                                              |
+| `text`                  | `(value: unknown, fallback?: string): string`                                                                                                                              |
+| `integer`               | `(value: unknown, fallback?: number, min?: number): number`                                                                                                                |
+| `strings`               | `(value: unknown): string[]`                                                                                                                                               |
+| `date`                  | `(value: unknown, fallback?: Date \| null): Date \| null`                                                                                                                  |
+| `stableId`              | `(prefix: string, value: unknown): string`                                                                                                                                 |
+| `sourceId`              | `(raw: LegacyRecord, prefix: string, identity: unknown): string` ; id source, sinon hash du contenu                                                                        |
+| `migrateSnapshot`       | `(db: Db, snapshot: Snapshot, options: MigrationOptions): Promise<MigrationReport>` ; `MigrationOptions = { dryRun: boolean }`                                             |
+| `createReport`          | `(dryRun: boolean): MigrationReport`                                                                                                                                       |
+| `tableCounts`           | `(report: MigrationReport, table: string): TableCounts`                                                                                                                    |
+| `renderReport`          | `(report: MigrationReport): string` ; Markdown                                                                                                                             |
 
 `SnapshotError` expose les codes du vérificateur hérité : format, lignes, JSONB, doublon, ordre, compte, empreinte et lecture du fichier. Les types `Snapshot`, `SnapshotRow`, `SnapshotErrorCode`, `MigrationOptions`, `MigrationReport`, `MigrationAnomaly` et `TableCounts` sont exportés ; les constantes `EPOCH` et `TRANSFORMER_VERSION` le sont aussi.
 

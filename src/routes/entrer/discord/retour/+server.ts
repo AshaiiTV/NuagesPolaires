@@ -26,7 +26,8 @@ export const GET: RequestHandler = async (event) => {
 	const code = url.searchParams.get('code') ?? '';
 	const state = url.searchParams.get('state') ?? '';
 	// Refus ou abandon côté Discord : rien n'a changé.
-	if (url.searchParams.has('error') || !code || !state) redirect(303, `${depart}?discord=annule${actor ? '#discord' : ''}`);
+	if (url.searchParams.has('error') || !code || !state)
+		redirect(303, `${depart}?discord=annule${actor ? '#discord' : ''}`);
 
 	let destination: string;
 	try {

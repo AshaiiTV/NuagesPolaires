@@ -22,7 +22,8 @@
 	const depuis = $derived(dateLongue(compte.createdAt).replace(/^1 /, '1er '));
 	const admin = $derived(compte.role === 'admin');
 	/** « de Kael Morvan », « d’Aria Lunval » : l'élision devant une voyelle ou un h muet. */
-	const de = (nom: string) => (/^[aeiouyhàâäéèêëîïôöùûüAEIOUYHÀÂÄÉÈÊËÎÏÔÖÙÛÜ]/.test(nom) ? `d’${nom}` : `de ${nom}`);
+	const de = (nom: string) =>
+		/^[aeiouyhàâäéèêëîïôöùûüAEIOUYHÀÂÄÉÈÊËÎÏÔÖÙÛÜ]/.test(nom) ? `d’${nom}` : `de ${nom}`;
 
 	// ── Mot de passe ──
 	const ecritureMdp = creerEcriture();
@@ -37,7 +38,13 @@
 		const texte = note?.texte ?? sansJs?.message;
 		if (!texte) return null;
 		const champ =
-			code === 'WRONG_PASSWORD' ? 'current' : code === 'INVALID_PASSWORD' ? 'next' : code === 'MISMATCH' ? 'passwordConfirm' : null;
+			code === 'WRONG_PASSWORD'
+				? 'current'
+				: code === 'INVALID_PASSWORD'
+					? 'next'
+					: code === 'MISMATCH'
+						? 'passwordConfirm'
+						: null;
 		return { champ, texte };
 	});
 
@@ -57,7 +64,12 @@
 		{ id: 'identite', title: 'Identité', level: 2, numero: '01' },
 		{ id: 'mot-de-passe', title: 'Mot de passe', level: 2, numero: '02' },
 		...(data.discordActif ? [{ id: 'discord', title: 'Discord', level: 2, numero: '03' }] : []),
-		{ id: 'quitter', title: 'Quitter le carnet', level: 2, numero: data.discordActif ? '04' : '03' },
+		{
+			id: 'quitter',
+			title: 'Quitter le carnet',
+			level: 2,
+			numero: data.discordActif ? '04' : '03'
+		},
 		{ id: 'fermer', title: 'Fermer le compte', level: 2, numero: data.discordActif ? '05' : '04' }
 	]);
 	const numero = (id: string) => sections.find((s) => s.id === id)?.numero;
@@ -69,9 +81,16 @@
 	<Page repere="NP / 07 — Mon compte" titre="Mon" titreVoix="compte.">
 		{#snippet marge()}
 			<div class="identite">
-				<Portrait nom={data.personnage?.name ?? compte.pseudo} src={data.personnage?.portraitUrl} taille={72} />
+				<Portrait
+					nom={data.personnage?.name ?? compte.pseudo}
+					src={data.personnage?.portraitUrl}
+					taille={72}
+				/>
 				<p class="pseudo">{compte.pseudo}</p>
-				<p class="role">{role}{#if !compte.characterId && compte.role === 'joueur'} · en attente de liaison{/if}</p>
+				<p class="role">
+					{role}{#if !compte.characterId && compte.role === 'joueur'}
+						· en attente de liaison{/if}
+				</p>
 				<p class="depuis">Dans le carnet depuis le {depuis}.</p>
 			</div>
 			<div class="sommaire"><Sommaire {sections} libelle="Chapitres de la page" /></div>
@@ -97,20 +116,31 @@
 					<dd>
 						{#if data.personnage}
 							<span class="valeur nom">{data.personnage.name}</span>
-							<span class="serment">{data.personnage.oath} · <span class="rang">{data.personnage.rank}</span> · niveau {data.personnage.level}</span>
+							<span class="serment"
+								>{data.personnage.oath} · <span class="rang">{data.personnage.rank}</span> · niveau {data
+									.personnage.level}</span
+							>
 							<Bouton variante="texte" href="/carnet/fiche" fleche="→">Ouvrir ma fiche</Bouton>
 						{:else if compte.characterId}
 							<span class="valeur nom">{compte.characterName ?? 'Relié'}</span>
-							<span class="serment">Une liaison existe, mais ta fiche n’a pas pu s’ouvrir. Recharge ; si ça persiste, donne ton pseudo à un administrateur sur Discord.</span>
+							<span class="serment"
+								>Une liaison existe, mais ta fiche n’a pas pu s’ouvrir. Recharge ; si ça persiste,
+								donne ton pseudo à un administrateur sur Discord.</span
+							>
 						{:else}
 							<span class="valeur attente">En attente de liaison</span>
 							<p class="voix phrase">
-								Ton compte existe. Ta fiche attend qu’un administrateur la relie à ton personnage. Transmets ton pseudo sur Discord&nbsp;:
+								Ton compte existe. Ta fiche attend qu’un administrateur la relie à ton personnage.
+								Transmets ton pseudo sur Discord&nbsp;:
 								<strong>{compte.pseudo}</strong>.
 							</p>
 							<div class="liens">
-								<Bouton variante="texte" href="/univers/premiers-pas" fleche="→">Premiers pas</Bouton>
-								<Bouton variante="texte" href="/compte" data-sveltekit-reload>Recharger cette page</Bouton>
+								<Bouton variante="texte" href="/univers/premiers-pas" fleche="→"
+									>Premiers pas</Bouton
+								>
+								<Bouton variante="texte" href="/compte" data-sveltekit-reload
+									>Recharger cette page</Bouton
+								>
 							</div>
 						{/if}
 					</dd>
@@ -126,9 +156,16 @@
 		</Chapitre>
 
 		<!-- 02 · Mot de passe -->
-		<Chapitre numero={numero('mot-de-passe')} titre="Mot de passe" id="mot-de-passe" chapeau="Confirme d’abord celui que tu utilises.">
+		<Chapitre
+			numero={numero('mot-de-passe')}
+			titre="Mot de passe"
+			id="mot-de-passe"
+			chapeau="Confirme d’abord celui que tu utilises."
+		>
 			{#if data.motDePasseCourt}
-				<NoteDeMarge>Ton mot de passe a moins de 8 caractères. Choisis-en un plus long : il garde ta fiche.</NoteDeMarge>
+				<NoteDeMarge
+					>Ton mot de passe a moins de 8 caractères. Choisis-en un plus long : il garde ta fiche.</NoteDeMarge
+				>
 			{/if}
 			<form
 				method="POST"
@@ -145,7 +182,14 @@
 				})}
 			>
 				<input type="hidden" name="geste" value="motDePasse" />
-				<input type="text" name="username" value={compte.pseudo} autocomplete="username" hidden readonly />
+				<input
+					type="text"
+					name="username"
+					value={compte.pseudo}
+					autocomplete="username"
+					hidden
+					readonly
+				/>
 				<MotDePasse
 					libelle="Mot de passe actuel"
 					name="current"
@@ -181,11 +225,17 @@
 					{#if ecritureMdp.note?.ton === 'attente' || ecritureMdp.note?.ton === 'fait'}
 						<NoteDeMarge ton={ecritureMdp.note.ton}>{ecritureMdp.note.texte}</NoteDeMarge>
 					{:else if refusMdp}
-						<NoteDeMarge ton="refus">{refusMdp.champ ? 'Le mot de passe n’est pas changé : corrige la ligne marquée.' : refusMdp.texte}</NoteDeMarge>
+						<NoteDeMarge ton="refus"
+							>{refusMdp.champ
+								? 'Le mot de passe n’est pas changé : corrige la ligne marquée.'
+								: refusMdp.texte}</NoteDeMarge
+						>
 					{/if}
 				</div>
 				<div class="gestes">
-					<Bouton variante="trait" type="submit" disabled={ecritureMdp.enCours}>Changer le mot de passe</Bouton>
+					<Bouton variante="trait" type="submit" disabled={ecritureMdp.enCours}
+						>Changer le mot de passe</Bouton
+					>
 				</div>
 			</form>
 		</Chapitre>
@@ -198,15 +248,26 @@
 				{/if}
 				{#if compte.discordLinked}
 					<p class="texte">
-						<Encre etat={ecritureDiscord.etat}>Lié à <strong>{compte.discordUsername || 'ton compte Discord'}</strong>.</Encre>
+						<Encre etat={ecritureDiscord.etat}
+							>Lié à <strong>{compte.discordUsername || 'ton compte Discord'}</strong>.</Encre
+						>
 						Tu peux entrer d’un geste depuis la page d’entrée.
 					</p>
-					<form method="POST" action="?/discord" use:enhance={ecritureDiscord.enhance({ verbe: 'Délié' })} class="gestes">
+					<form
+						method="POST"
+						action="?/discord"
+						use:enhance={ecritureDiscord.enhance({ verbe: 'Délié' })}
+						class="gestes"
+					>
 						<input type="hidden" name="geste" value="delier" />
-						<Bouton variante="texte" type="submit" disabled={ecritureDiscord.enCours}>Délier Discord</Bouton>
+						<Bouton variante="texte" type="submit" disabled={ecritureDiscord.enCours}
+							>Délier Discord</Bouton
+						>
 					</form>
 				{:else}
-					<p class="texte">Lie ton compte Discord pour entrer d’un geste. Discord ne donne ni rôle ni personnage.</p>
+					<p class="texte">
+						Lie ton compte Discord pour entrer d’un geste. Discord ne donne ni rôle ni personnage.
+					</p>
 					<form method="POST" action="?/discord" class="gestes">
 						<input type="hidden" name="geste" value="lier" />
 						<Bouton variante="trait" type="submit" fleche="↗">Lier mon compte Discord</Bouton>
@@ -220,9 +281,18 @@
 
 		<!-- Quitter le carnet : pour ce soir -->
 		<Chapitre numero={numero('quitter')} titre="Quitter le carnet" id="quitter">
-			<p class="texte">Le carnet se referme sur tous tes appareils. Ce qui est écrit reste écrit.</p>
-			<form method="POST" action="?/quitter" use:enhance={ecritureQuitter.enhance({ verbe: 'Refermé' })} class="gestes">
-				<Bouton variante="trait" type="submit" disabled={ecritureQuitter.enCours}>Quitter le carnet</Bouton>
+			<p class="texte">
+				Le carnet se referme sur tous tes appareils. Ce qui est écrit reste écrit.
+			</p>
+			<form
+				method="POST"
+				action="?/quitter"
+				use:enhance={ecritureQuitter.enhance({ verbe: 'Refermé' })}
+				class="gestes"
+			>
+				<Bouton variante="trait" type="submit" disabled={ecritureQuitter.enCours}
+					>Quitter le carnet</Bouton
+				>
 			</form>
 			{#if ecritureQuitter.note?.ton === 'refus'}
 				<NoteDeMarge ton="refus">{ecritureQuitter.note.texte}</NoteDeMarge>
@@ -233,13 +303,26 @@
 		<div class="filet-double">
 			<Chapitre numero={numero('fermer')} titre="Fermer le compte" id="fermer">
 				{#if admin}
-					<p class="texte">Un compte administrateur ne se ferme pas d’ici : le carnet garde toujours un administrateur.</p>
-				{:else}
-					<p class="voix grave">Le carnet se ferme pour de bon. Ce qui est écrit ne se rouvre pas.</p>
 					<p class="texte">
-						Ton compte disparaît{#if data.personnage}, avec la fiche {de(data.personnage.name)}{/if}. Écris ton mot de passe pour fermer.
+						Un compte administrateur ne se ferme pas d’ici : le carnet garde toujours un
+						administrateur.
 					</p>
-					<form method="POST" action="?/fermer" use:enhance={ecritureFermer.enhance({ verbe: 'Fermé' })} class="formulaire" novalidate>
+				{:else}
+					<p class="voix grave">
+						Le carnet se ferme pour de bon. Ce qui est écrit ne se rouvre pas.
+					</p>
+					<p class="texte">
+						Ton compte disparaît{#if data.personnage}, avec la fiche {de(
+								data.personnage.name
+							)}{/if}. Écris ton mot de passe pour fermer.
+					</p>
+					<form
+						method="POST"
+						action="?/fermer"
+						use:enhance={ecritureFermer.enhance({ verbe: 'Fermé' })}
+						class="formulaire"
+						novalidate
+					>
 						<input type="hidden" name="geste" value="fermer" />
 						<MotDePasse
 							libelle="Ton mot de passe"
@@ -257,7 +340,9 @@
 							{/if}
 						</div>
 						<div class="gestes">
-							<Bouton variante="rouille" type="submit" disabled={ecritureFermer.enCours}>Fermer mon compte</Bouton>
+							<Bouton variante="rouille" type="submit" disabled={ecritureFermer.enCours}
+								>Fermer mon compte</Bouton
+							>
 						</div>
 					</form>
 				{/if}

@@ -5,4 +5,6 @@
 	let { data, children }: LayoutProps = $props();
 </script>
 
-<Enveloppe compte={data.compte} discord={data.discord} regime="serre">{@render children()}</Enveloppe>
+<Enveloppe compte={data.compte} discord={data.discord} regime="serre"
+	>{@render children()}</Enveloppe
+>

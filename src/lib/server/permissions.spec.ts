@@ -73,7 +73,10 @@ describe('matrice rôle × capacité (04 §5)', () => {
 			it(`${role} ${allowed ? 'a' : 'n’a pas'} « ${capability} »`, () => {
 				expect(can(role, capability)).toBe(allowed);
 				if (allowed) expect(assertCan(actor(role), capability).role).toBe(role);
-				else expect(() => assertCan(actor(role), capability)).toThrow(expect.objectContaining({ status: 403, code: 'FORBIDDEN' }));
+				else
+					expect(() => assertCan(actor(role), capability)).toThrow(
+						expect.objectContaining({ status: 403, code: 'FORBIDDEN' })
+					);
 			});
 		}
 	}
@@ -82,7 +85,9 @@ describe('matrice rôle × capacité (04 §5)', () => {
 		for (const capability of CAPABILITIES) {
 			expect(can(null, capability)).toBe(false);
 			expect(can(undefined, capability)).toBe(false);
-			expect(() => assertCan(null, capability)).toThrow(expect.objectContaining({ status: 401, code: 'UNAUTHENTICATED' }));
+			expect(() => assertCan(null, capability)).toThrow(
+				expect.objectContaining({ status: 401, code: 'UNAUTHENTICATED' })
+			);
 		}
 	});
 
@@ -102,13 +107,20 @@ describe('matrice rôle × capacité (04 §5)', () => {
 
 describe('gardes d’acteur', () => {
 	it('requireActor : 401 avec le micro-texte 20 sans session', () => {
-		expect(() => requireActor(null)).toThrow(expect.objectContaining({ status: 401, message: expect.stringMatching(/Le carnet s.est refermé/) }));
+		expect(() => requireActor(null)).toThrow(
+			expect.objectContaining({
+				status: 401,
+				message: expect.stringMatching(/Le carnet s.est refermé/)
+			})
+		);
 		expect(requireActor(actor('joueur'))).toMatchObject({ role: 'joueur' });
 	});
 
 	it('requireOwnCharacter : personnage relié exigé (403 NOT_LINKED sinon)', () => {
 		expect(requireOwnCharacter(actor('joueur', 'p_1'))).toMatchObject({ characterId: 'p_1' });
-		expect(() => requireOwnCharacter(actor('joueur'))).toThrow(expect.objectContaining({ status: 403, code: 'NOT_LINKED' }));
+		expect(() => requireOwnCharacter(actor('joueur'))).toThrow(
+			expect.objectContaining({ status: 403, code: 'NOT_LINKED' })
+		);
 		expect(() => requireOwnCharacter(null)).toThrow(expect.objectContaining({ status: 401 }));
 		// Un MJ relié à son propre personnage agit sur SA fiche comme un joueur.
 		expect(requireOwnCharacter(actor('mj', 'p_2')).characterId).toBe('p_2');

@@ -67,7 +67,7 @@
 		text-transform: uppercase;
 		font-variant-numeric: tabular-nums;
 		white-space: nowrap;
-		color: var(--tampon);
+		color: var(--encre-2);
 	}
 	.lecture :global(h2 .romain) {
 		font: 500 22px / var(--ligne) var(--voix);

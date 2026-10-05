@@ -6,7 +6,14 @@
 	import Bouton from '$lib/ui/Bouton.svelte';
 	import { heure } from '$lib/ui/dates';
 	import type { TableMJ } from './table.svelte';
-	import { correctionDe, dernierRoundResolu, lignesRayees, lignesResolution, sansEmoji, signe } from './texte';
+	import {
+		correctionDe,
+		dernierRoundResolu,
+		lignesRayees,
+		lignesResolution,
+		sansEmoji,
+		signe
+	} from './texte';
 
 	interface Props {
 		table: TableMJ;
@@ -15,9 +22,20 @@
 
 	const log = $derived(table.etat.log);
 	const round = $derived(table.revue ?? dernierRoundResolu(log));
-	const lignes = $derived(round ? lignesResolution(log, round).filter((e) => sansEmoji(e.text)) : []);
+	const lignes = $derived(
+		round ? lignesResolution(log, round).filter((e) => sansEmoji(e.text)) : []
+	);
 	const rayees = $derived(lignesRayees(log));
 	const ouverte = $derived(table.revue !== null);
+	const heureResolue = $derived(
+		table.revueA
+			? heure(table.revueA)
+			: /résolu à (\d{2}:\d{2})/.exec(
+					log.find(
+						(e) => e.kind === 'round' && e.round === round && /Résolution Round/.test(e.text)
+					)?.text ?? ''
+				)?.[1]
+	);
 
 	let enRature = $state<number | null>(null);
 	let motif = $state('erreur de résolution');
@@ -38,7 +56,7 @@
 
 {#if round}
 	<p class="entete chiffres" aria-live="polite">
-		Round {round} · résolu{#if ouverte && table.revueA}{' à '}{heure(table.revueA)}{/if}.
+		Round {round} · résolu{heureResolue ? ` à ${heureResolue}` : ''}.
 		{#if ouverte}<span class="ouvert">ouvert · rature possible</span>{/if}
 	</p>
 	{#if lignes.length}
@@ -67,8 +85,11 @@
 							</label>
 							<p class="apercu chiffres">{ressource(e.n)}</p>
 							<div class="gestes">
-								<Bouton variante="rouille" type="submit" disabled={!motif.trim()}>Rayer la ligne</Bouton>
-								<button type="button" class="geste" onclick={() => (enRature = null)}>Garder</button>
+								<Bouton variante="rouille" type="submit" disabled={!motif.trim()}
+									>Rayer la ligne</Bouton
+								>
+								<button type="button" class="geste" onclick={() => (enRature = null)}>Garder</button
+								>
 							</div>
 						</form>
 					{/if}

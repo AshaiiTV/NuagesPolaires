@@ -6,7 +6,7 @@
 import { error } from '@sveltejs/kit';
 import { requireCharacter } from '$lib/server/guards';
 import { NpError } from '$lib/server/http';
-import { getPlayerTable, getRecit, listRecits } from '$lib/server/domain/combats';
+import { getPlayerTable, getRecit } from '$lib/server/domain/combats';
 import { ruleCardFor, type RuleCard } from '$lib/game/rules';
 import { STATUS_EFFECTS, STATUS_IDS } from '$lib/game/combat/statuses';
 import { statusColor } from '$lib/game/colors';
@@ -32,7 +32,9 @@ function cartes() {
 
 /** Libellé et couleur de chaque statut (losange). */
 function statuts(): Record<string, { label: string; color: string }> {
-	return Object.fromEntries(STATUS_IDS.map((id) => [id, { label: STATUS_EFFECTS[id].label, color: statusColor(id) }]));
+	return Object.fromEntries(
+		STATUS_IDS.map((id) => [id, { label: STATUS_EFFECTS[id].label, color: statusColor(id) }])
+	);
 }
 
 /** Un refus « introuvable » ou « interdit » du domaine : la page n'est pas servie. */
@@ -46,29 +48,24 @@ export const load: PageServerLoad = async (event) => {
 	const id = event.params.id;
 	const maintenant = new Date().toISOString();
 
-	// Une Table repliée se lit comme un récit (archivé, visible de ses participants). La liste des
-	// récits ne relit pas l'état du combat : elle dit seulement si celui-ci est replié et à moi.
-	const recits = await listRecits(db, actor, { page: 1 });
-	const r = recits.find((x) => x.id === id);
-	if (r) {
-		let discordUrl = '';
-		try {
-			discordUrl = (await getRecit(db, actor, id)).discordUrl;
-		} catch (e) {
-			// Le récit reste lisible depuis le journal ; seul le lien du salon manque ici.
-			if (!(e instanceof NpError)) throw e;
-		}
-		return {
-			table: null,
-			repliee: { id: r.id, title: r.title, name: r.name, at: r.at, discordUrl },
-			maintenant,
-			cartes: null,
-			statuts: statuts()
-		};
-	}
-
 	try {
 		const table = await getPlayerTable(db, actor, id);
+		if (table.status === 'termine') {
+			const recit = table.recitId ? await getRecit(db, actor, table.recitId) : null;
+			return {
+				table: null,
+				repliee: {
+					id: table.recitId ?? id,
+					title: recit?.title ?? table.name,
+					name: table.name,
+					at: table.closedAt ?? table.at,
+					discordUrl: table.discordUrl
+				},
+				maintenant,
+				cartes: null,
+				statuts: statuts()
+			};
+		}
 		return { table, repliee: null, maintenant, cartes: cartes(), statuts: statuts() };
 	} catch (e) {
 		if (estRefus(e) || (e instanceof NpError && e.code === 'INVALID'))

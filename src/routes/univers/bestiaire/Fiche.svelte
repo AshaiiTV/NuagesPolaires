@@ -23,15 +23,15 @@
 		<Losange
 			couleur={beast.behaviorColor}
 			libelle={beast.behavior}
-		/>{#each beast.zones as zone}<span>{nomZone(zone.name)}</span>{/each}
+		/>{#each beast.zones as zone (zone.id)}<span>{nomZone(zone.name)}</span>{/each}
 	</div>
-	{#if beast.quote}<blockquote class="voix">« {beast.quote} »</blockquote>{/if}
+	{#if beast.quote}<blockquote class="voix">«&nbsp;{beast.quote}&nbsp;»</blockquote>{/if}
 	{#if beast.description}<p class="description">{beast.description}</p>{:else}<Vide
 			>La description reste à écrire.</Vide
 		>{/if}
 	<p class="ressources chiffres">Niveau {beast.level} · PV {beast.pv} · EP {beast.ep}</p>
 	<dl>
-		{#each lignes as ligne}<div class="ligne">
+		{#each lignes as ligne (ligne.titre)}<div class="ligne">
 				<dt>{ligne.titre}</dt>
 				<dd>
 					{#if ligne.texte}{ligne.texte}{:else}<span class="blanc">Cette ligne reste à écrire.</span

@@ -9,6 +9,7 @@ import { migrate } from 'drizzle-orm/pglite/migrator';
 import * as schema from './schema';
 import type { DbHandle } from './index';
 import { resolveMigrationsFolder } from './migrations-folder';
+
 import { seedDemo } from './seed';
 
 /**

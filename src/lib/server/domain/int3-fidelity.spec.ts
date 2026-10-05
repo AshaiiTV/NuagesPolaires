@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { createTestDb, type TestDb } from '../../../../tests/helpers/db';
 import { DEMO_IDS as D } from '../db/seed';
-import { characters, oaths, combats, characterHistory, beasts } from '../db/schema';
+import { characters, oaths, combats, beasts } from '../db/schema';
 import type { Actor } from '../permissions';
 import { getTable, getRecit, getPlayerTable, createTable } from './combats';
 import { listConsequences, setStatus, grantCombatXp } from './characters';
@@ -71,16 +71,14 @@ describe('INT-3 : contexte et contrats de domaine', () => {
 	});
 	it('A3/A4/A5 : archive enrichie, Taille Double 2×7 pour 5 EM, frappe courante 22 et D100 51', async () => {
 		const pid = 'p_int3_archive';
-		await t.db
-			.insert(characters)
-			.values({
-				id: pid,
-				name: 'Duelliste',
-				oathId: 'duelliste',
-				branch: 'Taille Double',
-				level: 2,
-				statuses: [{ id: 'gel', desc: 'Fiche IRP', posedBy: 'MJ', posedAt: 1 }]
-			});
+		await t.db.insert(characters).values({
+			id: pid,
+			name: 'Duelliste',
+			oathId: 'duelliste',
+			branch: 'Taille Double',
+			level: 2,
+			statuses: [{ id: 'gel', desc: 'Fiche IRP', posedBy: 'MJ', posedAt: 1 }]
+		});
 		await t.db
 			.update(beasts)
 			.set({ gem: '1–100 : Gemme Blanche' })
@@ -108,13 +106,11 @@ describe('INT-3 : contexte et contrats de domaine', () => {
 			],
 			log: ['Impact hérité −8 PV']
 		};
-		await t.db
-			.insert(combats)
-			.values({
-				id: raw.id,
-				state: { ...fromLegacyArchive(raw), legacy: raw },
-				status: 'en_cours'
-			});
+		await t.db.insert(combats).values({
+			id: raw.id,
+			state: { ...fromLegacyArchive(raw), legacy: raw },
+			status: 'en_cours'
+		});
 		await t.db.update(oaths).set({ baseDamage: 20 }).where(eq(oaths.id, 'duelliste'));
 		let s = (await getTable(t.db, mj, raw.id)).state;
 		expect(getAbilityOptions(s, s.fighters[0]!.id)[0]).toMatchObject({

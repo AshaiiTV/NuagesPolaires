@@ -51,7 +51,10 @@ export async function listStaffLog(
 ): Promise<StaffLogPageView> {
 	assertCan(actor, 'staff_log.read');
 	const { page } = parseInput(staffLogPageInput, input);
-	const [{ total }] = await db.select({ total: count() }).from(staffLog).where(isNull(staffLog.archiveId));
+	const [{ total }] = await db
+		.select({ total: count() })
+		.from(staffLog)
+		.where(isNull(staffLog.archiveId));
 	const pages = Math.max(1, Math.ceil(total / STAFF_LOG_PAGE_SIZE));
 	const current = Math.min(page, pages);
 	const rows = await db

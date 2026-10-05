@@ -132,7 +132,9 @@ describe('canRegister (audit 05 §5.5, legacy db.js:931-946)', () => {
 			alreadyRegistered: true
 		});
 		// mais un événement passé ou masqué refuse même un inscrit
-		expect(canRegister(event({ startsAt: PAST, participantIds: ['p_alice'] }), alice, NOW).ok).toBe(false);
+		expect(canRegister(event({ startsAt: PAST, participantIds: ['p_alice'] }), alice, NOW).ok).toBe(
+			false
+		);
 	});
 
 	it("respecte l'ordre des refus : nom > homonyme > masqué > fermé > capacité", () => {
@@ -142,13 +144,17 @@ describe('canRegister (audit 05 §5.5, legacy db.js:931-946)', () => {
 		expect(code(canRegister(worst, { ...alice, hasHomonym: true }, NOW))).toBe('EVENT_UNAVAILABLE');
 		expect(code(canRegister(worst, alice, NOW))).toBe('EVENT_NOT_FOUND');
 		expect(code(canRegister({ ...worst, hidden: false }, alice, NOW))).toBe('EVENT_CLOSED');
-		expect(code(canRegister({ ...worst, hidden: false, startsAt: FUTURE }, alice, NOW))).toBe('EVENT_UNAVAILABLE');
+		expect(code(canRegister({ ...worst, hidden: false, startsAt: FUTURE }, alice, NOW))).toBe(
+			'EVENT_UNAVAILABLE'
+		);
 	});
 });
 
 describe('canUnregister (legacy db.js:949, audit 08 §4)', () => {
 	it('autorisé même sur un événement masqué ou passé', () => {
-		expect(canUnregister(event({ hidden: true, startsAt: PAST, participantIds: ['p_alice'] }), alice)).toEqual({
+		expect(
+			canUnregister(event({ hidden: true, startsAt: PAST, participantIds: ['p_alice'] }), alice)
+		).toEqual({
 			ok: true,
 			wasRegistered: true
 		});
@@ -161,7 +167,10 @@ describe('canUnregister (legacy db.js:949, audit 08 §4)', () => {
 			code: 'EVENT_UNAVAILABLE',
 			status: 409
 		});
-		expect(canUnregister(event(), { id: 'p', name: '' })).toMatchObject({ ok: false, code: 'CHARACTER_UNNAMED' });
+		expect(canUnregister(event(), { id: 'p', name: '' })).toMatchObject({
+			ok: false,
+			code: 'CHARACTER_UNNAMED'
+		});
 	});
 });
 
@@ -190,7 +199,9 @@ describe('capacité et places (audit 08 §2.1, §3.2)', () => {
 			'La capacité ne peut pas être inférieure au nombre de participants déjà inscrits.'
 		);
 		const invalid = 'Le nombre de places doit être un entier positif, ou 0 pour aucune limite.';
-		expect(capacityError('1', 2)).toBe('La capacité ne peut pas être inférieure au nombre de participants déjà inscrits.');
+		expect(capacityError('1', 2)).toBe(
+			'La capacité ne peut pas être inférieure au nombre de participants déjà inscrits.'
+		);
 		expect(capacityError(-1, 0)).toBe(invalid);
 		expect(capacityError(1.5, 0)).toBe(invalid);
 		expect(capacityError(Number.NaN, 0)).toBe(invalid);
@@ -201,10 +212,18 @@ describe('capacité et places (audit 08 §2.1, §3.2)', () => {
 describe('eventState (audit 08 §2.1, legacy main.js:15138)', () => {
 	it('ordre hidden > past > undated > joined > full > open', () => {
 		expect(eventState(event({ hidden: true, startsAt: PAST }), 'p_alice', NOW)).toBe('hidden');
-		expect(eventState(event({ startsAt: PAST, participantIds: ['p_alice'] }), 'p_alice', NOW)).toBe('past');
-		expect(eventState(event({ startsAt: null, participantIds: ['p_alice'] }), 'p_alice', NOW)).toBe('undated');
-		expect(eventState(event({ capacity: 1, participantIds: ['p_alice'] }), 'p_alice', NOW)).toBe('joined');
-		expect(eventState(event({ capacity: 1, participantIds: ['p_bob'] }), 'p_alice', NOW)).toBe('full');
+		expect(eventState(event({ startsAt: PAST, participantIds: ['p_alice'] }), 'p_alice', NOW)).toBe(
+			'past'
+		);
+		expect(eventState(event({ startsAt: null, participantIds: ['p_alice'] }), 'p_alice', NOW)).toBe(
+			'undated'
+		);
+		expect(eventState(event({ capacity: 1, participantIds: ['p_alice'] }), 'p_alice', NOW)).toBe(
+			'joined'
+		);
+		expect(eventState(event({ capacity: 1, participantIds: ['p_bob'] }), 'p_alice', NOW)).toBe(
+			'full'
+		);
 		expect(eventState(event({ capacity: 1, participantIds: ['p_bob'] }), null, NOW)).toBe('full');
 		expect(eventState(event(), null, NOW)).toBe('open');
 	});

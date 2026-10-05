@@ -160,6 +160,11 @@ export interface EventRowView {
 	hidden: boolean;
 	/** Pseudo de l'organisateur (tampon), ou auteur hérité. */
 	organizer: string | null;
+	organizerStamp?: {
+		role: 'joueur' | 'mj' | 'designer' | 'admin';
+		pseudo: string;
+		at: string;
+	} | null;
 	/** Récit rattaché, servi seulement à qui peut le lire. */
 	recitId: string | null;
 	revision: number;

@@ -170,7 +170,11 @@ describe('migration 0000_fondation', () => {
 	});
 
 	it('colonnes INT-1 : rature du personnage, annonce et récit du rendez-vous, tokens, motif d’observation', async () => {
-		const rows = await executeRows<{ table_name: string; column_name: string; is_nullable: string }>(
+		const rows = await executeRows<{
+			table_name: string;
+			column_name: string;
+			is_nullable: string;
+		}>(
 			t.db,
 			sql`select table_name, column_name, is_nullable from information_schema.columns
 				where (table_name, column_name) in (
@@ -211,7 +215,10 @@ describe('migration 0000_fondation', () => {
 		});
 		await t.db.delete(schema.accounts).where(eq(schema.accounts.id, 'a_int1'));
 		await t.db.delete(schema.combats).where(eq(schema.combats.id, 'c_int1'));
-		const [c] = await t.db.select().from(schema.characters).where(eq(schema.characters.id, 'p_int1'));
+		const [c] = await t.db
+			.select()
+			.from(schema.characters)
+			.where(eq(schema.characters.id, 'p_int1'));
 		const [e] = await t.db.select().from(schema.events).where(eq(schema.events.id, 'e_int1'));
 		expect([c.struckBy, c.struckMotif, c.struckAt !== null]).toEqual([null, 'Doublon', true]);
 		expect([e.announcedBy, e.recitCombatId, e.announcedAt !== null]).toEqual([null, null, true]);

@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+	import { chemin } from '$lib/ui/adresse';
+	import { signature } from '$lib/ui/tampons';
 	// « Organiser » (régime serré) : à gauche le registre des rendez-vous, masqués compris ; à droite la
 	// page de saisie (nouveau rendez-vous, ou celui qu'on a ouvert). Chaque enregistrement confirmé par
 	// le serveur s'imprime d'un tampon sur sa ligne.
@@ -9,7 +12,7 @@
 	import NoteDeMarge from '$lib/ui/NoteDeMarge.svelte';
 	import Tampon from '$lib/ui/Tampon.svelte';
 	import Vide from '$lib/ui/Vide.svelte';
-	import { dateCourte, heure, heureRonde, jourSemaine } from '$lib/ui/dates';
+	import { dateCourte, heureRonde, jourSemaine } from '$lib/ui/dates';
 	import type { EventRowView } from '$lib/schemas/events';
 	import { teinte } from '../agenda';
 	import type { DonneesOrganiser, RetourOrganiser } from './serveur';
@@ -27,13 +30,21 @@
 	const confirme = $derived(form && 'geste' in form ? form : null);
 	function tamponDe(id: string): string | null {
 		if (!confirme || confirme.eventId !== id) return null;
-		const h = heure(confirme.at);
-		if (confirme.geste === 'masquer') return `${confirme.hidden ? 'Masqué' : 'Visible'} · ${h}`;
-		if (confirme.geste === 'prevenir') return `Prévenu · ${h}`;
-		return `Noté · ${h}`;
+		return signature(data.signataire.role, data.signataire.pseudo, confirme.at);
 	}
+	const gesteConfirme = $derived(
+		confirme?.geste === 'masquer'
+			? confirme.hidden
+				? 'Masqué'
+				: 'Visible'
+			: confirme?.geste === 'prevenir'
+				? 'Prévenu'
+				: 'Noté'
+	);
 	const echecAnnonce = $derived(
-		confirme?.geste === 'creer' && confirme.notifyError ? { id: confirme.eventId, texte: confirme.notifyError } : null
+		confirme?.geste === 'creer' && confirme.notifyError
+			? { id: confirme.eventId, texte: confirme.notifyError }
+			: null
 	);
 
 	function quand(ev: EventRowView): string {
@@ -44,20 +55,29 @@
 		// « 4 inscrits sur 6 » ou « sans limite » (03-vision §5.6).
 		const n = ev.count;
 		const inscrits = `${n} inscrit${n > 1 ? 's' : ''}`;
-		if (ev.capacity > 0) return n ? `${inscrits} sur ${ev.capacity}` : `${ev.capacity} places · aucun inscrit`;
+		if (ev.capacity > 0)
+			return n ? `${inscrits} sur ${ev.capacity}` : `${ev.capacity} places · aucun inscrit`;
 		return n ? `${inscrits} · sans limite` : 'sans limite · aucun inscrit';
 	}
 	const page = $derived(data.pagePasses);
 	const base = $derived(ouvert ? `/agenda/organiser/${ouvert.id}` : '/agenda/organiser');
 </script>
 
-<svelte:head><title>{ouvert ? `${ouvert.title} — Organiser` : 'Organiser'} — Nuages Polaires</title></svelte:head>
+<svelte:head
+	><title>{ouvert ? `${ouvert.title} — Organiser` : 'Organiser'} — Nuages Polaires</title
+	></svelte:head
+>
 
 {#snippet ligne(ev: EventRowView, passe: boolean)}
 	{@const marque = tamponDe(ev.id)}
 	<li class="rdv" class:passe class:courant={ouvert?.id === ev.id}>
-		<a href="/agenda/organiser/{ev.id}" aria-current={ouvert?.id === ev.id ? 'page' : undefined}>
-			<span class="quand chiffres">{#if ev.startsAt}{quand(ev)}{:else}<em>Date à confirmer</em>{/if}</span>
+		<a
+			href={chemin(`/agenda/organiser/${ev.id}`)}
+			aria-current={ouvert?.id === ev.id ? 'page' : undefined}
+		>
+			<span class="quand chiffres"
+				>{#if ev.startsAt}{quand(ev)}{:else}<em>Date à confirmer</em>{/if}</span
+			>
 			<span class="titre">{ev.title}</span>
 			<span class="meta">
 				<Losange couleur={teinte(ev.typeColor)} libelle={ev.typeLabel} />
@@ -66,7 +86,9 @@
 			</span>
 		</a>
 		{#if marque}
-			<span class="marque"><Tampon cle={ev.id + confirme?.at}>{marque}</Tampon></span>
+			<span class="marque"
+				>{gesteConfirme} · <Tampon cle={ev.id + confirme?.at}>{marque}</Tampon></span
+			>
 		{/if}
 		{#if echecAnnonce?.id === ev.id}
 			<p class="annonce">{echecAnnonce.texte}</p>
@@ -77,21 +99,25 @@
 <Page repere="NP / 04 — Agenda" titre="Organiser">
 	{#snippet marge()}
 		<div class="fil">
-			<a href="/agenda"><span aria-hidden="true">←</span> Agenda</a>
+			<a href={resolve('/agenda')}><span aria-hidden="true">←</span> Agenda</a>
 			<span>Les dates sont à l’heure de Paris.</span>
-			{#if !data.peutPrevenir}<span>Les MJ et les administrateurs préviennent les joueurs.</span>{/if}
+			{#if !data.peutPrevenir}<span>Les MJ et les administrateurs préviennent les joueurs.</span
+				>{/if}
 		</div>
 	{/snippet}
 
 	{#if data.raye}
-		<NoteDeMarge ton="fait">Rayé — « {data.raye} » sort de l’agenda ; sa trace reste dans le journal d’audit.</NoteDeMarge>
+		<NoteDeMarge ton="fait"
+			>Rayé — « {data.raye} » sort de l’agenda ; sa trace reste dans le journal d’audit.</NoteDeMarge
+		>
 	{/if}
 
 	<div class="atelier" class:ouvert>
 		<div class="registre">
 			<Chapitre numero="01" titre="Rendez-vous">
 				{#snippet actions()}
-					{#if ouvert}<a class="nouveau" href="/agenda/organiser">Nouveau rendez-vous</a>{/if}
+					{#if ouvert}<a class="nouveau" href={resolve('/agenda/organiser')}>Nouveau rendez-vous</a
+						>{/if}
 				{/snippet}
 				{#if data.agenda.upcoming.length}
 					<ol class="liste">
@@ -108,9 +134,14 @@
 					</ol>
 					{#if data.agenda.pastPages > 1}
 						<nav class="pages" aria-label="Pages des rendez-vous passés">
-							{#if page > 1}<a href="{base}?passes={page - 1}#passes" rel="prev">← Page précédente</a>{/if}
+							{#if page > 1}<a href={chemin(`${base}?passes=${page - 1}#passes`)} rel="prev"
+									>← Page précédente</a
+								>{/if}
 							<span class="folio chiffres">page {page} sur {data.agenda.pastPages}</span>
-							{#if page < data.agenda.pastPages}<a href="{base}?passes={page + 1}#passes" rel="next">Page suivante →</a>{/if}
+							{#if page < data.agenda.pastPages}<a
+									href={chemin(`${base}?passes=${page + 1}#passes`)}
+									rel="next">Page suivante →</a
+								>{/if}
 						</nav>
 					{/if}
 				{/if}
@@ -122,7 +153,9 @@
 				{#if ouvert}
 					<p class="ouvert-titre">{ouvert.title}</p>
 					<p class="ouvert-meta">
-						{#if ouvert.startsAt}<span class="chiffres">{dateCourte(ouvert.startsAt, data.lu)} · {heureRonde(ouvert.startsAt)}</span>{:else}<span>Date à confirmer</span>{/if}
+						{#if ouvert.startsAt}<span class="chiffres"
+								>{dateCourte(ouvert.startsAt, data.lu)} · {heureRonde(ouvert.startsAt)}</span
+							>{:else}<span>Date à confirmer</span>{/if}
 						{#if ouvert.organizer}<span>organisé par {ouvert.organizer}</span>{/if}
 						<span>
 							{#if ouvert.participants.length}
@@ -137,7 +170,9 @@
 					<Saisie evenement={ouvert} peutPrevenir={data.peutPrevenir} lu={data.lu} />
 				{/key}
 				{#if !ouvert}
-					<p class="rappel">Un rendez-vous noté apparaît dans l’agenda de chaque compte, sauf s’il est masqué.</p>
+					<p class="rappel">
+						Un rendez-vous noté apparaît dans l’agenda de chaque compte, sauf s’il est masqué.
+					</p>
 				{/if}
 			</Chapitre>
 		</div>

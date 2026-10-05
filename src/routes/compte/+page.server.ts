@@ -32,9 +32,15 @@ const CONFIRMATION_MESSAGE = 'Les deux mots de passe ne sont pas les mêmes.';
 const DISCORD_RETOUR: Record<string, { ton: 'fait' | 'refus'; texte: string }> = {
 	lie: { ton: 'fait', texte: 'Discord est lié à ton compte. Tu peux entrer d’un geste.' },
 	annule: { ton: 'refus', texte: 'La liaison Discord a été interrompue. Rien n’a changé.' },
-	DISCORD_STATE: { ton: 'refus', texte: 'La liaison Discord a expiré ou a déjà servi. Recommence.' },
+	DISCORD_STATE: {
+		ton: 'refus',
+		texte: 'La liaison Discord a expiré ou a déjà servi. Recommence.'
+	},
 	DISCORD_FAILED: { ton: 'refus', texte: 'Discord n’a pas confirmé la liaison. Réessaie.' },
-	DISCORD_TAKEN: { ton: 'refus', texte: 'Ce compte Discord est déjà lié à un autre compte du carnet.' }
+	DISCORD_TAKEN: {
+		ton: 'refus',
+		texte: 'Ce compte Discord est déjà lié à un autre compte du carnet.'
+	}
 };
 
 export const load: PageServerLoad = async (event) => {
@@ -46,7 +52,13 @@ export const load: PageServerLoad = async (event) => {
 	const porte = themes.find((t) => t.active) ?? themes.find((t) => t.id === 'dark') ?? null;
 	// Le personnage relié, en une ligne (Serment · rang · niveau) ; une fiche qui ne s'ouvre pas
 	// n'empêche pas d'ouvrir le compte.
-	let personnage: { name: string; portraitUrl: string | null; oath: string; rank: string; level: number } | null = null;
+	let personnage: {
+		name: string;
+		portraitUrl: string | null;
+		oath: string;
+		rank: string;
+		level: number;
+	} | null = null;
 	if (compte.characterId) {
 		try {
 			const sheet = await getOwnSheet(db, actor);
@@ -71,7 +83,8 @@ export const load: PageServerLoad = async (event) => {
 		personnage,
 		themePorte: porte ? { name: libelleTheme(porte).name, tone: porte.tone } : null,
 		discordActif,
-		discordRetour: discordActif && retour ? (DISCORD_RETOUR[retour] ?? DISCORD_RETOUR.DISCORD_FAILED) : null,
+		discordRetour:
+			discordActif && retour ? (DISCORD_RETOUR[retour] ?? DISCORD_RETOUR.DISCORD_FAILED) : null,
 		motDePasseCourt: event.url.searchParams.get('mot-de-passe') === 'court'
 	};
 };
@@ -80,9 +93,14 @@ export const actions: Actions = {
 	motDePasse: action(async (event, data) => {
 		const actor = requireAccount(event);
 		const next = String(data.next ?? '');
-		if (next.length < MIN_PASSWORD_LENGTH) throw new NpError('INVALID_PASSWORD', PASSWORD_TOO_SHORT_MESSAGE, 400);
-		if (next !== String(data.passwordConfirm ?? '')) throw new NpError('MISMATCH', CONFIRMATION_MESSAGE, 400);
-		const result = await changeOwnPassword(event.locals.db, actor, { current: String(data.current ?? ''), next });
+		if (next.length < MIN_PASSWORD_LENGTH)
+			throw new NpError('INVALID_PASSWORD', PASSWORD_TOO_SHORT_MESSAGE, 400);
+		if (next !== String(data.passwordConfirm ?? ''))
+			throw new NpError('MISMATCH', CONFIRMATION_MESSAGE, 400);
+		const result = await changeOwnPassword(event.locals.db, actor, {
+			current: String(data.current ?? ''),
+			next
+		});
 		// Toutes les sessions sont révoquées : celle-ci est remplacée par la nouvelle.
 		setSessionCookie(event.cookies, result.sessionToken, new Date(result.expiresAt));
 		return { geste: 'motDePasse' as const };
@@ -91,7 +109,8 @@ export const actions: Actions = {
 	// Lier (départ vers Discord, formulaire classique) ou délier (écriture sur place).
 	discord: action(async (event, data) => {
 		const actor = requireAccount(event);
-		if (!isDiscordEnabled()) throw NpError.notFound('La connexion Discord n’est pas activée sur ce carnet.');
+		if (!isDiscordEnabled())
+			throw NpError.notFound('La connexion Discord n’est pas activée sur ce carnet.');
 		if (data.geste === 'delier') {
 			await discordUnlink(event.locals.db, actor);
 			return { geste: 'discord' as const };

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+	import { chemin } from '$lib/ui/adresse';
 	// L'enveloppe du carnet connecté : la feuille, la tranche à onglets (les cahiers) sur le bord droit,
 	// la bande basse sur téléphone, et le ruban « En scène ». Ce qui n'est pas autorisé n'est pas rendu.
 	import type { Snippet } from 'svelte';
@@ -25,7 +27,14 @@
 		regime?: 'carnet' | 'serre' | 'scene';
 		children: Snippet;
 	}
-	let { cahiers, bande, ruban = null, compte = null, regime = 'carnet', children }: Props = $props();
+	let {
+		cahiers,
+		bande,
+		ruban = null,
+		compte = null,
+		regime = 'carnet',
+		children
+	}: Props = $props();
 	const basse = $derived((bande ?? cahiers).slice(0, 5));
 </script>
 
@@ -35,29 +44,42 @@
 	<div class="cahier">
 		<div class="feuille" id="page" tabindex="-1">
 			{#if ruban}
-				<a class="ruban" href={ruban.href}>
+				<a class="ruban" href={chemin(ruban.href)}>
 					{ruban.libelle ?? 'En scène'}
-					{#if ruban.href.startsWith('/table/')}<span class="sr-only"> — mène à la Table ouverte</span>{/if}
-					{#if ruban.corne}<span class="corne" aria-hidden="true"></span><span class="sr-only"> — pages non lues</span>{/if}
+					{#if ruban.href.startsWith('/table/')}<span class="sr-only">
+							— mène à la Table ouverte</span
+						>{/if}
+					{#if ruban.corne}<span class="corne" aria-hidden="true"></span><span class="sr-only">
+							— pages non lues</span
+						>{/if}
 				</a>
 			{/if}
 			{@render children()}
 		</div>
 
 		<nav class="tranche" aria-label="Cahiers">
-			<a class="signature" href="/" aria-label="Nuages Polaires, accueil"><Boussole taille={32} /></a>
+			<a class="signature" href={resolve('/')} aria-label="Nuages Polaires, accueil"
+				><Boussole taille={32} /></a
+			>
 			<ul>
 				{#each cahiers as onglet (onglet.id)}
 					<li>
-						<a class="onglet" class:courant={onglet.courant} href={onglet.href} aria-current={onglet.courant ? 'page' : undefined}>
+						<a
+							class="onglet"
+							class:courant={onglet.courant}
+							href={chemin(onglet.href)}
+							aria-current={onglet.courant ? 'page' : undefined}
+						>
 							{onglet.libelle}
-							{#if onglet.corne}<span class="corne" aria-hidden="true"></span><span class="sr-only"> — pages non lues</span>{/if}
+							{#if onglet.corne}<span class="corne" aria-hidden="true"></span><span class="sr-only">
+									— pages non lues</span
+								>{/if}
 						</a>
 					</li>
 				{/each}
 			</ul>
 			{#if compte}
-				<a class="compte" href="/compte">
+				<a class="compte" href={resolve('/compte')}>
 					<Portrait nom={compte.pseudo} src={compte.portrait} taille={36} />
 					<span class="pseudo">{compte.pseudo}</span>
 					{#if compte.role}<small class="role">{compte.role}</small>{/if}
@@ -69,7 +91,11 @@
 
 <nav class="bande-basse" data-regime={regime} aria-label="Cahiers">
 	{#each basse as onglet (onglet.id)}
-		<a class:courant={onglet.courant} href={onglet.href} aria-current={onglet.courant ? 'page' : undefined}>
+		<a
+			class:courant={onglet.courant}
+			href={chemin(onglet.href)}
+			aria-current={onglet.courant ? 'page' : undefined}
+		>
 			{onglet.court ?? onglet.libelle}
 			{#if onglet.corne}<span class="corne" aria-hidden="true"></span>{/if}
 		</a>

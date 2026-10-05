@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { chemin } from '$lib/ui/adresse';
 	import { enhance } from '$app/forms';
 	import { onMount, untrack } from 'svelte';
 	import PagePersonnages from './PagePersonnages.svelte';
@@ -94,7 +95,7 @@
 		<ul class="liste">
 			{#each data.characters as c (c.id)}
 				<li>
-					<a class="ligne" href="/table/personnages/{c.id}">
+					<a class="ligne" href={chemin(`/table/personnages/${c.id}`)}>
 						<span class="identite"
 							><strong>{c.name}</strong><span>{c.oath.name} · {c.oath.rankLabel}</span><span
 								class="liaison">{c.linkedPseudo ? `relié à ${c.linkedPseudo}` : 'non relié'}</span

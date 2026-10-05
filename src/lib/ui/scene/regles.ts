@@ -11,7 +11,7 @@ export function libelleSansPicto(label: string): string {
 	return label
 		.replace(/[^\p{L}\p{N}\s'’()−%+<>-]/gu, '')
 		.replace(/\(N(?: PV)?\)/g, '')
-		.replace(/(\d)%/g, '$1 %')
+		.replace(/(\d)%/g, '$1\u202f%')
 		.replace(/\s+/g, ' ')
 		.trim();
 }
@@ -20,7 +20,7 @@ export function libelleSansPicto(label: string): string {
 export function coutImprime(rule: Pick<ActionRule, 'cost' | 'resource'>): string {
 	if (rule.resource === null) return '';
 	if (rule.cost === null) return 'coût du palier';
-	return `${rule.cost} ${rule.resource.toUpperCase()}`;
+	return `${rule.cost}\u00a0${rule.resource.toUpperCase()}`;
 }
 
 /**
@@ -43,7 +43,7 @@ export function ancreSysteme(anchor: string): string {
  */
 export function sansEmoji(texte: string): string {
 	return texte
-		.replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}\u{20E3}]/gu, '')
+		.replace(/\p{Extended_Pictographic}|\u{FE0F}|\u{200D}|\u{20E3}/gu, '')
 		.replace(/[⚔☠❄⛓◌]/gu, '')
 		.replace(/\s{2,}/g, ' ')
 		.trim();

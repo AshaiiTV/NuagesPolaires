@@ -3,7 +3,11 @@ import type { WaitingView } from '$lib/schemas/reading';
 import type { EventRowView } from '$lib/schemas/events';
 import { composerAttente } from './attente';
 
-const scene = (id: string, channel: string | null, discordUrl: string | null = null): WaitingView => ({
+const scene = (
+	id: string,
+	channel: string | null,
+	discordUrl: string | null = null
+): WaitingView => ({
 	kind: 'scene',
 	id,
 	text: `Scène ouverte · ${channel ?? id}`,
@@ -12,7 +16,12 @@ const scene = (id: string, channel: string | null, discordUrl: string | null = n
 	channel,
 	at: '2026-09-30T19:00:00.000Z'
 });
-const table = (id: string, nom: string, channel: string, discordUrl: string | null = null): WaitingView => ({
+const table = (
+	id: string,
+	nom: string,
+	channel: string,
+	discordUrl: string | null = null
+): WaitingView => ({
 	kind: 'table',
 	id,
 	text: `La Table est ouverte : ${nom}`,
@@ -37,7 +46,11 @@ describe('composerAttente (Ce qui attend ta main)', () => {
 	});
 
 	it('ordre imposé : la scène, puis la Table, puis le rendez-vous', () => {
-		const lignes = composerAttente([rendezVous, table('c1', 'Col des brumes', '#col-des-brumes'), scene('s1', '#le-gue')]);
+		const lignes = composerAttente([
+			rendezVous,
+			table('c1', 'Col des brumes', '#col-des-brumes'),
+			scene('s1', '#le-gue')
+		]);
 		expect(lignes.map((l) => l.kind)).toEqual(['scene', 'table', 'event']);
 	});
 
@@ -52,7 +65,10 @@ describe('composerAttente (Ce qui attend ta main)', () => {
 
 	it('même lien Discord que la Table : la scène est celle de la Table', () => {
 		const url = 'https://discord.com/channels/1/2';
-		const lignes = composerAttente([scene('s1', '#autre-titre', url), table('c1', 'Col des brumes', '#col-des-brumes', url)]);
+		const lignes = composerAttente([
+			scene('s1', '#autre-titre', url),
+			table('c1', 'Col des brumes', '#col-des-brumes', url)
+		]);
 		expect(lignes.map((l) => l.id)).toEqual(['c1']);
 	});
 
@@ -80,7 +96,11 @@ describe('composerAttente (Ce qui attend ta main)', () => {
 			startsAt: '2026-10-03T18:00:00.000Z',
 			discordUrl: ''
 		} as unknown as EventRowView;
-		const lignes = composerAttente([scene('s1', '#le-gue'), scene('s2', '#le-gue')], [prochain], maintenant);
+		const lignes = composerAttente(
+			[scene('s1', '#le-gue'), scene('s2', '#le-gue')],
+			[prochain],
+			maintenant
+		);
 		expect(lignes.map((l) => [l.kind, l.id])).toEqual([
 			['scene', 's1'],
 			['event', 'e9']
@@ -89,14 +109,19 @@ describe('composerAttente (Ce qui attend ta main)', () => {
 	});
 
 	it('Table coupée de la liste reçue : reprise du feuillet, et la scène qu’elle a ouverte s’efface', () => {
-		const lignes = composerAttente([scene('s1', '#col-des-brumes'), scene('s2', '#col-des-brumes')], [], new Date(), {
-			id: 'c7',
-			name: 'Col des brumes',
-			discordUrl: '',
-			round: 1,
-			phase: 'declaration',
-			status: 'en_cours'
-		});
+		const lignes = composerAttente(
+			[scene('s1', '#col-des-brumes'), scene('s2', '#col-des-brumes')],
+			[],
+			new Date(),
+			{
+				id: 'c7',
+				name: 'Col des brumes',
+				discordUrl: '',
+				round: 1,
+				phase: 'declaration',
+				status: 'en_cours'
+			}
+		);
 		expect(lignes.map((l) => [l.kind, l.id])).toEqual([['table', 'c7']]);
 	});
 });

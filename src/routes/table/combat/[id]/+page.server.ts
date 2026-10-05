@@ -33,8 +33,13 @@ export const load: PageServerLoad = async (event) => {
 	try {
 		table = await getTable(db, actor, event.params.id);
 	} catch (e) {
-		if (isNpError(e) && e.status === 404) error(404, { message: 'Cette Table n’existe pas.', code: 'NOT_FOUND' });
-		if (isNpError(e)) error(e.status, { message: 'Cette Table n’a pas pu s’ouvrir : son état enregistré est illisible.', code: e.code });
+		if (isNpError(e) && e.status === 404)
+			error(404, { message: 'Cette Table n’existe pas.', code: 'NOT_FOUND' });
+		if (isNpError(e))
+			error(e.status, {
+				message: 'Cette Table n’a pas pu s’ouvrir : son état enregistré est illisible.',
+				code: e.code
+			});
 		throw e;
 	}
 	// Une Table repliée se lit dans les Archives.
@@ -42,7 +47,11 @@ export const load: PageServerLoad = async (event) => {
 
 	const state = table.state;
 	const participants = [
-		...new Set(state.fighters.filter((f) => f.type === 'player' && !f.isSummon && f.characterId).map((f) => f.characterId!))
+		...new Set(
+			state.fighters
+				.filter((f) => f.type === 'player' && !f.isSummon && f.characterId)
+				.map((f) => f.characterId!)
+		)
 	];
 	const demarre = state.startedAt !== null;
 	const [fiches, personnages, creatures] = await Promise.all([
@@ -81,7 +90,13 @@ export const load: PageServerLoad = async (event) => {
 			personnages: personnages
 				.filter((p) => !participants.includes(p.id))
 				.map((p) => ({ id: p.id, nom: p.name, serment: p.oath.name, niveau: p.level })),
-			creatures: creatures.map((b) => ({ id: b.id, nom: b.name, niveau: b.level, comportement: b.behavior, couleur: b.behaviorColor }))
+			creatures: creatures.map((b) => ({
+				id: b.id,
+				nom: b.name,
+				niveau: b.level,
+				comportement: b.behavior,
+				couleur: b.behaviorColor
+			}))
 		}
 	};
 };
@@ -131,10 +146,16 @@ export const actions: Actions = {
 		const actor = requireCapability(event, 'combat.run');
 		const db = event.locals.db;
 		let state = json<CombatState>(data.state, 'L’état de la Table');
-		if (state.startedAt !== null) throw new NpError('INVALID', 'Les combattants s’ajoutent avant de démarrer.');
+		if (state.startedAt !== null)
+			throw new NpError('INVALID', 'Les combattants s’ajoutent avant de démarrer.');
 		for (const characterId of liste(data.personnages)) {
 			const s = await getSheet(db, actor, characterId);
-			const tiers = [...s.tiers.reached, ...s.tiers.next].map((t) => ({ niv: t.level, nom: t.name, cout: t.cost, desc: t.description }));
+			const tiers = [...s.tiers.reached, ...s.tiers.next].map((t) => ({
+				niv: t.level,
+				nom: t.name,
+				cout: t.cost,
+				desc: t.description
+			}));
 			state = ajout(state, {
 				type: 'player',
 				characterId: s.id,
@@ -204,7 +225,17 @@ export const actions: Actions = {
 		const db = event.locals.db;
 		const state = json<CombatState>(data.state, 'L’état de la Table');
 		const consequences = json<
-			{ characterId: string; expectedRevision?: number; pv: number; ep: number; em: number; statuses: string[]; xp: number; drops: { name: string; beastName: string; qty: number; category: string }[]; motif: string }[]
+			{
+				characterId: string;
+				expectedRevision?: number;
+				pv: number;
+				ep: number;
+				em: number;
+				statuses: string[];
+				xp: number;
+				drops: { name: string; beastName: string; qty: number; category: string }[];
+				motif: string;
+			}[]
 		>(data.consequences, 'Les conséquences');
 		const titre = texte(data.titre);
 		if (!titre) throw new NpError('INVALID', 'Donne un titre au récit.');
@@ -225,12 +256,21 @@ export const actions: Actions = {
 				consequences: consequences as never,
 				recit: { title: titre, visibleToParticipants: texte(data.lisible) === 'oui' },
 				extract: publier
-					? { text: extraitTexte, onHome: texte(data.accueil) === 'oui', beastIds: liste(data.creatures) }
+					? {
+							text: extraitTexte,
+							onHome: texte(data.accueil) === 'oui',
+							beastIds: liste(data.creatures)
+						}
 					: undefined
 			});
 		} catch (e) {
 			// L'état final est relevé mais la clôture est refusée : la page garde la nouvelle révision.
-			if (isNpError(e)) return fail(e.status, { code: e.code, message: e.message, sauve: { revision: sauve.revision, releve: sauve.savedAt } });
+			if (isNpError(e))
+				return fail(e.status, {
+					code: e.code,
+					message: e.message,
+					sauve: { revision: sauve.revision, releve: sauve.savedAt }
+				});
 			throw e;
 		}
 		return { archive: { id: recit.id, at: recit.at, titre: recit.title } };

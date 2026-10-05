@@ -63,9 +63,9 @@ describe('secret et jetons (04 §3.1)', () => {
 	it('échéances : 30 jours (full), min(reset_expires_at, now + 1 h) (reset)', () => {
 		const now = new Date('2026-10-01T10:00:00Z');
 		expect(sessionExpiry('full', now).getTime()).toBe(now.getTime() + FULL_SESSION_MS);
-		expect(sessionExpiry('reset', now, new Date(now.getTime() + 2 * RESET_SESSION_MS)).getTime()).toBe(
-			now.getTime() + RESET_SESSION_MS
-		);
+		expect(
+			sessionExpiry('reset', now, new Date(now.getTime() + 2 * RESET_SESSION_MS)).getTime()
+		).toBe(now.getTime() + RESET_SESSION_MS);
 		const soon = new Date(now.getTime() + 10 * 60 * 1000);
 		expect(sessionExpiry('reset', now, soon).getTime()).toBe(soon.getTime());
 	});
@@ -73,7 +73,13 @@ describe('secret et jetons (04 §3.1)', () => {
 
 describe('readSession', () => {
 	it('lit une session pleine avec le compte et le personnage relié', async () => {
-		const s = await createSession(t.db, { accountId: ALICE, scope: 'full', sessionVersion: 0, ip: '1.2.3.4', userAgent: 'vitest' });
+		const s = await createSession(t.db, {
+			accountId: ALICE,
+			scope: 'full',
+			sessionVersion: 0,
+			ip: '1.2.3.4',
+			userAgent: 'vitest'
+		});
 		const read = await readSession(t.db, s.token);
 		expect(read?.account.id).toBe(ALICE);
 		expect(read?.character?.id).toBe(DEMO_IDS.characters.aria);
@@ -94,7 +100,12 @@ describe('readSession', () => {
 
 	it('refuse une session expirée', async () => {
 		const past = new Date(Date.now() - FULL_SESSION_MS - 1000);
-		const s = await createSession(t.db, { accountId: ALICE, scope: 'full', sessionVersion: 0, now: past });
+		const s = await createSession(t.db, {
+			accountId: ALICE,
+			scope: 'full',
+			sessionVersion: 0,
+			now: past
+		});
 		expect(await readSession(t.db, s.token)).toBeNull();
 		expect(await purgeExpiredSessions(t.db)).toBe(1);
 	});
@@ -117,8 +128,16 @@ describe('readSession', () => {
 
 	it('session reset : valide pendant la réinitialisation, refusée si elle échoit ou est levée (04 §10.8)', async () => {
 		const resetExpiresAt = new Date(Date.now() + 30 * 60 * 1000);
-		await t.db.update(accounts).set({ forcePasswordReset: true, resetExpiresAt }).where(eq(accounts.id, ALICE));
-		const s = await createSession(t.db, { accountId: ALICE, scope: 'reset', sessionVersion: 0, resetExpiresAt });
+		await t.db
+			.update(accounts)
+			.set({ forcePasswordReset: true, resetExpiresAt })
+			.where(eq(accounts.id, ALICE));
+		const s = await createSession(t.db, {
+			accountId: ALICE,
+			scope: 'reset',
+			sessionVersion: 0,
+			resetExpiresAt
+		});
 		expect(s.expiresAt.getTime()).toBe(resetExpiresAt.getTime());
 		const read = await readSession(t.db, s.token);
 		expect(read?.session.scope).toBe('reset');
@@ -149,8 +168,17 @@ describe('readSession', () => {
 describe('cookie np_session', () => {
 	it('HttpOnly ; SameSite=Lax ; Path=/ ; Secure hors dev ; Max-Age = échéance', () => {
 		const now = new Date('2026-10-01T10:00:00Z');
-		const opts = sessionCookieOptions(new Date(now.getTime() + FULL_SESSION_MS), { now, secure: true });
-		expect(opts).toEqual({ path: '/', httpOnly: true, secure: true, sameSite: 'lax', maxAge: 30 * 24 * 3600 });
+		const opts = sessionCookieOptions(new Date(now.getTime() + FULL_SESSION_MS), {
+			now,
+			secure: true
+		});
+		expect(opts).toEqual({
+			path: '/',
+			httpOnly: true,
+			secure: true,
+			sameSite: 'lax',
+			maxAge: 30 * 24 * 3600
+		});
 		expect(sessionCookieOptions(now, { now, secure: false }).secure).toBe(false);
 	});
 
@@ -159,7 +187,8 @@ describe('cookie np_session', () => {
 		const deleted: string[] = [];
 		const cookies = {
 			get: (n: string) => jar.get(n)?.value,
-			set: (n: string, value: string, opts: SessionCookieOptions) => void jar.set(n, { value, opts }),
+			set: (n: string, value: string, opts: SessionCookieOptions) =>
+				void jar.set(n, { value, opts }),
 			delete: (n: string) => void deleted.push(n)
 		};
 		setSessionCookie(cookies, 'jeton', new Date(Date.now() + 1000 * 60), true);

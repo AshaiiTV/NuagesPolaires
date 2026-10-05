@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { chemin } from '$lib/ui/adresse';
 	// La règle sous le pouce : UNE carte, choisie par contexte (ruleCardFor de src/lib/game/rules.ts),
 	// jamais une recherche (03-vision §5.3). Phase de déclaration → actions et coûts ; statut actif →
 	// sa définition ; EP basse → récupération ; sinon le glossaire. Toujours « Voir dans le système de
@@ -16,7 +17,9 @@
 	let { carte, id = 'carte-regle', onfermer }: Props = $props();
 
 	const actions = $derived(
-		carte.id === 'actions' ? carte.actions.filter((a) => a.id !== 'passer' && a.id !== 'capacite') : []
+		carte.id === 'actions'
+			? carte.actions.filter((a) => a.id !== 'passer' && a.id !== 'capacite')
+			: []
 	);
 </script>
 
@@ -34,18 +37,26 @@
 				<li>
 					<span class="mot">{libelleSansPicto(a.label)}</span>
 					<span class="cout chiffres">{coutImprime(a)}</span>
-					<span class="effet">{a.effect}{#if a.conditions !== 'Tous'}{' · '}<em>{a.conditions}</em>{/if}</span>
+					<span class="effet"
+						>{a.effect}{#if a.conditions !== 'Tous'}&nbsp;·&nbsp;<em>{a.conditions}</em>{/if}</span
+					>
 				</li>
 			{/each}
 		</ul>
 	{:else if carte.id === 'status'}
-		<p class="statut"><Losange couleur={carte.definition.color} libelle={carte.definition.label} /></p>
+		<p class="statut">
+			<Losange couleur={carte.definition.color} libelle={carte.definition.label} />
+		</p>
 		<p class="texte">{carte.definition.description}</p>
 	{:else}
 		<p class="texte">{carte.text}</p>
 	{/if}
 
-	<p class="lien"><a href={ancreSysteme(carte.anchor)}>Voir dans le système de jeu <span aria-hidden="true">→</span></a></p>
+	<p class="lien">
+		<a href={chemin(ancreSysteme(carte.anchor))}
+			>Voir dans le système de jeu <span aria-hidden="true">→</span></a
+		>
+	</p>
 </section>
 
 <style>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteMap } from 'svelte/reactivity';
 	// Le feuillet « Conséquences » — la seule modale du carnet (03-vision §3, §5.8, P7).
 	// Par personnage : PV / EP / EM (ancienne → nouvelle), statuts recopiés, XP proposée
 	// (ceil(niveau de la créature × 10 × participation %), participation réglable), drops, motif ;
@@ -15,7 +16,13 @@
 	import Losange from '$lib/ui/Losange.svelte';
 	import NoteDeMarge from '$lib/ui/NoteDeMarge.svelte';
 	import Encre from '$lib/ui/Encre.svelte';
-	import { PHRASE_ATTENTE, PHRASE_CONFLIT, PHRASE_FERME, PHRASE_REFUS } from '$lib/ui/ecriture.svelte';
+	import {
+		PHRASE_ATTENTE,
+		PHRASE_CONFLIT,
+		PHRASE_FERME,
+		PHRASE_REFUS
+	} from '$lib/ui/ecriture.svelte';
+	import { signature, phraseTampon } from '$lib/ui/tampons';
 	import { heure } from '$lib/ui/dates';
 	import type { CombatOutcome } from '$lib/game/combat/types';
 	import type { TableMJ } from './table.svelte';
@@ -37,6 +44,7 @@
 		table: TableMJ;
 		fiches: FicheConsequence[];
 		pseudo: string;
+		role?: string;
 		ouvert: boolean;
 		fermer: () => void;
 		/** La clôture a relevé l'état final avant d'être refusée : la page garde la nouvelle révision. */
@@ -44,7 +52,17 @@
 		archive: Archive | null;
 		archiver: (a: Archive) => void;
 	}
-	let { table, fiches, pseudo, ouvert, fermer, releveSansCloture, archive, archiver }: Props = $props();
+	let {
+		table,
+		fiches,
+		pseudo,
+		role = 'mj',
+		ouvert,
+		fermer,
+		releveSansCloture,
+		archive,
+		archiver
+	}: Props = $props();
 
 	let dialogue = $state<HTMLDialogElement | null>(null);
 	$effect(() => {
@@ -60,11 +78,13 @@
 	const propositions: CombatOutcome[] = $derived(table.propositions(participation));
 	const fiche = (id: string) => fiches.find((f) => f.id === id);
 	const motifDe = (id: string) => motifs[id] ?? `combat archivé · ${table.etat.name}`;
-	const toutes = $derived(propositions.length > 0 && propositions.every((o) => tamponnees.includes(o.characterId)));
+	const toutes = $derived(
+		propositions.length > 0 && propositions.every((o) => tamponnees.includes(o.characterId))
+	);
 
 	function tamponner(e: SubmitEvent, id: string) {
 		e.preventDefault();
-		if (!motifDe(id).trim() || archive) return;
+		if (!motifDe(id).trim() || archive || !dropsPrets) return;
 		tamponnees = [...new Set([...tamponnees, id])];
 		// Entrée enchaîne : le focus passe au motif de la ligne suivante.
 		const suivante = propositions.find((o) => !tamponnees.includes(o.characterId));
@@ -80,12 +100,28 @@
 	}
 	let confirmerTout = $state(false);
 	function tamponnerTout() {
-		tamponnees = propositions.filter((o) => motifDe(o.characterId).trim()).map((o) => o.characterId);
+		if (!dropsPrets) return;
+		tamponnees = propositions
+			.filter((o) => motifDe(o.characterId).trim())
+			.map((o) => o.characterId);
 		confirmerTout = false;
 	}
 
 	// ── Drops en attente (D100 puis gemme attribuée) ─────────────────────────────────────────────
-	const adversairesKo = $derived(table.etat.fighters.filter((f) => f.type === 'beast' && ko(f) && f.gem));
+	const adversairesKo = $derived(
+		table.etat.fighters.filter((f) => f.type === 'beast' && ko(f) && f.gem)
+	);
+	const dropsPrets = $derived(
+		adversairesKo.every((b) => {
+			const d = table.etat.drops.find((drop) => drop.fighterId === b.id);
+			return !!d && d.roll !== null && (d.gem === 'Aucune' || !!d.assignedTo);
+		})
+	);
+	const aLancer = $derived(
+		adversairesKo.find(
+			(b) => !table.etat.drops.some((d) => d.fighterId === b.id && d.roll !== null)
+		)
+	);
 	const dropDe = (fighterId: string) => table.etat.drops.find((d) => d.fighterId === fighterId);
 	let attributions = $state<Record<string, string>>({});
 
@@ -103,9 +139,13 @@
 	let accueil = $state(true);
 	let lisible = $state(true);
 	const creaturesPresentes = $derived(
-		[...new Map(table.etat.fighters.filter((f) => f.type === 'beast' && f.beastId).map((f) => [f.beastId!, f.baseName || f.name])).entries()].map(
-			([id, nom]) => ({ id, nom })
-		)
+		[
+			...new SvelteMap(
+				table.etat.fighters
+					.filter((f) => f.type === 'beast' && f.beastId)
+					.map((f) => [f.beastId!, f.baseName || f.name])
+			).entries()
+		].map(([id, nom]) => ({ id, nom }))
 	);
 	let creatures = $state<string[]>([]);
 	let creaturesInitiales = false;
@@ -116,8 +156,12 @@
 		}
 	});
 	const lignesExtrait = $derived(extrait.split(/\r?\n/).filter((l) => l.trim()).length);
-	const extraitValide = $derived(!publier || (lignesExtrait >= 2 && lignesExtrait <= 4 && !/\n\s*\n/.test(extrait.trim())));
-	const peutArchiver = $derived(toutes && titre.trim().length > 0 && extraitValide && !archive);
+	const extraitValide = $derived(
+		!publier || (lignesExtrait >= 2 && lignesExtrait <= 4 && !/\n\s*\n/.test(extrait.trim()))
+	);
+	const peutArchiver = $derived(
+		dropsPrets && toutes && titre.trim().length > 0 && extraitValide && !archive
+	);
 
 	const consequences = $derived(
 		propositions.map((o) => ({
@@ -127,7 +171,12 @@
 			em: o.emCur,
 			statuses: o.statuses,
 			xp: o.xpGain,
-			drops: o.drops.map((d) => ({ name: d.gem, beastName: d.beastName, qty: 1, category: 'Gemme' })),
+			drops: o.drops.map((d) => ({
+				name: d.gem,
+				beastName: d.beastName,
+				qty: 1,
+				category: 'Gemme'
+			})),
 			motif: motifDe(o.characterId).trim()
 		}))
 	);
@@ -152,7 +201,11 @@
 				return;
 			}
 			if (result.type === 'failure') {
-				const d = (result.data ?? {}) as { code?: string; message?: string; sauve?: { revision: number; releve: string | null } };
+				const d = (result.data ?? {}) as {
+					code?: string;
+					message?: string;
+					sauve?: { revision: number; releve: string | null };
+				};
 				if (d.sauve) releveSansCloture(d.sauve.revision, d.sauve.releve);
 				note = {
 					ton: 'refus',
@@ -168,7 +221,9 @@
 			note = { ton: 'refus', texte: `Rien n’est archivé. ${PHRASE_REFUS}` };
 		};
 	};
-	const signatureTampon = $derived(archive ? `tamponné par ${/^mj$/i.test(pseudo) ? 'MJ' : `MJ ${pseudo}`} · ${heure(archive.at)}` : '');
+	const signatureTampon = $derived(
+		archive ? phraseTampon(role, pseudo, archive.at, 'combat archivé') : ''
+	);
 </script>
 
 <dialog
@@ -184,13 +239,27 @@
 		<p class="repere">Feuillet · {table.etat.name}</p>
 		<h2 id="titre-consequences">Conséquences</h2>
 		{#if archive}
-			<p class="archive" aria-live="polite"><Tampon cle={archive.id}>Archivé · {heure(archive.at)}</Tampon></p>
+			<p class="archive" aria-live="polite">
+				<span>Archivé · {heure(archive.at)}</span>
+				<Tampon cle={archive.id}>{signature(role, pseudo, archive.at)}</Tampon>
+			</p>
 		{/if}
-		<button type="button" class="fermer" onclick={fermer} disabled={enCours} aria-label="Refermer le feuillet">Refermer</button>
+		<button
+			type="button"
+			class="fermer"
+			onclick={fermer}
+			disabled={enCours}
+			aria-label="Refermer le feuillet">Refermer</button
+		>
 	</header>
 
 	{#if adversairesKo.length && !archive}
 		<section class="drops" aria-labelledby="titre-drops">
+			{#if !dropsPrets}<NoteDeMarge
+					>{aLancer
+						? 'Lance le D100 de ' + aLancer.name + ' avant de tamponner.'
+						: 'Attribue chaque gemme avant de tamponner.'}</NoteDeMarge
+				>{/if}
 			<h3 id="titre-drops" class="chapitre"><span class="num">01</span> Drops en attente</h3>
 			<ul>
 				{#each adversairesKo as b (b.id)}
@@ -199,7 +268,9 @@
 						<span class="qui">{b.name}</span>
 						{#if !d || d.roll === null}
 							<span class="detail">D100 à lancer</span>
-							<button type="button" class="geste" onclick={() => table.lancerD100(b.id)}>Lancer le D100</button>
+							<button type="button" class="geste" onclick={() => table.lancerD100(b.id)}
+								>Lancer le D100</button
+							>
 						{:else if d.gem === 'Aucune'}
 							<span class="detail chiffres">D100 : {d.roll} · aucune gemme</span>
 						{:else if d.assignedTo}
@@ -209,12 +280,16 @@
 							<span class="attribuer">
 								<label class="sr-only" for="drop-{d.id}">Attribuer {d.gem} à</label>
 								<select id="drop-{d.id}" bind:value={attributions[d.id]}>
-									{#each propositions as o (o.characterId)}<option value={o.characterId}>{o.name}</option>{/each}
+									{#each propositions as o (o.characterId)}<option value={o.characterId}
+											>{o.name}</option
+										>{/each}
 								</select>
 								<button
 									type="button"
 									class="geste"
-									onclick={() => table.attribuer(d.id, attributions[d.id] ?? propositions[0]?.characterId ?? '')}>Attribuer</button
+									onclick={() =>
+										table.attribuer(d.id, attributions[d.id] ?? propositions[0]?.characterId ?? '')}
+									>Attribuer</button
 								>
 							</span>
 						{/if}
@@ -225,7 +300,9 @@
 	{/if}
 
 	<section aria-labelledby="titre-lignes">
-		<h3 id="titre-lignes" class="chapitre"><span class="num">{adversairesKo.length && !archive ? '02' : '01'}</span> Par personnage</h3>
+		<h3 id="titre-lignes" class="chapitre">
+			<span class="num">{adversairesKo.length && !archive ? '02' : '01'}</span> Par personnage
+		</h3>
 		{#if propositions.length}
 			<ol class="lignes">
 				{#each propositions as o (o.characterId)}
@@ -243,7 +320,12 @@
 									{#if r.m > 0}
 										<span class="res">
 											<span class="k">{r.k}</span>
-											{#if r.a !== undefined && r.a !== r.n}<Rature ancien={r.a} nouveau={r.n} /><span class="max">/{r.m}</span>{:else}<span class="inchange">{r.n}/{r.m}</span>{/if}
+											{#if r.a !== undefined && r.a !== r.n}<Rature
+													ancien={r.a}
+													nouveau={r.n}
+												/><span class="max">/{r.m}</span>{:else}<span class="inchange"
+													>{r.n}/{r.m}</span
+												>{/if}
 										</span>
 									{/if}
 								{/each}
@@ -270,7 +352,14 @@
 											step="5"
 											value={participation[o.characterId] ?? 100}
 											disabled={pose || !!archive}
-											oninput={(e) => (participation = { ...participation, [o.characterId]: Math.max(0, Math.min(100, Number(e.currentTarget.value) || 0)) })}
+											oninput={(e) =>
+												(participation = {
+													...participation,
+													[o.characterId]: Math.max(
+														0,
+														Math.min(100, Number(e.currentTarget.value) || 0)
+													)
+												})}
 										/>
 										<span class="unite">%</span>
 									</span>
@@ -282,7 +371,8 @@
 							</div>
 							<p class="drops-ligne">
 								{#if o.drops.length}
-									{#each o.drops as d, j (j)}<span>{d.gem} · Obtenue sur : {d.beastName}</span>{/each}
+									{#each o.drops as d, j (j)}<span>{d.gem} · Obtenue sur : {d.beastName}</span
+										>{/each}
 								{:else}
 									<span class="detail">Aucun drop.</span>
 								{/if}
@@ -293,7 +383,8 @@
 									<input
 										id="motif-{o.characterId}"
 										value={motifDe(o.characterId)}
-										oninput={(e) => (motifs = { ...motifs, [o.characterId]: e.currentTarget.value })}
+										oninput={(e) =>
+											(motifs = { ...motifs, [o.characterId]: e.currentTarget.value })}
 										required
 										maxlength={2000}
 										disabled={pose || !!archive}
@@ -302,10 +393,18 @@
 								{#if archive}
 									<Tampon cle={archive.id + o.characterId}>{signatureTampon}</Tampon>
 								{:else if pose}
-									<span class="en-attente"><Encre etat="humide">Tamponnée · s’imprime à l’archivage</Encre></span>
-									<button type="button" class="geste" onclick={() => reprendreLigne(o.characterId)}>Reprendre la ligne</button>
+									<span class="en-attente"
+										><Encre etat="humide">Tamponnée · s’imprime à l’archivage</Encre></span
+									>
+									<button type="button" class="geste" onclick={() => reprendreLigne(o.characterId)}
+										>Reprendre la ligne</button
+									>
 								{:else}
-									<Bouton variante="tampon" type="submit" disabled={!motifDe(o.characterId).trim()}>Tamponner</Bouton>
+									<Bouton
+										variante="tampon"
+										type="submit"
+										disabled={!dropsPrets || !motifDe(o.characterId).trim()}>Tamponner</Bouton
+									>
 								{/if}
 							</div>
 						</form>
@@ -315,51 +414,112 @@
 			{#if !archive && !toutes}
 				<div class="tout">
 					{#if confirmerTout}
-						<p>Tamponner les {propositions.length - tamponnees.length} lignes restantes avec leur motif ?</p>
-						<Bouton variante="tampon" onclick={tamponnerTout}>Tamponner tout</Bouton>
-						<button type="button" class="geste" onclick={() => (confirmerTout = false)}>Garder</button>
+						<p>
+							Tamponner les {propositions.length - tamponnees.length} lignes restantes avec leur motif
+							?
+						</p>
+						<Bouton variante="tampon" onclick={tamponnerTout} disabled={!dropsPrets}
+							>Tamponner tout</Bouton
+						>
+						<button type="button" class="geste" onclick={() => (confirmerTout = false)}
+							>Garder</button
+						>
 					{:else}
-						<Bouton variante="trait" onclick={() => (confirmerTout = true)}>Tamponner tout</Bouton>
+						<Bouton variante="trait" onclick={() => (confirmerTout = true)} disabled={!dropsPrets}
+							>Tamponner tout</Bouton
+						>
 					{/if}
 				</div>
 			{/if}
 		{:else}
-			<p class="detail vide">Aucun Élève du Serment à cette Table : rien à tamponner sur une fiche.</p>
+			<p class="detail vide">
+				Aucun Élève du Serment à cette Table : rien à tamponner sur une fiche.
+			</p>
 		{/if}
 	</section>
 
-	<form class="archivage" method="POST" action="?/terminer" use:enhance={envoyer} aria-labelledby="titre-archivage">
-		<h3 id="titre-archivage" class="chapitre"><span class="num">{adversairesKo.length && !archive ? '03' : '02'}</span> Archivage</h3>
+	<form
+		class="archivage"
+		method="POST"
+		action="?/terminer"
+		use:enhance={envoyer}
+		aria-labelledby="titre-archivage"
+	>
+		<h3 id="titre-archivage" class="chapitre">
+			<span class="num">{adversairesKo.length && !archive ? '03' : '02'}</span> Archivage
+		</h3>
 		<label class="champ">
 			<span>Titre du récit</span>
-			<input id="titre-recit" name="titre" bind:value={titre} required maxlength={200} disabled={!!archive} />
+			<input
+				id="titre-recit"
+				name="titre"
+				bind:value={titre}
+				required
+				maxlength={200}
+				disabled={!!archive}
+			/>
 		</label>
 		<label class="case">
-			<input type="checkbox" name="lisible" value="oui" bind:checked={lisible} disabled={!!archive} />
+			<input
+				type="checkbox"
+				name="lisible"
+				value="oui"
+				bind:checked={lisible}
+				disabled={!!archive}
+			/>
 			<span>Lisible par ses participants <span class="detail">· sans les notes du MJ</span></span>
 		</label>
 		<label class="case">
-			<input type="checkbox" name="publier" value="oui" bind:checked={publier} disabled={!!archive} />
+			<input
+				type="checkbox"
+				name="publier"
+				value="oui"
+				bind:checked={publier}
+				disabled={!!archive}
+			/>
 			<span>Publier un extrait</span>
 		</label>
 		{#if publier}
 			<div class="extrait">
 				<label class="champ">
 					<span>Extrait · deux à quatre lignes, écrites par toi</span>
-					<textarea name="extrait" bind:value={extrait} rows="4" maxlength={4000} disabled={!!archive}></textarea>
+					<textarea
+						name="extrait"
+						bind:value={extrait}
+						rows="4"
+						maxlength={4000}
+						disabled={!!archive}></textarea>
 				</label>
-				<p class="detail chiffres" class:refus={publier && extrait.trim() && !extraitValide} aria-live="polite">
-					{lignesExtrait ? `${lignesExtrait} ligne${lignesExtrait > 1 ? 's' : ''}` : 'Va à la ligne entre deux phrases'} · aucun nom de participant sur l’accueil.
+				<p
+					class="detail chiffres"
+					class:refus={publier && extrait.trim() && !extraitValide}
+					aria-live="polite"
+				>
+					{lignesExtrait
+						? `${lignesExtrait} ligne${lignesExtrait > 1 ? 's' : ''}`
+						: 'Va à la ligne entre deux phrases'} · aucun nom de participant sur l’accueil.
 				</p>
 				<fieldset>
 					<legend>Destinations</legend>
 					<label class="case">
-						<input type="checkbox" name="accueil" value="oui" bind:checked={accueil} disabled={!!archive} />
+						<input
+							type="checkbox"
+							name="accueil"
+							value="oui"
+							bind:checked={accueil}
+							disabled={!!archive}
+						/>
 						<span>L’accueil</span>
 					</label>
 					{#each creaturesPresentes as c (c.id)}
 						<label class="case">
-							<input type="checkbox" name="creatures" value={c.id} bind:group={creatures} disabled={!!archive} />
+							<input
+								type="checkbox"
+								name="creatures"
+								value={c.id}
+								bind:group={creatures}
+								disabled={!!archive}
+							/>
 							<span>La page de {c.nom}</span>
 						</label>
 					{/each}
@@ -369,13 +529,19 @@
 
 		<div class="valider">
 			{#if archive}
-				<Bouton variante="texte" href="/table/archives/{archive.id}" fleche="→">Lire le récit</Bouton>
+				<Bouton variante="texte" href="/table/archives/{archive.id}" fleche="→"
+					>Lire le récit</Bouton
+				>
 				<Bouton variante="texte" href="/table" fleche="→">Retour aux Tables</Bouton>
 			{:else}
 				<p class="detail">
-					{#if !toutes}Tamponne chaque ligne avant d’archiver.{:else if !extraitValide}L’extrait tient en deux à quatre lignes.{:else}Le combat se replie en récit ; les conséquences s’impriment sur les fiches.{/if}
+					{#if !toutes}Tamponne chaque ligne avant d’archiver.{:else if !extraitValide}L’extrait
+						tient en deux à quatre lignes.{:else}Le combat se replie en récit ; les conséquences
+						s’impriment sur les fiches.{/if}
 				</p>
-				<Bouton variante="tampon" type="submit" disabled={!peutArchiver || enCours}>Archiver le récit</Bouton>
+				<Bouton variante="tampon" type="submit" disabled={!peutArchiver || enCours}
+					>Archiver le récit</Bouton
+				>
 			{/if}
 		</div>
 		{#if note}
@@ -656,7 +822,7 @@
 		width: 20px;
 		height: 20px;
 		margin: 0;
-		accent-color: var(--tampon);
+		accent-color: var(--encre-humide);
 	}
 	.extrait {
 		display: grid;

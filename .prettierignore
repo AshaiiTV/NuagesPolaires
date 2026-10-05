@@ -8,3 +8,14 @@ bun.lockb
 # Miscellaneous
 /static/
 /drizzle/
+/legacy/
+/docs/
+/test-results/
+/.netlify/
+/build/
+
+# Textes du propriétaire : conservés verbatim, hors du paquet de corrections.
+/src/content/systeme-de-jeu.md
+/src/content/reglement.md
+/src/content/site-et-donnees.md
+/src/content/synopsis.md

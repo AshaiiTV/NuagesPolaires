@@ -1,6 +1,6 @@
 // Apparitions et transfert : 06-contrats B.6 ; audit 03 §10 ; 04 §3.7 et §10.10.
 import { randomBytes } from 'node:crypto';
-import { and, desc, eq, gt } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Db, Tx } from '../db';
 import {
@@ -8,6 +8,7 @@ import {
 	beastZones,
 	spawnCounters,
 	spawnRuns,
+	auditLog,
 	spawnSettings,
 	zones,
 	sessions,
@@ -245,13 +246,35 @@ export async function drawSpawn(
 }
 export async function spawnHistory(db: Db, actor: Actor | null): Promise<SpawnRunView[]> {
 	assertCan(actor, 'spawn.run');
-	return (
-		await db
-			.select()
-			.from(spawnRuns)
-			.orderBy(desc(spawnRuns.generatedAt), desc(spawnRuns.id))
-			.limit(24)
-	).map(view);
+	const rows = await db
+		.select()
+		.from(spawnRuns)
+		.orderBy(desc(spawnRuns.generatedAt), desc(spawnRuns.id))
+		.limit(24);
+	const transferts = rows.length
+		? await db
+				.select({ details: auditLog.details })
+				.from(auditLog)
+				.where(
+					and(
+						eq(auditLog.action, 'apparition_transferee'),
+						inArray(
+							sql<string>`${auditLog.details}->>'runId'`,
+							rows.map((r) => r.id)
+						)
+					)
+				)
+				.orderBy(desc(auditLog.ts), desc(auditLog.id))
+		: [];
+	return rows.map((row) => {
+		const transfert = transferts.find((t) => t.details.runId === row.id);
+		return {
+			...view(row),
+			...(typeof transfert?.details.combatId === 'string'
+				? { combatId: transfert.details.combatId }
+				: {})
+		};
+	});
 }
 export async function spawnTotals(db: Db, actor: Actor | null): Promise<SpawnTotalsView> {
 	assertCan(actor, 'spawn.run');

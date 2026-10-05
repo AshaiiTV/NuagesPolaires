@@ -61,13 +61,7 @@ export type InventoryItemLike = {
 
 /** Rangs des Serments (`SERM_LEVELS`, legacy main.js:6096-6104). audit 02 §4.2 */
 export type OathRank =
-	| 'basic'
-	| 'seasoned'
-	| 'emeritus'
-	| 'singular'
-	| 'transcended'
-	| 'corrupted'
-	| 'other';
+	'basic' | 'seasoned' | 'emeritus' | 'singular' | 'transcended' | 'corrupted' | 'other';
 
 /** Catégories de combat (`SERM_CATS`, legacy main.js:6091-6095). audit 02 §4.2 */
 export type OathCategory = 'melee' | 'distance' | 'magie' | 'soutien';

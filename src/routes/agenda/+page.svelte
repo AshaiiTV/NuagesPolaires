@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+	import { chemin } from '$lib/ui/adresse';
 	// Agenda (03-vision §5.6) : les rendez-vous de la table Discord. Marge : le mois, le fuseau, l'accès
 	// « Organiser » pour qui en a le droit. Corps : « À venir » (une ligne datée par rendez-vous),
 	// puis, sous un filet, « Passés » en encre grise, 8 par page.
@@ -71,14 +73,17 @@
 			{#if data.agenda.past.length}<a href="#passes">Passés</a>{/if}
 		</nav>
 		{#if data.organiser}
-			<div class="organiser"><Bouton variante="texte" href="/agenda/organiser" fleche="→">Organiser</Bouton></div>
+			<div class="organiser">
+				<Bouton variante="texte" href="/agenda/organiser" fleche="→">Organiser</Bouton>
+			</div>
 		{/if}
 	{/snippet}
 	{#snippet bande()}
 		<span class="bande-mois">{moisCourant}</span>
 		<span>Heure de Paris</span>
 		{#if interrompu}<span class="retard">Les rendez-vous affichés datent de {releve}.</span>{/if}
-		{#if data.organiser}<a class="bande-lien" href="/agenda/organiser">Organiser →</a>{/if}
+		{#if data.organiser}<a class="bande-lien" href={resolve('/agenda/organiser')}>Organiser →</a
+			>{/if}
 	{/snippet}
 
 	<Chapitre titre="À venir" id="a-venir">
@@ -109,7 +114,9 @@
 			<Vide>
 				Rien de prévu. Le monde attend.
 				{#snippet action()}
-					{#if data.organiser}<Bouton variante="texte" href="/agenda/organiser" fleche="→">Organiser un rendez-vous</Bouton>{/if}
+					{#if data.organiser}<Bouton variante="texte" href="/agenda/organiser" fleche="→"
+							>Organiser un rendez-vous</Bouton
+						>{/if}
 				{/snippet}
 			</Vide>
 		{/if}
@@ -120,17 +127,28 @@
 			<h2 id="titre-passes">Passés</h2>
 			<ol class="liste">
 				{#each data.agenda.past as ev (ev.id)}
-					<Ligne {ev} lu={data.lu} relie={data.relie} tampon={data.tampons[ev.id] ?? null} passe participer={(geste) => participer(ev.id, geste)} />
+					<Ligne
+						{ev}
+						lu={data.lu}
+						relie={data.relie}
+						tampon={data.tampons[ev.id] ?? null}
+						passe
+						participer={(geste) => participer(ev.id, geste)}
+					/>
 				{/each}
 			</ol>
 			{#if data.agenda.pastPages > 1}
 				<nav class="pages" aria-label="Pages des rendez-vous passés">
 					{#if page > 1}
-						<a href="?passes={page - 1}#passes" rel="prev"><span aria-hidden="true">←</span> Page précédente</a>
+						<a href={chemin(`/agenda?passes=${page - 1}#passes`)} rel="prev"
+							><span aria-hidden="true">←</span> Page précédente</a
+						>
 					{/if}
 					<span class="folio chiffres">page {page} sur {data.agenda.pastPages}</span>
 					{#if page < data.agenda.pastPages}
-						<a href="?passes={page + 1}#passes" rel="next">Page suivante <span aria-hidden="true">→</span></a>
+						<a href={chemin(`/agenda?passes=${page + 1}#passes`)} rel="next"
+							>Page suivante <span aria-hidden="true">→</span></a
+						>
 					{/if}
 				</nav>
 			{/if}

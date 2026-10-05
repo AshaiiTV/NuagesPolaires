@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+	import { chemin } from '$lib/ui/adresse';
 	// « Plus » : la suite de la bande basse du téléphone, en lignes de carnet. D'abord ce qui est à toi
 	// (journal, compte, collection), puis les cahiers de ton rôle absents de la bande, puis « Quitter le
 	// carnet ». Les règles sont celles de la tranche : ce qui n'est pas autorisé n'est pas rendu.
@@ -26,14 +28,39 @@
 		const dansLaBande = new Set(bandePour(compte, '/plus').map((o) => o.href));
 		const a_toi: Ligne[] = [
 			...(compte.relie
-				? [{ id: 'journal', href: '/carnet/journal', titre: 'Mon journal', resume: 'Tes notes, tes récits, les faits validés.' }]
+				? [
+						{
+							id: 'journal',
+							href: '/carnet/journal',
+							titre: 'Mon journal',
+							resume: 'Tes notes, tes récits, les faits validés.'
+						}
+					]
 				: []),
-			{ id: 'compte', href: '/compte', titre: 'Mon compte', resume: data.discordActif ? 'Pseudo, mot de passe, thème, Discord.' : 'Pseudo, mot de passe, thème.' },
-			{ id: 'collection', href: '/compte/collection', titre: 'Ma collection', resume: 'Les couleurs de ton carnet.' }
+			{
+				id: 'compte',
+				href: '/compte',
+				titre: 'Mon compte',
+				resume: data.discordActif
+					? 'Pseudo, mot de passe, thème, Discord.'
+					: 'Pseudo, mot de passe, thème.'
+			},
+			{
+				id: 'collection',
+				href: '/compte/collection',
+				titre: 'Ma collection',
+				resume: 'Les couleurs de ton carnet.'
+			}
 		];
 		const cahiers = cahiersPour(compte, '/plus')
 			.filter((o) => !dansLaBande.has(o.href))
-			.map((o) => ({ id: o.id, href: o.href, titre: o.libelle, resume: RESUMES[o.id] ?? '', corne: o.corne }));
+			.map((o) => ({
+				id: o.id,
+				href: o.href,
+				titre: o.libelle,
+				resume: RESUMES[o.id] ?? '',
+				corne: o.corne
+			}));
 		return [...a_toi, ...cahiers];
 	});
 	const numero = (i: number) => String(i + 1).padStart(2, '0');
@@ -44,15 +71,19 @@
 <Enveloppe compte={data.compte} discord={data.discord}>
 	<Page repere="NP / 07 — Plus" titre="La suite" titreVoix="du carnet.">
 		{#snippet marge()}
-			<p class="voix">Ce qui ne tient pas dans la bande du bas : ce qui est à toi, puis les autres cahiers.</p>
+			<p class="voix">
+				Ce qui ne tient pas dans la bande du bas : ce qui est à toi, puis les autres cahiers.
+			</p>
 		{/snippet}
 
-		<a class="qui" href="/compte">
+		<a class="qui" href={resolve('/compte')}>
 			<Portrait nom={data.personnage?.name ?? compte.pseudo} src={compte.portrait} taille={56} />
 			<span class="nom">
 				<span class="pseudo">{compte.pseudo}</span>
 				<span class="detail">
-					{LIBELLES_ROLE[compte.role]}{#if data.personnage}{' · ' + data.personnage.name}{:else if compte.role === 'joueur'}{' · en attente de liaison'}{/if}
+					{LIBELLES_ROLE[compte.role]}{#if data.personnage}{' · ' +
+							data.personnage
+								.name}{:else if compte.role === 'joueur'}&nbsp;·&nbsp;en&nbsp;attente&nbsp;de&nbsp;liaison{/if}
 				</span>
 			</span>
 		</a>
@@ -60,11 +91,13 @@
 		<ol class="lignes">
 			{#each lignes as ligne, i (ligne.id)}
 				<li>
-					<a href={ligne.href}>
+					<a href={chemin(ligne.href)}>
 						<span class="numero chiffres">{numero(i)}</span>
 						<span class="titre">
 							{ligne.titre}
-							{#if ligne.corne}<span class="corne" aria-hidden="true"></span><span class="sr-only"> — pages non lues</span>{/if}
+							{#if ligne.corne}<span class="corne" aria-hidden="true"></span><span class="sr-only">
+									— pages non lues</span
+								>{/if}
 						</span>
 						<span class="fleche" aria-hidden="true">→</span>
 						<span class="resume">{ligne.resume}</span>
@@ -77,7 +110,9 @@
 						<span class="numero chiffres">{numero(lignes.length)}</span>
 						<span class="titre">Quitter le carnet</span>
 						<span class="fleche" aria-hidden="true">→</span>
-						<span class="resume">Il se referme sur tous tes appareils. Ce qui est écrit reste écrit.</span>
+						<span class="resume"
+							>Il se referme sur tous tes appareils. Ce qui est écrit reste écrit.</span
+						>
 					</button>
 				</form>
 			</li>
@@ -134,7 +169,7 @@
 	.numero {
 		font: var(--t-repere);
 		letter-spacing: var(--approche-repere);
-		color: var(--tampon);
+		color: var(--encre-2);
 	}
 	.titre {
 		position: relative;

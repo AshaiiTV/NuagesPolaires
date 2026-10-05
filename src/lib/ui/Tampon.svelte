@@ -37,7 +37,9 @@
 		font: var(--t-repere);
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
-		white-space: nowrap;
+		max-width: 100%;
+		white-space: normal;
+		overflow-wrap: anywhere;
 		rotate: var(--angle);
 		/* Bord irrégulier : l'encre du tampon ne prend jamais tout à fait. */
 		filter: url(#np-encre-seche);
@@ -54,6 +56,12 @@
 		to {
 			translate: 0 0;
 			opacity: 1;
+		}
+	}
+	@media (prefers-contrast: more) {
+		.tampon {
+			rotate: 0deg;
+			filter: none;
 		}
 	}
 </style>

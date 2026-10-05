@@ -25,14 +25,12 @@ beforeEach(async () => {
 		{ id: 'a_mj', pseudo: 'MJ', role: 'mj', passwordHash: 'fixture' },
 		{ id: 'a_player', pseudo: 'Alice', characterId: 'p_a', passwordHash: 'fixture' }
 	]);
-	await testDb.db
-		.insert(sessions)
-		.values({
-			id: 'session',
-			accountId: 'a_mj',
-			sessionVersion: 0,
-			expiresAt: new Date(Date.now() + 3600000)
-		});
+	await testDb.db.insert(sessions).values({
+		id: 'session',
+		accountId: 'a_mj',
+		sessionVersion: 0,
+		expiresAt: new Date(Date.now() + 3600000)
+	});
 	await testDb.db.insert(beasts).values({ id: 'b_loup', name: 'Loup' });
 	const table = await createTable(testDb.db, mj, {
 		name: 'Col',

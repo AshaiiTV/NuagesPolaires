@@ -15,7 +15,10 @@ type GuardEvent = Pick<RequestEvent, 'locals' | 'url'>;
 function toLogin(event: GuardEvent): never {
 	if (event.locals.session?.scope === 'reset') redirect(303, RESET_PAGE);
 	const back = event.url.pathname + event.url.search;
-	const query = back && back !== '/' && back.startsWith('/') && !back.startsWith('//') ? `?retour=${encodeURIComponent(back)}` : '';
+	const query =
+		back && back !== '/' && back.startsWith('/') && !back.startsWith('//')
+			? `?retour=${encodeURIComponent(back)}`
+			: '';
 	redirect(303, `${LOGIN_PAGE}${query}`);
 }
 

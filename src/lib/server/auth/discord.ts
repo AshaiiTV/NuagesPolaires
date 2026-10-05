@@ -31,7 +31,8 @@ const DISCORD_AUTHORIZE_URL = 'https://discord.com/oauth2/authorize';
 const DISCORD_TOKEN_URL = 'https://discord.com/api/oauth2/token';
 const DISCORD_ME_URL = 'https://discord.com/api/users/@me';
 
-const STATE_EXPIRED_MESSAGE = 'La connexion Discord a expiré ou a déjà servi. Recommence depuis le carnet.';
+const STATE_EXPIRED_MESSAGE =
+	'La connexion Discord a expiré ou a déjà servi. Recommence depuis le carnet.';
 
 /** Discord est actif si DISCORD_CLIENT_ID est défini (03-vision §12.6). */
 export function isDiscordEnabled(env: Env = process.env): boolean {
@@ -40,7 +41,11 @@ export function isDiscordEnabled(env: Env = process.env): boolean {
 
 function assertEnabled(env: Env): { clientId: string; clientSecret: string; redirectUri: string } {
 	if (!isDiscordEnabled(env)) {
-		throw new NpError('DISCORD_DISABLED', 'La connexion Discord n’est pas activée sur ce carnet.', 404);
+		throw new NpError(
+			'DISCORD_DISABLED',
+			'La connexion Discord n’est pas activée sur ce carnet.',
+			404
+		);
 	}
 	const site = (env.NP_SITE_URL ?? '').trim().replace(/\/+$/, '');
 	if (!site) throw new Error('NP_SITE_URL est requis pour la connexion Discord.');
@@ -70,7 +75,9 @@ interface StatePayload {
 }
 
 function sign(data: string, env: Env): string {
-	return createHmac('sha256', sessionSecret(env)).update(`discord:${data}`, 'utf8').digest('base64url');
+	return createHmac('sha256', sessionSecret(env))
+		.update(`discord:${data}`, 'utf8')
+		.digest('base64url');
 }
 
 function encodeState(payload: StatePayload, env: Env): string {
@@ -97,7 +104,12 @@ export function readDiscordState(
 	} catch {
 		return null;
 	}
-	if (typeof payload?.s !== 'string' || typeof payload.v !== 'string' || typeof payload.e !== 'number') return null;
+	if (
+		typeof payload?.s !== 'string' ||
+		typeof payload.v !== 'string' ||
+		typeof payload.e !== 'number'
+	)
+		return null;
 	if (payload.e <= now.getTime()) return null;
 	const a = Buffer.from(payload.s);
 	const b = Buffer.from(state);
@@ -160,7 +172,8 @@ export async function exchangeDiscordCode(
 	env: Env = process.env
 ): Promise<{ id: string; username: string }> {
 	const cfg = assertEnabled(env);
-	const failure = () => new NpError('DISCORD_FAILED', 'Discord n’a pas confirmé la connexion. Réessaie.', 502);
+	const failure = () =>
+		new NpError('DISCORD_FAILED', 'Discord n’a pas confirmé la connexion. Réessaie.', 502);
 	let tokenResponse: Response;
 	try {
 		tokenResponse = await fetchFn(DISCORD_TOKEN_URL, {
@@ -190,7 +203,10 @@ export async function exchangeDiscordCode(
 		throw failure();
 	}
 	if (!meResponse.ok) throw failure();
-	const me = (await meResponse.json().catch(() => null)) as { id?: unknown; username?: unknown } | null;
+	const me = (await meResponse.json().catch(() => null)) as {
+		id?: unknown;
+		username?: unknown;
+	} | null;
 	if (!me || typeof me.id !== 'string' || !/^\d{5,32}$/.test(me.id)) throw failure();
 	return { id: me.id, username: typeof me.username === 'string' ? me.username.slice(0, 64) : '' };
 }
@@ -251,7 +267,11 @@ export async function discordCallback(
 }
 
 function discordTaken(): NpError {
-	return new NpError('DISCORD_TAKEN', 'Ce compte Discord est déjà lié à un autre compte du carnet.', 409);
+	return new NpError(
+		'DISCORD_TAKEN',
+		'Ce compte Discord est déjà lié à un autre compte du carnet.',
+		409
+	);
 }
 
 /** Délie le compte Discord du compte connecté. */
@@ -263,7 +283,12 @@ export async function discordUnlink(db: Db, actor: Actor | null): Promise<void> 
 			.update(accounts)
 			.set({ discordId: null, discordUsername: null })
 			.where(eq(accounts.id, present.accountId));
-		await recordAudit(tx, { source: 'auth', action: 'discord_unlink', actor: present, ...auditContextOf(present) });
+		await recordAudit(tx, {
+			source: 'auth',
+			action: 'discord_unlink',
+			actor: present,
+			...auditContextOf(present)
+		});
 	});
 }
 
@@ -277,11 +302,16 @@ export async function discordLogin(
 	const now = deps.now ?? new Date();
 	const { code, state } = parseInput(discordCallbackInput, input);
 	const payload = readDiscordState(input.cookieValue, state, env, now);
-	if (!payload || payload.m !== 'login') throw new NpError('DISCORD_STATE', STATE_EXPIRED_MESSAGE, 400);
+	if (!payload || payload.m !== 'login')
+		throw new NpError('DISCORD_STATE', STATE_EXPIRED_MESSAGE, 400);
 	const identity = await exchangeDiscordCode(code, payload.v, deps.fetch, env);
 
 	return db.transaction(async (tx) => {
-		const [account] = await tx.select().from(accounts).where(eq(accounts.discordId, identity.id)).for('update');
+		const [account] = await tx
+			.select()
+			.from(accounts)
+			.where(eq(accounts.discordId, identity.id))
+			.for('update');
 		// Un compte en réinitialisation forcée ne s'ouvre qu'avec son code (04 §4).
 		if (!account || !scopeMatchesAccount('full', account, now)) {
 			throw NpError.unauthenticated(
@@ -300,7 +330,12 @@ export async function discordLogin(
 		await recordAudit(tx, {
 			source: 'auth',
 			action: 'login_success',
-			actor: { accountId: account.id, role: account.role, characterId: account.characterId, pseudo: account.pseudo },
+			actor: {
+				accountId: account.id,
+				role: account.role,
+				characterId: account.characterId,
+				pseudo: account.pseudo
+			},
 			details: { method: 'discord', scope: 'full' },
 			ip: input.ip ?? null,
 			userAgent: input.userAgent ?? null

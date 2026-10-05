@@ -198,7 +198,9 @@ describe('applyXp', () => {
 		const result = applyXp(hero, 30, null);
 		expect(result.character.level).toBe(2);
 		expect([result.character.pvMax, result.character.pvCur]).toEqual([30, 12]);
-		expect(result.entries[0]?.text).toBe('⬆ Niveau 2 ! PV:30 EP:50 EM:20 — Palier I — Éveil débloqué');
+		expect(result.entries[0]?.text).toBe(
+			'⬆ Niveau 2 ! PV:30 EP:50 EM:20 — Palier I — Éveil débloqué'
+		);
 	});
 
 	it('plancher l’XP à 0 sans descente de niveau pour un montant négatif (audit 02 §2.5)', () => {
@@ -223,7 +225,12 @@ describe('applyXp', () => {
 
 	it('previewXp donne le même résultat sans effet', () => {
 		expect(previewXp(hero, 90)).toEqual({ level: 3, xp: 0, xpMax: 90, levelsGained: 2 });
-		expect(previewXp({ level: 2, xp: 50 }, 5)).toEqual({ level: 2, xp: 55, xpMax: 60, levelsGained: 0 });
+		expect(previewXp({ level: 2, xp: 50 }, 5)).toEqual({
+			level: 2,
+			xp: 55,
+			xpMax: 60,
+			levelsGained: 0
+		});
 	});
 });
 
@@ -405,7 +412,11 @@ describe('normalizeLegacyProgression', () => {
 
 	it('arrondit au point supérieur sans créer de niveau', () => {
 		expectUnified(normalizeLegacyProgression(legacy({ sLevel: 5, sXp: 1, sXpMax: 7 })), 5, 22);
-		expectUnified(normalizeLegacyProgression(legacy({ sLevel: 5, sXp: 999, sXpMax: 1000 })), 5, 149);
+		expectUnified(
+			normalizeLegacyProgression(legacy({ sLevel: 5, sXp: 999, sXpMax: 1000 })),
+			5,
+			149
+		);
 	});
 
 	it('résout les seuils atteints avant de comparer', () => {
@@ -495,7 +506,9 @@ describe('normalizeLegacyProgression', () => {
 		expect(player.pvMax).toBe(41);
 		expect(normalizeLegacyProgression(player)).toEqual(player);
 		expectUnified(normalizeLegacyProgression(legacy({ progressionVersion: 'legacy' })), 5, 75);
-		expect(normalizeLegacyProgression(legacy({ progressionVersion: 3 })).progressionVersion).toBe(3);
+		expect(normalizeLegacyProgression(legacy({ progressionVersion: 3 })).progressionVersion).toBe(
+			3
+		);
 	});
 });
 
@@ -512,7 +525,9 @@ describe('clampResources et newProgressionState', () => {
 			emMax: 20,
 			emCur: 20
 		});
-		expect(clampResources({ level: 2, pvMax: 0, pvCur: -4, epCur: 12.7, emMax: null, emCur: 5 })).toEqual({
+		expect(
+			clampResources({ level: 2, pvMax: 0, pvCur: -4, epCur: 12.7, emMax: null, emCur: 5 })
+		).toEqual({
 			level: 2,
 			xp: 0,
 			xpMax: 60,

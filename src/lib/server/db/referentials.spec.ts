@@ -133,7 +133,20 @@ describe('migration de données 0001_referentiels', () => {
 		const seeded = await createTestDb({ referentials: false, seed: true });
 		try {
 			for (const table of REFERENTIAL_TABLES) {
-				expect(await snapshot(migrated, table), table).toEqual(await snapshot(seeded, table));
+				const historiques = await snapshot(migrated, table);
+				// Les migrations historiques gardent leurs libellés ; le semis suit les arbitrages actuels.
+				const attendues =
+					table === 'themes'
+						? historiques.map((row) => {
+								const theme = THEMES.find((t) => t.id === row.id);
+								return {
+									...row,
+									name: theme?.name ?? row.name,
+									description: theme?.description ?? row.description
+								};
+							})
+						: historiques;
+				expect(attendues, table).toEqual(await snapshot(seeded, table));
 			}
 		} finally {
 			await seeded.close();

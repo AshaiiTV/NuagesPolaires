@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+	import { chemin } from '$lib/ui/adresse';
 	// La Table vue par un joueur (03-vision §5.9, §6.7, P3). Lever les yeux de Discord et comprendre
 	// en une seconde ce qui a changé, sans pouvoir agir : aucune action sur le combat, aucun élément
 	// cliquable dans la zone de la Table. La page s'écrit au rythme du MJ par un sondage court
@@ -31,7 +33,11 @@
 	type Champ = 'pv' | 'ep' | 'em';
 	const CHAMPS: readonly Champ[] = ['pv', 'ep', 'em'];
 	const NOMS = { pv: 'PV', ep: 'EP', em: 'EM' } as const;
-	const ETATS: Record<NarrativeCondition, string> = { LEGER: 'Léger', GRAVE: 'Grave', CRITIQUE: 'Critique' };
+	const ETATS: Record<NarrativeCondition, string> = {
+		LEGER: 'Léger',
+		GRAVE: 'Grave',
+		CRITIQUE: 'Critique'
+	};
 	const SONDAGE_MS = 4000;
 	const RETARD_S = 8;
 	const PERDUE_S = 30;
@@ -68,7 +74,9 @@
 	const camp = $derived(moi?.type ?? 'player');
 	const allies = $derived(p ? p.fighters.filter((f) => f.type === camp && f.id !== moi?.id) : []);
 	const adversaires = $derived(p ? p.fighters.filter((f) => f.type !== camp) : []);
-	const salon = $derived(vue ? channelFromTitle(vue.name) : data.repliee ? channelFromTitle(data.repliee.name) : '');
+	const salon = $derived(
+		vue ? channelFromTitle(vue.name) : data.repliee ? channelFromTitle(data.repliee.name) : ''
+	);
 
 	// ── Ce qui a changé : l'ancienne valeur reste en rature 4 s ──
 	let ratures = $state<Record<string, { ancien: string | number; jusqua: number }>>({});
@@ -104,7 +112,8 @@
 				for (const c of CHAMPS) {
 					const a = valeur(g, c);
 					const b = valeur(f, c);
-					if (a !== null && b !== null && a !== b) nouvelles[`${f.id}:${c}`] = { ancien: a, jusqua: t + RATURE_MS };
+					if (a !== null && b !== null && a !== b)
+						nouvelles[`${f.id}:${c}`] = { ancien: a, jusqua: t + RATURE_MS };
 				}
 				if (g.condition && f.condition && g.condition !== f.condition)
 					nouvelles[`${f.id}:etat`] = { ancien: ETATS[g.condition], jusqua: t + RATURE_MS };
@@ -139,7 +148,8 @@
 				echecs = 0;
 			} else if (r.ok) {
 				const suivant = (await r.json()) as PlayerTableView;
-				const memeEtat = vue && JSON.stringify(vue.projection) === JSON.stringify(suivant.projection);
+				const memeEtat =
+					vue && JSON.stringify(vue.projection) === JSON.stringify(suivant.projection);
 				appliquer(suivant);
 				etag = r.headers.get('ETag') ?? `"${suivant.revision}"`;
 				recuA = temps();
@@ -161,14 +171,18 @@
 
 	const age = $derived(Math.max(0, Math.floor((maintenant - recuA) / 1000)));
 	const reception = $derived<'ok' | 'retard' | 'perdue'>(
-		age > PERDUE_S || echecs >= 5 ? 'perdue' : age > RETARD_S ? 'retard' : 'ok'
+		age > PERDUE_S || echecs >= 5 ? 'perdue' : age >= RETARD_S ? 'retard' : 'ok'
 	);
 	const recuHeure = $derived(heure(recuA));
 
 	// ── Ce que dit la Table (même source que la seconde ligne du feuillet) ──
-	const tour = $derived(p?.currentFighterId ? (p.fighters.find((f) => f.id === p.currentFighterId) ?? null) : null);
+	const tour = $derived(
+		p?.currentFighterId ? (p.fighters.find((f) => f.id === p.currentFighterId) ?? null) : null
+	);
 	const phase = $derived(p ? phaseLibelle(p) : '');
-	const consigneTable = $derived(p ? consigne(p, tour && tour.id !== moi?.id ? tour.name : null) : '');
+	const consigneTable = $derived(
+		p ? consigne(p, tour && tour.id !== moi?.id ? tour.name : null) : ''
+	);
 
 	// ── Le récit des rounds : la plus récente en bas, « Round N · résolu à hh:mm. » à sa place ──
 	type Ligne =
@@ -194,7 +208,8 @@
 			const texte = sansEmoji(e.text);
 			if (texte) lignes.push({ genre: 'texte', cle: `n${e.n}`, n: e.n, texte, kind: e.kind });
 		}
-		for (const m of marques) lignes.push({ genre: 'resolu', cle: `r${m.round}-${m.t}`, round: m.round, a: m.a, t: m.t });
+		for (const m of marques)
+			lignes.push({ genre: 'resolu', cle: `r${m.round}-${m.t}`, round: m.round, a: m.a, t: m.t });
 		return lignes;
 	});
 
@@ -205,7 +220,12 @@
 		if (p?.phase === 'declaration') return c.actions;
 		const statut = moi?.statuses.find((s) => c.statuts[s.id]);
 		if (statut) return c.statuts[statut.id];
-		if (moi?.resources && moi.resources.epMax > 0 && moi.resources.epCur / moi.resources.epMax < 0.2) return c.recuperation;
+		if (
+			moi?.resources &&
+			moi.resources.epMax > 0 &&
+			moi.resources.epCur / moi.resources.epMax < 0.2
+		)
+			return c.recuperation;
 		return c.glossaire;
 	});
 	function libelleStatut(id: string): string {
@@ -279,7 +299,9 @@
 	}
 </script>
 
-<svelte:head><title>{vue ? `À la table — ${vue.name}` : 'La Table'} — Mon carnet</title></svelte:head>
+<svelte:head
+	><title>{vue ? `À la table — ${vue.name}` : 'La Table'} — Mon carnet</title></svelte:head
+>
 <svelte:window onkeydown={clavier} />
 
 {#snippet bande()}
@@ -292,16 +314,26 @@
 	{#if vue}
 		<button type="button" onclick={copier} disabled={!moi}>Copier pour Discord</button>
 		{#if carte}
-			<button type="button" bind:this={boutonRegle} aria-expanded={regleOuverte} aria-controls="panneau-table" onclick={basculerRegle}>Règle</button>
+			<button
+				type="button"
+				bind:this={boutonRegle}
+				aria-expanded={regleOuverte}
+				aria-controls="panneau-table"
+				onclick={basculerRegle}>Règle</button
+			>
 		{/if}
 		{#if vue.discordUrl}
-			<a href={vue.discordUrl} target="_blank" rel="noopener noreferrer">Ouvrir le salon <span aria-hidden="true">↗</span></a>
+			<a href={vue.discordUrl} target="_blank" rel="external noopener noreferrer"
+				>Ouvrir le salon <span aria-hidden="true">↗</span></a
+			>
 		{/if}
 	{:else}
-		<a href="/carnet/scene">En scène</a>
-		<a href="/carnet">Mon carnet</a>
+		<a href={resolve('/carnet/scene')}>En scène</a>
+		<a href={resolve('/carnet')}>Mon carnet</a>
 		{#if data.repliee?.discordUrl}
-			<a href={data.repliee.discordUrl} target="_blank" rel="noopener noreferrer">Ouvrir le salon <span aria-hidden="true">↗</span></a>
+			<a href={data.repliee.discordUrl} target="_blank" rel="external noopener noreferrer"
+				>Ouvrir le salon <span aria-hidden="true">↗</span></a
+			>
 		{/if}
 	{/if}
 {/snippet}
@@ -333,12 +365,12 @@
 				<h1 class="titre">{data.repliee?.name ?? 'La Table'}</h1>
 			</header>
 			<div class="repliee">
-				<Vide>
-					La Table est repliée. Le récit est dans ton journal.
-				</Vide>
+				<Vide>La Table est repliée. Le récit est dans ton journal.</Vide>
 				{#if data.repliee}
 					<p class="suite">
-						<a class="lien" href="/carnet/recits/{data.repliee.id}">Lire le récit — {data.repliee.title}</a>
+						<a class="lien" href={chemin(`/carnet/recits/${data.repliee.id}`)}
+							>Lire le récit — {data.repliee.title}</a
+						>
 						<span class="quand">repliée le {dateHeure(data.repliee.at)}</span>
 					</p>
 				{/if}
@@ -348,18 +380,23 @@
 			<header class="tete">
 				<h1 class="titre">
 					À la table — {vue.name}<span class="etape"
-						><span class="point" aria-hidden="true">{' · '}</span
-						>{#if p.active || p.round > 0}<span class="round chiffres">Round {p.round}</span>{' · '}{/if}<span
-							class="phase">{phase}</span
-						></span
+						><span class="point" aria-hidden="true">&nbsp;·&nbsp;</span
+						>{#if p.active || p.round > 0}<span class="round chiffres">Round {p.round}</span
+							>&nbsp;·&nbsp;{/if}<span class="phase">{phase}</span></span
 					>
 				</h1>
 				<div class="reception" class:retard={reception !== 'ok'}>
 					{#if reception === 'perdue'}
-						<p role="alert">Plus de nouvelles de la Table depuis <span class="chiffres">{recuHeure}</span>.</p>
-						<button type="button" class="lien" onclick={sonder} disabled={enCours}>Réessayer</button>
+						<p role="alert">
+							Plus de nouvelles de la Table depuis <span class="chiffres">{recuHeure}</span>.
+						</p>
+						<button type="button" class="lien" onclick={sonder} disabled={enCours}>Réessayer</button
+						>
 					{:else if reception === 'retard'}
-						<p>Dernier état reçu à <span class="chiffres">{recuHeure}</span> · en retard de <span class="chiffres">{age}</span> s.</p>
+						<p>
+							Dernier état reçu à <span class="chiffres">{recuHeure}</span> · en retard de
+							<span class="chiffres">{age}</span> s.
+						</p>
 					{:else}
 						<p>Dernier état reçu à <span class="chiffres">{recuHeure}</span>.</p>
 					{/if}
@@ -389,7 +426,13 @@
 						{#if moi.statuses.length}
 							<ul class="statuts" aria-label="Statuts">
 								{#each moi.statuses as s (s.id)}
-									<li><Losange couleur={data.statuts[s.id]?.color ?? 'currentColor'} libelle={libelleStatut(s.id)} detail="{s.tours} t." /></li>
+									<li>
+										<Losange
+											couleur={data.statuts[s.id]?.color ?? 'currentColor'}
+											libelle={libelleStatut(s.id)}
+											detail="{s.tours} t."
+										/>
+									</li>
 								{/each}
 							</ul>
 						{/if}
@@ -398,32 +441,59 @@
 				{/if}
 
 				{#snippet ligneCombattant(f: ProjectedFighter, adverse: boolean)}
-					<li class="combattant" class:a-son-tour={p?.phase === 'declaration' && p.currentFighterId === f.id}>
+					<li
+						class="combattant"
+						class:a-son-tour={p?.phase === 'declaration' && p.currentFighterId === f.id}
+					>
 						<p class="c-tete">
 							<span class="c-nom">{f.name}</span>
 							{#if f.isSummon}<span class="c-meta">invocation</span>{/if}
-							{#if p?.phase === 'declaration' && p.currentFighterId === f.id}<span class="c-tour">déclare</span>{/if}
+							{#if p?.phase === 'declaration' && p.currentFighterId === f.id}<span class="c-tour"
+									>déclare</span
+								>{/if}
 						</p>
 						{#if f.resources}
 							<p class="c-chiffres chiffres">
 								{#each CHAMPS as c (c)}
 									{@const a = ancien(f, c)}
-									<span class="c-res" class:bas={c === 'pv' && f.resources.pvMax > 0 && f.resources.pvCur / f.resources.pvMax < 0.32}>
-										<abbr title={c === 'pv' ? 'Points de vie' : c === 'ep' ? 'Énergie physique' : 'Énergie magique'}>{NOMS[c]}</abbr>
-										{#if a !== null}<Rature ancien={a} nouveau={valeur(f, c)} />{:else}{valeur(f, c)}{/if}<span class="c-max">/{maximum(f, c)}</span>
+									<span
+										class="c-res"
+										class:bas={c === 'pv' &&
+											f.resources.pvMax > 0 &&
+											f.resources.pvCur / f.resources.pvMax < 0.32}
+									>
+										<abbr
+											title={c === 'pv'
+												? 'Points de vie'
+												: c === 'ep'
+													? 'Énergie physique'
+													: 'Énergie magique'}>{NOMS[c]}</abbr
+										>
+										{#if a !== null}<Rature ancien={a} nouveau={valeur(f, c)} />{:else}{valeur(
+												f,
+												c
+											)}{/if}<span class="c-max">/{maximum(f, c)}</span>
 									</span>
 								{/each}
 							</p>
 						{:else if adverse && f.condition}
 							{@const a = ancien(f, 'etat')}
 							<p class="c-etat etat-{f.condition.toLowerCase()}">
-								{#if a !== null}<Rature ancien={a} nouveau={ETATS[f.condition]} />{:else}{ETATS[f.condition]}{/if}
+								{#if a !== null}<Rature ancien={a} nouveau={ETATS[f.condition]} />{:else}{ETATS[
+										f.condition
+									]}{/if}
 							</p>
 						{/if}
 						{#if f.statuses.length}
 							<ul class="statuts compacts" aria-label="Statuts de {f.name}">
 								{#each f.statuses as s (s.id)}
-									<li><Losange couleur={data.statuts[s.id]?.color ?? 'currentColor'} libelle={libelleStatut(s.id)} detail="{s.tours} t." /></li>
+									<li>
+										<Losange
+											couleur={data.statuts[s.id]?.color ?? 'currentColor'}
+											libelle={libelleStatut(s.id)}
+											detail="{s.tours} t."
+										/>
+									</li>
 								{/each}
 							</ul>
 						{/if}
@@ -462,11 +532,17 @@
 								{#if l.genre === 'round'}
 									<li class="l-round chiffres">Round {l.round}</li>
 								{:else if l.genre === 'resolu'}
-									<li class="l-resolu"><Encre etat={maintenant - l.t < HUMIDE_MS ? 'humide' : 'prise'}>Round {l.round} · résolu à {l.a}.</Encre></li>
+									<li class="l-resolu">
+										<Encre etat={maintenant - l.t < HUMIDE_MS ? 'humide' : 'prise'}
+											>Round {l.round} · résolu à {l.a}.</Encre
+										>
+									</li>
 								{:else}
 									{@const arrivee = arrivees[l.n]}
 									<li class="l-texte k-{l.kind}">
-										<Encre etat={arrivee && maintenant - arrivee < HUMIDE_MS ? 'humide' : 'prise'}>{l.texte}</Encre>
+										<Encre etat={arrivee && maintenant - arrivee < HUMIDE_MS ? 'humide' : 'prise'}
+											>{l.texte}</Encre
+										>
 									</li>
 								{/if}
 							{/each}
@@ -474,7 +550,6 @@
 					{/if}
 				</section>
 			</div>
-
 		{/if}
 	</Feuille>
 </Enveloppe>

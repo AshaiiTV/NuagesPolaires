@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
@@ -82,7 +83,7 @@
 
 <svelte:head><title>{data.oath?.name ?? 'Nouveau Serment'} — L’Atelier</title></svelte:head>
 <PageAtelier titre={data.oath?.name ?? 'Nouveau Serment'} serments>
-	<a class="retour" href="/atelier/serments">← Les Serments</a>
+	<a class="retour" href={resolve('/atelier/serments')}>← Les Serments</a>
 	{#if ecriture.note}<NoteDeMarge ton={ecriture.note.ton}
 			>{ecriture.note.ton === 'refus' ? 'Le Serment n’est pas modifié. ' : ''}{ecriture.note
 				.texte}</NoteDeMarge
@@ -116,21 +117,21 @@
 				<div class="champs">
 					<label class="choix"
 						>Rang<select name="rank" bind:value={draft.rank}
-							>{#each oathRankSchema.options as rank}<option value={rank}
+							>{#each oathRankSchema.options as rank (rank)}<option value={rank}
 									>{OATH_RANK_LABELS[rank]}</option
 								>{/each}</select
 						></label
 					>
 					<label class="choix"
 						>Catégorie<select name="category" bind:value={draft.category}
-							>{#each oathCategorySchema.options as category}<option value={category}
+							>{#each oathCategorySchema.options as category (category)}<option value={category}
 									>{OATH_CATEGORY_LABELS[category]}</option
 								>{/each}</select
 						></label
 					>
 				</div>
 				<div class="champs trois">
-					{#each ['pvN', 'epN', 'emN'] as key}<Champ
+					{#each ['pvN', 'epN', 'emN'] as key (key)}<Champ
 							libelle="Croissance {key.slice(0, 2).toUpperCase()} par niveau"
 							name={key}
 							type="number"
@@ -159,8 +160,8 @@
 				<label class="choix"
 					>Lignée<select name="evolvesFrom" bind:value={draft.evolvesFrom}
 						><option value="">Sans lignée</option
-						>{#each data.oaths.filter((o) => o.id !== data.oath?.id) as oath}<option value={oath.id}
-								>Évolution de {oath.name}</option
+						>{#each data.oaths.filter((o) => o.id !== data.oath?.id) as oath, index (index)}<option
+								value={oath.id}>Évolution de {oath.name}</option
 							>{/each}</select
 					></label
 				>
@@ -175,7 +176,7 @@
 			</div>
 		</Chapitre>
 		<div class="branches">
-			{#each ['bA', 'bB'] as key, i}
+			{#each ['bA', 'bB'] as key, i (key)}
 				<Chapitre numero={i === 0 ? '02' : '03'} titre="Branche {i === 0 ? 'A' : 'B'}">
 					<div class="saisie">
 						<Champ
@@ -207,7 +208,7 @@
 							bind:value={draft[`${key}.flavor`]}
 							maxlength={20000}
 						/>
-						{#each niveaux as niveau, t}
+						{#each niveaux as niveau, t (t)}
 							<fieldset class="palier">
 								<legend
 									><span>{etapes[t]}</span><span class="niveau chiffres">Niveau {niveau}</span

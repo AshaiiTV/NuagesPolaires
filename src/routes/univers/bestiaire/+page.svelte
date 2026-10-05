@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { chemin } from '$lib/ui/adresse';
 	import Page from '$lib/ui/Page.svelte';
 	import Losange from '$lib/ui/Losange.svelte';
 	import Vide from '$lib/ui/Vide.svelte';
@@ -27,7 +28,7 @@
 		<ul class="creatures">
 			{#each data.beasts as beast (beast.id)}
 				<li>
-					<a class="creature" href="/univers/bestiaire/{beast.id}">
+					<a class="creature" href={chemin(`/univers/bestiaire/${beast.id}`)}>
 						<span class="nom">{beast.name}</span><span class="niveau chiffres"
 							>Niveau {beast.level}</span
 						>

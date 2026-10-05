@@ -31,7 +31,9 @@ export function consigne(t: EtatTable, attendu: string | null = null): string {
 	if (enPreparation(t)) return 'La Table se prépare.';
 	if (t.phase === 'resolution') return 'Le MJ résout.';
 	if (t.phase === 'declaration') {
-		return attendu ? `Le MJ attend la déclaration de ${attendu}.` : 'Le MJ attend ta déclaration sur Discord.';
+		return attendu
+			? `Le MJ attend la déclaration de ${attendu}.`
+			: 'Le MJ attend ta déclaration sur Discord.';
 	}
 	return 'Le MJ prépare le round suivant.';
 }

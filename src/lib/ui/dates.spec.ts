@@ -42,7 +42,9 @@ describe('formats de base', () => {
 		expect(dateLongue('2026-09-26T22:30:00Z', NOW)).toBe('27 septembre');
 		expect(heure('2026-09-26T22:30:00Z')).toBe('00:30');
 		// 23:30 UTC le 31 décembre = 00:30 le 1er janvier à Paris (heure d'hiver).
-		expect(dateLongue('2026-12-31T23:30:00Z', '2027-01-02T00:00:00Z')).toBe('1 janvier');
+		expect(dateLongue('2026-12-31T23:30:00Z', '2027-01-02T00:00:00Z')).toBe('1er janvier');
+		expect(dateCourte('2026-12-31T23:30:00Z', '2027-01-02T00:00:00Z')).toBe('1er janv.');
+		expect(jour('2026-12-31T23:30:00Z')).toBe('vendredi 1er janvier');
 	});
 
 	it('une valeur absente ou invalide donne une chaîne vide', () => {

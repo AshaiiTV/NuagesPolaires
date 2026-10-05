@@ -1,5 +1,5 @@
 // U6 — 03-vision §5.10, P4 et P9. Connexions et écritures par les formulaires réels.
-import { expect, test, type Page, type BrowserContext } from '@playwright/test';
+import { expect, test, type Page, type BrowserContext } from './fixtures';
 import { mkdir } from 'node:fs/promises';
 
 const PASSWORDS: Record<string, string> = {
@@ -52,11 +52,15 @@ async function connecter(page: Page, pseudo: string) {
 	if (cookies) {
 		await page.context().addCookies(cookies);
 		await page.goto('/compte', { waitUntil: 'networkidle' });
+		await expect(page.locator('html')).toHaveAttribute('data-app-ready', 'true', {
+			timeout: 15_000
+		});
 		if (!new URL(page.url()).pathname.startsWith('/entrer')) return;
 		// Un autre paquet peut redémarrer la base de démonstration pendant les vérifications.
 		sessions.delete(pseudo);
 	}
 	await page.goto('/entrer', { waitUntil: 'networkidle' });
+	await expect(page.locator('html')).toHaveAttribute('data-app-ready', 'true', { timeout: 15_000 });
 	await page.locator('input[name="pseudo"]').fill(pseudo);
 	await page.locator('input[name="password"]').fill(PASSWORDS[pseudo]);
 	await page.locator('form button[type="submit"]').click();
@@ -85,6 +89,7 @@ async function tamponner(page: Page, id: string, motif: string) {
 
 async function creer(page: Page, name: string) {
 	await page.goto(LIST, { waitUntil: 'networkidle' });
+	await expect(page.locator('html')).toHaveAttribute('data-app-ready', 'true', { timeout: 15_000 });
 	await page.getByRole('link', { name: 'Nouveau personnage', exact: true }).click();
 	const details = page.locator('#nouveau');
 	await details.locator('input[name="name"]').fill(name);
@@ -128,6 +133,9 @@ async function tenue(page: Page) {
 test.describe('Personnages — lectures et droits', () => {
 	test('un visiteur revient au formulaire Entrer', async ({ page }) => {
 		await page.goto(LIST);
+		await expect(page.locator('html')).toHaveAttribute('data-app-ready', 'true', {
+			timeout: 15_000
+		});
 		await expect(page).toHaveURL(/\/entrer/);
 	});
 	for (const pseudo of ['alice', 'bob', 'designer', 'nova']) {
@@ -135,6 +143,9 @@ test.describe('Personnages — lectures et droits', () => {
 			await connecter(page, pseudo);
 			for (const path of [LIST, ARIA]) {
 				const response = await page.goto(path);
+				await expect(page.locator('html')).toHaveAttribute('data-app-ready', 'true', {
+					timeout: 15_000
+				});
 				expect(response?.status()).toBe(404);
 				if (pseudo === 'nova' && path === LIST) await capturerEtat(page, 'compte-en-attente-refus');
 				await expect(page.locator('#attribuer')).toHaveCount(0);
@@ -159,19 +170,31 @@ test.describe('Personnages — lectures et droits', () => {
 	test('recherche et filtres restent dans l’adresse ; vide en une phrase', async ({ page }) => {
 		await connecter(page, 'mj');
 		await page.goto(`${LIST}?recherche=Aria&serment=duelliste&liaison=relie`);
+		await expect(page.locator('html')).toHaveAttribute('data-app-ready', 'true', {
+			timeout: 15_000
+		});
 		await expect(page.locator('.liste')).toContainText('Aria Lunval');
 		await expect(page.locator('.liste')).not.toContainText('Kael Morvan');
 		await expect(page.locator('.liste')).toContainText('relié à alice');
 		await page.goto(`${LIST}?liaison=non-relie`);
+		await expect(page.locator('html')).toHaveAttribute('data-app-ready', 'true', {
+			timeout: 15_000
+		});
 		await expect(page.locator('.liste')).toContainText('Seren Vallombre');
 		await expect(page.locator('.liste')).not.toContainText('Aria Lunval');
 		await page.goto(`${LIST}?recherche=personnage-inexistant-u6`);
+		await expect(page.locator('html')).toHaveAttribute('data-app-ready', 'true', {
+			timeout: 15_000
+		});
 		await expect(page.getByText('Aucun personnage. Le premier s’écrit ici.')).toBeVisible();
 		await capturerEtat(page, 'liste-vide');
 	});
 	test('le MJ lit le journal mais ne reçoit pas les opérations sensibles', async ({ page }) => {
 		await connecter(page, 'mj');
 		await page.goto(ARIA, { waitUntil: 'networkidle' });
+		await expect(page.locator('html')).toHaveAttribute('data-app-ready', 'true', {
+			timeout: 15_000
+		});
 		await expect(page.getByText('Lu par le joueur, les MJ et les administrateurs.')).toBeVisible();
 		await expect(page.locator('#journal')).toContainText('La brume ne se lève pas.');
 		await expect(page.locator('#sensible')).toHaveCount(0);
@@ -233,6 +256,9 @@ test.describe('Personnages — tampons', () => {
 	}) => {
 		await connecter(page, 'mj');
 		await page.goto(ARIA, { waitUntil: 'networkidle' });
+		await expect(page.locator('html')).toHaveAttribute('data-app-ready', 'true', {
+			timeout: 15_000
+		});
 		const editor = await ouvrir(page, 'xp');
 		const choice = editor
 			.locator('select[name="beastId"] option')
@@ -253,13 +279,19 @@ test.describe('Personnages — tampons', () => {
 		await expect(page.locator('#consequences')).not.toContainText(motif);
 		await expect(page.locator('#consequences')).toContainText(motif, { timeout: 15000 });
 		await expect(page.locator('#consequences')).toContainText('+18 XP');
-		await expect(page.locator('#consequences')).toContainText('tamponné par MJ mj le');
+		await expect(page.locator('#consequences .tampon').first()).toContainText(/MJ ·/);
 		const context = await browser.newContext();
 		const alice = await context.newPage();
 		await connecter(alice, 'alice');
 		await alice.goto('/carnet');
+		await expect(alice.locator('html')).toHaveAttribute('data-app-ready', 'true', {
+			timeout: 15_000
+		});
 		await expect(alice.getByText(/Un MJ a tamponné/).first()).toBeVisible();
 		await alice.goto('/carnet/fiche');
+		await expect(alice.locator('html')).toHaveAttribute('data-app-ready', 'true', {
+			timeout: 15_000
+		});
 		await alice.locator('#consequences').evaluate((el) => {
 			if (el instanceof HTMLDetailsElement) el.open = true;
 		});
@@ -298,7 +330,10 @@ test.describe('Personnages — tampons', () => {
 		const other = await context.newPage();
 		await connecter(other, 'mj');
 		await other.goto(path, { waitUntil: 'networkidle' });
-		let editor = await ouvrir(other, 'corriger');
+		await expect(other.locator('html')).toHaveAttribute('data-app-ready', 'true', {
+			timeout: 15_000
+		});
+		const editor = await ouvrir(other, 'corriger');
 		await editor.locator('[name="newValue"]').fill('28');
 		await editor.locator('[name="motif"]').fill('Deuxième main, saisie gardée.');
 		const first = await ouvrir(page, 'corriger');
@@ -326,6 +361,9 @@ test.describe('Personnages — tampons', () => {
 		await connecter(owner, 'alice');
 		// Les commandes testées ici utilisent les form actions du cahier joueur, jamais un appel de domaine direct.
 		await owner.goto('/carnet/scene', { waitUntil: 'networkidle' });
+		await expect(owner.locator('html')).toHaveAttribute('data-app-ready', 'true', {
+			timeout: 15_000
+		});
 		await owner.getByRole('button', { name: 'Déclarer', exact: true }).nth(1).click();
 		const declaration = owner.locator('#ligne-ep');
 		await declaration.locator('[name="choix"]').selectOption('regle:esquive');
@@ -334,6 +372,9 @@ test.describe('Personnages — tampons', () => {
 		expect((await declared).status()).toBe(200);
 		await connecter(page, 'mj');
 		await page.goto(ARIA, { waitUntil: 'networkidle' });
+		await expect(page.locator('html')).toHaveAttribute('data-app-ready', 'true', {
+			timeout: 15_000
+		});
 		const pending = page.locator('#declarations details').first();
 		await pending.locator('summary').click();
 		await pending.locator('[name="motif"]').fill('Report depuis le salon.');
@@ -345,6 +386,9 @@ test.describe('Personnages — tampons', () => {
 		);
 		const beforeStrike = await page.locator('#ressources').innerText();
 		await owner.goto('/carnet/scene', { waitUntil: 'networkidle' });
+		await expect(owner.locator('html')).toHaveAttribute('data-app-ready', 'true', {
+			timeout: 15_000
+		});
 		await owner.getByRole('button', { name: 'Déclarer', exact: true }).nth(1).click();
 		await declaration.locator('[name="choix"]').selectOption('regle:esquive');
 		const secondDeclaration = owner.waitForResponse((r) => r.request().method() === 'POST');
@@ -360,6 +404,9 @@ test.describe('Personnages — tampons', () => {
 		);
 		expect(await page.locator('#ressources').innerText()).toBe(beforeStrike);
 		await owner.goto('/carnet/journal?voix=faits', { waitUntil: 'networkidle' });
+		await expect(owner.locator('html')).toHaveAttribute('data-app-ready', 'true', {
+			timeout: 15_000
+		});
 		const proposed = owner.locator('form[action="?/proposerFait"]');
 		await proposed.evaluate((el) => {
 			for (let p = el.parentElement; p; p = p.parentElement)
@@ -427,6 +474,9 @@ test.describe('Personnages — tampons', () => {
 		await strike.getByRole('button', { name: 'Rayer ce personnage', exact: true }).click();
 		await expect(page).toHaveURL(new RegExp(`${LIST}$`));
 		const response = await page.goto(path);
+		await expect(page.locator('html')).toHaveAttribute('data-app-ready', 'true', {
+			timeout: 15_000
+		});
 		expect(response?.status()).toBe(404);
 	});
 });
@@ -442,6 +492,9 @@ for (const pseudo of ['mj', 'admin']) {
 				page.on('pageerror', (e) => errors.push(e.message));
 				await mkdir('test-results/captures/u6-etats', { recursive: true });
 				await page.goto(LIST);
+				await expect(page.locator('html')).toHaveAttribute('data-app-ready', 'true', {
+					timeout: 15_000
+				});
 				await page.evaluate((theme) => {
 					document.documentElement.dataset.theme = theme;
 					document.documentElement.dataset.ton = theme === 'light' ? 'clair' : 'sombre';
@@ -452,6 +505,9 @@ for (const pseudo of ['mj', 'admin']) {
 					fullPage: true
 				});
 				await page.goto(ARIA, { waitUntil: 'networkidle' });
+				await expect(page.locator('html')).toHaveAttribute('data-app-ready', 'true', {
+					timeout: 15_000
+				});
 				await page.evaluate((theme) => {
 					document.documentElement.dataset.theme = theme;
 					document.documentElement.dataset.ton = theme === 'light' ? 'clair' : 'sombre';

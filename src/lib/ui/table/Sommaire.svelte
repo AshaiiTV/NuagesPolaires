@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { chemin } from '$lib/ui/adresse';
 	// Sommaire du cahier « La Table » : ses pages dans l'ordre de la vision (03-vision §4) —
 	// Tables · Apparitions · Archives · Personnages. Une ligne de repères, jamais d'onglets.
 	import { page } from '$app/state';
@@ -9,12 +10,28 @@
 	}
 	let { combat = null }: Props = $props();
 
-	const chemin = $derived(page.url.pathname);
+	const cheminCourant = $derived(page.url.pathname);
 	const pages = $derived([
-		{ href: '/table', libelle: 'Tables', courant: chemin === '/table' || chemin.startsWith('/table/combat') },
-		{ href: '/table/apparitions', libelle: 'Apparitions', courant: chemin.startsWith('/table/apparitions') },
-		{ href: '/table/archives', libelle: 'Archives', courant: chemin.startsWith('/table/archives') },
-		{ href: '/table/personnages', libelle: 'Personnages', courant: chemin.startsWith('/table/personnages') }
+		{
+			href: '/table',
+			libelle: 'Tables',
+			courant: cheminCourant === '/table' || cheminCourant.startsWith('/table/combat')
+		},
+		{
+			href: '/table/apparitions',
+			libelle: 'Apparitions',
+			courant: cheminCourant.startsWith('/table/apparitions')
+		},
+		{
+			href: '/table/archives',
+			libelle: 'Archives',
+			courant: cheminCourant.startsWith('/table/archives')
+		},
+		{
+			href: '/table/personnages',
+			libelle: 'Personnages',
+			courant: cheminCourant.startsWith('/table/personnages')
+		}
 	]);
 </script>
 
@@ -22,12 +39,16 @@
 	<ul>
 		{#each pages as p (p.href)}
 			<li>
-				<a href={p.href} class:courant={p.courant} aria-current={p.courant ? 'page' : undefined}>{p.libelle}</a>
+				<a
+					href={chemin(p.href)}
+					class:courant={p.courant}
+					aria-current={p.courant ? 'page' : undefined}>{p.libelle}</a
+				>
 			</li>
 		{/each}
 		{#if combat}
 			<li class="combat">
-				<a href="/table/combat/{combat.id}">Reprendre « {combat.nom} »</a>
+				<a href={chemin(`/table/combat/${combat.id}`)}>Reprendre « {combat.nom} »</a>
 			</li>
 		{/if}
 	</ul>
@@ -72,8 +93,11 @@
 		color: var(--encre-humide);
 	}
 	@media (max-width: 760px) {
+		ul {
+			gap: 0;
+		}
 		a {
-			padding: 0 10px;
+			padding: 0 8px;
 		}
 		a.courant::after {
 			left: 10px;

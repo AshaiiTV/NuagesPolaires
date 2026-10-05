@@ -71,7 +71,12 @@ const MJ: readonly Capability[] = [
 	'staff_log.read'
 ];
 
-const DESIGNER: readonly Capability[] = ['events.manage', 'beasts.manage', 'beasts.read_reserved', 'observations.validate'];
+const DESIGNER: readonly Capability[] = [
+	'events.manage',
+	'beasts.manage',
+	'beasts.read_reserved',
+	'observations.validate'
+];
 
 const ADMIN: readonly Capability[] = [
 	...MJ,
@@ -104,7 +109,8 @@ export function can(role: Role | null | undefined, capability: Capability): bool
 
 /** Exige un compte connecté ; renvoie l'acteur. */
 export function requireActor(actor: Actor | null | undefined): Actor {
-	if (!actor) throw NpError.unauthenticated('Le carnet s’est refermé. Rouvre-le en te reconnectant.');
+	if (!actor)
+		throw NpError.unauthenticated('Le carnet s’est refermé. Rouvre-le en te reconnectant.');
 	return actor;
 }
 
@@ -116,9 +122,13 @@ export function assertCan(actor: Actor | null | undefined, capability: Capabilit
 }
 
 /** Exige un personnage relié (actions du joueur sur sa propre fiche) ; renvoie son identifiant. */
-export function requireOwnCharacter(actor: Actor | null | undefined): { actor: Actor; characterId: string } {
+export function requireOwnCharacter(actor: Actor | null | undefined): {
+	actor: Actor;
+	characterId: string;
+} {
 	const present = requireActor(actor);
-	if (!present.characterId) throw new NpError('NOT_LINKED', 'Ton compte attend sa liaison à un personnage.', 403);
+	if (!present.characterId)
+		throw new NpError('NOT_LINKED', 'Ton compte attend sa liaison à un personnage.', 403);
 	return { actor: present, characterId: present.characterId };
 }
 

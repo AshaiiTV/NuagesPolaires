@@ -39,8 +39,7 @@
 			bind:value
 			aria-invalid={erreur ? 'true' : undefined}
 			aria-describedby={erreur ? `${identifiant}-erreur` : aide ? `${identifiant}-aide` : undefined}
-			{...reste}
-		></textarea>
+			{...reste}></textarea>
 	{:else}
 		<input
 			id={identifiant}

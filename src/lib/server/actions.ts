@@ -3,7 +3,13 @@
 // `action()` lit le FormData en objet, convertit `expectedRevision` en nombre, appelle le handler,
 // traduit une NpError en `fail(status, { code, message, values })` et laisse passer `redirect` / `error`
 // de SvelteKit. Les valeurs renvoyées pour regarnir le formulaire ne contiennent jamais de secret.
-import { fail, isHttpError, isRedirect, type ActionFailure, type RequestEvent } from '@sveltejs/kit';
+import {
+	fail,
+	isHttpError,
+	isRedirect,
+	type ActionFailure,
+	type RequestEvent
+} from '@sveltejs/kit';
 import { isNpError } from '$lib/server/http';
 
 export type FormValue = string | string[] | number | File | File[] | undefined;
@@ -58,12 +64,16 @@ export function safeValues(values: FormValues): Record<string, string | string[]
 		if (SECRET_FIELD.test(key)) continue;
 		if (typeof value === 'string') out[key] = value;
 		else if (typeof value === 'number') out[key] = String(value);
-		else if (Array.isArray(value) && value.every((v) => typeof v === 'string')) out[key] = value as string[];
+		else if (Array.isArray(value) && value.every((v) => typeof v === 'string'))
+			out[key] = value as string[];
 	}
 	return out;
 }
 
-export type ActionHandler<E extends RequestEvent, R> = (event: E, data: FormValues) => Promise<R> | R;
+export type ActionHandler<E extends RequestEvent, R> = (
+	event: E,
+	data: FormValues
+) => Promise<R> | R;
 
 /**
  * Enveloppe une form action : `NpError` ⇒ `fail(status, { code, message, values })` ; `redirect` et
@@ -76,7 +86,8 @@ export function action<E extends RequestEvent, R>(handler: ActionHandler<E, R>) 
 			return await handler(event, data);
 		} catch (e) {
 			if (isRedirect(e) || isHttpError(e)) throw e;
-			if (isNpError(e)) return fail(e.status, { code: e.code, message: e.message, values: safeValues(data) });
+			if (isNpError(e))
+				return fail(e.status, { code: e.code, message: e.message, values: safeValues(data) });
 			throw e;
 		}
 	};

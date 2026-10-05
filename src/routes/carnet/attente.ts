@@ -8,7 +8,9 @@ import { heureRonde, jour, jourSemaine, joursCalendaires } from '$lib/ui/dates';
 /** « samedi 20 h » dans la semaine, « 12 octobre, 20 h » au-delà (même phrase que le domaine). */
 function quand(iso: string, maintenant: Date): string {
 	const jours = joursCalendaires(iso, maintenant) ?? 99;
-	return jours >= 0 && jours <= 6 ? `${jourSemaine(iso)} ${heureRonde(iso)}` : `${jour(iso)}, ${heureRonde(iso)}`;
+	return jours >= 0 && jours <= 6
+		? `${jourSemaine(iso)} ${heureRonde(iso)}`
+		: `${jour(iso)}, ${heureRonde(iso)}`;
 }
 
 /**
@@ -38,8 +40,7 @@ export function composerAttente(
 	const deLaTable = (w: WaitingView) =>
 		tables.some(
 			(t) =>
-				(t.channel && w.channel === t.channel) ||
-				(t.discordUrl && w.discordUrl === t.discordUrl)
+				(t.channel && w.channel === t.channel) || (t.discordUrl && w.discordUrl === t.discordUrl)
 		);
 	const vues = new Set<string>();
 	const scenes = waiting.filter((w) => {
@@ -52,7 +53,9 @@ export function composerAttente(
 	const rendezVous = waiting.filter((w) => w.kind === 'event');
 	// La liste reçue peut avoir été coupée avant le rendez-vous : on le retrouve dans « Ce qui vient ».
 	if (!rendezVous.length) {
-		const e = upcoming.find((u) => u.registered && u.startsAt && Date.parse(u.startsAt) >= maintenant.getTime());
+		const e = upcoming.find(
+			(u) => u.registered && u.startsAt && Date.parse(u.startsAt) >= maintenant.getTime()
+		);
 		if (e?.startsAt)
 			rendezVous.push({
 				kind: 'event',

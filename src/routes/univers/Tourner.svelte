@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { chemin } from '$lib/ui/adresse';
 	// Pied de page « Tourner » : la page d'avant à gauche, la suivante à droite.
 	// Entre Serments, les flèches du clavier tournent aussi la page.
 	import { goto } from '$app/navigation';
@@ -31,7 +32,7 @@
 			event.key === 'ArrowLeft' ? previous : event.key === 'ArrowRight' ? next : null;
 		if (destination) {
 			event.preventDefault();
-			void goto(destination.href);
+			void goto(chemin(destination.href));
 		}
 	}
 </script>
@@ -40,7 +41,7 @@
 
 <nav class="tourner" aria-label="Tourner la page">
 	{#if previous}
-		<a class="precedente" href={previous.href} rel="prev">
+		<a class="precedente" href={chemin(previous.href)} rel="prev">
 			<span class="sens repere">
 				<span class="fleche" aria-hidden="true">←</span>
 				<span><span class="quoi">{quoi}</span>{serments ? 'précédent' : 'précédente'}</span>
@@ -49,7 +50,7 @@
 		</a>
 	{/if}
 	{#if next}
-		<a class="suivante" href={next.href} rel="next">
+		<a class="suivante" href={chemin(next.href)} rel="next">
 			<span class="sens repere">
 				<span><span class="quoi">{quoi}</span>{serments ? 'suivant' : 'suivante'}</span>
 				<span class="fleche" aria-hidden="true">→</span>

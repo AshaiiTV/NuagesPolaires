@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { chemin } from '$lib/ui/adresse';
 	// Le feuillet volant « En scène » (03-vision §5.3, §6.5, §6.6, P2). Pensé pour un téléphone tenu
 	// d'une main : ressources et déclarations, capacités du niveau, objets, bloc à coller, note
 	// rapide ; en bas, la règle sous le pouce, la copie pour Discord, reposer. On déclare, on ne frappe
@@ -100,7 +101,9 @@
 	let chiffre = $state<Record<Res, string>>({ pv: '', ep: '', em: '' });
 	let motLibre = $state<Record<Res, string>>({ pv: '', ep: '', em: '' });
 	/** Ligne en cours d'envoi : humide jusqu'à la réponse ; `reseau` : partie sans réponse. */
-	let envoi = $state<{ ressource: Res; texte: string; etat: 'humide' | 'reseau' | 'refus' } | null>(null);
+	let envoi = $state<{ ressource: Res; texte: string; etat: 'humide' | 'reseau' | 'refus' } | null>(
+		null
+	);
 	let declencheurs = $state<Partial<Record<Res, HTMLButtonElement>>>({});
 
 	function motChoisi(r: Res) {
@@ -131,7 +134,11 @@
 			{ verbe: 'Noté' },
 			{
 				avant: () => {
-					envoi = { ressource: r, texte: apercu(r) ?? `${fiche?.name ?? ''} déclare…`, etat: 'humide' };
+					envoi = {
+						ressource: r,
+						texte: apercu(r) ?? `${fiche?.name ?? ''} déclare…`,
+						etat: 'humide'
+					};
 				},
 				apres: (result) => {
 					if (result.type === 'success') {
@@ -139,7 +146,10 @@
 						ouverte = null;
 						chiffre[r] = '';
 						motLibre[r] = '';
-					} else if (result.type === 'error' && (!navigator.onLine || !enLigne || result.status === undefined)) {
+					} else if (
+						result.type === 'error' &&
+						(!navigator.onLine || !enLigne || result.status === undefined)
+					) {
 						if (envoi) envoi.etat = 'reseau';
 					} else if (envoi) {
 						envoi.etat = 'refus';
@@ -151,14 +161,23 @@
 
 	// ── Annuler (10 s), puis rayer : la ligne rayée reste lisible ──
 	let rayees = $state<{ d: DeclarationView; verbe: 'annulée' | 'rayée'; quand: string }[]>([]);
-	const soumettreLigne: SubmitFunction = ecrire('ligne', eLigne, { verbe: 'Rayé' }, {
-		apres: (result) => {
-			if (result.type !== 'success' || !result.data) return;
-			const r = result.data as { annulee?: DeclarationView; rayee?: DeclarationView };
-			const d = r.annulee ?? r.rayee;
-			if (d) rayees = [...rayees, { d, verbe: r.annulee ? 'annulée' : 'rayée', quand: heure(Date.now() + decalage) }];
+	const soumettreLigne: SubmitFunction = ecrire(
+		'ligne',
+		eLigne,
+		{ verbe: 'Rayé' },
+		{
+			apres: (result) => {
+				if (result.type !== 'success' || !result.data) return;
+				const r = result.data as { annulee?: DeclarationView; rayee?: DeclarationView };
+				const d = r.annulee ?? r.rayee;
+				if (d)
+					rayees = [
+						...rayees,
+						{ d, verbe: r.annulee ? 'annulée' : 'rayée', quand: heure(Date.now() + decalage) }
+					];
+			}
 		}
-	});
+	);
 	function secondesRestantes(d: DeclarationView): number {
 		return Math.max(0, Math.ceil((Date.parse(d.cancelUntil) - maintenant) / 1000));
 	}
@@ -177,11 +196,16 @@
 	// ── Objets : consommer → une ligne de confirmation ──
 	let aConsommer = $state<string | null>(null);
 	const objetChoisi = $derived(fiche?.items.find((i) => i.id === aConsommer) ?? null);
-	const soumettreConsommer: SubmitFunction = ecrire('consommer', eConsommer, { verbe: 'Noté' }, {
-		apres: (result) => {
-			if (result.type === 'success') aConsommer = null;
+	const soumettreConsommer: SubmitFunction = ecrire(
+		'consommer',
+		eConsommer,
+		{ verbe: 'Noté' },
+		{
+			apres: (result) => {
+				if (result.type === 'success') aConsommer = null;
+			}
 		}
-	});
+	);
 
 	// ── Note rapide pour le journal ──
 	let noteRapide = $state('');
@@ -189,11 +213,16 @@
 
 	// ── Ouvrir une scène ──
 	let ouvrirScene = $state(false);
-	const soumettreScene = ecrire('scene', eScene, { verbe: 'Ouverte' }, {
-		apres: (result) => {
-			if (result.type === 'success') ouvrirScene = false;
+	const soumettreScene = ecrire(
+		'scene',
+		eScene,
+		{ verbe: 'Ouverte' },
+		{
+			apres: (result) => {
+				if (result.type === 'success') ouvrirScene = false;
+			}
 		}
-	});
+	);
 
 	// ── La Table repliée pendant la scène ──
 	let tableVue = $state(untrack(() => data.contexte.table));
@@ -211,7 +240,11 @@
 	});
 	/** Même phrase que la Table vue par le joueur, lue à la même source (la projection de la Table). */
 	function ligneTable(t: NonNullable<typeof contexte.table>): string {
-		return ligneFeuillet(data.etatTable ?? { active: t.status === 'en_cours', round: t.round, phase: t.phase });
+		if (data.etatTable?.status === 'termine')
+			return 'La Table est repliée. Le récit est dans ton journal.';
+		return ligneFeuillet(
+			data.etatTable ?? { active: t.status === 'en_cours', round: t.round, phase: t.phase }
+		);
 	}
 	/** Tours restants d'un statut : ceux de la Table quand elle est ouverte, sinon ceux de la fiche. */
 	function tours(s: { id: string; turns: number | null }): number | null {
@@ -292,7 +325,8 @@
 		}
 		try {
 			const ref = document.referrer ? new URL(document.referrer) : null;
-			if (ref && ref.origin === location.origin && ref.pathname !== location.pathname) retour = ref.pathname + ref.search;
+			if (ref && ref.origin === location.origin && ref.pathname !== location.pathname)
+				retour = ref.pathname + ref.search;
 		} catch {
 			retour = '/carnet';
 		}
@@ -324,15 +358,29 @@
 
 {#snippet bande()}
 	<span class="repere">Scène</span>
-	{#if contexte.channel}<span class="sep" aria-hidden="true">·</span><span class="salon">{contexte.channel}</span>{/if}
+	{#if contexte.channel}<span class="sep" aria-hidden="true">·</span><span class="salon"
+			>{contexte.channel}</span
+		>{/if}
 	<span class="sep" aria-hidden="true">·</span><time class="horloge">{horloge}</time>
 	{#if !enLigne}<span class="hors-ligne">hors réseau</span>{/if}
 {/snippet}
 
 {#snippet barre()}
-	<button type="button" bind:this={boutonRegle} aria-expanded={panneau === 'regle'} aria-controls="panneau-feuillet" onclick={() => basculer('regle')}>Règle</button>
+	<button
+		type="button"
+		bind:this={boutonRegle}
+		aria-expanded={panneau === 'regle'}
+		aria-controls="panneau-feuillet"
+		onclick={() => basculer('regle')}>Règle</button
+	>
 	<button type="button" onclick={copier} disabled={!fiche}>Copier pour Discord</button>
-	<button type="button" bind:this={boutonReposer} aria-expanded={panneau === 'reposer'} aria-controls="panneau-feuillet" onclick={() => basculer('reposer')}>Reposer</button>
+	<button
+		type="button"
+		bind:this={boutonReposer}
+		aria-expanded={panneau === 'reposer'}
+		aria-controls="panneau-feuillet"
+		onclick={() => basculer('reposer')}>Reposer</button
+	>
 {/snippet}
 
 {#snippet notePied()}
@@ -346,16 +394,30 @@
 		{#if panneau === 'regle'}
 			<CarteRegle carte={data.carte} onfermer={fermerPanneau} />
 		{:else if panneau === 'reposer'}
-			<form class="reposer" method="POST" action="?/marquePage" use:enhance={soumettreReposer} aria-labelledby="titre-reposer">
+			<form
+				class="reposer"
+				method="POST"
+				action="?/marquePage"
+				use:enhance={soumettreReposer}
+				aria-labelledby="titre-reposer"
+			>
 				<header>
 					<p class="repere">Reposer le feuillet</p>
 					<h2 id="titre-reposer" tabindex="-1">Où j’en suis</h2>
 					<button type="button" class="refermer" onclick={fermerPanneau}>Garder ouvert</button>
 				</header>
-				<p class="aide">Facultatif : une phrase et un lien pour reprendre le fil. C’est ton marque-page.</p>
+				<p class="aide">
+					Facultatif&nbsp;: une phrase et un lien pour reprendre le fil. C’est ton marque-page.
+				</p>
 				<input type="hidden" name="retour" value={retour} />
 				{#if scene}<input type="hidden" name="sceneId" value={scene.id} />{/if}
-				<Champ libelle="Où j’en suis" name="text" bind:value={phraseReprise} maxlength={280} placeholder="Une phrase pour reprendre le fil…" />
+				<Champ
+					libelle="Où j’en suis"
+					name="text"
+					bind:value={phraseReprise}
+					maxlength={280}
+					placeholder="Une phrase pour reprendre le fil…"
+				/>
 				<Champ
 					libelle="Lien du message Discord"
 					name="url"
@@ -404,13 +466,17 @@
 					<p class="alerte" role="status">Pas de réseau. Tes chiffres restent ceux de {releve}.</p>
 				{/if}
 				{#if contexte.table}
-					<a class="table" href="/carnet/table/{contexte.table.id}">
+					<a class="table" href={chemin(`/carnet/table/${contexte.table.id}`)}>
 						<span class="repere">La Table</span>
 						<span class="table-etat">{ligneTable(contexte.table)}</span>
 						<span class="fleche" aria-hidden="true">→</span>
 					</a>
 				{:else if repliee}
-					<p class="table repliee"><span class="repere">La Table</span><span class="table-etat">La Table est repliée · {repliee}</span></p>
+					<p class="table repliee">
+						<span class="repere">La Table</span><span class="table-etat"
+							>La Table est repliée · {repliee}</span
+						>
+					</p>
 				{/if}
 			</header>
 
@@ -419,10 +485,17 @@
 				<section class="scene" aria-label="Scène ouverte">
 					<p class="scene-titre">
 						<span>{scene.title}</span>
-						{#if scene.discordUrl}<a href={scene.discordUrl} target="_blank" rel="noopener noreferrer">Ouvrir le salon <span aria-hidden="true">↗</span></a>{/if}
+						{#if scene.discordUrl}<a
+								href={scene.discordUrl}
+								target="_blank"
+								rel="external noopener noreferrer"
+								>Ouvrir le salon <span aria-hidden="true">↗</span></a
+							>{/if}
 					</p>
 					{#if data.marquePage?.text}
-						<p class="reprise"><span class="repere">Tu t’étais arrêté ici</span> « {data.marquePage.text} »</p>
+						<p class="reprise">
+							<span class="repere">Tu t’étais arrêté ici</span> « {data.marquePage.text} »
+						</p>
 					{/if}
 				</section>
 			{:else}
@@ -430,15 +503,35 @@
 					<p class="scene-titre">
 						<span class="vide-scene">Aucune scène ouverte.</span>
 						{#if !ouvrirScene}
-							<button type="button" class="lien" onclick={() => (ouvrirScene = true)} aria-expanded="false">Ouvrir une scène</button>
+							<button
+								type="button"
+								class="lien"
+								onclick={() => (ouvrirScene = true)}
+								aria-expanded="false">Ouvrir une scène</button
+							>
 						{/if}
 					</p>
 					{#if ouvrirScene}
 						<form class="ouvrir" method="POST" action="?/ouvrirScene" use:enhance={soumettreScene}>
-							<Champ libelle="Titre de la scène" name="title" required maxlength={120} placeholder="Embuscade au col des brumes" />
-							<Champ libelle="Lien du salon" name="discordUrl" type="url" inputmode="url" required placeholder="https://discord.com/channels/…" />
+							<Champ
+								libelle="Titre de la scène"
+								name="title"
+								required
+								maxlength={120}
+								placeholder="Embuscade au col des brumes"
+							/>
+							<Champ
+								libelle="Lien du salon"
+								name="discordUrl"
+								type="url"
+								inputmode="url"
+								required
+								placeholder="https://discord.com/channels/…"
+							/>
 							<div class="gestes">
-								<Bouton variante="ruban" type="submit" disabled={eScene.enCours}>Ouvrir la scène</Bouton>
+								<Bouton variante="ruban" type="submit" disabled={eScene.enCours}
+									>Ouvrir la scène</Bouton
+								>
 								<Bouton variante="texte" onclick={() => (ouvrirScene = false)}>Refermer</Bouton>
 							</div>
 							{@render noteDe('scene')}
@@ -479,7 +572,11 @@
 										<li class="decl">
 											<span class="decl-texte">{d.text}</span>
 											<span class="meta">{heure(d.at)} · attend un MJ</span>
-											<form method="POST" action={reste > 0 ? '?/annuler' : '?/rayer'} use:enhance={soumettreLigne}>
+											<form
+												method="POST"
+												action={reste > 0 ? '?/annuler' : '?/rayer'}
+												use:enhance={soumettreLigne}
+											>
 												<input type="hidden" name="id" value={d.id} />
 												<button type="submit" class="lien" disabled={eLigne.enCours}>
 													{#if reste > 0}Annuler · <span class="chiffres">{reste}</span> s{:else}Rayer{/if}
@@ -489,7 +586,9 @@
 									{/each}
 									{#if envoi?.ressource === r}
 										<li class="decl envoi">
-											<Encre etat={envoi.etat === 'refus' ? 'refusee' : 'humide'}>{envoi.texte}</Encre>
+											<Encre etat={envoi.etat === 'refus' ? 'refusee' : 'humide'}
+												>{envoi.texte}</Encre
+											>
 										</li>
 									{/if}
 								</ul>
@@ -533,16 +632,29 @@
 											{#if mot.saisie === 'chiffre-mot'}
 												<label class="saisie mot-saisie">
 													<span>Mot</span>
-													<input name="mot" autocomplete="off" required maxlength={80} placeholder="Ce que tu fais" bind:value={motLibre[r]} />
+													<input
+														name="mot"
+														autocomplete="off"
+														required
+														maxlength={80}
+														placeholder="Ce que tu fais"
+														bind:value={motLibre[r]}
+													/>
 												</label>
 											{/if}
 										</div>
 										{#if mot.saisie === 'chiffre-mot'}
-											<p class="aide">Sans signe, le chiffre est dépensé ; « +5 » le regagne.</p>
+											<p class="aide">
+												Sans signe, le chiffre est dépensé&nbsp;; «&nbsp;+5&nbsp;» le regagne.
+											</p>
 										{/if}
 									{/if}
 									<p class="apercu" aria-live="polite">
-										{#if apercu(r)}{apercu(r)}{:else}<span class="manque">{mot?.saisie === 'chiffre-mot' ? 'Un chiffre et un mot, puis note.' : 'Un chiffre, puis note.'}</span>{/if}
+										{#if apercu(r)}{apercu(r)}{:else}<span class="manque"
+												>{mot?.saisie === 'chiffre-mot'
+													? 'Un chiffre et un mot, puis note.'
+													: 'Un chiffre, puis note.'}</span
+											>{/if}
 									</p>
 									<div class="gestes">
 										<Bouton variante="ruban" type="submit" disabled={eDeclarer.enCours}>
@@ -551,7 +663,9 @@
 										<Bouton variante="texte" onclick={fermerLigne}>Refermer</Bouton>
 									</div>
 									{#if actif === 'declarer' && envoi?.ressource === r && envoi.etat === 'reseau'}
-										<NoteDeMarge ton="refus">Pas de réseau. Tes chiffres restent ceux de {releve}.</NoteDeMarge>
+										<NoteDeMarge ton="refus"
+											>Pas de réseau. Tes chiffres restent ceux de {releve}.</NoteDeMarge
+										>
 									{:else if envoi?.ressource === r || actif === 'declarer'}
 										{@render noteDe('declarer')}
 									{/if}
@@ -568,7 +682,13 @@
 				{#if fiche.statuses.length}
 					<ul class="statuts" aria-label="Statuts">
 						{#each fiche.statuses as s (s.id)}
-							<li><Losange couleur={s.color} libelle={s.label} detail={tours(s) ? `${tours(s)} t.` : undefined} /></li>
+							<li>
+								<Losange
+									couleur={s.color}
+									libelle={s.label}
+									detail={tours(s) ? `${tours(s)} t.` : undefined}
+								/>
+							</li>
 						{/each}
 					</ul>
 				{/if}
@@ -622,7 +742,8 @@
 										type="button"
 										class="lien"
 										aria-expanded={aConsommer === o.id}
-										onclick={() => (aConsommer = aConsommer === o.id ? null : o.id)}>Consommer</button
+										onclick={() => (aConsommer = aConsommer === o.id ? null : o.id)}
+										>Consommer</button
 									>
 								{/if}
 							</li>
@@ -631,10 +752,17 @@
 									<form method="POST" action="?/consommer" use:enhance={soumettreConsommer}>
 										<input type="hidden" name="itemId" value={o.id} />
 										<input type="hidden" name="expectedRevision" value={fiche.revision} />
-										<p class="question">Tu déclares avoir utilisé {objetChoisi.name} ?</p>
-										<Champ libelle="Contexte (facultatif)" name="note" maxlength={2000} placeholder="Après la chute dans le gué" />
+										<p class="question">Tu déclares avoir utilisé « {objetChoisi.name} » ?</p>
+										<Champ
+											libelle="Contexte (facultatif)"
+											name="note"
+											maxlength={2000}
+											placeholder="Après la chute dans le gué"
+										/>
 										<div class="gestes">
-											<Bouton variante="ruban" type="submit" disabled={eConsommer.enCours}>Oui, je le note.</Bouton>
+											<Bouton variante="ruban" type="submit" disabled={eConsommer.enCours}
+												>Oui, je le note.</Bouton
+											>
 											<Bouton variante="texte" onclick={() => (aConsommer = null)}>Non</Bouton>
 										</div>
 									</form>
@@ -668,7 +796,9 @@
 			{@render noteDe('noter')}
 
 			<p class="deplacer">
-				<button type="button" class="lien" onclick={deplacer}>{gauche ? 'Déplacer à droite' : 'Déplacer à gauche'}</button>
+				<button type="button" class="lien" onclick={deplacer}
+					>{gauche ? 'Déplacer à droite' : 'Déplacer à gauche'}</button
+				>
 			</p>
 		{/if}
 	</Feuille>

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { SvelteDate } from 'svelte/reactivity';
+	import { signature } from '$lib/ui/tampons';
 	// Ce qui attend : la page d'entrée du Registre. Pas de compteur ni de tableau de bord : seulement ce
 	// qui demande la main d'un administrateur, avec le geste qui le règle.
 	import { enhance } from '$app/forms';
@@ -21,11 +23,17 @@
 
 	const pending = $derived(data.pending);
 	const compte = $derived(pending.pendingAccounts.find((a) => a.id === compteChoisi) ?? null);
-	const personnage = $derived(pending.unlinkedCharacters.find((c) => c.id === personnageChoisi) ?? null);
+	const personnage = $derived(
+		pending.unlinkedCharacters.find((c) => c.id === personnageChoisi) ?? null
+	);
 	const lie = $derived(form && 'lie' in form ? form.lie : null);
-	const maintenant = $derived(new Date(data.releve).getTime());
-	const echu = (iso: string | null) => !!iso && new Date(iso).getTime() <= maintenant;
-	const rien = $derived(pending.pendingAccounts.length === 0 && pending.openResets.length === 0);
+	const maintenant = $derived(new SvelteDate(data.releve).getTime());
+	const echu = (iso: string | null) => !!iso && new SvelteDate(iso).getTime() <= maintenant;
+	const rien = $derived(
+		pending.pendingAccounts.length === 0 &&
+			pending.openResets.length === 0 &&
+			data.anomalies.length === 0
+	);
 
 	const numLiaisons = $derived(pending.pendingAccounts.length > 0 ? '01' : null);
 	const numResets = $derived(pending.openResets.length > 0 ? (numLiaisons ? '02' : '01') : null);
@@ -43,7 +51,7 @@
 		{#if lie && ecriture.note?.ton !== 'refus'}
 			<p class="liaison-faite">
 				<span><strong>{lie.pseudo}</strong> est relié à <strong>{lie.personnage}</strong>.</span>
-				<Tampon cle={lie.id + lie.at}>Administrateur {lie.par} · {heure(lie.at)}</Tampon>
+				<Tampon cle={lie.id + lie.at}>{signature('admin', lie.par, lie.at)}</Tampon>
 			</p>
 		{/if}
 	</div>
@@ -52,9 +60,20 @@
 		<Vide>Rien n’attend. Le registre est à jour.</Vide>
 	{/if}
 
+	{#if data.anomalies.length}
+		<Chapitre titre="Reprise à vérifier" id="reprise">
+			<ul>
+				{#each data.anomalies as anomalie, index (index)}<li>{anomalie.message}</li>{/each}
+			</ul>
+			<Bouton variante="texte" href="/registre/donnees" fleche="→">Ouvrir les données</Bouton>
+		</Chapitre>
+	{/if}
 	{#if numLiaisons}
 		<Chapitre numero={numLiaisons} titre="Liaisons" id="liaisons">
-			<p class="consigne">Choisis un compte, puis son personnage, puis lie-les. Le joueur verra sa fiche au prochain rechargement.</p>
+			<p class="consigne">
+				Choisis un compte, puis son personnage, puis lie-les. Le joueur verra sa fiche au prochain
+				rechargement.
+			</p>
 			<form method="POST" action="?/lier" use:enhance={ecriture.enhance({ verbe: 'Lié' })}>
 				<div class="colonnes">
 					<fieldset>
@@ -63,10 +82,18 @@
 							{#each pending.pendingAccounts as a (a.id)}
 								<li>
 									<label class:choisi={compteChoisi === a.id}>
-										<input type="radio" name="accountId" value={a.id} bind:group={compteChoisi} required />
+										<input
+											type="radio"
+											name="accountId"
+											value={a.id}
+											bind:group={compteChoisi}
+											required
+										/>
 										<span class="marque" aria-hidden="true"></span>
 										<span class="nom">{a.pseudo}</span>
-										<span class="date">inscrit le {le(a.createdAt)} · {relatif(a.createdAt, maintenant)}</span>
+										<span class="date"
+											>inscrit le {le(a.createdAt)} · {relatif(a.createdAt, maintenant)}</span
+										>
 									</label>
 									<input type="hidden" name={'revision.' + a.id} value={a.revision} />
 								</li>
@@ -80,7 +107,13 @@
 								{#each pending.unlinkedCharacters as c (c.id)}
 									<li>
 										<label class:choisi={personnageChoisi === c.id}>
-											<input type="radio" name="characterId" value={c.id} bind:group={personnageChoisi} required />
+											<input
+												type="radio"
+												name="characterId"
+												value={c.id}
+												bind:group={personnageChoisi}
+												required
+											/>
 											<span class="marque" aria-hidden="true"></span>
 											<span class="nom">{c.name}</span>
 											<span class="date">{c.oathName}</span>
@@ -89,7 +122,10 @@
 								{/each}
 							</ul>
 						{:else}
-							<Vide>Aucun personnage n’attend de compte. Il s’écrit d’abord dans La Table › Personnages.</Vide>
+							<Vide
+								>Aucun personnage n’attend de compte. Il s’écrit d’abord dans La Table ›
+								Personnages.</Vide
+							>
 						{/if}
 					</fieldset>
 				</div>
@@ -116,19 +152,30 @@
 
 	{#if numResets}
 		<Chapitre numero={numResets} titre="Réinitialisations en cours" id="reinitialisations">
-			<p class="consigne">Un code temporaire a été remis ; le compte doit encore choisir son nouveau mot de passe.</p>
+			<p class="consigne">
+				Un code temporaire a été remis ; le compte doit encore choisir son nouveau mot de passe.
+			</p>
 			<ul class="lignes">
 				{#each pending.openResets as a (a.id)}
 					<li>
 						<span class="nom">{a.pseudo}</span>
 						{#if a.resetExpiresAt && !echu(a.resetExpiresAt)}
-							<span class="echeance">code valable jusqu’à <span class="chiffres">{heure(a.resetExpiresAt)}</span></span>
+							<span class="echeance"
+								>code valable jusqu’à <span class="chiffres">{heure(a.resetExpiresAt)}</span></span
+							>
 						{:else if a.resetExpiresAt}
-							<span class="echeance echu">code échu depuis le <span class="chiffres">{leA(a.resetExpiresAt)}</span> — il en faut un nouveau</span>
+							<span class="echeance echu"
+								>code échu depuis le <span class="chiffres">{leA(a.resetExpiresAt)}</span> — il en faut
+								un nouveau</span
+							>
 						{:else}
 							<span class="echeance echu">sans échéance — il faut un nouveau code</span>
 						{/if}
-						<Bouton variante="texte" href={'/registre/comptes?q=' + encodeURIComponent(a.pseudo)} fleche="→">Ouvrir le compte</Bouton>
+						<Bouton
+							variante="texte"
+							href={'/registre/comptes?q=' + encodeURIComponent(a.pseudo)}
+							fleche="→">Ouvrir le compte</Bouton
+						>
 					</li>
 				{/each}
 			</ul>

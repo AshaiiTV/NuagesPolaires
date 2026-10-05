@@ -22,7 +22,10 @@ import { SESSION_COOKIE, clearSessionCookie, cookieShouldBeSecure, readSession }
 type Env = Record<string, string | undefined>;
 
 /** Pages ouvertes à une session `reset` (04 §4 : verify, complete_forced_reset, logout). */
-export const RESET_ALLOWED_PATHS: readonly string[] = ['/entrer/nouveau-mot-de-passe', '/entrer/quitter'];
+export const RESET_ALLOWED_PATHS: readonly string[] = [
+	'/entrer/nouveau-mot-de-passe',
+	'/entrer/quitter'
+];
 export const RESET_PAGE = '/entrer/nouveau-mot-de-passe';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
@@ -61,7 +64,10 @@ export function isResetAllowedPath(pathname: string): boolean {
 }
 
 /** En-têtes de sécurité des réponses SSR (04 §4, §10.11). La CSP elle-même vient de `kit.csp`. */
-export function securityHeaders(options: { dev: boolean; authenticated: boolean }): Record<string, string> {
+export function securityHeaders(options: {
+	dev: boolean;
+	authenticated: boolean;
+}): Record<string, string> {
 	const headers: Record<string, string> = {
 		'X-Content-Type-Options': 'nosniff',
 		'Referrer-Policy': 'strict-origin-when-cross-origin',
@@ -102,7 +108,10 @@ export function applyThemeToHtml(
 	if (!THEME_ID_SAFE.test(theme.id)) return html;
 	let out = html;
 	if (theme.id !== 'dark' || theme.ton !== 'sombre') {
-		out = out.replace('data-theme="dark" data-ton="sombre"', `data-theme="${theme.id}" data-ton="${theme.ton}"`);
+		out = out.replace(
+			'data-theme="dark" data-ton="sombre"',
+			`data-theme="${theme.id}" data-ton="${theme.ton}"`
+		);
 	}
 	if (customTokens && out.includes('</head>')) {
 		const decls = Object.entries(customTokens)
@@ -115,9 +124,9 @@ export function applyThemeToHtml(
 }
 
 /** Module optionnel `reading.ts` (paquet « Dernières pages ») : présent ⇒ inclus dans le bundle. */
-const readingModules = import.meta.glob<{ hasCorners?: (db: Db, actor: Actor) => Promise<boolean> }>(
-	'/src/lib/server/domain/reading.ts'
-);
+const readingModules = import.meta.glob<{
+	hasCorners?: (db: Db, actor: Actor) => Promise<boolean>;
+}>('/src/lib/server/domain/reading.ts');
 
 async function cornersFor(db: Db, actor: Actor): Promise<boolean> {
 	const load = Object.values(readingModules)[0];
@@ -137,7 +146,13 @@ async function openTableOf(db: Db, account: Account): Promise<string | null> {
 		const [row] = await db
 			.select({ id: combats.id })
 			.from(combats)
-			.where(and(eq(combats.ownerAccountId, account.id), eq(combats.status, 'en_cours'), isNull(combats.closedAt)))
+			.where(
+				and(
+					eq(combats.ownerAccountId, account.id),
+					eq(combats.status, 'en_cours'),
+					isNull(combats.closedAt)
+				)
+			)
 			.orderBy(desc(combats.updatedAt))
 			.limit(1);
 		return row?.id ?? null;
@@ -174,7 +189,9 @@ export interface HandleDeps {
 /** Base factice du prérendu : toute utilisation lève une erreur explicite. */
 const BUILD_DB = new Proxy({} as Db, {
 	get() {
-		throw new Error('Base indisponible pendant le prérendu : cette page doit être rendue côté serveur.');
+		throw new Error(
+			'Base indisponible pendant le prérendu : cette page doit être rendue côté serveur.'
+		);
 	}
 });
 
@@ -207,7 +224,10 @@ export function createHandle(deps: HandleDeps): Handle {
 		const method = event.request.method;
 		if (!isOriginAllowed(method, event.request.headers.get('origin'), env.NP_SITE_URL, deps.dev)) {
 			return withHeaders(
-				new Response('Origine refusée.', { status: 403, headers: { 'content-type': 'text/plain; charset=utf-8' } }),
+				new Response('Origine refusée.', {
+					status: 403,
+					headers: { 'content-type': 'text/plain; charset=utf-8' }
+				}),
 				securityHeaders({ dev: deps.dev, authenticated: false })
 			);
 		}
@@ -268,7 +288,10 @@ export function createHandle(deps: HandleDeps): Handle {
 			const response = await resolve(event, {
 				transformPageChunk: ({ html }) => applyThemeToHtml(html, theme, customTokens)
 			});
-			return withHeaders(response, securityHeaders({ dev: deps.dev, authenticated: !!read || !!token }));
+			return withHeaders(
+				response,
+				securityHeaders({ dev: deps.dev, authenticated: !!read || !!token })
+			);
 		} finally {
 			await handle.close();
 		}

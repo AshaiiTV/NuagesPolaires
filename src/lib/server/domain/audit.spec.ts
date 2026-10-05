@@ -47,7 +47,14 @@ describe('recordAudit', () => {
 		});
 		const page = await listAudit(t.db, admin, { action: 'probe' });
 		expect(page.rows).toHaveLength(1);
-		expect(page.rows[0]).toMatchObject({ source: 'test', actorPseudo: 'mj', actorRole: 'mj', ip: '1.2.3.4', origin: 'https://np.test', details: { a: 1 } });
+		expect(page.rows[0]).toMatchObject({
+			source: 'test',
+			actorPseudo: 'mj',
+			actorRole: 'mj',
+			ip: '1.2.3.4',
+			origin: 'https://np.test',
+			details: { a: 1 }
+		});
 		expect(page.rows[0].userAgent).toHaveLength(240);
 	});
 });
@@ -75,15 +82,24 @@ describe('listAudit (06 §B.8)', () => {
 	it('filtre par acteur (insensible à la casse) et par action', async () => {
 		const page = await listAudit(t.db, admin, { actor: 'ALI', action: 'login_success' });
 		expect(page.rows.length).toBeGreaterThan(0);
-		expect(page.rows.every((r) => r.actorPseudo === 'alice' && r.action === 'login_success')).toBe(true);
+		expect(page.rows.every((r) => r.actorPseudo === 'alice' && r.action === 'login_success')).toBe(
+			true
+		);
 		expect((await listAudit(t.db, admin, { actor: '%' })).rows).toHaveLength(0);
 	});
 
 	it('filtre par dates : jour entier ou instant exact', async () => {
-		const day = await listAudit(t.db, admin, { from: '2026-09-21', to: '2026-09-21', source: undefined } as never);
+		const day = await listAudit(t.db, admin, {
+			from: '2026-09-21',
+			to: '2026-09-21',
+			source: undefined
+		} as never);
 		expect(day.rows.length + (day.pages - 1) * AUDIT_PAGE_SIZE).toBe(24);
 		expect(day.rows.every((r) => r.at.startsWith('2026-09-21'))).toBe(true);
-		const exact = await listAudit(t.db, admin, { from: '2026-09-20T12:00:00Z', to: '2026-09-20T14:00:00Z' });
+		const exact = await listAudit(t.db, admin, {
+			from: '2026-09-20T12:00:00Z',
+			to: '2026-09-20T14:00:00Z'
+		});
 		expect(exact.rows).toHaveLength(3);
 		await expect(listAudit(t.db, admin, { from: 'hier' })).rejects.toMatchObject({ status: 400 });
 	});

@@ -20,7 +20,13 @@
 	let { pv, ep, em, releve = null, enRetard = false, grande = false }: Props = $props();
 
 	const lignes = $derived([
-		{ nom: 'PV', titre: 'Points de Vie', ...pv, bas: pv.max > 0 && pv.cur / pv.max < 0.32 },
+		{
+			nom: 'PV',
+			titre: 'Points de Vie',
+			...pv,
+			declare: pv.declare,
+			bas: pv.max > 0 && pv.cur / pv.max < 0.32
+		},
 		{ nom: 'EP', titre: 'Énergie Physique', ...ep, bas: false },
 		{ nom: 'EM', titre: 'Énergie Magique', ...em, bas: false }
 	]);

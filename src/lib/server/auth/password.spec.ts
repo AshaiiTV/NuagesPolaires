@@ -57,14 +57,22 @@ describe('formats hérités (04 §10.9, revue GPT B8)', () => {
 	});
 
 	it('un sel DÉCODÉ en octets (mauvaise convention) ne vérifie pas', async () => {
-		const wrong = pbkdf2Sync(LEGACY_SHA, Buffer.from(LEGACY_SALT, 'hex'), 100_000, 64, 'sha512').toString('hex');
+		const wrong = pbkdf2Sync(
+			LEGACY_SHA,
+			Buffer.from(LEGACY_SALT, 'hex'),
+			100_000,
+			64,
+			'sha512'
+		).toString('hex');
 		expect(await verifyPassword(LEGACY_PASSWORD, `pbkdf2:${LEGACY_SALT}:${wrong}`)).toBe(false);
 	});
 
 	it('vérifie sha256:<hex> et hex nu, insensible à la casse de l’hex', async () => {
 		const prefixed = legacySha256('Alice-audit-123!');
 		expect(await verifyPassword('Alice-audit-123!', prefixed)).toBe(true);
-		expect(await verifyPassword('Alice-audit-123!', prefixed.toUpperCase().replace('SHA256:', 'sha256:'))).toBe(true);
+		expect(
+			await verifyPassword('Alice-audit-123!', prefixed.toUpperCase().replace('SHA256:', 'sha256:'))
+		).toBe(true);
 		expect(await verifyPassword('alice-audit-123!', prefixed)).toBe(false);
 		const bare = prefixed.slice(7);
 		expect(passwordHashFormat(bare)).toBe('hex');
@@ -94,13 +102,16 @@ describe('validation stricte des formats', () => {
 		'x'.repeat(10_000)
 	];
 
-	it.each(malformed.map((m) => [String(m).slice(0, 40), m]))('« %s » ⇒ false, sans exception', async (_label, stored) => {
-		const started = Date.now();
-		expect(passwordHashFormat(stored as string)).toBe('invalid');
-		expect(await verifyPassword('peu importe', stored as string)).toBe(false);
-		expect(Date.now() - started).toBeLessThan(1000);
-		expect(needsRehash(stored as string)).toBe(true);
-	});
+	it.each(malformed.map((m) => [String(m).slice(0, 40), m]))(
+		'« %s » ⇒ false, sans exception',
+		async (_label, stored) => {
+			const started = Date.now();
+			expect(passwordHashFormat(stored as string)).toBe('invalid');
+			expect(await verifyPassword('peu importe', stored as string)).toBe(false);
+			expect(Date.now() - started).toBeLessThan(1000);
+			expect(needsRehash(stored as string)).toBe(true);
+		}
+	);
 });
 
 describe('utilitaires', () => {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	// Pied des pages publiques. Le lien Discord n'apparaît que si un administrateur l'a saisi.
 	interface Props {
 		discord?: string | null;
@@ -12,11 +13,13 @@
 		<small>Le compagnon d’un monde à écrire.</small>
 	</p>
 	<nav aria-label="Pied de page">
-		<a href="/univers/reglement">Règlement</a>
-		<a href="/univers/premiers-pas">Premiers pas</a>
-		<a href="/univers/site-et-donnees">Le site et vos données</a>
+		<a href={resolve('/univers/reglement')}>Règlement</a>
+		<a href={resolve('/univers/premiers-pas')}>Premiers pas</a>
+		<a href={resolve('/univers/site-et-donnees')}>Le site et vos données</a>
 		{#if discord}
-			<a href={discord} rel="noopener noreferrer" target="_blank">Discord <span aria-hidden="true">↗</span></a>
+			<a href={discord} rel="external noopener noreferrer" target="_blank"
+				>Discord <span aria-hidden="true">↗</span></a
+			>
 		{/if}
 	</nav>
 </footer>

@@ -8,7 +8,7 @@
 // le compte s'appliquent.
 import { and, eq } from 'drizzle-orm';
 import type { Db, Tx } from '$lib/server/db';
-import { accounts, characters, sessions, type Account } from '$lib/server/db/schema';
+import { accounts, sessions, type Account } from '$lib/server/db/schema';
 import { scopeMatchesAccount } from './session';
 import { NpError } from '$lib/server/http';
 import type { Actor } from '$lib/server/permissions';

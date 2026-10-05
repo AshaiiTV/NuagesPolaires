@@ -63,7 +63,8 @@
 	);
 
 	// « jusqu’au 1er mai » : le premier du mois s'écrit en ordinal.
-	const saison = (iso: string | null) => (iso ? `jusqu’au ${dateLongue(iso).replace(/^1 /, '1er ')}` : null);
+	const saison = (iso: string | null) =>
+		iso ? `jusqu’au ${dateLongue(iso).replace(/^1 /, '1er ')}` : null;
 </script>
 
 <svelte:head>
@@ -77,17 +78,29 @@
 <Enveloppe compte={data.compte} discord={data.discord}>
 	<Page repere="NP / 07 — Ma collection" titre="Ma" titreVoix="collection.">
 		{#snippet marge()}
-			<p class="voix">Les couleurs de ton carnet. Un thème change les teintes, jamais les mots ni les tampons ; l’accueil public garde les siennes.</p>
+			<p class="voix">
+				Les couleurs de ton carnet. Un thème change les teintes, jamais les mots ni les tampons ;
+				l’accueil public garde les siennes.
+			</p>
 			{#if porte}
-				<p class="porte-marge"><span class="repere">Porté</span><span class="nom">{porte.name}</span></p>
+				<p class="porte-marge">
+					<span class="repere">Porté</span><span class="nom">{porte.name}</span>
+				</p>
 			{/if}
-			<div class="retour"><Bouton variante="texte" href="/compte" fleche="→">Mon compte</Bouton></div>
+			<div class="retour">
+				<Bouton variante="texte" href="/compte" fleche="→">Mon compte</Bouton>
+			</div>
 		{/snippet}
 		{#snippet bande()}
 			{#if porte}<span>Porté : {porte.name}</span>{/if}
 		{/snippet}
 
-		<Chapitre numero="01" titre="Dans ta collection" id="collection" chapeau="Choisis-en un : le carnet se recolore dès que le serveur l’a noté.">
+		<Chapitre
+			numero="01"
+			titre="Dans ta collection"
+			id="collection"
+			chapeau="Choisis-en un : le carnet se recolore dès que le serveur l’a noté."
+		>
 			<div class="reponse" aria-live="polite">
 				{#if ecriture.note}
 					<NoteDeMarge ton={ecriture.note.ton}>{ecriture.note.texte}</NoteDeMarge>
@@ -99,9 +112,11 @@
 				bind:this={formulaire}
 				use:enhance={ecriture.enhance({ verbe: 'Porté' })}
 			>
-				<fieldset class="galerie" aria-describedby="consigne">
+				<fieldset class="galerie" role="radiogroup" aria-describedby="consigne">
 					<legend class="sr-only">Thème porté</legend>
-					<p id="consigne" class="sr-only">Les flèches parcourent la collection ; le thème choisi se porte aussitôt.</p>
+					<p id="consigne" class="sr-only">
+						Les flèches parcourent la collection ; le thème choisi se porte aussitôt.
+					</p>
 					{#each possedes as theme (theme.id)}
 						{@const sechage = ecriture.enCours && choisi === theme.id}
 						<label class="feuillet" class:porte={theme.active}>
@@ -124,7 +139,11 @@
 										{:else if theme.active}
 											<span class="marque" aria-hidden="true"></span>Porté
 										{:else}
-											<span>Dans ta collection{#if saison(theme.availableUntil)}{' · '}{saison(theme.availableUntil)}{/if}</span>
+											<span
+												>Dans ta collection{#if saison(theme.availableUntil)}&nbsp;·&nbsp;{saison(
+														theme.availableUntil
+													)}{/if}</span
+											>
 										{/if}
 									</span>
 								</span>
@@ -138,7 +157,12 @@
 			</form>
 		</Chapitre>
 
-		<Chapitre numero="02" titre="Les autres thèmes" id="ailleurs" chapeau="Ils se donnent : un administrateur les offre, ou le carnet les distribue à leur saison.">
+		<Chapitre
+			numero="02"
+			titre="Les autres thèmes"
+			id="ailleurs"
+			chapeau="Ils se donnent : un administrateur les offre, ou le carnet les distribue à leur saison."
+		>
 			{#if ailleurs.length}
 				<ul class="galerie">
 					{#each ailleurs as theme (theme.id)}
@@ -148,7 +172,13 @@
 								<span class="legende">
 									<span class="titre">{theme.name}</span>
 									{#if theme.description}<span class="description">{theme.description}</span>{/if}
-									<span class="etat"><span>Hors collection{#if saison(theme.availableUntil)}{' · '}{saison(theme.availableUntil)}{/if}</span></span>
+									<span class="etat"
+										><span
+											>Hors collection{#if saison(theme.availableUntil)}&nbsp;·&nbsp;{saison(
+													theme.availableUntil
+												)}{/if}</span
+										></span
+									>
 								</span>
 							</span>
 						</li>
@@ -274,7 +304,7 @@
 
 	@media (max-width: 760px) {
 		.galerie {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
+			grid-template-columns: minmax(0, 1fr);
 			gap: 16px 12px;
 		}
 		.legende {
@@ -285,7 +315,7 @@
 			line-height: 24px;
 		}
 		.description {
-			display: none;
+			display: block;
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {

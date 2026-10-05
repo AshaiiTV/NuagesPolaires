@@ -6,13 +6,16 @@ import { newPasswordSchema } from './auth';
 export const ROLE_VALUES = ['joueur', 'mj', 'designer', 'admin'] as const;
 export type RoleView = (typeof ROLE_VALUES)[number];
 
-const bool = z.preprocess((v) => v === true || v === 'true' || v === 'on' || v === '1', z.boolean());
+const bool = z.preprocess(
+	(v) => v === true || v === 'true' || v === 'on' || v === '1',
+	z.boolean()
+);
 
-/** Identifiant de compte ou de personnage (audit 05 §3.1 : `^[A-Za-z0-9_:\-]{1,128}$`). */
+/** Identifiant de compte ou de personnage (audit 05 §3.1 : `^[A-Za-z0-9_:-]{1,128}$`). */
 export const idSchema = z
 	.string({ error: 'Identifiant invalide.' })
 	.trim()
-	.regex(/^[A-Za-z0-9_:\-]{1,128}$/, 'Identifiant invalide.');
+	.regex(/^[A-Za-z0-9_:-]{1,128}$/, 'Identifiant invalide.');
 
 /** `expectedRevision` : entier ≥ 1 (son absence est traitée avant, en 428). */
 export const revisionSchema = z.number({ error: 'Version attendue invalide.' }).int().min(1);
@@ -26,7 +29,10 @@ export const linkCharacterInput = z.object({
 });
 export type LinkCharacterInput = z.input<typeof linkCharacterInput>;
 
-export const unlinkCharacterInput = z.object({ accountId: idSchema, expectedRevision: revisionSchema });
+export const unlinkCharacterInput = z.object({
+	accountId: idSchema,
+	expectedRevision: revisionSchema
+});
 export type UnlinkCharacterInput = z.input<typeof unlinkCharacterInput>;
 
 export const setRoleInput = z.object({
@@ -44,7 +50,11 @@ export type AdminSetPasswordInput = z.input<typeof adminSetPasswordInput>;
 
 export const strikeAccountInput = z.object({
 	accountId: idSchema,
-	typedPseudo: z.string({ error: 'Saisis le pseudo du compte.' }).trim().min(1, 'Saisis le pseudo du compte.').max(64)
+	typedPseudo: z
+		.string({ error: 'Saisis le pseudo du compte.' })
+		.trim()
+		.min(1, 'Saisis le pseudo du compte.')
+		.max(64)
 });
 export type StrikeAccountInput = z.input<typeof strikeAccountInput>;
 
@@ -69,7 +79,10 @@ export const THEME_TOKEN_KEYS = [
 	'--ruban'
 ] as const;
 
-const hexColor = z.string().trim().regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, 'Couleur hexadécimale invalide.');
+const hexColor = z
+	.string()
+	.trim()
+	.regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, 'Couleur hexadécimale invalide.');
 
 export const themeTokensSchema = z.object({
 	'--bureau': hexColor,
@@ -91,7 +104,10 @@ export const createThemeInput = z.object({
 	id: z
 		.string({ error: 'Identifiant de thème invalide.' })
 		.trim()
-		.regex(/^[a-z0-9][a-z0-9-]{1,39}$/, 'Identifiant de thème invalide : minuscules, chiffres et tirets.'),
+		.regex(
+			/^[a-z0-9][a-z0-9-]{1,39}$/,
+			'Identifiant de thème invalide : minuscules, chiffres et tirets.'
+		),
 	name: z.string({ error: 'Nom requis.' }).trim().min(1, 'Nom requis.').max(60),
 	description: z.string().trim().max(300).optional().default(''),
 	tokens: themeTokensSchema

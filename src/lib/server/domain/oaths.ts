@@ -52,7 +52,11 @@ function definition(row: Oath): OathDefinition {
 		icon: row.icon,
 		category: row.category,
 		lore: row.lore,
-		branches: { bA: branch(row.branches.bA), bB: branch(row.branches.bB), extraBranches: (row.branches.extraBranches ?? []).map((b) => ({ ...b, style: b.style ?? '' })) },
+		branches: {
+			bA: branch(row.branches.bA),
+			bB: branch(row.branches.bB),
+			extraBranches: (row.branches.extraBranches ?? []).map((b) => ({ ...b, style: b.style ?? '' }))
+		},
 		isBuiltin: row.isBuiltin
 	};
 }
@@ -103,6 +107,9 @@ function rowView(row: Oath, catalogue: Oath[], reserved: boolean): OathRowView {
 	const parent = catalogue.find((candidate) => candidate.id === row.evolvesFrom);
 	return {
 		id: row.id,
+		reservedVisibility: reserved
+			? { hidden: row.hidden, outsideShowcase: row.hidden || !PUBLIC_RANKS.includes(row.rank) }
+			: null,
 		name: row.name,
 		weapon: row.weapon,
 		rank: row.rank,
@@ -246,7 +253,14 @@ export async function updateOath(
 			.update(oaths)
 			.set({
 				...data,
-				...(data.branches ? { branches: { ...data.branches, extraBranches: data.branches.extraBranches ?? old?.branches.extraBranches ?? [] } } : {}),
+				...(data.branches
+					? {
+							branches: {
+								...data.branches,
+								extraBranches: data.branches.extraBranches ?? old?.branches.extraBranches ?? []
+							}
+						}
+					: {}),
 				...(growth ? { pvGrowth: growth.pvN, epGrowth: growth.epN, emGrowth: growth.emN } : {}),
 				revision: sql`${oaths.revision} + 1`
 			})
@@ -262,8 +276,16 @@ export async function updateOath(
 			.for('update');
 		for (const character of carriers) {
 			let branch = character.branch;
-			const previousBranches = [old.branches.bA, old.branches.bB, ...(old.branches.extraBranches ?? [])];
-			const nextBranches = [row.branches.bA, row.branches.bB, ...(row.branches.extraBranches ?? [])];
+			const previousBranches = [
+				old.branches.bA,
+				old.branches.bB,
+				...(old.branches.extraBranches ?? [])
+			];
+			const nextBranches = [
+				row.branches.bA,
+				row.branches.bB,
+				...(row.branches.extraBranches ?? [])
+			];
 			for (const [index, previous] of previousBranches.entries()) {
 				if (previous && branchMatchesLabel({ ...previous, style: previous.style ?? '' }, branch)) {
 					branch = nextBranches[index]?.nom ?? 'Aucune';

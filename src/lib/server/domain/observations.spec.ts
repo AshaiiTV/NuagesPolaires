@@ -28,16 +28,14 @@ describe('Observations — intégration PGlite', () => {
 	});
 	beforeAll(async () => {
 		test = await createTestDb();
-		await test.db
-			.insert(accounts)
-			.values(
-				['joueur', 'mj', 'designer', 'admin'].map((role) => ({
-					id: `test_${role}`,
-					role: role as Role,
-					pseudo: role,
-					passwordHash: 'test'
-				}))
-			);
+		await test.db.insert(accounts).values(
+			['joueur', 'mj', 'designer', 'admin'].map((role) => ({
+				id: `test_${role}`,
+				role: role as Role,
+				pseudo: role,
+				passwordHash: 'test'
+			}))
+		);
 		await test.db.insert(beasts).values([
 			{ id: 'visible', name: 'Visible' },
 			{ id: 'hidden', name: 'Masquée', hidden: true }
@@ -134,15 +132,13 @@ describe('Observations — intégration PGlite', () => {
 	}
 	it('publication rayée : observation retirée du public', async () => {
 		await test.db.insert(publications).values({ id: 'struck', text: 'Récit', struck: true });
-		await test.db
-			.insert(beastObservations)
-			.values({
-				id: 'struck_obs',
-				beastId: 'visible',
-				text: 'Rayée',
-				status: 'validated',
-				publicationId: 'struck'
-			});
+		await test.db.insert(beastObservations).values({
+			id: 'struck_obs',
+			beastId: 'visible',
+			text: 'Rayée',
+			status: 'validated',
+			publicationId: 'struck'
+		});
 		expect((await listObservations(test.db, 'visible')).some((o) => o.id === 'struck_obs')).toBe(
 			false
 		);

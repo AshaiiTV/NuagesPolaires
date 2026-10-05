@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { SvelteDate, SvelteURLSearchParams } from 'svelte/reactivity';
+	import { resolve } from '$app/paths';
 	// Le journal d'audit : une page à réglure où chaque action du carnet s'écrit sur sa ligne, l'heure
 	// dans la marge, les jours en titres courants. On le lit, on le filtre, on l'exporte ; on ne l'écrit
 	// jamais d'ici. Les décisions des MJ et des administrateurs se lisent sur la même réglure.
@@ -8,7 +10,15 @@
 	import Vide from '$lib/ui/Vide.svelte';
 	import { heure } from '$lib/ui/dates';
 	import PageRegistre from '../PageRegistre.svelte';
-	import { ACTIONS_AUDIT, LIBELLE_ROLE, SOURCES_AUDIT, actionAudit, actionDecision, detailsLisibles, le } from '../format';
+	import {
+		ACTIONS_AUDIT,
+		LIBELLE_ROLE,
+		SOURCES_AUDIT,
+		actionAudit,
+		actionDecision,
+		detailsLisibles,
+		le
+	} from '../format';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -42,19 +52,30 @@
 			acteur: r.actorName,
 			role: '',
 			action: actionDecision(r.action),
-			detail: [DETAILS[r.detail] ?? r.detail, r.target && !TECHNIQUE.test(r.target) && !r.detail.includes(r.target) ? `cible : ${r.target}` : ''].filter(Boolean).join(' · ')
+			detail: [
+				DETAILS[r.detail] ?? r.detail,
+				r.target && !TECHNIQUE.test(r.target) && !r.detail.includes(r.target)
+					? `cible\u00a0: ${r.target}`
+					: ''
+			]
+				.filter(Boolean)
+				.join(' · ')
 		}));
 	});
 
 	/** Un identifiant interne (« c_caBbbQVpeidlFfcH ») ne dit rien à qui lit : on le tait. */
 	const TECHNIQUE = /^[a-z]{1,4}_[A-Za-z0-9_-]{6,}$/;
-	const DETAILS: Record<string, string> = { auto: 'sauvegarde automatique', true: 'oui', false: 'non' };
+	const DETAILS: Record<string, string> = {
+		auto: 'sauvegarde automatique',
+		true: 'oui',
+		false: 'non'
+	};
 
 	/** Les lignes regroupées par jour (heure de Paris) : le jour s'écrit une fois, en titre courant. */
 	const jours = $derived.by(() => {
 		const groupes: { jour: string; lignes: Ligne[] }[] = [];
 		for (const l of lignes) {
-			const j = le(l.at, new Date(data.releve).getTime());
+			const j = le(l.at, new SvelteDate(data.releve).getTime());
 			const dernier = groupes.at(-1);
 			if (dernier && dernier.jour === j) dernier.lignes.push(l);
 			else groupes.push({ jour: j, lignes: [l] });
@@ -63,44 +84,81 @@
 	});
 
 	const pagination = $derived(data.audit ?? data.staff ?? { page: 1, pages: 1 });
-	const filtre = $derived(!!(data.filtres.acteur || data.filtres.action || data.filtres.du || data.filtres.au));
+	const filtre = $derived(
+		!!(data.filtres.acteur || data.filtres.action || data.filtres.du || data.filtres.au)
+	);
 
 	function lien(changes: Record<string, string | number | null>): string {
-		const p = new URLSearchParams();
+		const p = new SvelteURLSearchParams();
 		const base: Record<string, string> =
 			data.vue === 'staff'
 				? { vue: 'staff' }
-				: { acteur: data.filtres.acteur, action: data.filtres.action, du: data.filtres.du, au: data.filtres.au };
-		for (const [k, v] of Object.entries({ ...base, ...changes })) if (v !== null && v !== '' && v !== 1) p.set(k, String(v));
+				: {
+						acteur: data.filtres.acteur,
+						action: data.filtres.action,
+						du: data.filtres.du,
+						au: data.filtres.au
+					};
+		for (const [k, v] of Object.entries({ ...base, ...changes }))
+			if (v !== null && v !== '' && v !== 1) p.set(k, String(v));
 		const s = p.toString();
 		return '/registre/journal' + (s ? '?' + s : '');
 	}
 	const export_ = $derived.by(() => {
-		const p = new URLSearchParams();
+		const p = new SvelteURLSearchParams();
 		for (const [k, v] of Object.entries(data.filtres)) if (v) p.set(k, v);
 		const s = p.toString();
 		return '/registre/journal/texte' + (s ? '?' + s : '');
 	});
 
-	const actionsConnues = Object.entries(ACTIONS_AUDIT).sort((a, b) => a[1].localeCompare(b[1], 'fr'));
+	const actionsConnues = Object.entries(ACTIONS_AUDIT).sort((a, b) =>
+		a[1].localeCompare(b[1], 'fr')
+	);
 </script>
 
-<svelte:head><title>{data.vue === 'staff' ? 'Décisions des MJ' : 'Journal d’audit'} — Le Registre</title></svelte:head>
+<svelte:head
+	><title>{data.vue === 'staff' ? 'Décisions des MJ' : 'Journal d’audit'} — Le Registre</title
+	></svelte:head
+>
 
-<PageRegistre titre={data.vue === 'staff' ? 'Décisions' : 'Journal'} titreVoix={data.vue === 'staff' ? 'des MJ.' : 'd’audit.'}>
+<PageRegistre
+	titre={data.vue === 'staff' ? 'Décisions' : 'Journal'}
+	titreVoix={data.vue === 'staff' ? 'des MJ.' : 'd’audit.'}
+>
 	{#snippet reperes()}
 		<span>relevé <span class="chiffres">{heure(data.releve)}</span></span>
 		<span class="gris">Lu ici, jamais écrit d’ici.</span>
 	{/snippet}
 
 	<nav class="voix" aria-label="Journaux">
-		<a href="/registre/journal" class:courant={data.vue === 'audit'} aria-current={data.vue === 'audit' ? 'page' : undefined}>Journal d’audit</a>
-		<a href="/registre/journal?vue=staff" class:courant={data.vue === 'staff'} aria-current={data.vue === 'staff' ? 'page' : undefined}>Décisions des MJ</a>
+		<a
+			href={resolve('/registre/journal')}
+			class:courant={data.vue === 'audit'}
+			aria-current={data.vue === 'audit' ? 'page' : undefined}>Journal d’audit</a
+		>
+		<a
+			href={resolve('/registre/journal?vue=staff')}
+			class:courant={data.vue === 'staff'}
+			aria-current={data.vue === 'staff' ? 'page' : undefined}>Décisions des MJ</a
+		>
 	</nav>
 
 	{#if data.vue === 'audit'}
-		<form class="filtres" method="GET" action="/registre/journal" role="search" aria-label="Filtrer le journal">
-			<Champ libelle="Acteur" name="acteur" value={data.filtres.acteur} type="search" autocomplete="off" placeholder="pseudo" />
+		<form
+			class="filtres"
+			method="GET"
+			action="/registre/journal"
+			role="search"
+			aria-label="Filtrer le journal"
+		>
+			<Champ
+				libelle="Acteur"
+				name="acteur"
+				value={data.filtres.acteur}
+				type="search"
+				autocomplete="off"
+				placeholder="pseudo"
+			/>
 			<label class="choix">
 				<span>Action</span>
 				<select name="action">
@@ -121,11 +179,18 @@
 			</div>
 		</form>
 		<div class="exporter">
-			<p class="gris">{filtre ? 'L’export reprend ces filtres.' : 'L’export reprend tout le journal.'} Les dates y sont en temps universel.</p>
-			<Bouton variante="trait" href={export_} download data-sveltekit-reload>Exporter (.txt)</Bouton>
+			<p class="gris">
+				{filtre ? 'L’export reprend ces filtres.' : 'L’export reprend tout le journal.'} Les dates y sont
+				en temps universel.
+			</p>
+			<Bouton variante="trait" href={export_} download data-sveltekit-reload>Exporter (.txt)</Bouton
+			>
 		</div>
 	{:else}
-		<p class="chapeau">Ce que les MJ et les administrateurs ont fait, écrit en clair. Les lignes archivées n’y figurent plus.</p>
+		<p class="chapeau">
+			Ce que les MJ et les administrateurs ont fait, écrit en clair. Les lignes archivées n’y
+			figurent plus.
+		</p>
 	{/if}
 
 	{#if 'refus' in data && data.refus}
@@ -136,7 +201,9 @@
 		{#if filtre}
 			<Vide>
 				Aucune ligne ne correspond à ces filtres.
-				{#snippet action()}<Bouton variante="texte" href="/registre/journal" fleche="→">Revoir tout le journal</Bouton>{/snippet}
+				{#snippet action()}<Bouton variante="texte" href="/registre/journal" fleche="→"
+						>Revoir tout le journal</Bouton
+					>{/snippet}
 			</Vide>
 		{:else if data.vue === 'staff'}
 			<Vide>Aucune décision écrite. La prochaine s’écrira ici.</Vide>
@@ -152,9 +219,18 @@
 						{#each g.lignes as l (l.id)}
 							<li>
 								<time class="heure chiffres" datetime={l.at}>{heure(l.at)}</time>
-								<span class="qui"><span class="source">{l.source}</span>
-								<span class="acteur">{#if l.acteur}{l.acteur}{#if l.role}<span class="role">{' · ' + l.role}</span>{/if}{:else}<span class="gris">visiteur</span>{/if}</span></span>
-								<span class="quoi"><strong>{l.action}</strong>{#if l.detail}<span class="detail">{l.detail}</span>{/if}</span>
+								<span class="qui"
+									><span class="source">{l.source}</span>
+									<span class="acteur"
+										>{#if l.acteur}{l.acteur}{#if l.role}<span class="role"
+													>{'&nbsp;· ' + l.role}</span
+												>{/if}{:else}<span class="gris">visiteur</span>{/if}</span
+									></span
+								>
+								<span class="quoi"
+									><strong>{l.action}</strong>{#if l.detail}<span class="detail">{l.detail}</span
+										>{/if}</span
+								>
 							</li>
 						{/each}
 					</ol>
@@ -167,11 +243,15 @@
 		{#if pagination.pages > 1}
 			<nav class="pages" aria-label="Pages du journal">
 				{#if pagination.page > 1}
-					<Bouton variante="texte" href={lien({ page: pagination.page - 1 })}>← Plus récentes</Bouton>
+					<Bouton variante="texte" href={lien({ page: pagination.page - 1 })}
+						>← Plus récentes</Bouton
+					>
 				{:else}<span></span>{/if}
 				<span class="ou chiffres">page {pagination.page} sur {pagination.pages}</span>
 				{#if pagination.page < pagination.pages}
-					<Bouton variante="texte" href={lien({ page: pagination.page + 1 })} fleche="→">Plus anciennes</Bouton>
+					<Bouton variante="texte" href={lien({ page: pagination.page + 1 })} fleche="→"
+						>Plus anciennes</Bouton
+					>
 				{:else}<span></span>{/if}
 			</nav>
 		{/if}

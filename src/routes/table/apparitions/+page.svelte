@@ -37,7 +37,8 @@
 	let personnages = $state<string[]>([]);
 
 	const nomZone = (n: string) => (n.startsWith('[') || n.startsWith('#') ? nomSalon(n) : n);
-	const resumeGroupes = (g: { nom: string; quantite: number }[]) => g.map((x) => `${x.nom} ×${x.quantite}`).join(' · ');
+	const resumeGroupes = (g: { nom: string; quantite: number }[]) =>
+		g.map((x) => `${x.nom} ×${x.quantite}`).join(' · ');
 </script>
 
 <svelte:head><title>Apparitions — La Table — Nuages Polaires</title></svelte:head>
@@ -52,7 +53,12 @@
 
 	<Chapitre numero="01" titre="Tirer">
 		<div class="tirer">
-			<form method="POST" action="?/tirer" class="zones" use:enhance={tirer.enhance({ verbe: 'Tiré' })}>
+			<form
+				method="POST"
+				action="?/tirer"
+				class="zones"
+				use:enhance={tirer.enhance({ verbe: 'Tiré' })}
+			>
 				<fieldset>
 					<legend>Zone</legend>
 					<ul class="liste-zones">
@@ -76,7 +82,9 @@
 					<Bouton variante="ruban" type="submit" disabled={tirer.enCours || !zone}>Tirer</Bouton>
 				</div>
 				{#if tirer.note}
-					<div aria-live="polite"><NoteDeMarge ton={tirer.note.ton}>{tirer.note.texte}</NoteDeMarge></div>
+					<div aria-live="polite">
+						<NoteDeMarge ton={tirer.note.ton}>{tirer.note.texte}</NoteDeMarge>
+					</div>
 				{/if}
 			</form>
 
@@ -90,7 +98,7 @@
 					<ul class="groupes">
 						{#each courant.groupes as g, i (i)}
 							<li>
-								<span class="nom">{g.nom}</span>
+								<span class="nom">Rencontre {i + 1} · {g.nom}</span>
 								<span class="detail">
 									niv. {g.niveau}
 									{#if g.comportement}<Losange couleur={g.couleur} libelle={g.comportement} />{/if}
@@ -100,7 +108,12 @@
 						{/each}
 					</ul>
 
-					<form method="POST" action="?/envoyer" class="envoyer" use:enhance={envoyer.enhance({ verbe: 'Envoyé' })}>
+					<form
+						method="POST"
+						action="?/envoyer"
+						class="envoyer"
+						use:enhance={envoyer.enhance({ verbe: 'Envoyé' })}
+					>
 						<input type="hidden" name="tirage" value={courant.id} />
 						<fieldset>
 							<legend>Élèves du Serment à la Table</legend>
@@ -109,7 +122,12 @@
 									{#each data.personnages as p (p.id)}
 										<li>
 											<label>
-												<input type="checkbox" name="personnages" value={p.id} bind:group={personnages} />
+												<input
+													type="checkbox"
+													name="personnages"
+													value={p.id}
+													bind:group={personnages}
+												/>
 												<span class="nom">{p.nom}</span>
 												<span class="detail">{p.serment} · niv. {p.niveau}</span>
 											</label>
@@ -126,7 +144,9 @@
 									? `${personnages.length} Élève${personnages.length > 1 ? 's' : ''} du Serment et ce tirage ouvriront une Table.`
 									: 'La Table peut s’ouvrir sans Élève ; tu les ajoutes avant de démarrer.'}
 							</p>
-							<Bouton variante="trait" type="submit" disabled={envoyer.enCours} fleche="→">Envoyer à la Table</Bouton>
+							<Bouton variante="trait" type="submit" disabled={envoyer.enCours} fleche="→"
+								>Envoyer à la Table</Bouton
+							>
 						</div>
 						{#if envoyer.note && envoyer.note.ton !== 'fait'}
 							<NoteDeMarge ton={envoyer.note.ton}>{envoyer.note.texte}</NoteDeMarge>
@@ -139,7 +159,11 @@
 		</div>
 	</Chapitre>
 
-	<Chapitre numero="02" titre="Derniers tirages" chapeau="Les 24 derniers, du plus récent au plus ancien.">
+	<Chapitre
+		numero="02"
+		titre="Derniers tirages"
+		chapeau="Les 24 derniers, du plus récent au plus ancien."
+	>
 		{#if data.tirages.length}
 			<ol class="historique">
 				{#each data.tirages as t (t.id)}
@@ -147,8 +171,13 @@
 						<span class="quand chiffres">{heure(t.at)} · {dateCourte(t.at)}</span>
 						<span class="zone">{nomZone(t.zone)}</span>
 						<span class="groupes-ligne">{resumeGroupes(t.groupes)}</span>
-						<button type="button" class="geste" onclick={() => (choisi = t.id)} aria-pressed={courant?.id === t.id}>
-							{courant?.id === t.id ? 'Affiché' : 'Reprendre'}
+						<button
+							type="button"
+							class="geste"
+							onclick={() => (choisi = t.id)}
+							aria-pressed={courant?.id === t.id}
+						>
+							{t.combatId ? 'Envoyé à la Table' : 'Pas encore envoyé'}
 						</button>
 					</li>
 				{/each}
@@ -158,7 +187,11 @@
 		{/if}
 	</Chapitre>
 
-	<Chapitre numero="03" titre="Totaux par créature" chapeau="Sorties cumulées par créature ; elles pondèrent les tirages suivants.">
+	<Chapitre
+		numero="03"
+		titre="Totaux par créature"
+		chapeau="Sorties cumulées par créature ; elles pondèrent les tirages suivants."
+	>
 		{#if data.totaux.length}
 			<ul class="totaux">
 				{#each data.totaux as t (t.id)}

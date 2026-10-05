@@ -37,12 +37,18 @@
 	const max = (r: ResourceKey) => f[`${r}Max`];
 	const demarre = $derived(table.demarre);
 	const invocations = $derived(
-		f.type === 'player' && !f.isSummon ? table.capacites(f.id).filter((o) => o.kind === 'summon' && o.summon) : []
+		f.type === 'player' && !f.isSummon
+			? table.capacites(f.id).filter((o) => o.kind === 'summon' && o.summon)
+			: []
 	);
-	const declares = $derived((table.etat.declarations[f.id] ?? []).reduce((n, a) => n + (a.consumeActions || 1), 0));
+	const declares = $derived(
+		(table.etat.declarations[f.id] ?? []).reduce((n, a) => n + (a.consumeActions || 1), 0)
+	);
 	const maxActions = $derived(demarre && !ko(f) ? table.actionsMax(f.id) : 0);
 	const pvBas = $derived(f.pvMax > 0 && f.pvCur / f.pvMax < 0.32);
-	const apercu = $derived(Math.max(0, Math.min(max(ressource) || 999, Math.trunc(Number(valeur) || 0))));
+	const apercu = $derived(
+		Math.max(0, Math.min(max(ressource) || 999, Math.trunc(Number(valeur) || 0)))
+	);
 
 	$effect(() => {
 		if (ouvert) {
@@ -105,14 +111,21 @@
 	];
 </script>
 
-<li class="combattant" class:ko={ko(f)} class:declare class:ouvert class:adversaire={f.type === 'beast'}>
+<li
+	class="combattant"
+	class:ko={ko(f)}
+	class:declare
+	class:ouvert
+	class:adversaire={f.type === 'beast'}
+>
 	<div class="ligne">
 		<span class="nom">
 			<span class="texte" title={f.name}>{f.name}</span>
 			{#if initiative || ko(f) || f.isSummon}
 				<span class="marques">
 					{#if ko(f)}<span class="marque ko-marque">KO</span>{/if}
-					{#if initiative}<span class="marque" title="Ouvre l’ordre de déclaration">initiative</span>{/if}
+					{#if initiative}<span class="marque" title="Ouvre l’ordre de déclaration">initiative</span
+						>{/if}
 					{#if f.isSummon}<span class="marque">invocation</span>{/if}
 				</span>
 			{/if}
@@ -120,7 +133,9 @@
 		{#each RESSOURCES as r (r.id)}
 			<span class="res chiffres r-{r.id}" class:bas={r.id === 'pv' && pvBas}>
 				{#if max(r.id) > 0}
-					<span class="sr-only">{r.nom} </span><span class="cur">{cur(r.id)}</span><span class="max">/{max(r.id)}</span>
+					<span class="sr-only">{r.nom} </span><span class="cur">{cur(r.id)}</span><span class="max"
+						>/{max(r.id)}</span
+					>
 				{:else}
 					<span class="sr-only">sans {r.nom}</span>
 				{/if}
@@ -132,11 +147,18 @@
 				<Losange couleur={st.couleur} libelle={st.libelle} detail="{s.tours} t." />
 			{/each}
 		</span>
-		<span class="declare-points chiffres" aria-label={maxActions ? `${declares} action${declares > 1 ? 's' : ''} déclarée${declares > 1 ? 's' : ''} sur ${maxActions}` : undefined}>
-			{#if maxActions && maxActions <= 4}
-				<span aria-hidden="true">{'●'.repeat(Math.min(declares, maxActions))}{'○'.repeat(Math.max(0, maxActions - declares))}</span>
-			{:else if maxActions}
-				<span aria-hidden="true">{Math.min(declares, maxActions)}/{maxActions}</span>
+		<span
+			class="declare-points chiffres"
+			aria-label={maxActions
+				? `${declares} action${declares > 1 ? 's' : ''} déclarée${declares > 1 ? 's' : ''} sur ${maxActions}`
+				: undefined}
+		>
+			{#if maxActions}
+				<span aria-hidden="true"
+					>{'●'.repeat(Math.min(declares, maxActions))}{'○'.repeat(
+						Math.max(0, maxActions - declares)
+					)}</span
+				>
 			{/if}
 		</span>
 		<button
@@ -153,18 +175,46 @@
 
 	{#if ouvert}
 		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-		<div class="panneau" id={idPanneau} bind:this={panneau} role="region" aria-label="Gestes sur {f.name}" onkeydown={touche}>
+		<div
+			class="panneau"
+			id={idPanneau}
+			bind:this={panneau}
+			role="region"
+			aria-label="Gestes sur {f.name}"
+			onkeydown={touche}
+		>
 			<div class="modes" role="group" aria-label="Geste">
-				<button type="button" class:actif={mode === 'ajuster'} onclick={() => (mode = 'ajuster')}>Ajuster</button>
+				<button type="button" class:actif={mode === 'ajuster'} onclick={() => (mode = 'ajuster')}
+					>Ajuster</button
+				>
 				{#if f.epMax || f.emMax}
-					<button type="button" class:actif={mode === 'restaurer'} onclick={() => ((mode = 'restaurer'), (motif = 'restauration'))}>Restauration</button>
+					<button
+						type="button"
+						class:actif={mode === 'restaurer'}
+						onclick={() => ((mode = 'restaurer'), (motif = 'restauration'))}>Restauration</button
+					>
 				{/if}
-				<button type="button" class:actif={mode === 'statut'} onclick={() => (mode = 'statut')}>Statut</button>
+				<button type="button" class:actif={mode === 'statut'} onclick={() => (mode = 'statut')}
+					>Statut</button
+				>
 				{#if invocations.length && demarre}
-					<button type="button" class:actif={mode === 'invocation'} onclick={() => ((mode = 'invocation'), (motif = 'invocation'))}>Invocation</button>
+					<button
+						type="button"
+						class:actif={mode === 'invocation'}
+						onclick={() => ((mode = 'invocation'), (motif = 'invocation'))}>Invocation</button
+					>
 				{/if}
-				<button type="button" class:actif={mode === 'ordre'} onclick={() => ((mode = 'ordre'), (motif = 'ordre modifié'))}>{demarre ? 'Ordre' : 'Initiative'}</button>
-				<button type="button" class:actif={mode === 'retirer'} onclick={() => ((mode = 'retirer'), (motif = 'retiré de la Table'))}>Retirer</button>
+				<button
+					type="button"
+					class:actif={mode === 'ordre'}
+					onclick={() => ((mode = 'ordre'), (motif = 'ordre modifié'))}
+					>{demarre ? 'Ordre' : 'Initiative'}</button
+				>
+				<button
+					type="button"
+					class:actif={mode === 'retirer'}
+					onclick={() => ((mode = 'retirer'), (motif = 'retiré de la Table'))}>Retirer</button
+				>
 			</div>
 
 			{#if mode === 'ajuster'}
@@ -172,16 +222,37 @@
 					<div class="choix-ressource" role="radiogroup" aria-label="Ressource">
 						{#each RESSOURCES as r (r.id)}
 							{#if max(r.id) > 0}
-								<button type="button" role="radio" aria-checked={ressource === r.id} class:actif={ressource === r.id} onclick={() => choisirRessource(r.id)}>{r.nom}</button>
+								<button
+									type="button"
+									role="radio"
+									aria-checked={ressource === r.id}
+									class:actif={ressource === r.id}
+									onclick={() => choisirRessource(r.id)}>{r.nom}</button
+								>
 							{/if}
 						{/each}
 					</div>
 					<label class="valeur">
 						<span>Nouvelle valeur</span>
 						<span class="pas-a-pas">
-							<button type="button" onclick={() => (valeur = Math.max(0, (Number(valeur) || 0) - 5))} aria-label="Moins 5">−5</button>
-							<input class="chiffres" type="number" min="0" max={max(ressource) || 999} bind:value={valeur} inputmode="numeric" />
-							<button type="button" onclick={() => (valeur = (Number(valeur) || 0) + 5)} aria-label="Plus 5">+5</button>
+							<button
+								type="button"
+								onclick={() => (valeur = Math.max(0, (Number(valeur) || 0) - 5))}
+								aria-label="Moins 5">−5</button
+							>
+							<input
+								class="chiffres"
+								type="number"
+								min="0"
+								max={max(ressource) || 999}
+								bind:value={valeur}
+								inputmode="numeric"
+							/>
+							<button
+								type="button"
+								onclick={() => (valeur = (Number(valeur) || 0) + 5)}
+								aria-label="Plus 5">+5</button
+							>
 						</span>
 					</label>
 					<label class="motif">
@@ -190,13 +261,29 @@
 					</label>
 					<p class="apercu chiffres" aria-live="polite">
 						{ressource.toUpperCase()}
-						{#if apercu !== cur(ressource)}<Rature ancien={cur(ressource)} nouveau={apercu} />{:else}{cur(ressource)} · inchangé{/if}
+						{#if apercu !== cur(ressource)}<Rature
+								ancien={cur(ressource)}
+								nouveau={apercu}
+							/>{:else}{cur(ressource)} · inchangé{/if}
 						<span class="max">/{max(ressource)}</span>
 					</p>
 					<div class="gestes">
-						<Bouton variante="trait" type="submit" disabled={apercu === cur(ressource) || !motif.trim()}>Noter</Bouton>
+						<Bouton
+							variante="trait"
+							type="submit"
+							disabled={apercu === cur(ressource) || !motif.trim()}>Noter</Bouton
+						>
 						{#if f.epMax}
-							<button type="button" class="raccourci" onclick={() => preremplir('ep', f.epCur - Math.ceil(f.epMax * 0.5), 'repos court (−50 % EP max)')}>Repos court</button>
+							<button
+								type="button"
+								class="raccourci"
+								onclick={() =>
+									preremplir(
+										'ep',
+										f.epCur - Math.ceil(f.epMax * 0.5),
+										'repos court (−50 % EP max)'
+									)}>Repos court</button
+							>
 						{/if}
 						<button type="button" class="raccourci" onclick={fermer}>Fermer</button>
 					</div>
@@ -205,14 +292,22 @@
 				<form class="geste" onsubmit={noterRestauration}>
 					<p class="apercu chiffres">
 						{#if f.epMax}EP <Rature ancien={f.epCur} nouveau={f.epMax} />{/if}
-						{#if f.emMax}<span class="sep">·</span> EM <Rature ancien={f.emCur} nouveau={f.emMax} />{/if}
+						{#if f.emMax}<span class="sep">·</span> EM <Rature
+								ancien={f.emCur}
+								nouveau={f.emMax}
+							/>{/if}
 					</p>
 					<label class="motif">
 						<span>Motif</span>
 						<input bind:value={motif} required maxlength={200} />
 					</label>
 					<div class="gestes">
-						<Bouton variante="trait" type="submit" disabled={!motif.trim() || (f.epCur === f.epMax && f.emCur === f.emMax)}>Noter la restauration</Bouton>
+						<Bouton
+							variante="trait"
+							type="submit"
+							disabled={!motif.trim() || (f.epCur === f.epMax && f.emCur === f.emMax)}
+							>Noter la restauration</Bouton
+						>
 						<button type="button" class="raccourci" onclick={fermer}>Fermer</button>
 					</div>
 				</form>
@@ -242,7 +337,12 @@
 								{@const st = statut(s.id)}
 								<li>
 									<Losange couleur={st.couleur} libelle={st.libelle} detail="{s.tours} t." />
-									<button type="button" class="raccourci" onclick={() => motif.trim() && table.retirerStatut(f.id, s.id, motif)}>Retirer</button>
+									<button
+										type="button"
+										class="raccourci"
+										onclick={() => motif.trim() && table.retirerStatut(f.id, s.id, motif)}
+										>Retirer</button
+									>
 								</li>
 							{/each}
 						</ul>
@@ -256,7 +356,11 @@
 					</label>
 					<div class="gestes">
 						{#each invocations as o (o.label)}
-							<Bouton variante="trait" onclick={() => o.summon && motif.trim() && table.invoquer(f.id, o.summon, motif) && fermer()}>
+							<Bouton
+								variante="trait"
+								onclick={() =>
+									o.summon && motif.trim() && table.invoquer(f.id, o.summon, motif) && fermer()}
+							>
 								Invoquer {sansEmoji(o.label)} · {o.summon?.pv} PV
 							</Bouton>
 						{/each}
@@ -268,7 +372,13 @@
 					{#if demarre}
 						<label class="champ-court">
 							<span>Position dans l’ordre</span>
-							<input class="chiffres" type="number" min="1" max={table.etat.order.length} bind:value={rang} />
+							<input
+								class="chiffres"
+								type="number"
+								min="1"
+								max={table.etat.order.length}
+								bind:value={rang}
+							/>
 						</label>
 						<label class="motif">
 							<span>Motif</span>
@@ -276,13 +386,19 @@
 						</label>
 						<p class="aide">Changer l’ordre vide les déclarations du round en cours.</p>
 						<div class="gestes">
-							<Bouton variante="trait" type="submit" disabled={!motif.trim()}>Placer en position {rang}</Bouton>
+							<Bouton variante="trait" type="submit" disabled={!motif.trim()}
+								>Placer en position {rang}</Bouton
+							>
 							<button type="button" class="raccourci" onclick={fermer}>Fermer</button>
 						</div>
 					{:else}
-						<p class="aide">L’initiative ouvre l’ordre de déclaration ; elle reste fixe pour tout le combat.</p>
+						<p class="aide">
+							L’initiative ouvre l’ordre de déclaration ; elle reste fixe pour tout le combat.
+						</p>
 						<div class="gestes">
-							<Bouton variante="trait" type="submit" disabled={initiative}>{initiative ? `Initiative : ${f.name}` : `Donner l’initiative à ${f.name}`}</Bouton>
+							<Bouton variante="trait" type="submit" disabled={initiative}
+								>{initiative ? `Initiative : ${f.name}` : `Donner l’initiative à ${f.name}`}</Bouton
+							>
 							<button type="button" class="raccourci" onclick={fermer}>Fermer</button>
 						</div>
 					{/if}
@@ -290,14 +406,17 @@
 			{:else if mode === 'retirer'}
 				<form class="geste" onsubmit={noterRetrait}>
 					<p class="aide">
-						{f.name} quitte la Table.{#if demarre} Les déclarations du round en cours sont vidées et l’ordre repart de l’ordre d’ajout.{/if}
+						{f.name} quitte la Table.{#if demarre}
+							Les déclarations du round en cours sont vidées et l’ordre repart de l’ordre d’ajout.{/if}
 					</p>
 					<label class="motif">
 						<span>Motif</span>
 						<input bind:value={motif} required maxlength={200} />
 					</label>
 					<div class="gestes">
-						<Bouton variante="rouille" type="submit" disabled={!motif.trim()}>Retirer {f.name}</Bouton>
+						<Bouton variante="rouille" type="submit" disabled={!motif.trim()}
+							>Retirer {f.name}</Bouton
+						>
 						<button type="button" class="raccourci" onclick={fermer}>Garder</button>
 					</div>
 				</form>
@@ -339,9 +458,8 @@
 		line-height: 16px;
 	}
 	.texte {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		white-space: normal;
+		overflow-wrap: anywhere;
 		font: 600 14px/24px var(--corps);
 		color: var(--encre);
 	}
@@ -382,7 +500,11 @@
 	.ko .res .cur {
 		color: var(--encre-grise);
 	}
+	.statuts :global(.sens) {
+		white-space: normal;
+	}
 	.statuts {
+		overflow: hidden;
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0 12px;
@@ -390,10 +512,11 @@
 		line-height: 20px;
 	}
 	.declare-points {
-		font: 400 12px/24px var(--corps);
-		letter-spacing: 0.12em;
+		font: 400 12px/14px var(--corps);
+		letter-spacing: 0;
 		color: var(--encre-humide);
-		white-space: nowrap;
+		white-space: normal;
+		overflow-wrap: anywhere;
 	}
 	.menu {
 		display: grid;

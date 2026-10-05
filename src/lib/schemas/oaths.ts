@@ -52,13 +52,11 @@ export const oathFieldsSchema = z.object({
 		.default({})
 });
 export const createOathSchema = oathFieldsSchema;
-export const updateOathSchema = oathFieldsSchema
-	.partial()
-	.extend({
-		id: z.string().min(1).max(128),
-		expectedRevision: z.number().int().min(1).optional(),
-		motif: z.string().trim().min(1, 'Un motif est requis.').max(1000)
-	});
+export const updateOathSchema = oathFieldsSchema.partial().extend({
+	id: z.string().min(1).max(128),
+	expectedRevision: z.number().int().min(1).optional(),
+	motif: z.string().trim().min(1, 'Un motif est requis.').max(1000)
+});
 export const setOathHiddenSchema = z.object({
 	id: z.string().min(1).max(128),
 	hidden: z.boolean(),
@@ -78,6 +76,7 @@ export type TierView = {
 	stage: string;
 };
 export type OathRowView = {
+	reservedVisibility?: { hidden: boolean; outsideShowcase: boolean } | null;
 	id: string;
 	name: string;
 	weapon: string;

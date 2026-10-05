@@ -46,14 +46,18 @@ export function interceptTransaction(
 			if (prop === 'transaction') {
 				return async (cb: (tx: unknown) => Promise<unknown>, config?: unknown) => {
 					if (options.before) await options.before();
-					return (target.transaction as (cb: (tx: unknown) => Promise<unknown>, config?: unknown) => Promise<unknown>)(
-						(tx) => cb(options.wrapTx ? options.wrapTx(tx) : tx),
-						config
-					);
+					return (
+						target.transaction as (
+							cb: (tx: unknown) => Promise<unknown>,
+							config?: unknown
+						) => Promise<unknown>
+					)((tx) => cb(options.wrapTx ? options.wrapTx(tx) : tx), config);
 				};
 			}
 			const value = Reflect.get(target, prop, target) as unknown;
-			return typeof value === 'function' ? (value as (...a: unknown[]) => unknown).bind(target) : value;
+			return typeof value === 'function'
+				? (value as (...a: unknown[]) => unknown).bind(target)
+				: value;
 		}
 	});
 }
@@ -70,7 +74,9 @@ export function failOnDelete(table: object): (tx: unknown) => unknown {
 						return (value as (t: object) => unknown).call(target, t);
 					};
 				}
-				return typeof value === 'function' ? (value as (...a: unknown[]) => unknown).bind(target) : value;
+				return typeof value === 'function'
+					? (value as (...a: unknown[]) => unknown).bind(target)
+					: value;
 			}
 		});
 }

@@ -10,7 +10,8 @@ import {
 	resolveDbTarget
 } from './index';
 import { createPgliteHandle } from './pglite';
-import { checkReferentials, resolveMigrationsFolder, runMigrations } from './migrate';
+import { resolveMigrationsFolder, runMigrations, checkReferentials } from './migrate';
+
 import { DEMO_IDS, THEME_SEED } from './seed';
 import { NpError, isNpError, toErrorPayload } from '../http';
 

@@ -34,7 +34,10 @@ export interface RateLimitKey {
 }
 
 /** Normalise le sujet d'un compteur : pseudo en minuscules, adresse vide ⇒ `unknown`. */
-export function rateLimitKey(scope: RateLimitScope, subject: string | null | undefined): RateLimitKey {
+export function rateLimitKey(
+	scope: RateLimitScope,
+	subject: string | null | undefined
+): RateLimitKey {
 	const raw = (subject ?? '').trim();
 	const normalized = scope === 'ip' ? raw || 'unknown' : raw.toLowerCase();
 	return { scope, subject: normalized.slice(0, 128) };

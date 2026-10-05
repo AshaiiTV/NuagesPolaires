@@ -33,7 +33,8 @@ function carteDuMoment(fiche: SheetView, contexte: SceneContextView): RuleCard {
 	if (contexte.table?.phase === 'declaration') return ruleCardFor({ kind: 'declaration' });
 	const statut = fiche.statuses.find((s) => (STATUS_IDS as readonly string[]).includes(s.id));
 	if (statut) return ruleCardFor({ kind: 'status', status: statut.id as StatusId });
-	if (fiche.ep.max > 0 && fiche.ep.cur / fiche.ep.max < 0.2) return ruleCardFor({ kind: 'recovery' });
+	if (fiche.ep.max > 0 && fiche.ep.cur / fiche.ep.max < 0.2)
+		return ruleCardFor({ kind: 'recovery' });
 	return ruleCardFor({ kind: 'out-of-combat' });
 }
 
@@ -50,13 +51,13 @@ export const load: PageServerLoad = async (event) => {
 	// La Table où figure le personnage, lue à la même source que `/carnet/table/[id]` : la seconde
 	// ligne du feuillet et la Table disent la même chose au même instant, et les statuts portent
 	// leurs tours (« Saignement 2 t. ») tels que le MJ les tient.
-	let etatTable: { active: boolean; round: number; phase: string } | null = null;
+	let etatTable: { active: boolean; round: number; phase: string; status: string } | null = null;
 	let tours: Record<string, number> = {};
 	if (contexte.table) {
 		try {
 			const t = await getPlayerTable(db, actor, contexte.table.id);
 			const p = t.projection;
-			etatTable = { active: p.active, round: p.round, phase: p.phase };
+			etatTable = { active: p.active, round: p.round, phase: p.phase, status: t.status };
 			tours = Object.fromEntries((p.self?.statuses ?? []).map((st) => [st.id, st.tours]));
 		} catch (e) {
 			// Table refusée ou repliée entre-temps : le feuillet garde la ligne du contexte.
@@ -81,7 +82,8 @@ export const load: PageServerLoad = async (event) => {
 function retourSur(brut: string): string {
 	const r = brut.trim();
 	if (!r.startsWith('/') || r.startsWith('//') || r.startsWith('/\\')) return '/carnet';
-	if (r === '/carnet/scene' || r.startsWith('/carnet/scene?') || r.startsWith('/entrer')) return '/carnet';
+	if (r === '/carnet/scene' || r.startsWith('/carnet/scene?') || r.startsWith('/entrer'))
+		return '/carnet';
 	return r;
 }
 
@@ -92,8 +94,14 @@ export const actions: Actions = {
 		const ressource = texte(data.ressource) as Res;
 		if (!RESSOURCES.includes(ressource)) throw new NpError('INVALID', 'Ressource invalide.', 400);
 		const fiche = await getOwnSheet(db, actor);
-		if (!fiche) throw new NpError('NOT_FOUND', 'Ta fiche n’a pas pu s’ouvrir. Recharge la page.', 404);
-		const r = resoudre(motsPour(fiche)[ressource], texte(data.choix), texte(data.chiffre), texte(data.mot));
+		if (!fiche)
+			throw new NpError('NOT_FOUND', 'Ta fiche n’a pas pu s’ouvrir. Recharge la page.', 404);
+		const r = resoudre(
+			motsPour(fiche)[ressource],
+			texte(data.choix),
+			texte(data.chiffre),
+			texte(data.mot)
+		);
 		if (!r.ok) throw new NpError('INVALID', r.erreur, 400);
 		const contexte = await getSceneContext(db, actor);
 		const declaree = await declare(db, actor, {
@@ -131,7 +139,10 @@ export const actions: Actions = {
 
 	noter: action(async (event, data) => {
 		const { actor } = requireCharacter(event);
-		const entree = await writeEntry(event.locals.db, actor, { text: texte(data.text), inScene: true });
+		const entree = await writeEntry(event.locals.db, actor, {
+			text: texte(data.text),
+			inScene: true
+		});
 		return { notee: entree.id };
 	}),
 
@@ -158,6 +169,5 @@ export const actions: Actions = {
 			discordUrl: texte(data.discordUrl)
 		});
 		return { scene: scene.id };
-	}),
-
+	})
 };

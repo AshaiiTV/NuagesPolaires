@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { SvelteDate, SvelteURLSearchParams } from 'svelte/reactivity';
+	import { chemin } from '$lib/ui/adresse';
 	// Comptes et liaisons : une ligne par compte, dépliée pour agir. Sur téléphone, la page se consulte
 	// et les liaisons se font ; rôle, mot de passe et rature restent « Sur ordinateur ».
 	import { enhance } from '$app/forms';
@@ -29,13 +31,17 @@
 
 	/** Le code temporaire : affiché une fois, jamais gardé ailleurs que dans cette page ouverte. */
 	let efface = $state<string | null>(null);
-	const code = $derived(form && 'temporaire' in form && form.temporaire && form.temporaire.secret !== efface ? form.temporaire : null);
+	const code = $derived(
+		form && 'temporaire' in form && form.temporaire && form.temporaire.secret !== efface
+			? form.temporaire
+			: null
+	);
 
-	const maintenant = $derived(new Date(data.releve).getTime());
+	const maintenant = $derived(new SvelteDate(data.releve).getTime());
 	const cibleDisparue = $derived(!!cible && !data.rows.some((a) => a.id === cible));
 
 	function lien(params: { q?: string; role?: string | null }): string {
-		const p = new URLSearchParams();
+		const p = new SvelteURLSearchParams();
 		const q = params.q ?? data.q;
 		if (q) p.set('q', q);
 		if (params.role) p.set('role', params.role);
@@ -59,14 +65,28 @@
 
 	<div class="outils">
 		<form class="recherche" method="GET" action="/registre/comptes" role="search">
-			<Champ libelle="Chercher un pseudo ou un personnage" name="q" value={data.q} type="search" autocomplete="off" />
+			<Champ
+				libelle="Chercher un pseudo ou un personnage"
+				name="q"
+				value={data.q}
+				type="search"
+				autocomplete="off"
+			/>
 			{#if data.role}<input type="hidden" name="role" value={data.role} />{/if}
 			<Bouton variante="trait" type="submit">Chercher</Bouton>
 		</form>
 		<nav class="filtres" aria-label="Filtrer par rôle">
-			<a href={lien({ role: null })} class:courant={!data.role} aria-current={!data.role ? 'true' : undefined}><span class="marque" aria-hidden="true"></span>Tous</a>
+			<a
+				href={chemin(lien({ role: null }))}
+				class:courant={!data.role}
+				aria-current={!data.role ? 'true' : undefined}
+				><span class="marque" aria-hidden="true"></span>Tous</a
+			>
 			{#each ROLES as r (r.id)}
-				<a href={lien({ role: r.id })} class:courant={data.role === r.id} aria-current={data.role === r.id ? 'true' : undefined}
+				<a
+					href={chemin(lien({ role: r.id }))}
+					class:courant={data.role === r.id}
+					aria-current={data.role === r.id ? 'true' : undefined}
 					><span class="marque" aria-hidden="true"></span>{r.pluriel}</a
 				>
 			{/each}
@@ -79,14 +99,17 @@
 		{#if data.q || data.role}
 			<Vide>
 				Aucun compte ne correspond à cette recherche.
-				{#snippet action()}<Bouton variante="texte" href="/registre/comptes" fleche="→">Revoir tous les comptes</Bouton>{/snippet}
+				{#snippet action()}<Bouton variante="texte" href="/registre/comptes" fleche="→"
+						>Revoir tous les comptes</Bouton
+					>{/snippet}
 			</Vide>
 		{:else}
 			<Vide>Aucun compte n’est encore inscrit.</Vide>
 		{/if}
 	{:else}
 		<div class="tete-liste" aria-hidden="true">
-			<span>Pseudo</span><span>Rôle</span><span>Liaison</span><span>Dernière venue</span><span></span>
+			<span>Pseudo</span><span>Rôle</span><span>Liaison</span><span>Dernière venue</span><span
+			></span>
 		</div>
 		<ul class="comptes">
 			{#each data.rows as a (a.id)}
@@ -95,7 +118,9 @@
 				<li>
 					<details class="compte" open={cible === a.id && !!ecriture.note ? true : undefined}>
 						<summary>
-							<span class="pseudo">{a.pseudo}{#if moi}<span class="toi">{' · toi'}</span>{/if}</span>
+							<span class="pseudo"
+								>{a.pseudo}{#if moi}<span class="toi">&nbsp;·&nbsp;toi</span>{/if}</span
+							>
 							<span class="role"><Encre {etat}>{LIBELLE_ROLE[a.role] ?? a.role}</Encre></span>
 							<span class="liaison">
 								{#if a.characterName}
@@ -108,7 +133,9 @@
 								{#if a.forcePasswordReset}<span class="reset">· code temporaire en cours</span>{/if}
 							</span>
 							<span class="venue chiffres">
-								{#if a.lastSeenAt}<span title={leA(a.lastSeenAt)}>{leA(a.lastSeenAt)}</span><span class="relatif">{' · '}{relatif(a.lastSeenAt, maintenant)}</span>{:else}<span class="attente">jamais venu</span>{/if}
+								{#if a.lastSeenAt}<span title={leA(a.lastSeenAt)}>{leA(a.lastSeenAt)}</span><span
+										class="relatif">&nbsp;·&nbsp;{relatif(a.lastSeenAt, maintenant)}</span
+									>{:else}<span class="attente">jamais venu</span>{/if}
 							</span>
 							<span class="pli" aria-hidden="true"></span>
 						</summary>
@@ -130,7 +157,9 @@
 										<label class="choix">
 											<span>Personnage sans compte</span>
 											<select name="characterId" required>
-												{#each data.unlinkedCharacters as c (c.id)}<option value={c.id}>{c.name} · {c.oathName}</option>{/each}
+												{#each data.unlinkedCharacters as c (c.id)}<option value={c.id}
+														>{c.name} · {c.oathName}</option
+													>{/each}
 											</select>
 										</label>
 										<Bouton variante="tampon" type="submit">Lier</Bouton>
@@ -148,7 +177,9 @@
 									<label class="choix">
 										<span>Rôle du compte</span>
 										<select name="role">
-											{#each ROLES as r (r.id)}<option value={r.id} selected={a.role === r.id}>{r.libelle}</option>{/each}
+											{#each ROLES as r (r.id)}<option value={r.id} selected={a.role === r.id}
+													>{r.libelle}</option
+												>{/each}
 										</select>
 									</label>
 									<Bouton variante="trait" type="submit">Changer le rôle</Bouton>
@@ -158,9 +189,15 @@
 							{#if !moi}
 								<section class="op ordinateur">
 									<h3 class="repere">Mot de passe</h3>
-									<form method="POST" action="?/reinitialiser" use:enhance={pour(a.id, 'Réinitialisé')}>
+									<form
+										method="POST"
+										action="?/reinitialiser"
+										use:enhance={pour(a.id, 'Réinitialisé')}
+									>
 										<input type="hidden" name="accountId" value={a.id} />
-										<p class="etat">Un code valable une heure remplace le mot de passe ; ses sessions se ferment.</p>
+										<p class="etat">
+											Un code valable une heure remplace le mot de passe ; ses sessions se ferment.
+										</p>
 										<Bouton variante="rouille" type="submit">Réinitialiser le mot de passe</Bouton>
 									</form>
 								</section>
@@ -170,10 +207,18 @@
 								<div class="code" role="status">
 									<p class="repere">Code temporaire · {a.pseudo}</p>
 									<p class="secret">{code.secret}</p>
-									<p class="echeance">valable une heure · jusqu’à <span class="chiffres">{heure(code.expiresAt)}</span></p>
-									<p class="consigne">À transmettre au propriétaire du compte. Il devra choisir un nouveau mot de passe à la connexion.</p>
+									<p class="echeance">
+										valable une heure · jusqu’à <span class="chiffres">{heure(code.expiresAt)}</span
+										>
+									</p>
+									<p class="consigne">
+										À transmettre au propriétaire du compte. Il devra choisir un nouveau mot de
+										passe à la connexion.
+									</p>
 									<p class="consigne grise">Ce code ne sera plus affiché.</p>
-									<Bouton variante="texte" onclick={() => (efface = code.secret)}>Effacer ce code</Bouton>
+									<Bouton variante="texte" onclick={() => (efface = code.secret)}
+										>Effacer ce code</Bouton
+									>
 								</div>
 							{/if}
 
@@ -183,17 +228,25 @@
 									<form method="POST" action="?/rayer" use:enhance={pour(a.id, 'Rayé')}>
 										<input type="hidden" name="accountId" value={a.id} />
 										<p class="etat">
-											Le compte se ferme et ses sessions avec lui. {#if a.characterName}<strong>{a.characterName}</strong> est conservé et redevient sans compte.{/if}
+											Le compte se ferme et ses sessions avec lui. {#if a.characterName}<strong
+													>{a.characterName}</strong
+												> est conservé et redevient sans compte.{/if}
 										</p>
 										<div class="confirmer">
-											<Champ libelle={'Saisis « ' + a.pseudo + ' » pour confirmer'} name="typedPseudo" id={'rayer-' + a.id} autocomplete="off" required />
+											<Champ
+												libelle={'Saisis « ' + a.pseudo + ' » pour confirmer'}
+												name="typedPseudo"
+												id={'rayer-' + a.id}
+												autocomplete="off"
+												required
+											/>
 											<Bouton variante="rouille" type="submit">Rayer ce compte</Bouton>
 										</div>
 									</form>
 								</section>
 							{/if}
 
-							<p class="sur-ordinateur">Rôle, mot de passe et rature : sur ordinateur.</p>
+							<p class="sur-ordinateur">Rôle, mot de passe et rature&nbsp;: sur ordinateur.</p>
 
 							{#if cible === a.id}<div class="note">{@render note()}</div>{/if}
 						</div>
