@@ -16,7 +16,7 @@ const ETINCELLE = (cx: number, cy: number, r: number) => {
 const SCEAUX: Readonly<Record<string, string>> = {
 	// Épée moyenne, pointe haute, pommeau en losange.
 	duelliste:
-		'M24 8 L26 12.5 V30 H22 V12.5 Z M17 30 H31 M24 30 V36.5 M24 36.5 l2.2 2.2 -2.2 2.2 -2.2 -2.2 Z',
+		'M37.4 10.6 L35.3 16.1 L20.7 30.7 L17.3 27.3 L31.9 12.7 Z M13.2 23.2 L24.8 34.8 M19 29 L13.6 34.4 M13.6 34.4 L13.6 38.1 L9.9 38.1 L9.9 34.4 Z',
 	// Deux lames légères croisées.
 	bretteur: `M14 37 L33 11 M34 37 L15 11 M16.2 27.4 L21.8 31.6 M31.8 27.4 L26.2 31.6 ${ROND(14, 37, 1.4)} ${ROND(34, 37, 1.4)}`,
 	// Lame large à deux mains, pointe basse, quillons inclinés.
@@ -42,7 +42,7 @@ const SCEAUX: Readonly<Record<string, string>> = {
 	evocateur: `M13.5 37.5 L29 18 M26.2 21.5 L28.6 23.4 ${ETINCELLE(33, 12.5, 5)} ${ETINCELLE(38, 23.5, 2.5)} ${ETINCELLE(22.5, 11.6, 2.1)}`,
 	// Trois maillons.
 	conjurateur:
-		'M13.7 13.7 A5.8 3.8 45 1 0 21.9 21.9 A5.8 3.8 45 1 0 13.7 13.7 M19.9 19.9 A5.8 3.8 45 1 0 28.1 28.1 A5.8 3.8 45 1 0 19.9 19.9 M26.1 26.1 A5.8 3.8 45 1 0 34.3 34.3 A5.8 3.8 45 1 0 26.1 26.1',
+		'M10.6 10.6 A7.5 4.9 45 1 0 21.3 21.3 A7.5 4.9 45 1 0 10.6 10.6 M18.7 18.7 A7.5 4.9 45 1 0 29.3 29.3 A7.5 4.9 45 1 0 18.7 18.7 M26.7 26.7 A7.5 4.9 45 1 0 37.4 37.4 A7.5 4.9 45 1 0 26.7 26.7',
 	// Orbe sur son pied.
 	arcaniste: `${ROND(24, 20.5, 9)} M19 17.5 A6 6 0 0 1 23 14.6 M17 34 Q24 29.4 31 34 M15 38 H33 ${ETINCELLE(36.5, 11, 2.5)}`
 };

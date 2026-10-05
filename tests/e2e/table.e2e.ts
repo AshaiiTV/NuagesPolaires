@@ -201,6 +201,7 @@ test.describe('La Table — combat (P5)', () => {
 		await page.setViewportSize({ width: 390, height: 844 });
 		await connecter(page, 'mj');
 		await ouvrirTable(page, 'Table de poche', 3);
+		await expect(page.locator('.sommaire nav a')).toHaveCount(4);
 		const lignesSommaire = await page
 			.locator('.sommaire nav a')
 			.evaluateAll((liens) => liens.map((a) => a.getBoundingClientRect().top));

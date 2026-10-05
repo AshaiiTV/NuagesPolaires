@@ -35,6 +35,8 @@ export async function ouvrirTable(page: Page, titre: string, dix = false) {
 	}
 	await page.getByRole('button', { name: 'Ouvrir la Table', exact: true }).click();
 	await page.waitForURL(/\/table\/combat\//);
+	// L'adresse change avant que la feuille soit tournée (transition de vue) : attendre la Table.
+	await expect(page.locator('article.table-mj')).toBeVisible();
 	return new URL(page.url()).pathname.split('/').pop()!;
 }
 
