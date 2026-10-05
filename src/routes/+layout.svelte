@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { onNavigate } from '$app/navigation';
 	import '$lib/ui/styles/fonts.css';
 	import '$lib/ui/styles/tokens.css';
 	import '$lib/ui/styles/themes.css';
@@ -7,6 +8,18 @@
 
 	let { data, children } = $props();
 	// Les parcours attendent le branchement des gestes avant leur première interaction.
+	// Tourner la page : la feuille (Page.svelte) passe par un fondu bref, l'enveloppe reste en place.
+	// Rien sous prefers-reduced-motion, rien si le navigateur ne connaît pas les transitions de vue.
+	onNavigate((navigation) => {
+		if (!document.startViewTransition) return;
+		if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		return new Promise((resolve) => {
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
+	});
 	onMount(() => {
 		void (async () => {
 			await document.fonts.ready;

@@ -138,6 +138,30 @@ a:hover {
 	transform: translateY(0);
 }
 
+/* Tourner la page : seule la feuille change, sans fondu de l'enveloppe. */
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation: none;
+	mix-blend-mode: normal;
+}
+::view-transition-old(feuille) {
+	animation: 110ms ease-in both np-feuille-sort;
+}
+::view-transition-new(feuille) {
+	animation: 190ms 60ms ease-out both np-feuille-vient;
+}
+@keyframes np-feuille-sort {
+	to {
+		opacity: 0;
+	}
+}
+@keyframes np-feuille-vient {
+	from {
+		opacity: 0;
+		transform: translateY(5px);
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	*,
 	*::before,

@@ -53,6 +53,7 @@
 <style>
 	.page {
 		position: relative;
+		view-transition-name: feuille;
 		display: grid;
 		grid-template-columns: 34fr 66fr;
 		column-gap: var(--gouttiere);
