@@ -315,7 +315,7 @@ function definitionOf(oath: Oath): OathDefinition {
 		icon: oath.icon,
 		category: oath.category,
 		lore: oath.lore,
-		branches: { bA: branch(oath.branches?.bA), bB: branch(oath.branches?.bB) },
+		branches: { bA: branch(oath.branches?.bA), bB: branch(oath.branches?.bB), extraBranches: (oath.branches.extraBranches ?? []).map((b) => ({ ...b, style: b.style ?? '' })) },
 		isBuiltin: oath.isBuiltin
 	};
 }

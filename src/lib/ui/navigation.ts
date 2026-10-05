@@ -83,7 +83,8 @@ export function bandePour(compte: CompteNav, chemin: string): Onglet[] {
 /** Le ruban « En scène » : second accès permanent, selon le rôle. `null` : pas de ruban. */
 export function rubanPour(compte: CompteNav): { href: string; libelle: string; corne: boolean } | null {
 	if ((compte.role === 'mj' || compte.role === 'admin') && compte.tableOuverte) {
-		return { href: `/table/combat/${compte.tableOuverte}`, libelle: 'La Table', corne: false };
+		// Un seul nom pour le ruban (03-vision §4) : seule sa destination change pour le MJ.
+		return { href: `/table/combat/${compte.tableOuverte}`, libelle: 'En scène', corne: false };
 	}
 	if (compte.relie) return { href: '/carnet/scene', libelle: 'En scène', corne: !!compte.cornes };
 	if (compte.role === 'joueur') return { href: '/carnet', libelle: 'En scène', corne: !!compte.cornes };

@@ -256,7 +256,7 @@
 							<p class="date"><span class="jour">{dateCourte(r.at)}</span></p>
 							<div class="recit-corps">
 								<p class="recit-titre">{r.title}</p>
-								<p class="recit-details chiffres">{r.round} round{r.round > 1 ? 's' : ''}{#if r.name && r.name !== r.title} · {r.name}{/if}</p>
+								<p class="recit-details chiffres">{r.round} round{r.round > 1 ? 's' : ''}{#if r.name && r.name !== r.title}{' · '}{r.name}{/if}</p>
 							</div>
 							<p class="recit-gestes">
 								<Bouton variante="texte" href="/carnet/recits/{r.id}" fleche="→">Lire</Bouton>

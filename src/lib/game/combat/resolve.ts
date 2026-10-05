@@ -63,6 +63,7 @@ function elemental(state: CombatState, f: Fighter, a: CombatAction, target: Figh
 }
 
 function queueDrop(state: CombatState, target: Fighter): void {
+	target.koCause = 'attack';
 	if (target.type !== 'beast' || !target.gem || state.drops.some((d) => d.fighterId === target.id)) return;
 	state.drops.push({ id: newDropId(state), fighterId: target.id, beastId: target.beastId, beastName: target.name, round: state.round, roll: null, gem: null, assignedTo: null, assignedName: null });
 }

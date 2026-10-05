@@ -206,7 +206,7 @@ describe('listOpenScenes et getSceneContext', () => {
 	it('contexte du feuillet : la scène la plus récente, et la Table montrée aux participants', async () => {
 		const ctx = await getSceneContext(t.db, actors.bob);
 		expect(ctx.scene).not.toBeNull();
-		expect(ctx.table).toBeNull();
+		expect(ctx.table).toMatchObject({ id: DEMO_IDS.openCombat, round: 2 });
 		expect(ctx.channel).toBe(ctx.scene!.channel);
 
 		await t.db.insert(schema.combats).values([

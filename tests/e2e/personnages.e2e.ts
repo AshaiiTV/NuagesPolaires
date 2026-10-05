@@ -142,7 +142,10 @@ test.describe('Personnages — lectures et droits', () => {
 					page.getByText('La brume ne se lève pas. Kael dit qu’elle écoute.')
 				).toHaveCount(0);
 			}
+			// Le refus de mutation se vérifie avec une session encore ouverte, sans suivre une redirection.
+			await connecter(page, pseudo);
 			const denied = await page.request.post(`${ARIA}?/corriger`, {
+				maxRedirects: 0,
 				form: {
 					resource: 'pv',
 					newValue: '20',

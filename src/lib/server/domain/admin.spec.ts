@@ -105,6 +105,7 @@ describe('exportData', () => {
 describe('migrationStatus', () => {
 	it('base jamais migrée, puis lecture du registre par table', async () => {
 		expect(await migrationStatus(t.db, actors.admin)).toEqual({
+			anomalies: [],
 			migrated: false,
 			total: 0,
 			lastMigratedAt: null,
@@ -143,6 +144,7 @@ describe('migrationStatus', () => {
 		const before = await auditCount();
 		const status = await migrationStatus(t.db, actors.admin);
 		expect(status).toEqual({
+			anomalies: [],
 			migrated: true,
 			total: 3,
 			lastMigratedAt: '2026-09-30T13:00:00.000Z',

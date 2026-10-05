@@ -201,7 +201,8 @@ describe('La Table — audit 03 §8 et 04 §10.6', () => {
 		expect(
 			(await getRecit(testDb.db, player, combat.id)).log.some((e) => e.text.includes('secret'))
 		).toBe(false);
-		expect(await recitAsText(testDb.db, mj, combat.id)).not.toContain('secret');
+		expect(await recitAsText(testDb.db, mj, combat.id)).toContain('secret');
+		expect(await recitAsText(testDb.db, player, combat.id)).not.toContain('secret');
 		expect((await counts()).publications).toBe(1);
 	});
 	it('annule aussi la première fiche si la révision de la seconde a changé', async () => {

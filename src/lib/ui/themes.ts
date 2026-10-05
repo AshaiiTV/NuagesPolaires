@@ -19,7 +19,7 @@ export type Theme = {
 export const THEMES: Theme[] = [
 	{
 		id: 'dark',
-		name: 'Nuages Polaires',
+		name: 'Carnet de nuit',
 		ton: 'sombre',
 		tokens: {
 			'--bureau': '#091519',
@@ -31,12 +31,11 @@ export const THEMES: Theme[] = [
 			'--encre-grise': '#7e8f8b',
 			'--ruban': '#c6d8c4'
 		},
-		description:
-			'Nuit d’encre, lumière d’aurore et ivoire. La signature visuelle de Nuages Polaires.'
+		description: 'Nuit d’encre, lumière d’aurore et ivoire.'
 	},
 	{
 		id: 'light',
-		name: 'Brume Claire',
+		name: 'Papier',
 		ton: 'clair',
 		tokens: {
 			'--bureau': '#dcd6c5',
@@ -48,7 +47,7 @@ export const THEMES: Theme[] = [
 			'--encre-grise': '#8a928c',
 			'--ruban': '#7fa089'
 		},
-		description: 'Mode clair, propre et doux.'
+		description: 'Encre noire sur papier clair.'
 	},
 	{
 		id: 'violet',
@@ -64,8 +63,7 @@ export const THEMES: Theme[] = [
 			'--encre-grise': '#9a93c7',
 			'--ruban': '#73d8ff'
 		},
-		description:
-			'Un thème spatial franc : ciel profond, étoiles vives, halos stellaires et verre cosmique.'
+		description: 'Nuit violette, encre pâle, ruban bleu ciel.'
 	},
 	{
 		id: 'green',
@@ -81,8 +79,7 @@ export const THEMES: Theme[] = [
 			'--encre-grise': '#8db883',
 			'--ruban': '#d8c16a'
 		},
-		description:
-			'Un thème jungle organique : feuillage humide, lianes mouvantes, mousse profonde et lumière dorée filtrée par la canopée.'
+		description: 'Vert de sous-bois, encre de mousse, ruban d’or pâle.'
 	},
 	{
 		id: 'aquaris',
@@ -98,7 +95,7 @@ export const THEMES: Theme[] = [
 			'--encre-grise': '#8fb6c0',
 			'--ruban': '#e5c878'
 		},
-		description: 'Palais noyés, lumière abyssale, cyan profond et or ancien.'
+		description: 'Bleu des grands fonds, encre d’écume, ruban d’or ancien.'
 	},
 	{
 		id: 'easter',
@@ -114,7 +111,7 @@ export const THEMES: Theme[] = [
 			'--encre-grise': '#668378',
 			'--ruban': '#ff83bc'
 		},
-		description: 'Un printemps joyeux : fleurs, herbe, lumière douce et couleurs pastel.'
+		description: 'Vert tendre, encre de feuille, ruban rose.'
 	},
 	{
 		id: 'halloween',
@@ -130,7 +127,7 @@ export const THEMES: Theme[] = [
 			'--encre-grise': '#a98e8d',
 			'--ruban': '#d8d2ff'
 		},
-		description: 'Nuit violette, lueur orange et ambiance inquiétante.'
+		description: 'Prune nocturne, encre chaude, ruban lilas.'
 	},
 	{
 		id: 'noel',
@@ -146,11 +143,11 @@ export const THEMES: Theme[] = [
 			'--encre-grise': '#9bb59e',
 			'--ruban': '#f2c66d'
 		},
-		description: 'Un Noël lumineux, rouge, vert, doré et enneigé.'
+		description: 'Vert sapin, encre de neige, ruban doré.'
 	},
 	{
 		id: 'bloodmoon',
-		name: 'BloodMoon',
+		name: 'Lune de sang',
 		ton: 'sombre',
 		tokens: {
 			'--bureau': '#050102',
@@ -162,9 +159,20 @@ export const THEMES: Theme[] = [
 			'--encre-grise': '#b07d82',
 			'--ruban': '#ff7d92'
 		},
-		description: 'Noir rituel, lune carmine, menace souveraine et éclat cramoisi.'
+		description: 'Noir rougi, encre rosée, ruban carmin.'
 	}
 ];
+
+const NATIFS = new Map(THEMES.map((t) => [t.id, t]));
+
+/**
+ * Nom et description d'un thème natif tels que le carnet les écrit (03-vision §7) : huit couleurs,
+ * sans ambiance ni mouvement. Un thème créé dans le Registre garde les siens.
+ */
+export function libelleTheme<T extends { id: string; name: string; description?: string | null }>(theme: T): T {
+	const natif = NATIFS.get(theme.id);
+	return natif ? { ...theme, name: natif.name, description: natif.description } : theme;
+}
 
 function luminance(hex: string): number {
 	const match = /^#([\da-f]{3}|[\da-f]{6})$/i.exec(hex);

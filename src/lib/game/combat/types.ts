@@ -149,6 +149,8 @@ export interface Fighter extends Resources {
 	/** Paliers de la branche choisie (joueur), pour construire les capacités. */
 	branch: FighterBranch | null;
 	statuses: StatusInstance[];
+	/** Cause connue du KO, pour ne jamais ouvrir un drop après un tick de statut. */
+	koCause?: 'attack' | 'status';
 	/** Bouclier de PV max (Bash Cinglant, Appel du Bouclier) ; retiré en fin de combat. */
 	pvMaxBonus: number;
 	/** Brise-Armure en attente : ajouté au prochain coup reçu. */

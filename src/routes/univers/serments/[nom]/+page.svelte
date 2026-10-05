@@ -241,12 +241,12 @@
 		letter-spacing: -0.01em;
 		color: var(--encre);
 	}
-	/* La lettre de la branche tient lieu de numéro de chapitre : laiton, Cormorant pour un signe seul. */
+	/* La lettre de la branche tient lieu de numéro de chapitre : Cormorant pour un signe seul. */
 	.numero {
 		flex: none;
 		font: 500 22px / var(--ligne) var(--voix);
 		letter-spacing: 0.04em;
-		color: var(--tampon);
+		color: var(--encre-2);
 	}
 	.mot {
 		position: absolute;

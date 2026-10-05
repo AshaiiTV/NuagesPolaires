@@ -16,7 +16,9 @@
 	import Vide from '$lib/ui/Vide.svelte';
 	import Portrait from '$lib/ui/Portrait.svelte';
 	import { creerEcriture, PHRASE_REFUS } from '$lib/ui/ecriture.svelte';
+	import { LIBELLES_ROLE } from '$lib/ui/navigation';
 	import { dateCourte, dateLongue, heure, heureRonde, jourSemaine, joursCalendaires, mois, parisParts } from '$lib/ui/dates';
+	import { phrasePlaces, teinte } from '../agenda/agenda';
 	import type { EventRowView } from '$lib/schemas/events';
 	import type { PageLineView } from '$lib/schemas/reading';
 	import type { PageProps } from './$types';
@@ -111,6 +113,9 @@
 		return out;
 	});
 	const cornees = $derived(vue.since.some((l) => l.cornered));
+	/** La scène ouverte porte déjà « Préparer ma réponse » : la ligne de la Table ne le répète pas. */
+	const sceneEnTete = $derived(vue.waiting.some((w) => w.kind === 'scene'));
+	const role = $derived(data.compte ? LIBELLES_ROLE[data.compte.role] : '');
 
 	// ---- Ce qui attend ta main : le texte du domaine, sans son préfixe déjà écrit en repère -------
 	function apres(texte: string, separateur: string): string {
@@ -118,25 +123,12 @@
 		return i >= 0 ? texte.slice(i + separateur.length) : texte;
 	}
 
-	// ---- Rendez-vous --------------------------------------------------------------------------
-	/** Couleur de sens du type (losange) : le token s'il existe, sinon une encre du carnet. */
-	const REPLI: Record<string, string> = {
-		'--red': 'var(--rouille)',
-		'--gold': 'var(--encre-2)',
-		'--glacier': 'var(--encre-humide)',
-		'--purple': 'var(--ruban)',
-		'--faint': 'var(--encre-grise)'
-	};
-	const teinte = (token: string) => `var(${token}, ${REPLI[token] ?? 'var(--encre-2)'})`;
+	// ---- Rendez-vous (teintes de sens et phrase des places : celles de l'Agenda) -----------------
 	function jourDuMois(iso: string | null): string {
 		return iso ? String(parisParts(iso)?.day ?? '') : '';
 	}
 	function moisCourt(iso: string | null): string {
 		return iso ? dateCourte(iso).split(' ').slice(1).join(' ') : '';
-	}
-	function places(e: EventRowView): string {
-		if (e.capacity === 0) return 'sans limite';
-		return `${e.count} inscrit${e.count > 1 ? 's' : ''} sur ${e.capacity}`;
 	}
 	function noteRdv(e: EventRowView): string {
 		const fait = form && 'participation' in form ? form.participation : null;
@@ -170,7 +162,7 @@
 			<p class="rdv-details">
 				<Losange couleur={teinte(e.typeColor)} libelle={e.typeLabel} />
 				{#if e.startsAt}<span class="chiffres">{jourSemaine(e.startsAt)} {dateLongue(e.startsAt)}, {heureRonde(e.startsAt)}</span>{/if}
-				<span class="chiffres">{places(e)}</span>
+				<span class="chiffres">{phrasePlaces(e.count, e.capacity)}</span>
 				{#if e.discordUrl}
 					<a class="rdv-salon" href={e.discordUrl} target="_blank" rel="noopener noreferrer">Ouvrir le salon<span class="fleche" aria-hidden="true">↗</span></a>
 				{/if}
@@ -179,7 +171,8 @@
 		<div class="rdv-geste">
 			{#if lecture || (!e.canRegister && !e.registered)}
 				{#if e.closedReason === 'unlinked'}
-					<p class="ferme">Ton compte attend sa liaison pour venir.</p>
+					<!-- Le staff sans personnage mène les rendez-vous, il ne s'y inscrit pas : rien à dire. -->
+					{#if vue.state !== 'staff'}<p class="ferme">Ton compte attend sa liaison pour venir.</p>{/if}
 				{:else if e.closedReason === 'full'}
 					<p class="ferme">Complet</p>
 				{:else if e.closedReason === 'undated'}
@@ -302,7 +295,10 @@
 								</div>
 							{:else if w.kind === 'table'}
 								<p class="quoi"><span class="repere">La Table est ouverte</span> <span class="lieu">{apres(w.text, ' : ')}</span></p>
-								<div class="gestes"><Bouton variante="texte" href={w.href} fleche="→">Suivre</Bouton></div>
+								<div class="gestes">
+									<Bouton variante="texte" href={w.href} fleche="→">Suivre</Bouton>
+									{#if !sceneEnTete}<Bouton variante="trait" href="/carnet/scene">Préparer ma réponse</Bouton>{/if}
+								</div>
 							{:else}
 								<p class="quoi"><span class="repere">Rendez-vous</span> <span class="lieu">{apres(w.text, 'Rendez-vous ')}</span></p>
 								<div class="gestes">
@@ -369,6 +365,53 @@
 			</div>
 		{/snippet}
 	</Page>
+{:else if vue.state === 'staff'}
+	<!-- MJ, designer, administrateur sans personnage : le carnet suit les Tables ouvertes et l'agenda. -->
+	<Page repere="NP / 02 — Mon carnet" titre="Dernières" titreVoix="pages." grain>
+		{#snippet marge()}
+			<div class="identite">
+				<Portrait nom={vue.pseudo} src={data.compte?.portrait ?? null} taille={72} />
+				<p class="nom">{vue.pseudo}</p>
+				{#if role}<p class="serment"><span class="rang">{role}</span></p>{/if}
+			</div>
+			<p class="lu">Lu pour la dernière fois le {dateLongue(vue.lastReadAt)}.</p>
+		{/snippet}
+		{#snippet bande()}
+			<p class="bande-nom">{vue.pseudo}{#if role}{' · '}<span class="rang">{role}</span>{/if}</p>
+			<p class="bande-lu">Lu pour la dernière fois le {dateLongue(vue.lastReadAt)}.</p>
+		{/snippet}
+
+		<Chapitre titre="Ce qui attend ta main" id="attend">
+			{#if vue.waiting.length}
+				<ul class="attend">
+					{#each vue.waiting as w (w.kind + w.id)}
+						<li class="attente {w.kind}">
+							<p class="quoi"><span class="repere">La Table est ouverte</span> <span class="lieu">{apres(w.text, ' : ')}</span></p>
+							<div class="gestes">
+								<Bouton variante="texte" href={w.href} fleche="→">Suivre</Bouton>
+								{#if w.discordUrl}
+									<Bouton variante="texte" href={w.discordUrl} fleche="↗" target="_blank" rel="noopener noreferrer">Ouvrir le salon</Bouton>
+								{/if}
+							</div>
+						</li>
+					{/each}
+				</ul>
+			{:else}
+				<Vide>Aucune Table ouverte.</Vide>
+			{/if}
+		</Chapitre>
+
+		{@render ceQuiVient(false)}
+
+		{#snippet pied()}
+			<div class="gestes pied-gestes">
+				{#if data.compte?.role === 'mj' || data.compte?.role === 'admin'}
+					<Bouton variante="texte" href="/table" fleche="→">Ouvrir La Table</Bouton>
+				{/if}
+				<Bouton variante="texte" href="/agenda" fleche="→">Ouvrir l’agenda</Bouton>
+			</div>
+		{/snippet}
+	</Page>
 {:else}
 	<!-- Compte en attente de liaison, ou liaison vers une fiche introuvable : la page réduite. -->
 	<Page repere="NP / 02 — Mon carnet" titre="Ton carnet" titreVoix="attend." grain>
@@ -393,7 +436,7 @@
 					<p class="copie" aria-live="polite">{#if copie}Copié · {copie} — colle-le sur Discord.{/if}</p>
 				</div>
 			</div>
-		{:else}
+		{:else if vue.state === 'unavailable'}
 			<p class="attente-lead">Une liaison existe, mais ta fiche n’a pas pu s’ouvrir. Recharge ; si ça persiste, donne ton pseudo à un administrateur sur Discord.</p>
 		{/if}
 
@@ -750,6 +793,17 @@
 		.pied-gestes {
 			flex-direction: column;
 			align-items: stretch;
+		}
+	}
+	/* « En attendant » au téléphone : chaque description sous son lien, même rythme pour les trois. */
+	@media (max-width: 600px) {
+		.liens li {
+			flex-direction: column;
+			align-items: flex-start;
+			padding-bottom: calc(var(--ligne) / 2);
+		}
+		.liens span {
+			line-height: var(--ligne);
 		}
 	}
 </style>

@@ -37,6 +37,7 @@
 			{#if ruban}
 				<a class="ruban" href={ruban.href}>
 					{ruban.libelle ?? 'En scène'}
+					{#if ruban.href.startsWith('/table/')}<span class="sr-only"> — mène à la Table ouverte</span>{/if}
 					{#if ruban.corne}<span class="corne" aria-hidden="true"></span><span class="sr-only"> — pages non lues</span>{/if}
 				</a>
 			{/if}
@@ -216,7 +217,8 @@
 		font: var(--t-repere);
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
-		color: var(--tampon);
+		/* Le laiton est réservé aux décisions des MJ : le rôle s'écrit à l'encre secondaire. */
+		color: var(--encre-2);
 		white-space: nowrap;
 	}
 

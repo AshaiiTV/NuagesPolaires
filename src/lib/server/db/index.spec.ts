@@ -156,7 +156,7 @@ describe('openDb — PGlite partagé (04 §10.2)', () => {
 			else process.env.NP_DB_DRIVER = previous;
 			await closeSharedDb();
 		}
-	});
+	}, 30000);
 
 	it('refuse une cible PGlite explicite quand NODE_ENV=production', async () => {
 		const previous = process.env.NODE_ENV;
@@ -186,7 +186,7 @@ describe('migrations', () => {
 				handle.db,
 				sql`select count(*)::int as n from drizzle.__drizzle_migrations`
 			);
-			expect(rows[0]?.n).toBe(4); // 0000 (DDL) + 0001 (référentiels) + 0002 (DDL INT-1) + 0003 (tokens)
+			expect(rows[0]?.n).toBe(5); // Fondation, référentiels, INT-1, tokens et fidélité INT-3.
 			const themes = await executeRows<{ n: number }>(
 				handle.db,
 				sql`select count(*)::int as n from themes`

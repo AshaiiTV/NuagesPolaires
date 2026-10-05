@@ -55,14 +55,15 @@ describe('getLastPages — jeu de démonstration', () => {
 		expect(view.daysAway).toBeLessThanOrEqual(3);
 
 		// Ordre imposé : scène ouverte d'abord, puis le rendez-vous où Aria vient.
-		expect(view.waiting.map((w) => w.kind)).toEqual(['scene', 'event']);
+		expect(view.waiting.map((w) => w.kind)).toEqual(['scene', 'table', 'event']);
 		expect(view.waiting[0]).toMatchObject({
 			id: DEMO_IDS.scene,
 			text: 'Scène ouverte · #brume-sur-la-foret-centre',
 			href: '/carnet/scene',
 			discordUrl: 'https://discord.com/channels/demo/foret-centre'
 		});
-		expect(view.waiting[1].text).toMatch(/^Rendez-vous .+ — tu viens$/);
+		expect(view.waiting[1].id).toBe(DEMO_IDS.openCombat);
+		expect(view.waiting[2].text).toMatch(/^Rendez-vous .+ — tu viens$/);
 
 		// Depuis la dernière lecture (−3 j) : le tampon du MJ (−2 j) puis la note en scène (−1 j).
 		expect(view.since.map((l) => l.text)).toEqual([

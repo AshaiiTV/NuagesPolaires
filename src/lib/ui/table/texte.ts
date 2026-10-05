@@ -163,8 +163,7 @@ export function exportDiscord(s: CombatState, maintenant = Date.now()): string {
 	if (adversaires.length) lignes.push(`**Adversaires :** ${adversaires.map((f) => `${f.name}${ko(f) ? ' (KO)' : ''}`).join(' · ')}`);
 	lignes.push('');
 	for (const e of s.log) {
-		const texte = sansEmoji(e.text);
-		if (!texte) continue;
+		const texte = e.text;
 		if (e.kind === 'round') lignes.push('', `**${texte}**`, '');
 		else lignes.push(`· ${texte}`);
 	}

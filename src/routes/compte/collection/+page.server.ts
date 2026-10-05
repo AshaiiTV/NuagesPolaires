@@ -4,6 +4,7 @@
 import { action } from '$lib/server/actions';
 import { listThemes, selectTheme } from '$lib/server/domain/accounts';
 import { requireAccount } from '$lib/server/guards';
+import { libelleTheme } from '$lib/ui/themes';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -12,6 +13,7 @@ export const load: PageServerLoad = async (event) => {
 	return {
 		themes: themes
 			.filter((t) => t.owned || t.visible || t.active)
+			.map(libelleTheme)
 			.map((t) => ({
 				id: t.id,
 				name: t.name,

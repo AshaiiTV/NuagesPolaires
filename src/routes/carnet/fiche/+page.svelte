@@ -20,6 +20,8 @@
 	import Rature from '$lib/ui/Rature.svelte';
 	import { creerEcriture } from '$lib/ui/ecriture.svelte';
 	import { dateCourte, heure, joursCalendaires } from '$lib/ui/dates';
+	import { palierAtteint, palierSuivant } from '$lib/ui/scene/paliers';
+	import { signataire } from './signature';
 	import { EQUIPMENT_LABELS, EQUIPMENT_SLOTS, ITEM_CATEGORIES, RESOURCES } from '$lib/schemas/characters';
 	import type { ConsequenceFilter, ConsequenceView, ItemView, ResourceKey } from '$lib/schemas/characters';
 	import type { DeclarationView } from '$lib/schemas/declarations';
@@ -165,8 +167,6 @@
 	}
 	const declarable = (i: ItemView) => i.category === 'Consommable';
 
-	// ---- Serment -------------------------------------------------------------------------------
-	const ROMAINS = ['I', 'II', 'III', 'IV', 'V', 'VI'];
 
 	// ---- Conséquences --------------------------------------------------------------------------
 	const FILTRES: { cle: ConsequenceFilter | null; libelle: string }[] = [
@@ -190,7 +190,7 @@
 	const raturees = $derived((data.consequences?.rows ?? []).filter((c) => c.struck).length > 0);
 	const CHAMPS: Record<string, string> = { pv: 'PV', ep: 'EP', em: 'EM', xp: 'XP', level: 'niveau', qty: 'quantité' };
 	function tampon(c: ConsequenceView): string | null {
-		return c.stamp ? `${c.stamp.role} ${c.stamp.name} · ${dateCourte(c.at)}, ${heure(c.at)}` : null;
+		return c.stamp ? `${signataire(c.stamp)} · ${dateCourte(c.at)}, ${heure(c.at)}` : null;
 	}
 	function signature(c: ConsequenceView): string | null {
 		if (c.stamp) return null;
@@ -414,7 +414,7 @@
 						{#each fiche.tiers.reached as t, n (t.level + t.name)}
 							<li class="palier atteint">
 								<p class="palier-tete">
-									<span class="repere">Palier {ROMAINS[n] ?? n + 1} · niveau <span class="chiffres">{t.level}</span></span>
+									<span class="repere chiffres">{palierAtteint(n, t.level, t.stage)}</span>
 									<span class="palier-nom">{t.name}</span>
 									{#if t.cost}<span class="cout chiffres">{t.cost}</span>{/if}
 								</p>
@@ -425,9 +425,8 @@
 							{@const rang = fiche.tiers.reached.length + n}
 							<li class="palier suivant">
 								<p class="palier-tete">
-									<span class="repere">Palier {ROMAINS[rang] ?? rang + 1}</span>
+									<span class="repere chiffres">{palierSuivant(rang, t.level, t.stage)}</span>
 									<span class="palier-nom">{t.name}</span>
-									<span class="cout">au niveau <span class="chiffres">{t.level}</span></span>
 								</p>
 							</li>
 						{/each}
@@ -865,6 +864,8 @@
 	.palier-texte {
 		margin-top: 4px;
 		font: var(--t-recit);
+		/* Valeurs de règle (« 10+Niv ») : chiffres alignés, lisibles d'un coup d'œil en plein RP. */
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		max-width: var(--lecture);
 	}
@@ -872,7 +873,6 @@
 		color: var(--encre-humide);
 	}
 	.suivant .palier-nom,
-	.suivant .cout,
 	.suivant .repere {
 		color: var(--encre-grise);
 	}

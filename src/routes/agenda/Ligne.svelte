@@ -11,7 +11,8 @@
 	import Tampon from '$lib/ui/Tampon.svelte';
 	import type { EtatEncre } from '$lib/ui/Encre.svelte';
 	import type { NoteEcriture } from '$lib/ui/ecriture.svelte';
-	import { heureRonde, jourSemaine } from '$lib/ui/dates';
+	import { dateCourte, heureRonde, jourSemaine } from '$lib/ui/dates';
+	import { LIBELLES_ROLE, type RoleCompte } from '$lib/ui/navigation';
 	import type { EventRowView } from '$lib/schemas/events';
 	import { blocDate, phrasePasses, phrasePlaces, teinte } from './agenda';
 
@@ -22,6 +23,8 @@
 		passe?: boolean;
 		/** Le compte a un personnage relié (sinon : lecture seule). */
 		relie: boolean;
+		/** Tampon de l'organisateur : rôle, pseudo, jour d'écriture (« MJ Maitre · 26 sept. »). */
+		tampon?: { role: RoleCompte; pseudo: string; at: string } | null;
 		/** Cette ligne porte l'écriture en cours ou la dernière réponse. */
 		active?: boolean;
 		etat?: EtatEncre;
@@ -35,6 +38,7 @@
 		lu,
 		passe = false,
 		relie,
+		tampon = null,
 		active = false,
 		etat = 'prise',
 		note = null,
@@ -68,7 +72,7 @@
 		<p class="meta">
 			<Losange couleur={teinte(ev.typeColor)} libelle={ev.typeLabel} />
 			{#if quand}<span class="quand chiffres">{quand}</span>{:else}<span class="quand">Date à confirmer</span>{/if}
-			{#if ev.hidden}<span class="masque">Masqué · visible des MJ et des administrateurs</span>{/if}
+			{#if ev.hidden}<span class="masque">Masqué · visible de ceux qui organisent</span>{/if}
 		</p>
 		<p class="places chiffres">
 			<span class="compte">{passe ? phrasePasses(ev.count) : phrasePlaces(ev.count, ev.capacity)}</span>
@@ -102,7 +106,11 @@
 		</div>
 	</div>
 
-	{#if ev.organizer}
+	{#if tampon}
+		<p class="organise">
+			<span class="par">organisé par</span><Tampon cle={ev.id}>{LIBELLES_ROLE[tampon.role]} {tampon.pseudo}<span class="point" aria-hidden="true">{' · '}</span><span class="sr-only">, le </span>{dateCourte(tampon.at, lu)}</Tampon>
+		</p>
+	{:else if ev.organizer}
 		<p class="organise"><span class="par">organisé par</span><Tampon cle={ev.id}>{ev.organizer}</Tampon></p>
 	{/if}
 

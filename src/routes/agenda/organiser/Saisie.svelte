@@ -234,7 +234,7 @@
 		</label>
 		<label class="option large" class:choisi={b.visibilite === 'masque'}>
 			<input type="radio" name="visibilite" value="masque" bind:group={b.visibilite} />
-			<span>Masqué : visible des MJ et des administrateurs</span>
+			<span>Masqué : visible de ceux qui organisent (MJ, designers, administrateurs)</span>
 		</label>
 	</fieldset>
 

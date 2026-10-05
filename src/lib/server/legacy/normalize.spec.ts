@@ -211,7 +211,7 @@ describe('formes héritées (audit 06 §2)', () => {
 		);
 		expect(c.row.state.schemaVersion).toBe(2);
 		expect(c.participants).toEqual(['p']);
-		expect(c.row.status).toBe('termine');
+		expect(c.row.status).toBe('preparation');
 		for (const flag of ['active', '_inProgress', '_draft'])
 			expect(n.normalizeCombat({ [flag]: true }, 'Maitre').row.status).toBe('en_cours');
 		expect(n.normalizeCombat({ _stub: true }, 'Maitre')).toMatchObject({

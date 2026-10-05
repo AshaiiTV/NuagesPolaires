@@ -8,10 +8,22 @@
 		detail?: string;
 	}
 	let { couleur, libelle, detail }: Props = $props();
+
+	/** Une couleur très claire (gemme Blanche) disparaît sur l'ivoire : elle reçoit un contour d'encre. */
+	function claire(c: string): boolean {
+		const v = c.trim().toLowerCase();
+		if (v === 'white' || v === '#fff' || v === '#ffffff') return true;
+		const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/.exec(v);
+		if (!m) return false;
+		const h = m[1].length === 3 ? [...m[1]].map((x) => x + x).join('') : m[1];
+		const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+		return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.8;
+	}
+	const contour = $derived(claire(couleur));
 </script>
 
 <span class="sens">
-	<span class="losange" style:background={couleur} aria-hidden="true"></span>
+	<span class="losange" class:contour style:background={couleur} aria-hidden="true"></span>
 	<span class="libelle">{libelle}</span>{#if detail}<span class="detail chiffres">{detail}</span>{/if}
 </span>
 
@@ -27,6 +39,9 @@
 		width: 5px;
 		height: 5px;
 		rotate: 45deg;
+	}
+	.contour {
+		box-shadow: 0 0 0 1px var(--encre-grise);
 	}
 	.libelle {
 		font: var(--t-repere);

@@ -1,5 +1,5 @@
 <script lang="ts">
-	// Sommaire du cahier « L'univers » : une ligne par chapitre, numéro en laiton, résumé, flèche.
+	// Sommaire du cahier « L'univers » : une ligne par chapitre, numéro à l’encre, résumé, flèche.
 	import Page from '$lib/ui/Page.svelte';
 	import { typo } from './typo';
 	import type { PageProps } from './$types';
@@ -50,7 +50,7 @@
 	.numero {
 		font: var(--t-repere);
 		letter-spacing: var(--approche-repere);
-		color: var(--tampon);
+		color: var(--encre-2);
 	}
 	.titre {
 		font: 500 28px / var(--ligne) var(--voix);

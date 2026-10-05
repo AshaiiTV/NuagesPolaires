@@ -15,6 +15,7 @@ import {
 } from '$lib/server/domain/accounts';
 import { ALWAYS_GRANTED_THEME_IDS } from '$lib/server/db/referentials';
 import { THEME_TOKEN_KEYS } from '$lib/schemas/accounts';
+import { libelleTheme } from '$lib/ui/themes';
 import type { Actions, PageServerLoad } from './$types';
 
 const texte = (v: unknown): string => (typeof v === 'string' ? v : '');
@@ -25,7 +26,7 @@ export const load: PageServerLoad = async (event) => {
 	const themes = await listThemes(db, actor);
 	const comptes = await listAccounts(db, actor);
 	return {
-		themes: themes.map((t) => ({ ...t, toujours: ALWAYS_GRANTED_THEME_IDS.includes(t.id) })),
+		themes: themes.map((t) => ({ ...libelleTheme(t), toujours: ALWAYS_GRANTED_THEME_IDS.includes(t.id) })),
 		// Le don est réservé aux joueurs (règle du serveur) : on ne propose qu'eux.
 		joueurs: comptes
 			.filter((c) => c.role === 'joueur')

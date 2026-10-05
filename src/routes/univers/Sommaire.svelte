@@ -192,7 +192,7 @@
 		line-height: 20px;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
-		color: var(--tampon);
+		color: var(--encre-2);
 	}
 	.titre {
 		grid-column: 3;

@@ -21,6 +21,8 @@
 	const role = $derived(LIBELLES_ROLE[compte.role]);
 	const depuis = $derived(dateLongue(compte.createdAt).replace(/^1 /, '1er '));
 	const admin = $derived(compte.role === 'admin');
+	/** « de Kael Morvan », « d’Aria Lunval » : l'élision devant une voyelle ou un h muet. */
+	const de = (nom: string) => (/^[aeiouyhàâäéèêëîïôöùûüAEIOUYHÀÂÄÉÈÊËÎÏÔÖÙÛÜ]/.test(nom) ? `d’${nom}` : `de ${nom}`);
 
 	// ── Mot de passe ──
 	const ecritureMdp = creerEcriture();
@@ -116,7 +118,7 @@
 				<div class="ligne">
 					<dt>Thème</dt>
 					<dd>
-						<span class="valeur">{data.themePorte?.name ?? 'Nuages Polaires'}</span>
+						<span class="valeur">{data.themePorte?.name ?? 'Carnet de nuit'}</span>
 						<Bouton variante="texte" href="/compte/collection" fleche="→">Ma collection</Bouton>
 					</dd>
 				</div>
@@ -235,7 +237,7 @@
 				{:else}
 					<p class="voix grave">Le carnet se ferme pour de bon. Ce qui est écrit ne se rouvre pas.</p>
 					<p class="texte">
-						Ton compte disparaît{#if data.personnage}, avec la fiche de {data.personnage.name}{/if}. Écris ton mot de passe pour fermer.
+						Ton compte disparaît{#if data.personnage}, avec la fiche {de(data.personnage.name)}{/if}. Écris ton mot de passe pour fermer.
 					</p>
 					<form method="POST" action="?/fermer" use:enhance={ecritureFermer.enhance({ verbe: 'Fermé' })} class="formulaire" novalidate>
 						<input type="hidden" name="geste" value="fermer" />

@@ -8,6 +8,7 @@ import { action, type FormValues } from '$lib/server/actions';
 import { requireCharacter } from '$lib/server/guards';
 import { NpError } from '$lib/server/http';
 import { getSceneContext, openScene } from '$lib/server/domain/scenes';
+import { getPlayerTable } from '$lib/server/domain/combats';
 import { consumeOwnItem, getOwnSheet } from '$lib/server/domain/characters';
 import {
 	cancelDeclaration,
@@ -46,11 +47,29 @@ export const load: PageServerLoad = async (event) => {
 	// Le marque-page est unique, tenu par compte (03-vision §6.2) : le feuillet montre le même que
 	// Dernières pages, jamais une seconde phrase « Tu t'étais arrêté ici ».
 	const { bookmark: marquePage } = await getLastPages(db, actor);
+	// La Table où figure le personnage, lue à la même source que `/carnet/table/[id]` : la seconde
+	// ligne du feuillet et la Table disent la même chose au même instant, et les statuts portent
+	// leurs tours (« Saignement 2 t. ») tels que le MJ les tient.
+	let etatTable: { active: boolean; round: number; phase: string } | null = null;
+	let tours: Record<string, number> = {};
+	if (contexte.table) {
+		try {
+			const t = await getPlayerTable(db, actor, contexte.table.id);
+			const p = t.projection;
+			etatTable = { active: p.active, round: p.round, phase: p.phase };
+			tours = Object.fromEntries((p.self?.statuses ?? []).map((st) => [st.id, st.tours]));
+		} catch (e) {
+			// Table refusée ou repliée entre-temps : le feuillet garde la ligne du contexte.
+			if (!(e instanceof NpError)) throw e;
+		}
+	}
 	return {
 		contexte,
 		fiche,
 		attente,
 		marquePage,
+		etatTable,
+		tours,
 		mots: fiche ? motsPour(fiche) : null,
 		carte: fiche ? carteDuMoment(fiche, contexte) : ruleCardFor({ kind: 'out-of-combat' }),
 		/** Heure du serveur : le compte à rebours d'annulation se cale dessus. */

@@ -69,7 +69,7 @@
 		<Page repere="NP / 00 — Rejoindre" titre="Rejoindre" titreVoix="l’aventure." grain>
 			{#snippet marge()}
 				{@render suivi()}
-				<p class="voix chapeau">L’inscription passe toujours par le règlement. Ton accord se donne en bas de la page.</p>
+				<p class="voix chapeau">L’inscription passe toujours par le règlement.</p>
 				{#if reglement.entrees.length}
 					<div class="sommaire"><Sommaire sections={reglement.entrees} libelle="Sommaire du règlement" /></div>
 				{/if}
@@ -83,12 +83,13 @@
 
 			<header class="ouverture">
 				<p class="repere">I · {typo(reglement.titre)}</p>
-				<p class="voix">{typo(reglement.resume)}</p>
+				<p class="voix">Lis-le jusqu’au bout : ton accord se donne en bas de la page.</p>
+				<p class="aller"><Bouton variante="texte" href="#accord" fleche="↓">Aller à l’accord</Bouton></p>
 			</header>
 
 			<TexteReglement html={reglement.html} />
 
-			<form method="GET" action="/entrer/inscription" class="accord">
+			<form method="GET" action="/entrer/inscription" class="accord" id="accord" tabindex="-1" aria-label="Accord au règlement">
 				<input type="hidden" name="etape" value="compte" />
 				<input type="hidden" name="reglement" value="accepte" />
 				<p class="voix">En continuant, tu acceptes ce règlement, sans réserve. Il se relit à tout moment dans L’univers.</p>
@@ -229,6 +230,15 @@
 	.ouverture .repere {
 		color: var(--encre-humide);
 		margin-bottom: 12px;
+	}
+	.aller {
+		margin-top: 8px;
+	}
+	.accord {
+		scroll-margin-top: var(--ligne);
+	}
+	.accord:focus {
+		outline: none;
 	}
 	.accord {
 		max-width: var(--lecture);

@@ -290,6 +290,7 @@ export async function createTable(
 				branch: branch ? { name: branch.nom, tiers: branch.paliers } : null
 			});
 			baselines[characterId] = sheet.revision;
+			state.fighters.at(-1)!.oathDamage = oath.baseDamage;
 		}
 		for (const entry of data.beasts) {
 			const [beast] = await tx.select().from(beasts).where(eq(beasts.id, entry.beastId));
@@ -863,7 +864,7 @@ export async function getRecit(db: Db, actor: Actor | null, id: string): Promise
 			throw NpError.notFound("Cette Table n'est pas la tienne.");
 	}
 	const state = stateOf(row);
-	// Liste blanche même pour le MJ : un récit n'est jamais un export de l'état réservé.
+	// Journal intégral pour le staff ; liste blanche et filtrage pour les participants.
 	const log = staff
 		? state.log
 				.map((e) => ({

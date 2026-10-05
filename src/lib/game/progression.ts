@@ -515,11 +515,12 @@ export function normalizeLegacyProgression(
 				: typeof out.class === 'string'
 					? out.class
 					: '';
-		const resolved = { ...growthFor(oathName), ...resolveGrowth(oathName) };
+		const native = growthFor(oathName);
+		const resolved = resolveGrowth(oathName) ?? {};
 		const growth: Growth = {
-			pvN: finiteOr(resolved.pvN, 0),
-			epN: finiteOr(resolved.epN, 0),
-			emN: finiteOr(resolved.emN, 0)
+			pvN: finiteOr(resolved.pvN, native.pvN),
+			epN: finiteOr(resolved.epN, native.epN),
+			emN: finiteOr(resolved.emN, native.emN)
 		};
 		const resources: Array<['pv' | 'ep' | 'em', number, keyof Growth]> = [
 			['pv', BASE_STATS.pv, 'pvN'],

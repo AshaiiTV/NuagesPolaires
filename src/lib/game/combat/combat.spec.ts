@@ -50,7 +50,7 @@ describe('déclarations, coûts et initiative', () => {
 		s = act(s, p(s).id, 'soin', { healAmt: 12, emCost: 4 });
 		s = act(s, p(s).id, 'frappe_dechainees', { target: b(s).id, value: 8, healAmt: 6, healTarget: p(s).id });
 		s = round(s);
-		expect(p(s)).toMatchObject({ pvCur: 88, emCur: 84, epCur: 100 });
+		expect(p(s)).toMatchObject({ pvCur: 88, emCur: 89, epCur: 100 });
 		expect(b(s).pvCur).toBe(82);
 		expect(s.log.map((e) => e.text)).toContain('💚 Soin auto → Alice +6 PV');
 	});
@@ -163,8 +163,8 @@ describe('statuts', () => {
 		expect(s.log.at(-3)?.text ?? s.log.map((l) => l.text).join(' ')).toBeDefined();
 		expect(s.log.some((l) => l.text.endsWith('dissipé'))).toBe(true);
 	});
-	it('poison arrondi supérieur et min 1 ; retrait ; durée manuelle bornée', () => {
-		let s = fixture(21); s = applyStatus(s, p(s).id, 'empoisonne', 100); expect(p(s).statuses[0]!.tours).toBe(10);
+	it('poison arrondi supérieur et min 1 ; retrait ; durée manuelle sans plafond', () => {
+		let s = fixture(21); s = applyStatus(s, p(s).id, 'empoisonne', 100); expect(p(s).statuses[0]!.tours).toBe(100);
 		s = round(s); expect(p(s).pvCur).toBe(19); s = removeStatus(s, p(s).id, 'empoisonne'); expect(p(s).statuses).toEqual([]);
 		s = fixture(1); s = applyStatus(s, p(s).id, 'empoisonne', 1); s = round(s); expect(p(s).pvCur).toBe(0);
 	});
@@ -188,9 +188,9 @@ describe('taunt et invocations', () => {
 		s = adjustResource(s, id, 'pv', -16); expect(addSummon(s, p(s).id, spec).fighters).toHaveLength(3);
 		expect(endCombat(s).outcomes.map((o) => o.characterId)).toEqual(['alice']);
 	});
-	it('invocation déclarée ajoutée en fin d’ordre, sans action ce round ; Crabe ne protège pas', () => {
+	it('invocation déclarée sans tour dans l’ordre ; Crabe ne protège pas', () => {
 		let s = fixture(); s = act(s, p(s).id, 'capacite', { kind: 'summon', summon: { ...spec, name: 'Crabe Canon', autoInterpose: false, rangeType: 'distance' }, emCost: 6 }); s = act(s, p(s).id, 'passer');
-		s = act(s, b(s).id, 'frappe', { target: p(s).id }); s = round(s); expect(p(s).pvCur).toBe(91); expect(s.order.at(-1)).toBe(s.fighters[2]!.id);
+		s = act(s, b(s).id, 'frappe', { target: p(s).id }); s = round(s); expect(p(s).pvCur).toBe(91); expect(s.order).not.toContain(s.fighters[2]!.id);
 		s = act(s, p(s).id, 'passer'); s = act(s, b(s).id, 'frappe', { target: p(s).id }); s = round(s); expect(p(s).pvCur).toBe(82);
 	});
 	it('taunt temporaire 1 round, permanent agressif, bonus par ennemi, désactivation', () => {

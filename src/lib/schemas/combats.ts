@@ -68,6 +68,7 @@ const fighterSchema = z
 		emCur: integer,
 		emMax: integer,
 		statuses: z.array(statusSchema).max(64),
+		koCause: z.enum(['attack', 'status']).optional(),
 		pvMaxBonus: integer,
 		briseArmureBonus: integer,
 		defenseTaxNext: integer,

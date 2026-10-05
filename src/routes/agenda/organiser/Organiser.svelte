@@ -41,8 +41,11 @@
 		return `${jourSemaine(ev.startsAt).slice(0, 3)}. ${dateCourte(ev.startsAt, data.lu)} · ${heureRonde(ev.startsAt)}`;
 	}
 	function places(ev: EventRowView): string {
-		if (ev.capacity > 0) return ev.count ? `${ev.count} sur ${ev.capacity}` : `${ev.capacity} places, personne encore`;
-		return ev.count ? `${ev.count} · sans limite` : 'sans limite, personne encore';
+		// « 4 inscrits sur 6 » ou « sans limite » (03-vision §5.6).
+		const n = ev.count;
+		const inscrits = `${n} inscrit${n > 1 ? 's' : ''}`;
+		if (ev.capacity > 0) return n ? `${inscrits} sur ${ev.capacity}` : `${ev.capacity} places · aucun inscrit`;
+		return n ? `${inscrits} · sans limite` : 'sans limite · aucun inscrit';
 	}
 	const page = $derived(data.pagePasses);
 	const base = $derived(ouvert ? `/agenda/organiser/${ouvert.id}` : '/agenda/organiser');

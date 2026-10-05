@@ -100,9 +100,16 @@
 	.texte:hover {
 		border-bottom-color: var(--encre);
 	}
-	.bouton:disabled,
-	.bouton[aria-disabled='true'] {
-		opacity: 0.5;
+	/* Geste en attente (rien à noter encore) : un cadre de réglure et l'encre secondaire, lisibles
+	   dans tous les thèmes — jamais une sauge éteinte à demi-opacité. */
+	.bouton:is(:disabled, [aria-disabled='true']) {
+		background: transparent;
+		border-color: var(--reglure);
+		color: var(--encre-2);
 		cursor: default;
+	}
+	.texte:is(:disabled, [aria-disabled='true']) {
+		border-color: transparent;
+		border-bottom-color: var(--reglure);
 	}
 </style>

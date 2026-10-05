@@ -22,6 +22,7 @@
 	import { creerEcriture } from '$lib/ui/ecriture.svelte';
 	import { heure } from '$lib/ui/dates';
 	import { ligneFeuillet } from '$lib/ui/scene/table';
+	import { nomPalier, palierSuivant } from '$lib/ui/scene/paliers';
 	import { declarationText, type DeclarationView } from '$lib/schemas/declarations';
 	import { RESSOURCES, resoudre, type Res } from './mots';
 	import type { PageProps } from './$types';
@@ -30,10 +31,6 @@
 
 	type Ecriture = ReturnType<typeof creerEcriture>;
 	const NOMS: Record<Res, 'PV' | 'EP' | 'EM'> = { pv: 'PV', ep: 'EP', em: 'EM' };
-	const ROMAINS = ['I', 'II', 'III', 'IV', 'V', 'VI'];
-	/** Noms des paliers du lexique (03-vision §8) : on *atteint* un palier, on ne le « débloque » pas. */
-	const PALIERS = ['Éveil', 'Densité', 'Maîtrise', 'Plénitude'];
-	const nomPalier = (i: number, repli: string) => PALIERS[i] ?? repli;
 
 	const fiche = $derived(data.fiche);
 	const contexte = $derived(data.contexte);
@@ -212,9 +209,13 @@
 			}
 		});
 	});
-	/** Même phrase que la Table vue par le joueur, au même instant (la Table a commencé = `en_cours`). */
+	/** Même phrase que la Table vue par le joueur, lue à la même source (la projection de la Table). */
 	function ligneTable(t: NonNullable<typeof contexte.table>): string {
-		return ligneFeuillet({ active: t.status === 'en_cours', round: t.round, phase: t.phase });
+		return ligneFeuillet(data.etatTable ?? { active: t.status === 'en_cours', round: t.round, phase: t.phase });
+	}
+	/** Tours restants d'un statut : ceux de la Table quand elle est ouverte, sinon ceux de la fiche. */
+	function tours(s: { id: string; turns: number | null }): number | null {
+		return data.tours[s.id] ?? s.turns;
 	}
 
 	// ── Bloc à coller ──
@@ -230,7 +231,7 @@
 			`relevé ${releve}`
 		].join(' · ');
 		const l3 = fiche.statuses.length
-			? fiche.statuses.map((s) => (s.turns ? `${s.label} ${s.turns} t.` : s.label)).join(' · ')
+			? fiche.statuses.map((s) => (tours(s) ? `${s.label} ${tours(s)} t.` : s.label)).join(' · ')
 			: 'Aucun statut.';
 		return `${l1}\n${l2}\n${l3}`;
 	});
@@ -567,7 +568,7 @@
 				{#if fiche.statuses.length}
 					<ul class="statuts" aria-label="Statuts">
 						{#each fiche.statuses as s (s.id)}
-							<li><Losange couleur={s.color} libelle={s.label} detail={s.turns ? `${s.turns} t.` : undefined} /></li>
+							<li><Losange couleur={s.color} libelle={s.label} detail={tours(s) ? `${tours(s)} t.` : undefined} /></li>
 						{/each}
 					</ul>
 				{/if}
@@ -586,7 +587,7 @@
 						{#each fiche.tiers.reached as t, i (t.level)}
 							<li class="palier">
 								<p class="palier-tete">
-									<span class="repere">Palier {ROMAINS[i] ?? i + 1} — {nomPalier(i, t.stage)}</span>
+									<span class="repere">{nomPalier(i, t.stage)}</span>
 									<span class="niveau">niveau {t.level}</span>
 								</p>
 								<p class="palier-nom">{t.name} <span class="cout">{t.cost}</span></p>
@@ -598,7 +599,7 @@
 							{@const n = fiche.tiers.reached.length}
 							<li class="palier suivant">
 								<p class="palier-tete">
-									<span class="repere">Palier {ROMAINS[n] ?? n + 1} — {nomPalier(n, t.stage)} · au niveau {t.level}</span>
+									<span class="repere">{palierSuivant(n, t.level, t.stage)}</span>
 								</p>
 							</li>
 						{/if}
@@ -1029,8 +1030,7 @@
 		font: 400 14px/24px var(--corps);
 		color: var(--encre);
 	}
-	.suivant .repere,
-	.suivant .niveau {
+	.suivant .repere {
 		color: var(--encre-grise);
 	}
 

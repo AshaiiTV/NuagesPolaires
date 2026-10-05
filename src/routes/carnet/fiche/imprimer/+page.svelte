@@ -6,6 +6,8 @@
 	import Losange from '$lib/ui/Losange.svelte';
 	import Portrait from '$lib/ui/Portrait.svelte';
 	import { dateCourte, dateHeure, heure } from '$lib/ui/dates';
+	import { palierAtteint, palierSuivant } from '$lib/ui/scene/paliers';
+	import { signataire } from '../signature';
 	import { EQUIPMENT_LABELS, EQUIPMENT_SLOTS, ITEM_CATEGORIES, RESOURCES } from '$lib/schemas/characters';
 	import type { ConsequenceView } from '$lib/schemas/characters';
 	import type { PageProps } from './$types';
@@ -15,7 +17,6 @@
 	const consequences = $derived(data.vue.consequences);
 
 	const NOMS = { pv: 'Points de Vie', ep: 'Énergie Physique', em: 'Énergie Magique' } as const;
-	const ROMAINS = ['I', 'II', 'III', 'IV', 'V', 'VI'];
 	const signe = (n: number) => (n > 0 ? `+${n}` : `−${Math.abs(n)}`);
 	const part = (cur: number, max: number) => (max > 0 ? Math.max(0, Math.min(100, (cur / max) * 100)) : 0);
 
@@ -26,7 +27,7 @@
 	});
 
 	function qui(c: ConsequenceView): string {
-		if (c.stamp) return `${c.stamp.role} ${c.stamp.name}`;
+		if (c.stamp) return `${signataire(c.stamp)} · ${heure(c.at)}`;
 		if (c.signature === 'toi') return 'toi';
 		if (c.signature === 'regles') return 'règles';
 		return '';
@@ -80,7 +81,7 @@
 			</section>
 
 			<section class="bloc">
-				<h2><span class="num">·</span> Statuts et gemmes</h2>
+				<h2>Statuts et gemmes</h2>
 				<p class="libelle">Statuts</p>
 				{#if fiche.statuses.length}
 					<ul class="sens">{#each fiche.statuses as s (s.id)}<li><Losange couleur={s.color} libelle={s.label} /></li>{/each}</ul>
@@ -133,13 +134,13 @@
 				<ol class="paliers">
 					{#each fiche.tiers.reached as t, n (t.level + t.name)}
 						<li>
-							<p class="palier-tete"><span class="libelle">Palier {ROMAINS[n] ?? n + 1} · niveau {t.level}</span> <strong>{t.name}</strong>{#if t.cost} <span class="cout">{t.cost}</span>{/if}</p>
+							<p class="palier-tete"><span class="libelle">{palierAtteint(n, t.level, t.stage)}</span> <strong>{t.name}</strong>{#if t.cost} <span class="cout">{t.cost}</span>{/if}</p>
 							{#if t.description}<p class="palier-texte">{t.description}</p>{/if}
 						</li>
 					{/each}
 					{#each fiche.tiers.next as t, n (t.level + t.name)}
 						<li class="suivant">
-							<p class="palier-tete"><span class="libelle">Palier {ROMAINS[fiche.tiers.reached.length + n] ?? fiche.tiers.reached.length + n + 1}</span> <strong>{t.name}</strong> <span class="cout">au niveau {t.level}</span></p>
+							<p class="palier-tete"><span class="libelle">{palierSuivant(fiche.tiers.reached.length + n, t.level, t.stage)}</span> <strong>{t.name}</strong></p>
 						</li>
 					{/each}
 				</ol>
@@ -401,10 +402,10 @@
 	}
 	.palier-texte {
 		font: 400 15px/22px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.suivant,
-	.suivant .libelle,
-	.suivant .cout {
+	.suivant .libelle {
 		color: var(--encre-grise);
 	}
 	.consequences th {

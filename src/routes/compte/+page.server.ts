@@ -21,6 +21,7 @@ import {
 } from '$lib/server/auth/session';
 import { getOwnSheet } from '$lib/server/domain/characters';
 import { requireAccount } from '$lib/server/guards';
+import { libelleTheme } from '$lib/ui/themes';
 import { NpError } from '$lib/server/http';
 import { MIN_PASSWORD_LENGTH, PASSWORD_TOO_SHORT_MESSAGE } from '$lib/schemas/auth';
 import type { Actions, PageServerLoad } from './$types';
@@ -68,7 +69,7 @@ export const load: PageServerLoad = async (event) => {
 		// `compte` est déjà la navigation du layout (CompteNav) : la vue du compte s'appelle `moi`.
 		moi: compte,
 		personnage,
-		themePorte: porte ? { name: porte.name, tone: porte.tone } : null,
+		themePorte: porte ? { name: libelleTheme(porte).name, tone: porte.tone } : null,
 		discordActif,
 		discordRetour: discordActif && retour ? (DISCORD_RETOUR[retour] ?? DISCORD_RETOUR.DISCORD_FAILED) : null,
 		motDePasseCourt: event.url.searchParams.get('mot-de-passe') === 'court'

@@ -12,7 +12,7 @@ export function parseGemTable(text: string): Array<{ min: number; max: number; g
 }
 export function rollDrop(state: CombatState, fighterId: string, rng: Rng): CombatState {
 	const s = cloneState(state), f = findFighterOrThrow(s, fighterId);
-	if (f.type !== 'beast' || f.pvCur > 0 || !f.gem) throw new CombatError('COMBAT_DROP_UNAVAILABLE', 'Aucun drop disponible.');
+	if (f.type !== 'beast' || f.pvCur > 0 || !f.gem || f.koCause === 'status') throw new CombatError('COMBAT_DROP_UNAVAILABLE', 'Aucun drop disponible.');
 	let drop = s.drops.find((d) => d.fighterId === fighterId);
 	if (drop?.roll !== null && drop?.roll !== undefined) throw new CombatError('COMBAT_DROP_ALREADY_ROLLED', 'D100 déjà lancé.');
 	const value = rng();

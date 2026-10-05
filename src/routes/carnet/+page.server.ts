@@ -3,6 +3,7 @@ import { action } from '$lib/server/actions';
 import { requireAccount } from '$lib/server/guards';
 import { getLastPages, openPage, setBookmark, unfoldAll } from '$lib/server/domain/reading';
 import { setParticipation } from '$lib/server/domain/events';
+import { getSceneContext } from '$lib/server/domain/scenes';
 import { composerAttente } from './attente';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -23,6 +24,7 @@ export const load: PageServerLoad = async (event) => {
 	const brut = Number(event.url.searchParams.get('page') ?? '');
 	const page = Number.isInteger(brut) && brut >= 1 && brut <= 10_000 ? brut : undefined;
 	const vue = await getLastPages(event.locals.db, actor, { page });
+	const contexte = vue.state === 'linked' ? await getSceneContext(event.locals.db, actor) : null;
 	return {
 		vue: {
 			...vue,
@@ -30,7 +32,7 @@ export const load: PageServerLoad = async (event) => {
 			waiting:
 				vue.state === 'staff'
 					? vue.waiting
-					: composerAttente(vue.waiting).map((w) => (w.kind === 'table' ? { ...w, href: `/carnet/table/${w.id}` } : w)),
+					: composerAttente(vue.waiting, vue.upcoming, new Date(), contexte?.table ?? null).map((w) => (w.kind === 'table' ? { ...w, href: `/carnet/table/${w.id}` } : w)),
 			since: vue.since.map((l) => ({ ...l, href: versPage(l.href) }))
 		}
 	};

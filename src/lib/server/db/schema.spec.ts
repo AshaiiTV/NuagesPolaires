@@ -158,7 +158,7 @@ describe('migration 0000_fondation', () => {
 		);
 	});
 
-	it('contient quatre migrations : 0000 (DDL), 0001 (référentiels), 0002 (DDL INT-1), 0003 (tokens INT-1)', async () => {
+	it('contient cinq migrations, dont la fidélité INT-3', async () => {
 		expect(
 			(
 				await executeRows<{ n: number }>(
@@ -166,7 +166,7 @@ describe('migration 0000_fondation', () => {
 					sql`select count(*)::int as n from drizzle.__drizzle_migrations`
 				)
 			)[0]?.n
-		).toBe(4);
+		).toBe(5);
 	});
 
 	it('colonnes INT-1 : rature du personnage, annonce et récit du rendez-vous, tokens, motif d’observation', async () => {

@@ -246,6 +246,7 @@ export async function updateOath(
 			.update(oaths)
 			.set({
 				...data,
+				...(data.branches ? { branches: { ...data.branches, extraBranches: data.branches.extraBranches ?? old?.branches.extraBranches ?? [] } } : {}),
 				...(growth ? { pvGrowth: growth.pvN, epGrowth: growth.epN, emGrowth: growth.emN } : {}),
 				revision: sql`${oaths.revision} + 1`
 			})
@@ -261,10 +262,11 @@ export async function updateOath(
 			.for('update');
 		for (const character of carriers) {
 			let branch = character.branch;
-			for (const key of ['bA', 'bB'] as const) {
-				const previous = old.branches[key];
+			const previousBranches = [old.branches.bA, old.branches.bB, ...(old.branches.extraBranches ?? [])];
+			const nextBranches = [row.branches.bA, row.branches.bB, ...(row.branches.extraBranches ?? [])];
+			for (const [index, previous] of previousBranches.entries()) {
 				if (previous && branchMatchesLabel({ ...previous, style: previous.style ?? '' }, branch)) {
-					branch = row.branches[key]?.nom ?? 'Aucune';
+					branch = nextBranches[index]?.nom ?? 'Aucune';
 					break;
 				}
 			}

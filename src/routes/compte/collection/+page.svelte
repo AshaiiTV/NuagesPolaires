@@ -62,7 +62,8 @@
 			.join('')
 	);
 
-	const saison = (iso: string | null) => (iso ? `jusqu’au ${dateLongue(iso)}` : null);
+	// « jusqu’au 1er mai » : le premier du mois s'écrit en ordinal.
+	const saison = (iso: string | null) => (iso ? `jusqu’au ${dateLongue(iso).replace(/^1 /, '1er ')}` : null);
 </script>
 
 <svelte:head>
@@ -123,7 +124,7 @@
 										{:else if theme.active}
 											<span class="marque" aria-hidden="true"></span>Porté
 										{:else}
-											Dans ta collection{#if saison(theme.availableUntil)} · {saison(theme.availableUntil)}{/if}
+											<span>Dans ta collection{#if saison(theme.availableUntil)}{' · '}{saison(theme.availableUntil)}{/if}</span>
 										{/if}
 									</span>
 								</span>
@@ -147,7 +148,7 @@
 								<span class="legende">
 									<span class="titre">{theme.name}</span>
 									{#if theme.description}<span class="description">{theme.description}</span>{/if}
-									<span class="etat">Pas dans ta collection{#if saison(theme.availableUntil)} · {saison(theme.availableUntil)}{/if}</span>
+									<span class="etat"><span>Hors collection{#if saison(theme.availableUntil)}{' · '}{saison(theme.availableUntil)}{/if}</span></span>
 								</span>
 							</span>
 						</li>
@@ -243,11 +244,6 @@
 	.description {
 		font: var(--t-libelle);
 		color: var(--encre-2);
-		display: -webkit-box;
-		-webkit-line-clamp: 2;
-		line-clamp: 2;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
 	}
 	.etat {
 		display: flex;

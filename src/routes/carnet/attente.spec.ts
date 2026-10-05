@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { WaitingView } from '$lib/schemas/reading';
+import type { EventRowView } from '$lib/schemas/events';
 import { composerAttente } from './attente';
 
 const scene = (id: string, channel: string | null, discordUrl: string | null = null): WaitingView => ({
@@ -69,5 +70,33 @@ describe('composerAttente (Ce qui attend ta main)', () => {
 			rendezVous
 		]);
 		expect(lignes.map((l) => l.id)).toEqual(['s1', 'c1', 'e1']);
+	});
+
+	it('rendez-vous coupé de la liste reçue : retrouvé parmi ceux où tu viens', () => {
+		const maintenant = new Date('2026-10-01T19:00:00.000Z');
+		const prochain = {
+			id: 'e9',
+			registered: true,
+			startsAt: '2026-10-03T18:00:00.000Z',
+			discordUrl: ''
+		} as unknown as EventRowView;
+		const lignes = composerAttente([scene('s1', '#le-gue'), scene('s2', '#le-gue')], [prochain], maintenant);
+		expect(lignes.map((l) => [l.kind, l.id])).toEqual([
+			['scene', 's1'],
+			['event', 'e9']
+		]);
+		expect(lignes[1].text).toMatch(/^Rendez-vous samedi 20 h — tu viens$/);
+	});
+
+	it('Table coupée de la liste reçue : reprise du feuillet, et la scène qu’elle a ouverte s’efface', () => {
+		const lignes = composerAttente([scene('s1', '#col-des-brumes'), scene('s2', '#col-des-brumes')], [], new Date(), {
+			id: 'c7',
+			name: 'Col des brumes',
+			discordUrl: '',
+			round: 1,
+			phase: 'declaration',
+			status: 'en_cours'
+		});
+		expect(lignes.map((l) => [l.kind, l.id])).toEqual([['table', 'c7']]);
 	});
 });

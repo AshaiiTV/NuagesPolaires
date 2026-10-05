@@ -129,7 +129,7 @@
 		min-width: 22px;
 		font: var(--t-repere);
 		letter-spacing: 0.12em;
-		color: var(--tampon);
+		color: var(--encre-2);
 	}
 	.marque {
 		flex: none;
@@ -139,14 +139,6 @@
 	}
 	.courant .marque {
 		background: var(--encre-humide);
-	}
-	/* Le rang s'écrit en laiton, capitales espacées. */
-	nav a.rang,
-	nav a.rang:hover {
-		font: var(--t-repere);
-		letter-spacing: var(--approche-repere);
-		text-transform: uppercase;
-		color: var(--tampon);
 	}
 
 	/* Corps : une ligne de registre par Serment */

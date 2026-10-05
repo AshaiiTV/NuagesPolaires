@@ -28,7 +28,7 @@
 			...(compte.relie
 				? [{ id: 'journal', href: '/carnet/journal', titre: 'Mon journal', resume: 'Tes notes, tes récits, les faits validés.' }]
 				: []),
-			{ id: 'compte', href: '/compte', titre: 'Mon compte', resume: 'Pseudo, mot de passe, Discord.' },
+			{ id: 'compte', href: '/compte', titre: 'Mon compte', resume: data.discordActif ? 'Pseudo, mot de passe, thème, Discord.' : 'Pseudo, mot de passe, thème.' },
 			{ id: 'collection', href: '/compte/collection', titre: 'Ma collection', resume: 'Les couleurs de ton carnet.' }
 		];
 		const cahiers = cahiersPour(compte, '/plus')
@@ -76,7 +76,7 @@
 					<button type="submit">
 						<span class="numero chiffres">{numero(lignes.length)}</span>
 						<span class="titre">Quitter le carnet</span>
-						<span class="fleche" aria-hidden="true">↗</span>
+						<span class="fleche" aria-hidden="true">→</span>
 						<span class="resume">Il se referme sur tous tes appareils. Ce qui est écrit reste écrit.</span>
 					</button>
 				</form>

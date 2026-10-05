@@ -96,6 +96,7 @@
 						{ev}
 						lu={data.lu}
 						relie={data.relie}
+						tampon={data.tampons[ev.id] ?? null}
 						active={actif?.id === ev.id}
 						etat={ecriture.etat}
 						note={actif?.id === ev.id ? ecriture.note : null}
@@ -119,7 +120,7 @@
 			<h2 id="titre-passes">Passés</h2>
 			<ol class="liste">
 				{#each data.agenda.past as ev (ev.id)}
-					<Ligne {ev} lu={data.lu} relie={data.relie} passe participer={(geste) => participer(ev.id, geste)} />
+					<Ligne {ev} lu={data.lu} relie={data.relie} tampon={data.tampons[ev.id] ?? null} passe participer={(geste) => participer(ev.id, geste)} />
 				{/each}
 			</ol>
 			{#if data.agenda.pastPages > 1}

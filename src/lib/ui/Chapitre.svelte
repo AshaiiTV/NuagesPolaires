@@ -62,7 +62,7 @@
 	.numero {
 		font: var(--t-repere);
 		letter-spacing: var(--approche-repere);
-		color: var(--tampon);
+		color: var(--encre-2);
 	}
 	h2 {
 		font: var(--t-chapitre);

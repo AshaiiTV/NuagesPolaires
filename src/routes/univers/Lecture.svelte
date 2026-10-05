@@ -1,6 +1,6 @@
 <script lang="ts">
 	// Une page de lecture de L'univers : résumé et sommaire en marge, texte à largeur de lecture,
-	// chapitres numérotés en laiton, tableaux sur la réglure, pied « Tourner ».
+	// chapitres numérotés, tableaux sur la réglure, pied « Tourner ».
 	import Page from '$lib/ui/Page.svelte';
 	import Depliant from './Depliant.svelte';
 	import Sommaire from './Sommaire.svelte';
@@ -175,7 +175,7 @@
 		background: var(--reglure);
 	}
 
-	/* Chapitre : deux lignes de réglure, numéro en laiton à gauche, filet dessous. */
+	/* Chapitre : deux lignes de réglure, numéro à gauche, filet dessous. */
 	.lecture :global(h2) {
 		display: flex;
 		align-items: baseline;
@@ -196,7 +196,7 @@
 		text-transform: uppercase;
 		font-variant-numeric: tabular-nums;
 		white-space: nowrap;
-		color: var(--tampon);
+		color: var(--encre-2);
 	}
 	/* Un chiffre romain seul s'écrit en Cormorant : à 12 px, « I » ne serait qu'un trait. */
 	.lecture :global(h2 .romain) {
@@ -378,7 +378,7 @@
 	}
 
 	@media (max-width: 760px) {
-		/* Numéro en laiton au-dessus du titre. */
+		/* Numéro au-dessus du titre. */
 		.lecture :global(h2) {
 			display: block;
 		}

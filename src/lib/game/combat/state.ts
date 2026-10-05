@@ -140,6 +140,7 @@ export function createCombat(opts: CreateCombatOptions): CombatState {
 		version: 2,
 		schemaVersion: 2,
 		history: [],
+		gestureHistory: [],
 		id: opts.id,
 		name: opts.name ?? '',
 		notes: opts.notes ?? '',
@@ -286,7 +287,7 @@ export function addFighter(state: CombatState, input: FighterInput): CombatState
 /**
  * Retire un combattant (legacy combatRemoveFighter) : toutes les déclarations sont vidées.
 	 * L'ordre est réinitialisé à l'ordre d'ajout, comme le simulateur.
- * et, en combat actif, la déclaration reprend au premier de l'ordre.
+ * En combat actif, phase conservée ; curseur remis à 0 seulement s’il sort de l’ordre.
  */
 export function removeFighter(state: CombatState, fighterId: string): CombatState {
 	const draft = cloneState(state);

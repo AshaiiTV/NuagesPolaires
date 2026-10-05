@@ -86,6 +86,7 @@ export function addOrRefreshStatus(draft: CombatState, fighter: Fighter, id: Sta
  * dissipation à 0. Mutation sur un brouillon.
  */
 export function tickStatuses(draft: CombatState, fighter: Fighter): void {
+	const wasAlive = fighter.pvCur > 0;
 	const removeIdx: number[] = [];
 	fighter.statuses.forEach((st, si) => {
 		if (st.id === 'saignement') {
@@ -103,10 +104,11 @@ export function tickStatuses(draft: CombatState, fighter: Fighter): void {
 		}
 	});
 	for (const si of removeIdx.reverse()) fighter.statuses.splice(si, 1);
+	if (wasAlive && fighter.pvCur === 0) fighter.koCause = 'status';
 }
 
 /**
- * Pose manuelle par le MJ (legacy combatAddStatut) : durée 1-10, défaut 2 ; un statut déjà présent
+ * Pose manuelle par le MJ (legacy combatAddStatut) : durée minimum 1, défaut 2 ; un statut déjà présent
  * voit sa durée REMPLACÉE (pas le max). Journal « ⚠ X : Libellé (NT) », kind damage pour
  * saignement / empoisonné seulement.
  */
