@@ -428,10 +428,24 @@ const journalNotes: LineSource = async (db, ctx, { after, sourceId }) => {
 				sourceId !== null ? eq(journalEntries.id, sourceId) : undefined
 			)
 		);
+	const versions = await db
+		.select()
+		.from(journalEntries)
+		.where(eq(journalEntries.characterId, ctx.characterId));
+	const parId = new Map(versions.map((v) => [v.id, v]));
+	const premiere = (r: (typeof rows)[number]) => {
+		let v = parId.get(r.id);
+		while (v?.replacesId) {
+			const ancienne = parId.get(v.replacesId);
+			if (!ancienne) break;
+			v = ancienne;
+		}
+		return v ?? r;
+	};
 	return rows.map((r) => ({
 		id: `j:${r.id}`,
 		at: r.ts,
-		text: `Ta note du ${dateLongue(r.ts, ctx.now)}${r.inScene ? ' · notée en scène' : ''}`,
+		text: `Ta note du ${dateLongue(premiere(r).ts, ctx.now)}${premiere(r).inScene ? ' · notée en scène' : ''}`,
 		href: JOURNAL_HREF
 	}));
 };

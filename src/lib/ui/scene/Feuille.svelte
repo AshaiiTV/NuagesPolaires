@@ -21,6 +21,7 @@
 	import type { Snippet } from 'svelte';
 
 	interface Props {
+		superpose?: boolean;
 		disposition?: 'volant' | 'centre';
 		/** Feuillet posé à gauche du bureau (ordinateur seulement). */
 		gauche?: boolean;
@@ -42,6 +43,7 @@
 		ruban?: { href: string; libelle: string; corne?: boolean } | null;
 	}
 	let {
+		superpose = false,
 		disposition = 'volant',
 		gauche = false,
 		bande,
@@ -56,6 +58,7 @@
 	// Le régime se lit aussi sur `html` (03-vision §3, parcours P2) : posé à l'ouverture du feuillet,
 	// rendu au régime précédent quand on le repose.
 	$effect(() => {
+		if (superpose) return;
 		const racine = document.documentElement;
 		const avant = racine.dataset.regime;
 		racine.dataset.regime = 'scene';
@@ -135,6 +138,9 @@
 	   Le contenu lui laisse sa place (`--place-ruban`) pour qu'aucun titre ne passe dessous. ── */
 	.avec-ruban {
 		--place-ruban: 112px;
+	}
+	.avec-ruban .bande {
+		padding-right: calc(var(--place-ruban) + 12px);
 	}
 	.ruban {
 		position: absolute;
@@ -259,8 +265,9 @@
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		background: var(--page-2);
-		border-top: 1px solid var(--reglure);
-		box-shadow: var(--ombre-feuillet);
+		border-top: 1px solid var(--encre-grise);
+		padding-top: 12px;
+		box-shadow: 0 -8px 24px rgb(0 0 0 / 0.28);
 	}
 	.note-barre {
 		z-index: 5;
@@ -286,6 +293,7 @@
 			min-height: 100svh;
 		}
 		.ruban {
+			position: fixed;
 			right: 12px;
 		}
 		.contenu {

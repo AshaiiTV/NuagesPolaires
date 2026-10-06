@@ -1,9 +1,11 @@
 <script lang="ts">
+	/* eslint-disable svelte/valid-prop-names-in-kit-pages -- Ce composant sert aussi le feuillet superposé, chargé à la demande. */
 	import { chemin } from '$lib/ui/adresse';
 	// Le feuillet volant « En scène » (03-vision §5.3, §6.5, §6.6, P2). Pensé pour un téléphone tenu
 	// d'une main : ressources et déclarations, capacités du niveau, objets, bloc à coller, note
 	// rapide ; en bas, la règle sous le pouce, la copie pour Discord, reposer. On déclare, on ne frappe
 	// pas : une déclaration est une phrase notée, le chiffre du relevé ne change jamais.
+	import Sceau from '$lib/ui/Sceau.svelte';
 	import { onMount, tick, untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import type { ActionResult, SubmitFunction } from '@sveltejs/kit';
@@ -28,7 +30,16 @@
 	import { RESSOURCES, resoudre, type Res } from './mots';
 	import type { PageProps } from './$types';
 
-	let { data }: PageProps = $props();
+	let {
+		data,
+		superpose = false,
+		onreposer,
+		onrelire
+	}: PageProps & {
+		superpose?: boolean;
+		onreposer?: () => void;
+		onrelire?: () => Promise<void>;
+	} = $props();
 
 	type Ecriture = ReturnType<typeof creerEcriture>;
 	const NOMS: Record<Res, 'PV' | 'EP' | 'EM'> = { pv: 'PV', ep: 'EP', em: 'EM' };
@@ -70,7 +81,7 @@
 		options: Parameters<Ecriture['enhance']>[0] = {},
 		rappels: { avant?: () => void; apres?: (r: ActionResult) => void } = {}
 	): SubmitFunction {
-		const base = e.enhance(options);
+		const base = e.enhance({ ...options, sansRechargement: superpose, sansApplication: superpose });
 		return async (entree) => {
 			const suite = await base(entree);
 			if (!suite) return;
@@ -79,6 +90,8 @@
 			rappels.avant?.();
 			return async (sortie) => {
 				await suite(sortie);
+				if (superpose && sortie.result.type === 'redirect') onreposer?.();
+				else if (superpose && sortie.result.type === 'success') await onrelire?.();
 				rappels.apres?.(sortie.result);
 			};
 		};
@@ -288,6 +301,7 @@
 	let phraseReprise = $state(untrack(() => data.marquePage?.text ?? ''));
 	let lienReprise = $state(untrack(() => data.marquePage?.url ?? ''));
 	async function basculer(p: 'regle' | 'reposer') {
+		if (superpose && p === 'reposer') return onreposer?.();
 		panneau = panneau === p ? null : p;
 		if (!panneau) return (p === 'regle' ? boutonRegle : boutonReposer)?.focus();
 		await tick();
@@ -396,14 +410,14 @@
 		{:else if panneau === 'reposer'}
 			<form
 				class="reposer"
+				novalidate
 				method="POST"
 				action="?/marquePage"
 				use:enhance={soumettreReposer}
 				aria-labelledby="titre-reposer"
 			>
 				<header>
-					<p class="repere">Reposer le feuillet</p>
-					<h2 id="titre-reposer" tabindex="-1">Où j’en suis</h2>
+					<h2 id="titre-reposer" tabindex="-1">Reposer le feuillet</h2>
 					<button type="button" class="refermer" onclick={fermerPanneau}>Garder ouvert</button>
 				</header>
 				<p class="aide">
@@ -435,9 +449,10 @@
 	</div>
 {/snippet}
 
-<Enveloppe compte={data.compte} discord={data.discord} regime="scene">
+<Enveloppe compte={data.compte} discord={data.discord} regime="scene" {superpose}>
 	<Feuille
 		disposition="volant"
+		{superpose}
 		{gauche}
 		{bande}
 		{barre}
@@ -453,7 +468,8 @@
 			<header class="tete">
 				<h1 class="nom">{fiche.name}</h1>
 				<p class="identite">
-					{fiche.oath.name} · <span class="rang">{fiche.oath.rankLabel}</span> · niveau {fiche.level}
+					<span class="sceau"><Sceau serment={fiche.oath.name} taille={24} nu /></span>{fiche.oath
+						.name} · <span class="rang">{fiche.oath.rankLabel}</span> · niveau {fiche.level}
 				</p>
 				<LigneEtat
 					pv={{ ...fiche.pv, declare: fiche.pendingDeclared.pv }}
@@ -921,6 +937,12 @@
 	.reprise {
 		font: italic 400 13px/24px var(--corps);
 		color: var(--encre-2);
+	}
+	.sceau {
+		display: inline-flex;
+		vertical-align: middle;
+		margin-right: 8px;
+		color: var(--tampon);
 	}
 	.reprise .repere {
 		display: block;

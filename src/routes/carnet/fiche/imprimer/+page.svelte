@@ -4,11 +4,12 @@
 	// Le navigateur l'imprime ou l'enregistre en PDF ; aucune bibliothèque, aucune requête en plus.
 	import Bouton from '$lib/ui/Bouton.svelte';
 	import Losange from '$lib/ui/Losange.svelte';
+	import { texteConsequence } from '$lib/ui/table/texte';
 	import Portrait from '$lib/ui/Portrait.svelte';
 	import Sceau from '$lib/ui/Sceau.svelte';
 	import { dateCourte, dateHeure, heure } from '$lib/ui/dates';
 	import { palierAtteint, palierSuivant } from '$lib/ui/scene/paliers';
-	import { signature as signatureTampon } from '$lib/ui/tampons';
+	import { signature as signatureTampon, signaturePersonnelle } from '$lib/ui/tampons';
 	import {
 		EQUIPMENT_LABELS,
 		EQUIPMENT_SLOTS,
@@ -37,7 +38,7 @@
 
 	function qui(c: ConsequenceView): string {
 		if (c.stamp) return signatureTampon(c.stamp.role, c.stamp.name, c.at);
-		if (c.signature === 'toi') return 'toi';
+		if (c.signature === 'toi') return signaturePersonnelle('toi', c.at);
 		if (c.signature === 'regles') return 'règles';
 		return '';
 	}
@@ -74,7 +75,12 @@
 			</div>
 			<div class="sceau-impression"><Sceau serment={fiche.oath.name} taille={76} /></div>
 			<div class="portrait">
-				<Portrait nom={fiche.name} src={fiche.portraitUrl || null} taille={104} />
+				<Portrait
+					serment={fiche.oath.name}
+					nom={fiche.name}
+					src={fiche.portraitUrl || null}
+					taille={104}
+				/>
 			</div>
 		</header>
 
@@ -227,7 +233,7 @@
 							<tr class:rayee={c.struck}>
 								<td class="chiffres date">{dateCourte(c.at)}</td>
 								<td
-									>{c.text}{#if valeurs(c)}
+									>{texteConsequence(c.text)}{#if valeurs(c)}
 										<span class="chiffres valeurs"><s>{c.oldValue}</s> {c.newValue}</span>{/if}</td
 								>
 								<td class:tampon={!!c.stamp}>{qui(c)}</td>
@@ -315,7 +321,7 @@
 		font: 500 20px/28px var(--voix);
 	}
 	.rang {
-		color: var(--encre-2);
+		color: var(--tampon);
 	}
 	.exporte {
 		margin-top: 6px;
@@ -423,7 +429,7 @@
 		gap: 0 20px;
 	}
 	.serment-dl {
-		grid-template-columns: repeat(4, minmax(0, 1fr));
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 	.emplacements div {
 		padding: 4px 0;

@@ -14,6 +14,10 @@ export function signature(role: string | null, pseudo: string | null, date: Date
 	return `${signataire(role, pseudo)} · ${dateCourte(date)} ${heure(date)}`;
 }
 
+export function signaturePersonnelle(auteur: string, date: DateInput): string {
+	return `${auteur} · ${dateCourte(date)} ${heure(date)}`;
+}
+
 export function phraseTampon(
 	role: string | null,
 	pseudo: string | null,

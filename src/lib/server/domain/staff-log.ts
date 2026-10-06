@@ -4,10 +4,10 @@
 // par MJ et admin »). L'archivage MARQUE les lignes (`archive_id`, 04 §10.12) au lieu de les déplacer ;
 // contrairement à l'ancien `archiveSysLog` (main.js:1195-1196), il ne vide plus aucun historique de
 // personnage (historique complet conservé, 04 §3.2).
-import { count, desc, isNull } from 'drizzle-orm';
+import { and, count, desc, eq, isNull, ne } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import type { Db, Tx } from '$lib/server/db';
-import { staffLog, staffLogArchives } from '$lib/server/db/schema';
+import { staffLog, staffLogArchives, accounts } from '$lib/server/db/schema';
 import { assertCan, type Actor } from '$lib/server/permissions';
 import {
 	archiveStaffLogInput,
@@ -54,18 +54,20 @@ export async function listStaffLog(
 	const [{ total }] = await db
 		.select({ total: count() })
 		.from(staffLog)
-		.where(isNull(staffLog.archiveId));
+		.where(and(isNull(staffLog.archiveId), ne(staffLog.action, 'connexion')));
 	const pages = Math.max(1, Math.ceil(total / STAFF_LOG_PAGE_SIZE));
 	const current = Math.min(page, pages);
 	const rows = await db
-		.select()
+		.select({ ligne: staffLog, role: accounts.role })
 		.from(staffLog)
-		.where(isNull(staffLog.archiveId))
+		.leftJoin(accounts, eq(accounts.id, staffLog.actorAccountId))
+		.where(and(isNull(staffLog.archiveId), ne(staffLog.action, 'connexion')))
 		.orderBy(desc(staffLog.ts), desc(staffLog.id))
 		.limit(STAFF_LOG_PAGE_SIZE)
 		.offset((current - 1) * STAFF_LOG_PAGE_SIZE);
 	return {
-		rows: rows.map((r) => ({
+		rows: rows.map(({ ligne: r, role }) => ({
+			actorRole: role,
 			id: r.id,
 			at: r.ts.toISOString(),
 			action: r.action,

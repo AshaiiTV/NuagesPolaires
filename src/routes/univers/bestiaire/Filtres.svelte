@@ -39,14 +39,14 @@
 		{/each}
 	</fieldset>
 	<label class="choix"
-		>Zone<select name="zone" value={filters.zoneId ?? ''}
+		><span class="repere">Zone</span><select name="zone" value={filters.zoneId ?? ''}
 			><option value="">Toutes les zones</option>{#each zones as zone (zone.id)}<option
 					value={zone.id}>{nomZone(zone.name)}</option
 				>{/each}</select
 		></label
 	>
 	<label class="choix"
-		>Tri<select name="tri" value={filters.sort ?? 'name'}
+		><span class="repere">Tri</span><select name="tri" value={filters.sort ?? 'name'}
 			><option value="name">Nom · A à Z</option><option value="name_desc">Nom · Z à A</option
 			><option value="level_asc">Niveau croissant</option><option value="level_desc"
 				>Niveau décroissant</option
@@ -54,8 +54,7 @@
 		></label
 	>
 	<div class="gestes">
-		<Bouton type="submit">Chercher</Bouton><Bouton variante="texte" href={cible}
-			>Tous les repères</Bouton
+		<Bouton type="submit">Chercher</Bouton><Bouton variante="texte" href={cible}>Tout revoir</Bouton
 		>
 	</div>
 </form>

@@ -57,7 +57,7 @@
 	const titreId = $derived(`rdv-${ev.id}`);
 </script>
 
-<li class="rdv" class:passe class:active aria-labelledby={titreId}>
+<li class="rdv" class:inscrit={ev.registered} class:passe class:active aria-labelledby={titreId}>
 	<div class="date">
 		{#if bloc}
 			<time datetime={ev.startsAt}>
@@ -204,6 +204,9 @@
 		column-gap: var(--gouttiere);
 		padding: calc(var(--ligne) / 2) 0 calc(var(--ligne) / 2 - 1px);
 		border-bottom: 1px solid var(--reglure);
+	}
+	.rdv.inscrit .date {
+		box-shadow: inset 2px 0 var(--ruban);
 	}
 	.date {
 		grid-area: date;

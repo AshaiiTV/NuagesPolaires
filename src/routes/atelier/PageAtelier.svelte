@@ -31,8 +31,8 @@
 {/snippet}
 <div class="atelier">
 	<Page repere="NP / 08 — L’Atelier" {titre}>
-		{#snippet marge()}{@render sommaire()}{/snippet}
-		{#snippet bande()}{@render sommaire()}{/snippet}
+		{#snippet marge()}{#if pages.length > 1}{@render sommaire()}{/if}{/snippet}
+		{#snippet bande()}{#if pages.length > 1}{@render sommaire()}{/if}{/snippet}
 		{@render children()}
 	</Page>
 </div>

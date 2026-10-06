@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { chemin } from '$lib/ui/adresse';
 	// La page d'un Serment : cartouche d'identité en marge (catégorie, rang, arme, croissance),
 	// lore en Cormorant sous le titre, deux branches lues comme des chapitres (A, B), quatre paliers en lignes de carnet.
+	import Bouton from '$lib/ui/Bouton.svelte';
 	import Page from '$lib/ui/Page.svelte';
 	import Sceau from '$lib/ui/Sceau.svelte';
 	import Losange from '$lib/ui/Losange.svelte';
@@ -13,6 +13,7 @@
 	import { OATH_CATEGORY_LABELS, STYLE_COLORS } from '$lib/game/oaths';
 	import type { PageProps } from './$types';
 	let { data }: PageProps = $props();
+	let calque = $state(false);
 
 	// STYLE_COLORS donne des clés héritées (« red », « glacier »…), pas des couleurs : seules celles
 	// qui ont une teinte de sens dans les tokens sont rendues ; les autres gardent un losange neutre.
@@ -97,18 +98,31 @@
 	</dl>
 {/snippet}
 
+{#snippet interrupteur()}{#if data.oath.reserved}<label class="interrupteur"
+			><input
+				type="checkbox"
+				role="switch"
+				bind:checked={calque}
+				aria-controls="calque-reserve"
+			/>Calque</label
+		>{/if}{/snippet}
 <Page repere="NP / 05 — L’univers" titre={typo(data.oath.name)} grain>
 	{#snippet marge()}
 		{@render identite()}
+		{@render interrupteur()}
 		<div class="sommaire"><Sommaire {sections} /></div>
 	{/snippet}
 	{#snippet bande()}
 		<div class="bande">
 			{@render identite()}
+			{@render interrupteur()}
 			<Depliant libelle="Sommaire"><Sommaire {sections} /></Depliant>
 		</div>
 	{/snippet}
 
+	<div class="sceau-fond" aria-hidden="true">
+		<Sceau serment={data.oath.name} taille={240} nu />
+	</div>
 	{#if data.oath.lore}
 		<!-- Le lore ouvre la page, entier, sous le titre : il tient lieu de chapeau. -->
 		<section class="ouverture" id="lore">
@@ -117,15 +131,17 @@
 		</section>
 	{/if}
 
-	{#if data.oath.reserved}
-		<section aria-label="Calque réservé">
+	{#if data.oath.reserved && calque}
+		<aside class="calque" id="calque-reserve" aria-label="Calque réservé">
 			<p class="repere">
 				Calque réservé · {data.oath.reserved.hidden || data.oath.rank !== 'basic'
 					? 'Hors vitrine'
 					: 'En vitrine'}
 			</p>
-			<a href={chemin(`/atelier/serments/${data.oath.id}`)}>Modifier dans l’Atelier →</a>
-		</section>
+			<Bouton variante="texte" href={`/atelier/serments/${data.oath.id}`} fleche="→"
+				>Modifier dans l’Atelier</Bouton
+			>
+		</aside>
 	{/if}
 	{#if !branches.length}<Vide>Aucune branche définie.</Vide>{/if}
 	{#each branches as branch (branch.id)}
@@ -172,6 +188,35 @@
 </Page>
 
 <style>
+	.sceau-fond {
+		position: absolute;
+		top: 32px;
+		right: 32px;
+		pointer-events: none;
+		color: var(--reglure);
+	}
+	@media (max-width: 760px), print {
+		.sceau-fond {
+			display: none;
+		}
+	}
+	.calque {
+		margin: var(--ligne) 0 var(--ligne) 8px;
+		padding-left: 16px;
+		border-left: 1px solid var(--reglure);
+		font: var(--t-libelle);
+		line-height: var(--ligne);
+		color: var(--encre-2);
+	}
+	.interrupteur {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		min-height: var(--cible);
+		font: var(--t-libelle);
+		color: var(--encre-2);
+	}
+
 	/* ── Cartouche d'identité ─────────────────────────────────────────── */
 	/* Le sceau du Serment ouvre la marge, en encre : le laiton reste au rang. */
 	.sceau-serment {

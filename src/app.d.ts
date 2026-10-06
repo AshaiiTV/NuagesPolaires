@@ -30,7 +30,9 @@ declare global {
 			discordInvite: string | null;
 		}
 		// interface PageData {}
-		// interface PageState {}
+		interface PageState {
+			feuillet?: import('./routes/carnet/scene/$types').PageData;
+		}
 		// interface Platform {}
 	}
 }

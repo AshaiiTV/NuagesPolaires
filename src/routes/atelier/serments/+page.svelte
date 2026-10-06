@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { chemin } from '$lib/ui/adresse';
+	import Sceau from '$lib/ui/Sceau.svelte';
 	import PageAtelier from '../PageAtelier.svelte';
 	import Bouton from '$lib/ui/Bouton.svelte';
 	import Vide from '$lib/ui/Vide.svelte';
@@ -21,11 +22,11 @@
 	{#if !data.oaths.length}<Vide>Les Serments restent à écrire.</Vide>{:else}<ul class="lignes">
 			{#each data.oaths as oath, index (index)}<li>
 					<a class="ligne-lien" href={chemin(`/atelier/serments/${oath.id}`)}>
-						<span class="nom">{oath.name}</span><span>{oath.weapon}</span><span
-							>{oath.rankLabel}</span
-						><span aria-hidden="true">→</span>
+						<span class="nom"><Sceau serment={oath.name} taille={28} nu />{oath.name}</span><span
+							>{oath.weapon}</span
+						><span>{oath.rankLabel}</span><span aria-hidden="true">→</span>
 						<span class="meta"
-							><span>{oath.reserved?.isBuiltin ? 'Natif' : 'Ajouté'}</span
+							><span>{oath.reserved?.isBuiltin ? '' : 'écrit dans l’Atelier'}</span
 							>{#if oath.reserved?.hidden}<span class="marque">masqué</span
 								>{/if}{#if !PUBLIC_RANKS.includes(oath.rank)}<span class="marque">hors vitrine</span
 								>{/if}</span
@@ -36,6 +37,12 @@
 </PageAtelier>
 
 <style>
+	.nom {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		color: var(--encre-2);
+	}
 	.ligne-lien > span {
 		min-width: 0;
 		overflow-wrap: anywhere;

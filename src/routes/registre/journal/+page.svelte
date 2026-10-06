@@ -1,10 +1,12 @@
 <script lang="ts">
-	import { SvelteDate, SvelteURLSearchParams } from 'svelte/reactivity';
+	import { SvelteDate, SvelteURLSearchParams, SvelteMap } from 'svelte/reactivity';
 	import { resolve } from '$app/paths';
 	// Le journal d'audit : une page à réglure où chaque action du carnet s'écrit sur sa ligne, l'heure
 	// dans la marge, les jours en titres courants. On le lit, on le filtre, on l'exporte ; on ne l'écrit
 	// jamais d'ici. Les décisions des MJ et des administrateurs se lisent sur la même réglure.
 	import Bouton from '$lib/ui/Bouton.svelte';
+	import Tampon from '$lib/ui/Tampon.svelte';
+	import { signature } from '$lib/ui/tampons';
 	import Champ from '$lib/ui/Champ.svelte';
 	import NoteDeMarge from '$lib/ui/NoteDeMarge.svelte';
 	import Vide from '$lib/ui/Vide.svelte';
@@ -50,10 +52,10 @@
 			at: r.at,
 			source: 'décision',
 			acteur: r.actorName,
-			role: '',
+			role: r.actorRole ?? 'mj',
 			action: actionDecision(r.action),
 			detail: [
-				DETAILS[r.detail] ?? r.detail,
+				DETAILS[r.detail] ?? r.detail.replace(/^\[[^\]]*\]-/, '').replace(/-/g, ' '),
 				r.target && !TECHNIQUE.test(r.target) && !r.detail.includes(r.target)
 					? `cible\u00a0: ${r.target}`
 					: ''
@@ -64,9 +66,11 @@
 	});
 
 	/** Un identifiant interne (« c_caBbbQVpeidlFfcH ») ne dit rien à qui lit : on le tait. */
-	const TECHNIQUE = /^[a-z]{1,4}_[A-Za-z0-9_-]{6,}$/;
+	const TECHNIQUE = /^[a-z]{1,10}_[A-Za-z0-9_-]{6,}$/;
 	const DETAILS: Record<string, string> = {
 		auto: 'sauvegarde automatique',
+		manual: 'sauvegarde à la main',
+		round: 'fin de round',
 		true: 'oui',
 		false: 'non'
 	};
@@ -111,9 +115,12 @@
 		return '/registre/journal/texte' + (s ? '?' + s : '');
 	});
 
-	const actionsConnues = Object.entries(ACTIONS_AUDIT).sort((a, b) =>
-		a[1].localeCompare(b[1], 'fr')
-	);
+	const groupesActions = new SvelteMap<string, string[]>();
+	for (const [cle, libelle] of Object.entries(ACTIONS_AUDIT))
+		groupesActions.set(libelle, [...(groupesActions.get(libelle) ?? []), cle]);
+	const actionsConnues = [...groupesActions]
+		.map(([libelle, cles]) => [cles.join(','), libelle])
+		.sort((a, b) => a[1].localeCompare(b[1], 'fr'));
 </script>
 
 <svelte:head
@@ -166,7 +173,7 @@
 					{#each actionsConnues as [cle, libelle] (cle)}
 						<option value={cle} selected={data.filtres.action === cle}>{libelle}</option>
 					{/each}
-					{#if data.filtres.action && !ACTIONS_AUDIT[data.filtres.action]}
+					{#if data.filtres.action && !actionsConnues.some(([cle]) => cle === data.filtres.action)}
 						<option value={data.filtres.action} selected>{data.filtres.action}</option>
 					{/if}
 				</select>
@@ -217,13 +224,14 @@
 					<h2>{g.jour}</h2>
 					<ol>
 						{#each g.lignes as l (l.id)}
-							<li>
+							<li class:decision={data.vue === 'staff'}>
 								<time class="heure chiffres" datetime={l.at}>{heure(l.at)}</time>
 								<span class="qui"
-									><span class="source">{l.source}</span>
-									<span class="acteur"
-										>{#if l.acteur}{l.acteur}{#if l.role}<span class="role"
-													>{'&nbsp;· ' + l.role}</span
+									>{#if data.vue === 'staff'}<Tampon cle={String(l.id)}
+											>{signature(l.role, l.acteur, l.at)}</Tampon
+										>{:else}<span class="source">{l.source}</span>{/if}
+									<span class="acteur" class:cache={data.vue === 'staff'}
+										>{#if l.acteur}{l.acteur}{#if l.role}<span class="role">{' · ' + l.role}</span
 												>{/if}{:else}<span class="gris">visiteur</span>{/if}</span
 									></span
 								>
@@ -403,7 +411,18 @@
 		color: var(--encre-grise);
 		overflow-wrap: anywhere;
 	}
+	.cache {
+		display: none;
+	}
+	.decision {
+		grid-template-columns: var(--marge-heure) minmax(12rem, auto) minmax(0, 1fr);
+		padding-block: 12px;
+	}
+	.decision .detail {
+		font: italic 400 18px/24px var(--voix);
+	}
 	.acteur {
+		white-space: nowrap;
 		color: var(--encre);
 		overflow-wrap: anywhere;
 	}
@@ -449,6 +468,9 @@
 		}
 	}
 	@media (max-width: 760px) {
+		.decision {
+			grid-template-columns: var(--marge-heure) minmax(0, 1fr);
+		}
 		.registre-lignes {
 			--marge-heure: 3.25rem;
 		}

@@ -300,15 +300,6 @@
 		scroll-margin-top: calc(var(--ligne) * 3);
 	}
 	/* Une corne en haut à droite : la page qu'on a marquée pour soi. */
-	.arrivee::after {
-		content: '';
-		position: absolute;
-		top: -1px;
-		right: -1px;
-		width: 18px;
-		height: 18px;
-		background: linear-gradient(225deg, var(--page) 50%, var(--reglure) 50%);
-	}
 	.arrivee .repere {
 		line-height: var(--ligne);
 	}
@@ -376,6 +367,7 @@
 		border-bottom: 0;
 	}
 	.rang {
+		font-variant-numeric: lining-nums tabular-nums;
 		font: 400 32px / var(--ligne) var(--voix);
 		color: var(--encre-2);
 		padding-top: 4px;
@@ -475,9 +467,6 @@
 			padding: var(--ligne) var(--gouttiere) calc(var(--ligne) - 1px);
 			margin-inline: calc(var(--gouttiere) * -1);
 			border-inline: 0;
-		}
-		.arrivee::after {
-			right: 0;
 		}
 		.arrivee h2 {
 			font-size: 30px;

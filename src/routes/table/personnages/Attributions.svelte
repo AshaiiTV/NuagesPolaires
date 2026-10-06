@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { untrack, type Snippet } from 'svelte';
+	import { tick, untrack, type Snippet } from 'svelte';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import type { EtatEncre } from '$lib/ui/Encre.svelte';
 	import type { SheetView } from '$lib/schemas/characters';
@@ -39,6 +39,17 @@
 		untrack(() => (values.operation === op ? String(values[field] ?? fallback) : fallback));
 	let beastId = $state(initial('xp', 'beastId'));
 	let part = $state<string | number | null>(initial('xp', 'participationPct', '100'));
+	let revisionVue = untrack(() => revision);
+	$effect(() => {
+		if (revision === revisionVue) return;
+		revisionVue = revision;
+		if (etat === 'refusee') return;
+		// Après le reset natif et la synchronisation des champs liés.
+		void tick().then(() => {
+			beastId = '';
+			part = '100';
+		});
+	});
 	const beast = $derived(beasts.find((b) => b.id === beastId));
 	const xp = $derived(
 		beast && Number.isFinite(Number(part)) && Number(part) >= 0 && Number(part) <= 100

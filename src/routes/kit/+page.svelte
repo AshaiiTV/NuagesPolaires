@@ -51,7 +51,7 @@
 	<Page repere="NP / 02 — Mon carnet" titre="Dernières" titreVoix="pages." grain>
 		{#snippet marge()}
 			<div class="identite">
-				<Portrait nom="Kael" taille={72} />
+				<Portrait serment="Duelliste" nom="Kael" taille={72} />
 				<p class="nom">Kael</p>
 				<p class="serment">Duelliste · <span class="rang">Basique</span> · niveau 7</p>
 			</div>

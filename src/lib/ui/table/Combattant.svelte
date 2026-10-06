@@ -153,7 +153,8 @@
 				? `${declares} action${declares > 1 ? 's' : ''} déclarée${declares > 1 ? 's' : ''} sur ${maxActions}`
 				: undefined}
 		>
-			{#if maxActions}
+			{#if maxActions > 5}<span aria-hidden="true">{declares}/{maxActions}</span>
+			{:else if maxActions}
 				<span aria-hidden="true"
 					>{'●'.repeat(Math.min(declares, maxActions))}{'○'.repeat(
 						Math.max(0, maxActions - declares)
@@ -433,6 +434,7 @@
 		position: relative;
 		display: grid;
 		grid-template-columns: var(--colonnes-combattants);
+		grid-template-areas: 'nom pv ep em pts menu' 'st st st st st st';
 		align-items: center;
 		gap: 0 12px;
 		min-height: 48px;
@@ -501,9 +503,29 @@
 		color: var(--encre-grise);
 	}
 	.statuts :global(.sens) {
-		white-space: normal;
+		white-space: nowrap;
+	}
+	.nom {
+		grid-area: nom;
+	}
+	.r-pv {
+		grid-area: pv;
+	}
+	.r-ep {
+		grid-area: ep;
+	}
+	.r-em {
+		grid-area: em;
+	}
+	.menu {
+		grid-area: menu;
+	}
+	.declare-points {
+		grid-area: pts;
 	}
 	.statuts {
+		grid-area: st;
+		padding-bottom: 6px;
 		overflow: hidden;
 		display: flex;
 		flex-wrap: wrap;
@@ -515,8 +537,7 @@
 		font: 400 12px/14px var(--corps);
 		letter-spacing: 0;
 		color: var(--encre-humide);
-		white-space: normal;
-		overflow-wrap: anywhere;
+		white-space: nowrap;
 	}
 	.menu {
 		display: grid;

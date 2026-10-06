@@ -68,8 +68,7 @@
 				<p>Rencontrée dans les récits suivants.</p>
 				<ul>
 					{#each data.beast.reserved.usage.history as usage, index (index)}<li>
-							{usage.name}{#if usage.at}
-								· {dateLongue(usage.at)}{/if}
+							{usage.name}{#if usage.at}&nbsp;· {dateLongue(usage.at)}{/if}
 						</li>{/each}
 				</ul>
 			{:else}<p>Aucun récit ne garde encore son passage.</p>{/if}

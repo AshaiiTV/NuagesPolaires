@@ -29,7 +29,7 @@ import {
 	type PublishExtractInput,
 	type StrikePublicationInput
 } from '../../schemas/publications';
-import { signature } from '../../ui/tampons';
+import { signataire } from '../../ui/tampons';
 import { dateCourte, jour, heureRonde } from '../../ui/dates';
 import { appendStaffLog } from './staff-log';
 import { recordAudit } from './audit';
@@ -280,10 +280,10 @@ export async function listHomeLeaves(db: Db): Promise<HomeLeaf[]> {
 		leaves.push({
 			id: p.id,
 			kind: 'recit',
-			margin: date(p.stampedAt),
+			margin: date(p.stampedAt) + ' · récit',
 			title: published.title || published.name || 'Récit',
 			excerpt: p.text,
-			stamp: signature(published.role, published.pseudo, p.stampedAt),
+			stamp: `${signataire(published.role, published.pseudo)} · ${dateCourte(p.stampedAt)}`,
 			href: null
 		});
 	}
@@ -301,18 +301,14 @@ export async function listHomeLeaves(db: Db): Promise<HomeLeaf[]> {
 			leaves.push({
 				id: row.id,
 				kind,
-				margin: date(row.startsAt),
+				margin: date(row.startsAt) + (kind === 'passe' ? ' · passé' : ' · à venir'),
 				title: row.title,
 				excerpt:
 					row.description ||
 					(kind === 'passe'
-						? 'Rendez-vous passé · ' + row.title
+						? 'Rendez-vous passé · ' + jour(row.startsAt)
 						: 'Prochain rendez-vous · ' + jour(row.startsAt) + ' ' + heureRonde(row.startsAt)),
-				stamp: signature(
-					organisateur?.role ?? 'mj',
-					organisateur?.pseudo ?? row.createdByLabel,
-					row.createdAt ?? row.startsAt
-				),
+				stamp: `${signataire(organisateur?.role ?? 'mj', organisateur?.pseudo ?? row.createdByLabel)} · ${dateCourte(row.createdAt ?? row.startsAt)}`,
 				href: null
 			});
 		}

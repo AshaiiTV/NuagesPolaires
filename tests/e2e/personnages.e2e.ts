@@ -97,7 +97,7 @@ async function creer(page: Page, name: string) {
 	await details.locator('input[name="motif"]').fill('Création pour la lecture du carnet.');
 	await details.getByRole('button', { name: 'Tamponner', exact: true }).click();
 	await expect(page).toHaveURL(/\/table\/personnages\/p_/);
-	await expect(page.getByRole('heading', { level: 1 })).toHaveText(name);
+	await expect(page.getByRole('heading', { level: 1 })).toHaveText(name + '.');
 	return new URL(page.url()).pathname;
 }
 
@@ -463,7 +463,7 @@ test.describe('Personnages — tampons', () => {
 		await editor.locator('[name="levelDelta"]').fill('1');
 		await capturerEtat(page, 'identite-a-tamponner', 'sensible');
 		await tamponner(page, 'identite', 'Niveau et identité relus ensemble.');
-		await expect(page.getByRole('heading', { level: 1 })).toHaveText(name + ' relue');
+		await expect(page.getByRole('heading', { level: 1 })).toHaveText(name + ' relue.');
 		const strike = await ouvrir(page, 'rayerPersonnage');
 		await strike.locator('[name="typedName"]').fill('Nom incorrect');
 		await strike.locator('[name="motif"]').fill('Fiche rayée à la demande du joueur.');

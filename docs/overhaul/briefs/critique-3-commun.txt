@@ -1,0 +1,20 @@
+TROISIÈME TOUR — CONTRÔLE FINAL DE CLAUDE (lis tout avant d'agir).
+
+Tu es directeur artistique et relecteur d'interface. Dépôt : C:\Users\sacha\NuagesPolaires (branche overhaul). Produit : « Nuages Polaires », compagnon d'un serveur de roleplay textuel sur Discord (pas un jeu en ligne). Deux tours de critique ont eu lieu ; l'intégrateur dit avoir tout corrigé (docs/overhaul/revues/gpt-corrections-critique-2.md). Ta mission : dire si ta zone est MONTRABLE AU PROPRIÉTAIRE SANS RÉSERVE IMPORTANTE, preuves à l'appui. Une réserve importante est un défaut qu'un joueur, un MJ ou le propriétaire remarquerait dès les premières minutes et qui entame la confiance ou la tenue du produit. Tu n'es ni complaisant ni tatillon.
+
+TU NE MODIFIES AUCUN FICHIER SOURCE. Tu écris un seul fichier : ton rapport (chemin dans ta mission). Scripts et captures jetables dans .claude/captures/critique-3/<zone>/ (jamais test-results/).
+
+À LIRE : ton rapport du second tour (docs/overhaul/revues/claude-critique-<zone>-2.md : tableau des nouveaux défauts, lignes partiel/non corrigé/régression, propositions « remarquable »), et le rapport de l'intégrateur. Les arbitrages du lead du tour précédent restent valables (lis la section ARBITRAGES de .claude/briefs/critique-2-commun.txt : accent de Cormorant, contenu du propriétaire verbatim, laiton réservé, ruban « En scène », un marque-page, pas de jauges ni de notifications, valeurs du simulateur).
+
+MÉTHODE : serveur http://localhost:5173 (déjà lancé ; ne lance rien, n'exécute JAMAIS npx playwright test ni rien sur le port 4173). Captures : `MSYS_NO_PATHCONV=1 node scripts/capture.mjs <chemins…> --tailles=1440,390 --compte=<compte> --sortie=.claude/captures/critique-3/<zone>` (comptes : admin, alice, bob, mj, designer, nova ; --theme=light pour Papier), scripts Playwright jetables pour les états interactifs. BUDGET : 25 images lues au maximum, choisies pour vérifier (a) chaque défaut bloquant ou majeur de ton second tour, (b) chaque proposition « remarquable » réalisée (regarde-la vraiment : est-elle réussie, ou a-t-elle créé un nouveau défaut ?), (c) deux écrans au hasard de ta zone que tu n'avais pas regardés, à 390 px.
+
+RAPPORT (fichier indiqué par ta mission, markdown, français)
+# Contrôle final — <zone>-3
+Note : x/10 (rappelle les notes des tours 1 et 2)
+Un paragraphe de synthèse (5 lignes au plus).
+## Défauts du second tour — tableau : # | État (corrigé / partiel / non corrigé / régression) | Preuve (capture)
+## Propositions réalisées — tableau : proposition | réussie / à retoucher | remarque (une ligne)
+## Réserves importantes — tableau : # | Page | Largeur | Défaut (capture) | Correction précise (fichier, sélecteur, valeur). Seulement les vraies ; « Aucune » si c'est le cas.
+## Retouches mineures — liste courte (huit au plus), une ligne chacune avec la correction.
+## Verdict — « Montrable sans réserve importante : oui / non (réserves n° …) », une phrase.
+Réponse finale (hors fichier) : la note, le verdict, le nombre de réserves importantes et de retouches mineures.

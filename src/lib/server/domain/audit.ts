@@ -3,7 +3,7 @@
 // Lecture (Registre › Journal d'audit, 03-vision §5.11) : administrateurs seulement ; filtres acteur ·
 // action · dates ; jamais éditable ; export texte. Plus de plafond ni de « Tout vider » (purge par âge
 // dans le script d'entretien).
-import { and, count, desc, eq, gte, lt, lte, sql, type SQL } from 'drizzle-orm';
+import { and, count, desc, inArray, gte, lt, lte, sql, type SQL } from 'drizzle-orm';
 import type { Db, Tx } from '$lib/server/db';
 import { auditLog } from '$lib/server/db/schema';
 import { assertCan, type Actor } from '$lib/server/permissions';
@@ -65,7 +65,8 @@ function whereFor(filters: ReturnType<typeof auditFiltersInput.parse>): SQL | un
 		const needle = `%${filters.actor.toLowerCase().replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 		parts.push(sql`lower(${auditLog.actorPseudo}) LIKE ${needle}`);
 	}
-	if (filters.action) parts.push(eq(auditLog.action, filters.action));
+	if (filters.action)
+		parts.push(inArray(auditLog.action, filters.action.split(',').filter(Boolean)));
 	const from = bound(filters.from, false);
 	if (from) parts.push(gte(auditLog.ts, from.at));
 	const to = bound(filters.to, true);

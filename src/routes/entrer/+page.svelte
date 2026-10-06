@@ -17,7 +17,7 @@
 	// La saisie du pseudo survit à un refus, avec ou sans JavaScript.
 	let pseudo = $state(untrack(() => form?.values?.pseudo?.toString() ?? ''));
 
-	// Un refus de connexion est un 401 « Identifiant ou mot de passe incorrect » : c'est le message du
+	// Un refus de connexion est un 401 « Pseudo ou mot de passe inconnu. Le carnet reste fermé. » : c'est le message du
 	// serveur qui s'écrit, pas la phrase de session refermée.
 	const refus = $derived(
 		ecriture.note?.ton === 'refus'

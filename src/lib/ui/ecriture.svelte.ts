@@ -43,6 +43,8 @@ interface OptionsEcriture {
 	apres?: () => void;
 	/** Ne pas recharger les données de la page après succès. */
 	sansRechargement?: boolean;
+	/** Le feuillet superposé traite ses résultats sans remplacer la page dessous. */
+	sansApplication?: boolean;
 }
 
 export function creerEcriture() {
@@ -71,11 +73,11 @@ export function creerEcriture() {
 					};
 					options.apres?.();
 					if (result.type === 'redirect') {
-						await applyAction(result);
+						if (!options.sansApplication) await applyAction(result);
 						return;
 					}
 					if (!options.sansRechargement) await invalidateAll();
-					await applyAction(result);
+					if (!options.sansApplication) await applyAction(result);
 					return;
 				}
 				etat = 'refusee';
@@ -93,7 +95,7 @@ export function creerEcriture() {
 								: (donnees.message ?? PHRASE_REFUS)
 					};
 					// La saisie reste dans le formulaire : on n'applique pas de remise à zéro.
-					await applyAction(result);
+					if (!options.sansApplication) await applyAction(result);
 					return;
 				}
 				note = { ton: 'refus', texte: PHRASE_REFUS };

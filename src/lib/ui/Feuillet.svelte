@@ -82,7 +82,9 @@
 		overflow: hidden;
 	}
 	footer {
+		translate: 0 50%;
 		margin-top: auto;
+		margin-bottom: -24px;
 		padding-top: 6px;
 		display: flex;
 		align-items: center;
@@ -107,6 +109,9 @@
 		}
 	}
 	@media (max-width: 760px) {
+		footer {
+			margin-bottom: -20px;
+		}
 		.feuillet {
 			min-height: 0;
 			padding: 24px 20px 20px;

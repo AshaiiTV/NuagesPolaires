@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { chemin } from '$lib/ui/adresse';
+	import { phrasePlaces } from '../agenda';
 	import { signature } from '$lib/ui/tampons';
 	// « Organiser » (régime serré) : à gauche le registre des rendez-vous, masqués compris ; à droite la
 	// page de saisie (nouveau rendez-vous, ou celui qu'on a ouvert). Chaque enregistrement confirmé par
@@ -52,12 +53,7 @@
 		return `${jourSemaine(ev.startsAt).slice(0, 3)}. ${dateCourte(ev.startsAt, data.lu)} · ${heureRonde(ev.startsAt)}`;
 	}
 	function places(ev: EventRowView): string {
-		// « 4 inscrits sur 6 » ou « sans limite » (03-vision §5.6).
-		const n = ev.count;
-		const inscrits = `${n} inscrit${n > 1 ? 's' : ''}`;
-		if (ev.capacity > 0)
-			return n ? `${inscrits} sur ${ev.capacity}` : `${ev.capacity} places · aucun inscrit`;
-		return n ? `${inscrits} · sans limite` : 'sans limite · aucun inscrit';
+		return phrasePlaces(ev.count, ev.capacity);
 	}
 	const page = $derived(data.pagePasses);
 	const base = $derived(ouvert ? `/agenda/organiser/${ouvert.id}` : '/agenda/organiser');
@@ -156,7 +152,13 @@
 						{#if ouvert.startsAt}<span class="chiffres"
 								>{dateCourte(ouvert.startsAt, data.lu)} · {heureRonde(ouvert.startsAt)}</span
 							>{:else}<span>Date à confirmer</span>{/if}
-						{#if ouvert.organizer}<span>organisé par {ouvert.organizer}</span>{/if}
+						{#if ouvert.organizerStamp}<Tampon cle={ouvert.id}
+								>{signature(
+									ouvert.organizerStamp.role,
+									ouvert.organizerStamp.pseudo,
+									ouvert.organizerStamp.at
+								)}</Tampon
+							>{:else if ouvert.organizer}<span>organisé par {ouvert.organizer}</span>{/if}
 						<span>
 							{#if ouvert.participants.length}
 								Inscrits : {ouvert.participants.map((p) => p.name).join(', ')}

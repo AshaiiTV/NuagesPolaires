@@ -169,8 +169,10 @@
 						/>
 						<label class="choix"
 							>Comportement<select name="behavior" bind:value={draft.behavior}
-								>{#each behaviorSchema.options as behavior, index (index)}<option value={behavior}
-										>{behavior}</option
+								>{#if !(behaviorSchema.options as readonly string[]).includes(draft.behavior)}<option
+										value={draft.behavior}>{draft.behavior} (hors liste)</option
+									>{/if}{#each behaviorSchema.options as behavior, index (index)}<option
+										value={behavior}>{behavior}</option
 									>{/each}</select
 							></label
 						>

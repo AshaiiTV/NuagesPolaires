@@ -127,7 +127,7 @@ export {
 // ---------------------------------------------------------------------------
 
 /** 401 générique de connexion (audit 05 §4.4). */
-export const LOGIN_FAILED_MESSAGE = 'Identifiant ou mot de passe incorrect';
+export const LOGIN_FAILED_MESSAGE = 'Pseudo ou mot de passe inconnu. Le carnet reste fermé.';
 /** 409 PSEUDO_TAKEN (audit 05 §4.4). */
 export const PSEUDO_TAKEN_MESSAGE = 'Ce pseudo est déjà pris.';
 const RESET_EXPIRED_MESSAGE =

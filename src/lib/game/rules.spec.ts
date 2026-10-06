@@ -13,6 +13,15 @@ describe('table unique de règles', () => {
 			deplacer: 10,
 			frappeHauteDefault: 10
 		});
+		expect(ACTION_RULES.find((a) => a.id === 'bloquer_corps')?.pour).toBe('creature');
+		expect(
+			ACTION_RULES.filter((a) => a.conditions === 'Joueur').every((a) => a.pour === 'joueur')
+		).toBe(true);
+		expect(
+			ACTION_RULES.filter((a) => /Elementaliste/.test(a.conditions)).map((a) => a.serment)
+		).toEqual(['Elementaliste', 'Elementaliste', 'Elementaliste', 'Elementaliste']);
+		expect(ACTION_RULES.find((a) => a.id === 'frappe_dechainees')?.serment).toBe('Conjurateur');
+		expect(ACTION_RULES.find((a) => a.id === 'posture_haute')?.serment).toBe('Claymore');
 		expect(new Set(ACTION_RULES.map((a) => a.id)).size).toBe(ACTION_RULES.length);
 		for (const a of ACTION_RULES) {
 			expect(a.label).not.toBe('');

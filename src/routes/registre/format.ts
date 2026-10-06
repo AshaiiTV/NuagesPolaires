@@ -249,7 +249,15 @@ const CLES: Record<string, string> = {
 };
 
 /** Clés techniques qui ne disent rien à qui lit : on les tait. */
-const CLES_TUES = new Set(['id', 'runId', 'combatId', 'publishedExtractId', 'packs']);
+const CLES_TUES = new Set([
+	'scope',
+	'rehashed',
+	'id',
+	'runId',
+	'combatId',
+	'publishedExtractId',
+	'packs'
+]);
 
 const VALEURS: Record<string, string> = {
 	full: 'pleine',

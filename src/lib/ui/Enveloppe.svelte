@@ -12,20 +12,28 @@
 	interface Props {
 		compte: CompteNav | null;
 		discord?: string | null;
+		superpose?: boolean;
 		regime?: 'carnet' | 'serre' | 'scene';
 		children: Snippet;
 	}
-	let { compte, discord = null, regime = 'carnet', children }: Props = $props();
+	let { compte, discord = null, regime = 'carnet', superpose = false, children }: Props = $props();
 	const chemin = $derived(page.url.pathname);
 </script>
 
-{#if compte}
+{#if superpose}
+	{@render children()}
+{:else if compte}
 	<Cahier
 		cahiers={cahiersPour(compte, chemin)}
 		bande={bandePour(compte, chemin)}
 		ruban={rubanPour(compte)}
 		{regime}
-		compte={{ pseudo: compte.pseudo, portrait: compte.portrait, role: LIBELLES_ROLE[compte.role] }}
+		compte={{
+			pseudo: compte.pseudo,
+			portrait: compte.portrait,
+			serment: compte.serment,
+			role: LIBELLES_ROLE[compte.role]
+		}}
 	>
 		{@render children()}
 	</Cahier>

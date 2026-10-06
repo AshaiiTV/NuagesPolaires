@@ -218,6 +218,8 @@ function nativeTokens(id: string): Record<string, string> | null {
 /** Les neuf thèmes natifs, avec leurs huit tokens (colonne `themes.tokens`, décision INT-1). */
 export const THEME_SEED: readonly NewTheme[] = THEME_BASE.map((t) => ({
 	...t,
+	name: THEMES.find((theme) => theme.id === t.id)?.name ?? t.name,
+	description: THEMES.find((theme) => theme.id === t.id)?.description ?? t.description,
 	tokens: nativeTokens(t.id)
 }));
 

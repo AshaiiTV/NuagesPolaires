@@ -1,4 +1,7 @@
 <script lang="ts">
+	import Sceau from '$lib/ui/Sceau.svelte';
+	import Tampon from '$lib/ui/Tampon.svelte';
+	import { signature } from '$lib/ui/tampons';
 	import { chemin } from '$lib/ui/adresse';
 	import { enhance } from '$app/forms';
 	import { onMount, untrack } from 'svelte';
@@ -97,11 +100,14 @@
 				<li>
 					<a class="ligne" href={chemin(`/table/personnages/${c.id}`)}>
 						<span class="identite"
-							><strong>{c.name}</strong><span>{c.oath.name} · {c.oath.rankLabel}</span><span
-								class="liaison">{c.linkedPseudo ? `relié à ${c.linkedPseudo}` : 'non relié'}</span
+							><strong>{c.name}</strong><span class="serment"
+								><Sceau serment={c.oath.name} taille={28} nu />{c.oath.name} · {c.oath
+									.rankLabel}</span
+							><span class="liaison"
+								>{c.linkedPseudo ? `relié à ${c.linkedPseudo}` : 'non relié'}</span
 							></span
 						>
-						<span class="niveau chiffres"><span class="mobile">niv. </span>{c.level}</span>
+						<span class="niveau chiffres"><span class="mobile">niv.&nbsp;</span>{c.level}</span>
 						<span class="ressources chiffres"
 							><span>PV {c.pv.cur}<span class="max">/{c.pv.max}</span></span><span
 								>EP {c.ep.cur}<span class="max">/{c.ep.max}</span></span
@@ -113,9 +119,9 @@
 							></span
 						>
 						<span class="tampon"
-							>{#if c.lastStamp}<time datetime={c.lastStamp.at}
-									>{dateCourte(c.lastStamp.at)} · {heure(c.lastStamp.at)}</time
-								><span>{c.lastStamp.role} {c.lastStamp.name}</span>{:else}Aucun tampon.{/if}</span
+							>{#if c.lastStamp}<Tampon cle={c.id}
+									>{signature(c.lastStamp.role, c.lastStamp.name, c.lastStamp.at)}</Tampon
+								>{:else}Aucun tampon.{/if}</span
 						>
 						<span class="tourner" aria-hidden="true">→</span>
 					</a>
@@ -165,6 +171,11 @@
 </PagePersonnages>
 
 <style>
+	.serment {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
 	.filtres {
 		display: grid;
 		gap: var(--ligne);

@@ -10,6 +10,7 @@ export interface CompteNav {
 	/** Un personnage est relié à ce compte. */
 	relie: boolean;
 	portrait?: string | null;
+	serment?: string;
 	/** Des pages non lues existent (cornes) : ruban et onglet Mon carnet. */
 	cornes?: boolean;
 	/** Table ouverte conduite par ce MJ : le ruban y mène. */

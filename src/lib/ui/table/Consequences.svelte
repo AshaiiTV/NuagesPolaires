@@ -23,7 +23,6 @@
 		PHRASE_REFUS
 	} from '$lib/ui/ecriture.svelte';
 	import { signature, phraseTampon } from '$lib/ui/tampons';
-	import { heure } from '$lib/ui/dates';
 	import type { CombatOutcome } from '$lib/game/combat/types';
 	import type { TableMJ } from './table.svelte';
 	import { ko, statut } from './texte';
@@ -221,9 +220,6 @@
 			note = { ton: 'refus', texte: `Rien n’est archivé. ${PHRASE_REFUS}` };
 		};
 	};
-	const signatureTampon = $derived(
-		archive ? phraseTampon(role, pseudo, archive.at, 'combat archivé') : ''
-	);
 </script>
 
 <dialog
@@ -240,7 +236,7 @@
 		<h2 id="titre-consequences">Conséquences</h2>
 		{#if archive}
 			<p class="archive" aria-live="polite">
-				<span>Archivé · {heure(archive.at)}</span>
+				<span>Archivé</span>
 				<Tampon cle={archive.id}>{signature(role, pseudo, archive.at)}</Tampon>
 			</p>
 		{/if}
@@ -391,7 +387,9 @@
 									/>
 								</label>
 								{#if archive}
-									<Tampon cle={archive.id + o.characterId}>{signatureTampon}</Tampon>
+									<Tampon cle={archive.id + o.characterId}
+										>{phraseTampon(role, pseudo, archive.at, motifDe(o.characterId))}</Tampon
+									>
 								{:else if pose}
 									<span class="en-attente"
 										><Encre etat="humide">Tamponnée · s’imprime à l’archivage</Encre></span
@@ -592,6 +590,9 @@
 		color: var(--encre);
 	}
 	.archive {
+		display: flex;
+		align-items: center;
+		gap: 12px;
 		grid-column: 1;
 	}
 	.fermer {

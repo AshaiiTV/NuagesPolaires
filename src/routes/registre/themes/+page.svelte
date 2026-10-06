@@ -381,6 +381,9 @@
 
 <style>
 	.saut {
+		display: inline-flex;
+		align-items: center;
+		min-height: var(--cible);
 		color: var(--encre-humide);
 		text-decoration: none;
 	}

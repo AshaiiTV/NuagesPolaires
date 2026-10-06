@@ -11,6 +11,7 @@
 	import NoteDeMarge from '$lib/ui/NoteDeMarge.svelte';
 	import { creerEcriture } from '$lib/ui/ecriture.svelte';
 	import { dateLongue } from '$lib/ui/dates';
+	import Depliant from '../../univers/Depliant.svelte';
 	import Filtres from '../../univers/bestiaire/Filtres.svelte';
 	import type { PageProps } from './$types';
 	let { data, form }: PageProps = $props();
@@ -25,7 +26,14 @@
 
 <svelte:head><title>Bestiaire — L’Atelier</title></svelte:head>
 <PageAtelier titre="Le bestiaire" serments={data.atelierSerments}>
-	<Filtres cible="/atelier/bestiaire" filters={data.filters} zones={data.zones} />
+	<div class="filtres-bureau">
+		<Filtres cible="/atelier/bestiaire" filters={data.filters} zones={data.zones} />
+	</div>
+	<div class="filtres-telephone">
+		<Depliant libelle="Chercher, trier"
+			><Filtres cible="/atelier/bestiaire" filters={data.filters} zones={data.zones} /></Depliant
+		>
+	</div>
 	<div class="gestes">
 		<Bouton variante="ruban" href="/atelier/bestiaire/nouveau" fleche="→">Nouvelle créature</Bouton
 		><Bouton variante="texte" href="/univers/bestiaire" fleche="→">Lire le bestiaire</Bouton>
@@ -95,6 +103,17 @@
 </PageAtelier>
 
 <style>
+	.filtres-telephone {
+		display: none;
+	}
+	@media (max-width: 760px) {
+		.filtres-bureau {
+			display: none;
+		}
+		.filtres-telephone {
+			display: block;
+		}
+	}
 	.sous-titre {
 		display: block;
 		color: var(--encre-2);

@@ -1,11 +1,13 @@
 <script lang="ts">
 	// Portrait carré à coins droits. Si l'image manque ou échoue, l'initiale du personnage en Cormorant.
+	import Sceau from './Sceau.svelte';
 	interface Props {
+		serment?: string;
 		nom: string;
 		src?: string | null;
 		taille?: number;
 	}
-	let { nom, src = null, taille = 96 }: Props = $props();
+	let { nom, src = null, taille = 96, serment }: Props = $props();
 	let echec = $state(false);
 	const initiale = $derived((nom.trim()[0] ?? '·').toUpperCase());
 </script>
@@ -19,6 +21,8 @@
 			height={taille}
 			onerror={() => (echec = true)}
 		/>
+	{:else if serment}
+		<span class="sceau"><Sceau {serment} taille={taille * 0.8} /></span>
 	{:else}
 		<span class="initiale" aria-hidden="true">{initiale}</span>
 	{/if}
@@ -40,6 +44,9 @@
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
+	}
+	.sceau {
+		color: var(--tampon);
 	}
 	.initiale {
 		font: 500 calc(var(--taille) * 0.5) / 1 var(--voix);

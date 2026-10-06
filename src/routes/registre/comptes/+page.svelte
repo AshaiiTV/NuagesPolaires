@@ -282,6 +282,8 @@
 		gap: 0 20px;
 	}
 	.filtres a {
+		min-width: var(--cible);
+		justify-content: center;
 		display: flex;
 		align-items: center;
 		gap: 10px;

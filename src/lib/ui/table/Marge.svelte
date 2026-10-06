@@ -15,7 +15,11 @@
 	}
 	let { table, parties = ['journal', 'regle', 'notes'] }: Props = $props();
 
-	const log = $derived(table.etat.log.filter((e) => sansEmoji(e.text)));
+	const log = $derived(
+		table.etat.log.filter(
+			(e) => sansEmoji(e.text) && !/^Déclaration de\s*:/u.test(sansEmoji(e.text))
+		)
+	);
 	let fil = $state<HTMLElement | null>(null);
 	$effect(() => {
 		void log.length;
@@ -145,7 +149,7 @@
 	}
 	.journal li {
 		padding: 0;
-		font: 400 14px/28px var(--mono);
+		font: 400 13px/24px var(--mono);
 		scroll-snap-align: end;
 		color: var(--encre-2);
 		border-bottom: 1px solid color-mix(in srgb, var(--reglure) 60%, transparent);

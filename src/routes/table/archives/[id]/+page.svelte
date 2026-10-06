@@ -30,7 +30,9 @@
 			g.push(e);
 			groupes.set(e.round, g);
 		}
-		return [...groupes.entries()].sort((a, b) => a[0] - b[0]);
+		return [...groupes.entries()]
+			.filter(([, lignes]) => lignes.some((e) => !/^(?:Combat terminé|Déclarations)/u.test(e.text)))
+			.sort((a, b) => a[0] - b[0]);
 	});
 
 	const publier = creerEcriture();
@@ -52,19 +54,33 @@
 
 <svelte:head><title>{r.titre} — Archives — Nuages Polaires</title></svelte:head>
 
+{#snippet reperes()}
+	<dl class="reperes">
+		<div>
+			<dt>Replié</dt>
+			<dd>{dateCourte(r.at)}</dd>
+		</div>
+		<div>
+			<dt>Durée</dt>
+			<dd>{r.rounds} round{r.rounds > 1 ? 's' : ''}</dd>
+		</div>
+		<div>
+			<dt>Lecture</dt>
+			<dd>{r.lisible ? 'lisible par ses participants' : 'réservé à la Table'}</dd>
+		</div>
+	</dl>
+{/snippet}
+
 <Page repere="NP / 06 — La Table · récit" titre={r.titre} reglure={false}>
 	{#snippet marge()}
 		<Sommaire />
 	{/snippet}
 	{#snippet bande()}
 		<Sommaire />
-		<span class="chiffres"
-			>{dateCourte(r.at)} · {r.rounds} round{r.rounds > 1 ? 's' : ''} · {r.lisible
-				? 'lisible par ses participants'
-				: 'réservé à la Table'}</span
-		>
+		{@render reperes()}
 	{/snippet}
 
+	<div class="reperes-ordinateur">{@render reperes()}</div>
 	<Chapitre numero="01" titre="À la Table">
 		<div class="presents">
 			<div>
@@ -103,7 +119,12 @@
 			<div class="journal">
 				{#each rounds as [n, entrees] (n)}
 					<section class="round" aria-label="Round {n}">
-						<h3 class="sous chiffres">Round {n}</h3>
+						<span class="numero-round" aria-hidden="true">{n}</span>
+						<div class="tampon-round">
+							<Tampon cle={`${r.id}:${n}`}
+								>Round {n} · résolu{data.resolutions[n] ? ` à ${data.resolutions[n]}` : ''}</Tampon
+							>
+						</div>
 						<ol>
 							{#each entrees as e (e.n)}
 								<li class={e.kind} class:prive={e.prive}>
@@ -248,6 +269,14 @@
 </Page>
 
 <style>
+	.reperes-ordinateur {
+		display: none;
+	}
+	@media (min-width: 761px) {
+		.reperes-ordinateur {
+			display: block;
+		}
+	}
 	.sous {
 		font: var(--t-repere);
 		letter-spacing: var(--approche-repere);
@@ -299,8 +328,31 @@
 			var(--reglure) calc(var(--ligne) - 1px) var(--ligne)
 		);
 	}
+	.reperes {
+		display: grid;
+		gap: 12px;
+		margin-top: 24px;
+	}
+	.reperes dt {
+		font: var(--t-repere);
+		text-transform: uppercase;
+		color: var(--encre-2);
+	}
+	.round {
+		position: relative;
+		padding-left: 48px;
+	}
+	.numero-round {
+		position: absolute;
+		left: 0;
+		font: 400 32px/36px var(--voix);
+		color: var(--encre-2);
+	}
+	.tampon-round {
+		margin-bottom: 12px;
+	}
 	.round li {
-		font: 500 14px/24px var(--mono);
+		font: 400 18px/28px var(--voix);
 		color: var(--encre-2);
 	}
 	.round li.damage,

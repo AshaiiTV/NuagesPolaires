@@ -86,7 +86,7 @@
 					<Feuillet blanc biais={-1.2}>Les récits restent à écrire.</Feuillet>
 				</div>
 			{:else}
-				<div class="feuillets">
+				<div class="feuillets" class:deux={data.leaves?.length === 2}>
 					{#each data.leaves as leaf, i (leaf.id)}
 						<Feuillet
 							marge={leaf.margin}
@@ -163,8 +163,9 @@
 						{/each}
 					</ul>
 				{/if}
-				<a class="lien-fleche" href={resolve('/entrer/inscription')}
-					>Faire le premier pas <span aria-hidden="true">↗</span></a
+				<a class="lien-fleche" href={chemin(data.compte ? '/carnet/fiche' : '/entrer/inscription')}
+					>{data.compte ? 'Retrouver mon Serment' : 'Faire le premier pas'}
+					<span aria-hidden="true">↗</span></a
 				>
 			</div>
 		</section>
@@ -386,6 +387,11 @@
 		color: #d0dad1;
 		max-width: 12em;
 	}
+	@media (min-width: 761px) {
+		.feuillets.deux {
+			grid-template-columns: repeat(2, minmax(0, 300px));
+		}
+	}
 	.feuillets {
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -601,7 +607,8 @@
 	}
 	@media (max-width: 760px) {
 		.hero {
-			min-height: 760px;
+			min-height: 0;
+			flex-direction: column;
 			align-items: flex-start;
 		}
 		.paysage {
@@ -614,7 +621,7 @@
 				linear-gradient(180deg, rgb(9 21 25 / 0.33), transparent 50%, #091519 99%);
 		}
 		.texte {
-			padding: 52px 6% 190px;
+			padding: 52px 6% 28px;
 		}
 		.signal {
 			letter-spacing: 0.12em;
@@ -638,11 +645,14 @@
 			background: rgb(9 21 25 / 0.4);
 		}
 		.legende {
-			right: 6%;
-			bottom: 64px;
+			z-index: 1;
+			position: static;
+			align-self: flex-end;
+			margin: 0 6% 28px;
 			font-size: 22px;
 		}
 		.coordonnee {
+			display: none;
 			gap: 10px;
 			bottom: 14px;
 			letter-spacing: 0.1em;

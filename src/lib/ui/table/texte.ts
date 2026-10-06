@@ -23,12 +23,30 @@ export function sansEmoji(texte: string | null | undefined): string {
 		.replace(/\s*!+/g, '')
 		.replace(/\((\d+)T\)/g, '($1 t.)')
 		.replace(
-			/saigne −(\d+) PV \(→(\d+)\)/g,
-			(_tout, perte: string, apres: string) =>
-				`saigne −${perte} PV (${Number(apres) + Number(perte)}→${apres})`
+			/(saigne|empoisonné|brûle) −(\d+) PV \(→(\d+)\)/g,
+			(_tout, statut: string, perte: string, apres: string) =>
+				`${statut} −${perte} PV (${Number(apres) + Number(perte)}→${apres})`
 		)
+		.replace(/\bde ([AEIOUYÂÉÈÊÎÔ])/g, 'd’$1')
+		.replace(/−0 PV \(bloqué ([^)]+)\) \((\d+)→\2\)/g, 'aucun dégât (bloqué $1)')
 		.replace(/\s{2,}/g, ' ')
 		.trim();
+}
+
+/** Conséquences héritées : présentation seule, aucune valeur du moteur ne change. */
+export function texteConsequence(t: string): string {
+	return sansEmoji(t)
+		.replace(
+			/^(.+) — (\d+)R · PV:(\d+)\/(\d+) EP:(\d+)\/(\d+)$/,
+			(_t, titre: string, rounds: string, pv: string, pvMax: string, ep: string, epMax: string) =>
+				`${titre} · ${rounds} round${Number(rounds) > 1 ? 's' : ''} · PV ${pv}/${pvMax} · EP ${ep}/${epMax}`
+		)
+		.replace(
+			/^Niveau (\d+) PV:(\d+) EP:(\d+) EM:(\d+)(?: — (.+) débloqué)?$/,
+			(_t, niveau: string, pv: string, ep: string, em: string, palier?: string) =>
+				`Niveau ${niveau} atteint · PV ${pv} · EP ${ep} · EM ${em}${palier ? ` · ${palier} atteint` : ''}`
+		)
+		.replace(/(\d)%/g, '$1 %');
 }
 
 /** Nom de salon Discord d'une zone : « [🌳]-forêt-aux-lianes » → « #forêt-aux-lianes ». */

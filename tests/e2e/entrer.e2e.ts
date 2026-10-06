@@ -28,7 +28,9 @@ async function sansDebordement(page: Page) {
 test.describe('Entrer', () => {
 	test('refus : message du serveur, pseudo gardé', async ({ page }) => {
 		await connecter(page, 'alice', 'pas-le-bon-mot-de-passe');
-		await expect(page.getByText('Identifiant ou mot de passe incorrect')).toBeVisible();
+		await expect(
+			page.getByText('Pseudo ou mot de passe inconnu. Le carnet reste fermé.')
+		).toBeVisible();
 		await expect(page.locator('input[name="pseudo"]')).toHaveValue('alice');
 		await expect(page).toHaveURL(/\/entrer/);
 	});

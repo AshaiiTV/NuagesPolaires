@@ -1,4 +1,5 @@
 // La Table et ses récits : 06-contrats B.6 ; audit 03 §8-9 ; 04 §3.6, §6, §10.6.
+import { sansEmoji } from '$lib/ui/table/texte';
 import { randomBytes } from 'node:crypto';
 import { and, asc, desc, eq, gt, ilike, inArray, isNull, notInArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -882,7 +883,7 @@ export async function getRecit(db: Db, actor: Actor | null, id: string): Promise
 			);
 	return {
 		...recitRow(row),
-		log,
+		log: log.map((e) => ({ ...e, text: sansEmoji(e.text) })),
 		discordUrl: row.discordUrl,
 		participants: state.fighters.map((f) => f.name),
 		...(staff ? { notes: state.notes } : {})

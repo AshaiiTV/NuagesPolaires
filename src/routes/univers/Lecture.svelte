@@ -78,7 +78,7 @@
 
 <Page repere="NP / 05 — L’univers" titre={titre.debut} titreVoix={titre.voix} grain>
 	{#snippet marge()}
-		{#if slug === 'systeme'}<NoteDeMarge
+		{#if slug === 'systeme-de-jeu'}<NoteDeMarge
 				>Valeurs appliquées à la Table : voir la règle sous le pouce</NoteDeMarge
 			>{/if}
 		{#if enMarge}<p class="voix">{resume}</p>{/if}
@@ -97,7 +97,7 @@
 		{@html lecture.html}
 	</div>
 	{#snippet pied()}
-		{#if slug === 'systeme'}<div class="annotation-systeme">
+		{#if slug === 'systeme-de-jeu'}<div class="annotation-systeme">
 				<NoteDeMarge>Valeurs appliquées à la Table : voir la règle sous le pouce</NoteDeMarge>
 			</div>{/if}<Tourner {previous} {next} />{/snippet}
 </Page>
@@ -122,8 +122,7 @@
 			display: block;
 		}
 	}
-	.lecture :global(td:nth-child(2)),
-	.lecture :global(td:nth-child(3)) {
+	.lecture :global(td.valeur) {
 		white-space: nowrap;
 	}
 	/* Le sommaire collant commence vers 200 px du haut de la fenêtre : huit lignes de réserve

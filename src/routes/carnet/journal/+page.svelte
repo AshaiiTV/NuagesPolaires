@@ -122,6 +122,10 @@
 		for (let p = e.previous; p; p = p.previous) out.push(p);
 		return out;
 	}
+	function premiere(e: JournalEntryView): JournalEntryView {
+		while (e.previous) e = e.previous;
+		return e;
+	}
 	const quand = (e: JournalEntryView) => e.label ?? dateCourte(e.at);
 
 	// ---- Faits validés ----------------------------------------------------------------------------
@@ -180,18 +184,22 @@
 			{#if data.notes.rows.length}
 				<ol class="entrees">
 					{#each data.notes.rows as e (e.id)}
+						{@const r = premiere(e)}
 						<li class="entree" class:rayee={e.struck}>
 							<p class="date">
-								<span class="jour">{quand(e)}</span>
-								{#if !e.label}<span class="heure chiffres">{heure(e.at)}</span>{/if}
-								{#if e.inScene}<span class="en-scene">notée en scène</span>{/if}
+								<span class="jour">{quand(r)}</span>
+								{#if !r.label}<span class="heure chiffres">{heure(r.at)}</span>{/if}
+								{#if r.inScene}<span class="en-scene">notée en scène</span>{/if}
+								{#if e.previous}<span class="en-scene"
+										>corrigée le {dateCourte(e.at)}, {heure(e.at)}</span
+									>{/if}
 							</p>
 							<div class="ecrit">
 								{#if enCorrection === e.id}
 									<form
 										method="POST"
 										action="?/corriger"
-										use:enhance={ecrire(`corriger:${e.id}`, 'Corrigé', () => (enCorrection = null))}
+										use:enhance={ecrire(`corriger:${r.id}`, 'Corrigé', () => (enCorrection = null))}
 									>
 										<input type="hidden" name="entryId" value={e.id} />
 										<label class="sr-only" for="corriger-{e.id}"
@@ -200,7 +208,7 @@
 										<textarea
 											id="corriger-{e.id}"
 											class="sur-reglure"
-											class:humide={humide(`corriger:${e.id}`)}
+											class:humide={humide(`corriger:${r.id}`)}
 											name="text"
 											bind:value={correction}
 											maxlength={JOURNAL_MAX_CHARS}
@@ -211,7 +219,7 @@
 												type="submit"
 												disabled={!correction.trim() || correction.trim() === e.text.trim()}
 											>
-												<Encre etat={cible === `corriger:${e.id}` ? ecriture.etat : 'prise'}
+												<Encre etat={cible === `corriger:${r.id}` ? ecriture.etat : 'prise'}
 													>Noter la correction</Encre
 												>
 											</Bouton>
@@ -261,8 +269,8 @@
 										{/if}
 									</div>
 								{/if}
-								{#if noteDe(`corriger:${e.id}`) ?? noteDe(`rayer:${e.id}`)}
-									{@const n = (noteDe(`corriger:${e.id}`) ?? noteDe(`rayer:${e.id}`))!}
+								{#if noteDe(`corriger:${r.id}`) ?? noteDe(`rayer:${e.id}`)}
+									{@const n = (noteDe(`corriger:${r.id}`) ?? noteDe(`rayer:${e.id}`))!}
 									<NoteDeMarge ton={n.ton}>{n.texte}</NoteDeMarge>
 								{/if}
 							</div>

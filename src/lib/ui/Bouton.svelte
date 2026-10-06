@@ -70,6 +70,12 @@
 		border-color: var(--ruban);
 		color: var(--sur-ruban);
 	}
+	.bouton:is(.ruban, .tampon, .rouille) :global(.encre:not(.refusee)) {
+		color: inherit;
+	}
+	.bouton:is(.ruban, .tampon, .rouille) :global(.encre.humide) {
+		opacity: 0.72;
+	}
 	.ruban:hover {
 		background: color-mix(in srgb, var(--ruban) 86%, white);
 	}

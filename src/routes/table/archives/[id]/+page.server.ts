@@ -62,8 +62,13 @@ export const load: PageServerLoad = async (event) => {
 		},
 		// Le MJ lit tout : les lignes réservées (journaux repris de l'ancien simulateur) sont marquées.
 		journal: recit.log
-			.filter((e) => !/^Déclaration de\s*:/u.test(sansEmoji(e.text)))
+			.filter((e) => e.kind !== 'round' && !/^Déclaration de\s*:/u.test(sansEmoji(e.text)))
 			.map((e) => ({ n: e.n, round: e.round, kind: e.kind, text: e.text, prive: !!e.private })),
+		resolutions: Object.fromEntries(
+			recit.log
+				.filter((e) => e.kind === 'round' && /Résolution Round/.test(e.text))
+				.map((e) => [e.round, /résolu à (\d{2}:\d{2})/.exec(e.text)?.[1] ?? null])
+		),
 		notes: recit.notes ?? '',
 		eleves: state.fighters
 			.filter((f) => f.type === 'player' && !f.isSummon)

@@ -82,6 +82,7 @@
 		{#snippet marge()}
 			<div class="identite">
 				<Portrait
+					serment={data.personnage?.oath}
 					nom={data.personnage?.name ?? compte.pseudo}
 					src={data.personnage?.portraitUrl}
 					taille={72}

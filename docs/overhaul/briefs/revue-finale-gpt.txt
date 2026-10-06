@@ -1,0 +1,22 @@
+REVUE FINALE (P10) — TON VERDICT DE RELECTEUR INDÉPENDANT.
+Tu es relecteur principal, indépendant de l'équipe qui a construit : produit, interface, accessibilité, sécurité, exactitude des règles. Dépôt : C:\Users\sacha\NuagesPolaires (branche overhaul). Produit : « Nuages Polaires », le compagnon d'un serveur de roleplay textuel sur Discord — pas un jeu en ligne. Le propriétaire a demandé une refonte totale et veut être surpris par la qualité. Le critère de fin est écrit dans docs/overhaul/03-vision.md §10 : les parcours P1 à P9 passent, puis Claude ET toi relisez sans réserve importante. Tu es le second avis ; ne sois ni complaisant ni tatillon : une réserve importante est un défaut qu'un joueur, un MJ ou le propriétaire remarquerait et qui entame la confiance, l'usage ou la tenue du produit.
+
+TU NE MODIFIES AUCUN FICHIER DU DÉPÔT hors : ton rapport (ta réponse finale, écrite par l'outil dans docs/overhaul/revues/) et tes scripts ou captures jetables dans .claude/captures/revue-finale/ (n'utilise pas test-results/, que les tests vident). Pas de git.
+
+CE QUE TU FAIS, DANS L'ORDRE
+1. Lis : docs/overhaul/03-vision.md (en entier), docs/overhaul/06-contrats.md §C (arbre des routes), docs/overhaul/decisions-proprietaire.md, README.md, docs/overhaul/exploitation.md, et les derniers rapports de docs/overhaul/revues/ (claude-critique-*-2.md, gpt-corrections-*.md).
+2. Lance et rapporte exactement : npx svelte-check --tsconfig ./tsconfig.json ; npx vitest run --project server ; npx playwright test ; npm run lint ; npm run build ; npx tsx scripts/check-bundle.ts.
+3. Parcours réels, sur http://localhost:5173 s'il répond (sinon lance toi-même `npm run dev -- --port 5180 --strictPort` avec NP_DB_DRIVER=pglite et utilise --base=http://localhost:5180) : joue les quatre rôles — joueur (alice, bob, nova en attente), MJ (mj), designer (designer), administrateur (admin) — et le visiteur, à 390 px et 1440 px. Captures : `node scripts/capture.mjs <chemins…> --tailles=1440,390 --compte=<compte> --sortie=.claude/captures/revue-finale` (mots de passe de démonstration dans le script), et des scripts Playwright jetables pour les états interactifs (déclarer en scène, résoudre un round à la Table, tamponner, relier un compte, publier un extrait, créer un rendez-vous, changer de thème). REGARDE les images que tu produis (outil d'affichage d'image) : tu juges ce qui est rendu, pas seulement le code. Limite-toi à une quarantaine d'images bien choisies.
+4. Pour chacun des parcours P1 à P9 : dis si ses critères observables sont réellement tenus (test automatisé existant ET vérification à la main d'au moins un critère par parcours), et relève tout critère non couvert.
+5. Cherche activement ce qui casserait la confiance : une donnée d'un autre joueur servie par erreur (regarde les réponses réseau des pages joueur et visiteur : créature masquée, note de MJ, journal d'autrui, comptes), une écriture annoncée avant la réponse du serveur, un conflit d'écriture silencieux, un état vide muet, un libellé technique ou anglais qui fuit, une faute de français, un texte du propriétaire modifié (les contenus de src/content sont repris mot pour mot de legacy/), une règle de combat qui diffère de src/lib/game/rules.ts, un écran qui déborde ou se chevauche, un geste impossible au clavier, un contraste insuffisant, un reste de « jeu en ligne » (carte explorable, boutique, combat solo, points à gagner sur le site).
+6. Juge l'ensemble comme produit : est-ce cohérent, singulier, beau ? Est-ce bien un compagnon (il sert la partie qui se joue sur Discord) ? Qu'est-ce qui surprendra le propriétaire en bien, qu'est-ce qui le décevra ?
+
+RAPPORT FINAL (ta réponse, en français, markdown)
+# Revue finale — GPT
+## Verdict — une ligne exactement parmi : « SANS RÉSERVE IMPORTANTE » ou « RÉSERVES IMPORTANTES : n ».
+## Résultats des commandes (exacts).
+## Parcours P1–P9 — tableau : parcours | tenu / partiel / non tenu | preuve (test, capture, observation).
+## Réserves importantes — tableau numéroté : # | où (page, largeur, rôle) | ce que tu constates (preuve) | correction précise (fichier, fonction ou sélecteur). Seulement les vraies. S'il n'y en a pas, écris « Aucune ».
+## Réserves mineures — liste courte (dix au plus), une ligne chacune avec la correction.
+## Ce qui est réussi — cinq lignes au plus, concrètes.
+## Ce que le propriétaire doit savoir avant la mise en ligne — cinq lignes au plus.

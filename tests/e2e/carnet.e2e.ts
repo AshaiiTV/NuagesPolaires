@@ -175,9 +175,10 @@ test.describe('Ma fiche', () => {
 		await page.getByRole('button', { name: 'Changer de portrait' }).click();
 		const champ = page.getByLabel('Lien de l’image');
 		await champ.fill('javascript:alert(1)');
-		await champ.evaluate((e: HTMLInputElement) => (e.type = 'text'));
 		await page.getByRole('button', { name: 'Noter' }).click();
-		await expect(page.getByText(/Portrait refusé/)).toBeVisible();
+		await expect(
+			page.getByText('Ce lien ne mène pas à une image http(s). Ton portrait n’a pas changé.')
+		).toBeVisible();
 		await expect(champ).toHaveValue('javascript:alert(1)');
 	});
 

@@ -8,6 +8,8 @@
 	import Bouton from '$lib/ui/Bouton.svelte';
 	import Consequence from '$lib/ui/Consequence.svelte';
 	import Rature from '$lib/ui/Rature.svelte';
+	import Tampon from '$lib/ui/Tampon.svelte';
+	import { texteConsequence } from '$lib/ui/table/texte';
 	import Vide from '$lib/ui/Vide.svelte';
 	import { dateCourte, dateHeure, dateLongue, heure } from '$lib/ui/dates';
 	import type { ConsequenceView } from '$lib/schemas/characters';
@@ -21,12 +23,20 @@
 	const rounds = $derived.by(() => {
 		const out: { round: number; lignes: typeof recit.log }[] = [];
 		for (const l of recit.log) {
-			if (l.kind === 'round') continue;
+			if (l.kind === 'round' || /^Déclaration de\s*:/u.test(l.text)) continue;
 			const dernier = out.at(-1);
 			if (dernier && dernier.round === l.round) dernier.lignes.push(l);
 			else out.push({ round: l.round, lignes: [l] });
 		}
-		return out;
+		return out
+			.filter((r) => r.lignes.some((l) => !/^Combat terminé/u.test(l.text)))
+			.map((r) => ({
+				...r,
+				resolution:
+					recit.log
+						.find((l) => l.round === r.round && l.kind === 'round' && l.text.includes('résolu'))
+						?.text.match(/résolu à (\d{2}:\d{2})/)?.[1] ?? null
+			}));
 	});
 
 	const CHAMPS: Record<string, string> = { pv: 'PV', ep: 'EP', em: 'EM', xp: 'XP' };
@@ -46,7 +56,7 @@
 	{#snippet marge()}
 		<p class="quand">{dateLongue(recit.at)}</p>
 		<p class="details chiffres">
-			{recit.round} round{recit.round > 1 ? 's' : ''} · archivé à {heure(recit.at)}
+			{rounds.length} round{rounds.length > 1 ? 's' : ''} · archivé à {heure(recit.at)}
 		</p>
 		<p class="lisible">Lisible par ses participants. Les notes du MJ n’y figurent pas.</p>
 		<div class="gestes-marge">
@@ -65,7 +75,7 @@
 	{/snippet}
 	{#snippet bande()}
 		<p class="bande-ligne chiffres">
-			{dateHeure(recit.at)} · {recit.round} round{recit.round > 1 ? 's' : ''}
+			{dateHeure(recit.at)} · {rounds.length} round{rounds.length > 1 ? 's' : ''}
 		</p>
 	{/snippet}
 
@@ -75,7 +85,12 @@
 		{#if rounds.length}
 			{#each rounds as r (r.round)}
 				<section class="round" aria-label="Round {r.round}">
-					<p class="round-titre repere">Round <span class="chiffres">{r.round}</span></p>
+					<span class="numero-round" aria-hidden="true">{r.round}</span>
+					<p class="round-titre">
+						<Tampon cle={`${recit.id}:${r.round}`}
+							>Round {r.round}{r.resolution ? ` · résolu à ${r.resolution}` : ''}</Tampon
+						>
+					</p>
 					<ol class="log">
 						{#each r.lignes as l (l.n)}
 							<li class="ligne {l.kind}">
@@ -96,7 +111,7 @@
 		{/if}
 	</Chapitre>
 
-	<section aria-label="Participants">
+	<section class="participants" aria-label="Participants">
 		<p class="repere">Participants</p>
 		<p>{recit.participants.join(' · ')}</p>
 	</section>
@@ -111,7 +126,7 @@
 						motif={c.motif || null}
 						rayee={c.struck}
 					>
-						{c.text}{#if avecRature(c)}<span class="valeur"
+						{texteConsequence(c.text)}{#if avecRature(c)}<span class="valeur"
 								>{c.field ? `${CHAMPS[c.field] ?? c.field} ` : ''}<Rature
 									ancien={c.oldValue ?? ''}
 									nouveau={c.newValue}
@@ -175,7 +190,18 @@
 	}
 
 	/* Le journal du combat : une ligne de récit par effet, en caractères de machine. */
+	.participants {
+		margin-top: var(--ligne);
+	}
+	.numero-round {
+		position: absolute;
+		left: 0;
+		font: 400 32px/36px var(--voix);
+		color: var(--encre-2);
+	}
 	.round {
+		position: relative;
+		padding-left: 48px;
 		padding-top: calc(var(--ligne) / 2);
 	}
 	.round-titre {
@@ -191,7 +217,7 @@
 		padding: 0 0 0 14px;
 		border-bottom: 1px solid var(--reglure);
 		border-left: 1px solid transparent;
-		font: var(--t-mono);
+		font: 400 18px/28px var(--voix);
 		color: var(--encre);
 		overflow-wrap: anywhere;
 	}

@@ -24,9 +24,10 @@
 		{#each data.chapters as chapter, i (chapter.href)}
 			<li>
 				<a href={chemin(chapter.href)}>
-					<span class="numero chiffres">{String(i + 1).padStart(2, '0')}</span>
-					<span class="titre">{chapter.title}</span>
-					<span class="fleche" aria-hidden="true">→</span>
+					<span class="entree"
+						><span class="titre">{chapter.title}</span><span class="conduite" aria-hidden="true"
+						></span><span class="numero chiffres">{String(i + 1).padStart(2, '0')}</span></span
+					>
 					<span class="resume">{typo(chapter.resume ?? '')}</span>
 				</a>
 			</li>
@@ -43,14 +44,13 @@
 	}
 	a {
 		display: grid;
-		grid-template-columns: calc(var(--ligne) * 2) minmax(0, 1fr) var(--ligne);
+		grid-template-columns: minmax(0, 1fr);
 		align-items: baseline;
 		padding: var(--ligne) 0 calc(var(--ligne) - 1px);
 		text-decoration: none;
 	}
 	.numero {
-		font: var(--t-repere);
-		letter-spacing: var(--approche-repere);
+		font: 400 32px/var(--ligne) var(--voix);
 		color: var(--encre-2);
 	}
 	.titre {
@@ -59,30 +59,25 @@
 		color: var(--encre);
 		transition: color 160ms;
 	}
-	.fleche {
-		justify-self: end;
-		font: 400 18px / var(--ligne) var(--corps);
-		color: var(--encre-2);
-		transition:
-			translate 200ms,
-			color 160ms;
-	}
+
 	.resume {
-		grid-column: 2;
+		grid-column: 1;
 		max-width: 46ch;
 		font: var(--t-corps);
+		font-style: italic;
 		color: var(--encre-2);
 	}
-	a:hover .titre,
-	a:hover .fleche {
+	.entree {
+		display: flex;
+		align-items: baseline;
+		width: 100%;
+	}
+	.conduite {
+		flex: 1;
+		border-bottom: 1px dotted var(--reglure);
+		margin: 0 12px 7px;
+	}
+	a:hover .titre {
 		color: var(--encre-humide);
-	}
-	a:hover .fleche {
-		translate: 4px 0;
-	}
-	@media (max-width: 760px) {
-		a {
-			grid-template-columns: calc(var(--ligne) + 12px) minmax(0, 1fr) var(--ligne);
-		}
 	}
 </style>

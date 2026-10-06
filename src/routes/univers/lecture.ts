@@ -227,13 +227,14 @@ export function preparer(
 				return rangee.replace(/<td>([\s\S]*?)<\/td>/g, (_cellule, contenu: string) => {
 					const libelle = libelles[rangCellule] ?? '';
 					const texte = lire(contenu);
+					const valeur = texte.length <= 16;
 					if (rangCellule === 0) premiere = Math.max(premiere, texte.length);
 					// En liste, une cellule trop longue pour une demi-largeur prend toute la ligne.
 					const long = pile === 'liste' && libelle.length + texte.length > 17;
 					rangCellule++;
 					return (
 						`<td${libelle ? ` data-label="${attribut(libelle)}"` : ''}` +
-						`${long ? ' class="long"' : ''}>${contenu}</td>`
+						`${long || valeur ? ` class="${[long ? 'long' : '', valeur ? 'valeur' : ''].filter(Boolean).join(' ')}"` : ''}>${contenu}</td>`
 					);
 				});
 			});

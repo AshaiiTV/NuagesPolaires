@@ -74,7 +74,9 @@
 		color: var(--encre-2);
 	}
 	h2 {
-		font: var(--t-chapitre);
+		font: 500 28px / var(--ligne) var(--voix);
+		padding-block: calc(var(--ligne) / 2);
+		text-wrap: balance;
 		letter-spacing: -0.01em;
 		color: var(--encre);
 	}
@@ -101,9 +103,14 @@
 		font-style: italic;
 		color: var(--encre-2);
 	}
+	@media (max-width: 760px) {
+		.chapitre {
+			margin-top: var(--ligne);
+		}
+	}
 	:global([data-regime='serre']) h2,
 	:global([data-regime='scene']) h2 {
-		font: 600 14px/48px var(--corps);
+		font: 600 14px/24px var(--corps);
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
 	}

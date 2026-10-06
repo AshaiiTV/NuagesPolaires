@@ -18,6 +18,8 @@ export interface ActionRule {
 	resource: 'ep' | 'em' | null;
 	cost: number | null;
 	conditions: string;
+	pour?: 'joueur' | 'creature';
+	serment?: string;
 	effect: string;
 	anchor: string;
 }
@@ -40,6 +42,7 @@ export const ACTION_RULES: readonly ActionRule[] = [
 		resource: 'ep',
 		cost: 10,
 		conditions: 'Posture Haute active',
+		serment: 'Claymore',
 		effect: 'Dégâts et malus de la posture ; posture consommée',
 		anchor
 	},
@@ -50,6 +53,7 @@ export const ACTION_RULES: readonly ActionRule[] = [
 		resource: 'ep',
 		cost: 6,
 		conditions: 'Joueur',
+		pour: 'joueur',
 		effect: '4 + niveau dégâts',
 		anchor
 	},
@@ -70,6 +74,7 @@ export const ACTION_RULES: readonly ActionRule[] = [
 		resource: 'ep',
 		cost: 5,
 		conditions: 'Joueur',
+		pour: 'joueur',
 		effect: 'Dégâts × 0,5, arrondi supérieur',
 		anchor
 	},
@@ -80,6 +85,7 @@ export const ACTION_RULES: readonly ActionRule[] = [
 		resource: 'ep',
 		cost: 2,
 		conditions: 'Créature (Bloquer ou Parer)',
+		pour: 'creature',
 		effect: 'Dégâts × 0,75, arrondi supérieur',
 		anchor
 	},
@@ -90,6 +96,7 @@ export const ACTION_RULES: readonly ActionRule[] = [
 		resource: 'ep',
 		cost: 0,
 		conditions: 'Joueur',
+		pour: 'joueur',
 		effect: 'Dégâts × 0,75, arrondi supérieur',
 		anchor
 	},
@@ -150,6 +157,7 @@ export const ACTION_RULES: readonly ActionRule[] = [
 		resource: 'em',
 		cost: 5,
 		conditions: 'Conjurateur branche A',
+		serment: 'Conjurateur',
 		effect: 'Attaque et soin automatique',
 		anchor
 	},
@@ -160,6 +168,7 @@ export const ACTION_RULES: readonly ActionRule[] = [
 		resource: 'em',
 		cost: 6,
 		conditions: 'Claymore',
+		serment: 'Claymore',
 		effect: 'Prépare la prochaine Frappe Haute',
 		anchor
 	},
@@ -170,6 +179,7 @@ export const ACTION_RULES: readonly ActionRule[] = [
 		resource: 'em',
 		cost: 6,
 		conditions: 'Elementaliste Feu / Glace',
+		serment: 'Elementaliste',
 		effect: 'Feu, Brûlure, combo élémentaire',
 		anchor
 	},
@@ -180,6 +190,7 @@ export const ACTION_RULES: readonly ActionRule[] = [
 		resource: 'em',
 		cost: 4,
 		conditions: 'Elementaliste Feu / Glace',
+		serment: 'Elementaliste',
 		effect: 'Glace, Gel, combo élémentaire',
 		anchor
 	},
@@ -190,6 +201,7 @@ export const ACTION_RULES: readonly ActionRule[] = [
 		resource: 'em',
 		cost: 6,
 		conditions: 'Elementaliste Foudre / Eau',
+		serment: 'Elementaliste',
 		effect: 'Foudre, combo élémentaire',
 		anchor
 	},
@@ -200,6 +212,7 @@ export const ACTION_RULES: readonly ActionRule[] = [
 		resource: 'em',
 		cost: 4,
 		conditions: 'Elementaliste Foudre / Eau',
+		serment: 'Elementaliste',
 		effect: 'Eau, combo élémentaire',
 		anchor
 	}

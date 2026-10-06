@@ -22,7 +22,7 @@
 		/** Entrées de la bande basse (cinq au plus) ; par défaut les cahiers. */
 		bande?: Onglet[];
 		ruban?: { href: string; libelle?: string; corne?: boolean } | null;
-		compte?: { pseudo: string; portrait?: string | null; role?: string } | null;
+		compte?: { pseudo: string; portrait?: string | null; serment?: string; role?: string } | null;
 		/** Régime de la page : `carnet` (défaut), `serre` (outils denses), `scene` (feuillet, Table du joueur). */
 		regime?: 'carnet' | 'serre' | 'scene';
 		children: Snippet;
@@ -42,7 +42,7 @@
 
 <div class="bureau" data-regime={regime}>
 	<div class="cahier">
-		<div class="feuille" id="page" tabindex="-1">
+		<main class="feuille" id="page" tabindex="-1">
 			{#if ruban}
 				<a class="ruban" href={chemin(ruban.href)}>
 					{ruban.libelle ?? 'En scène'}
@@ -55,7 +55,7 @@
 				</a>
 			{/if}
 			{@render children()}
-		</div>
+		</main>
 
 		<nav class="tranche" aria-label="Cahiers">
 			<a class="signature" href={resolve('/')} aria-label="Nuages Polaires, accueil"
@@ -80,7 +80,12 @@
 			</ul>
 			{#if compte}
 				<a class="compte" href={resolve('/compte')}>
-					<Portrait nom={compte.pseudo} src={compte.portrait} taille={36} />
+					<Portrait
+						serment={compte.serment}
+						nom={compte.pseudo}
+						src={compte.portrait}
+						taille={36}
+					/>
 					<span class="pseudo">{compte.pseudo}</span>
 					{#if compte.role}<small class="role">{compte.role}</small>{/if}
 				</a>
@@ -287,6 +292,9 @@
 			display: none;
 		}
 		.ruban {
+			position: fixed;
+			top: 0;
+			z-index: 12;
 			right: var(--gouttiere);
 		}
 		.bande-basse {

@@ -3,6 +3,7 @@ import { redirect } from '@sveltejs/kit';
 import { action, type FormValues } from '$lib/server/actions';
 import { requireCapability } from '$lib/server/guards';
 import {
+	getBeast,
 	createBeast,
 	updateBeast,
 	duplicateBeast,
@@ -19,13 +20,14 @@ const texte = (d: FormValues, k: string) => String(d[k] ?? '');
 const nombres = (d: FormValues, k: string) => Number(d[k]);
 const tableau = (value: FormValues[string]): string[] =>
 	Array.isArray(value) ? value.map(String) : value ? [String(value)] : [];
-function champs(data: FormValues) {
+function champs(data: FormValues, garderComportement = false) {
 	const behavior = behaviorSchema.safeParse(data.behavior);
-	if (!behavior.success) throw new NpError('INVALID', 'Choisis un comportement.');
+	if (!behavior.success && !garderComportement)
+		throw new NpError('INVALID', 'Choisis un comportement.');
 	const champs = {
 		name: texte(data, 'name'),
 		subtitle: texte(data, 'subtitle'),
-		behavior: behavior.data,
+		behavior: behavior.success ? behavior.data : undefined,
 		level: nombres(data, 'level'),
 		pv: nombres(data, 'pv'),
 		ep: nombres(data, 'ep'),
@@ -58,7 +60,10 @@ export const creer = action(async (event, data) => {
 });
 export const modifier = action(async (event, data) => {
 	const actor = requireCapability(event, 'beasts.manage');
-	await updateBeast(event.locals.db, actor, { ...champs(data), ...commande(event, data) });
+	const ancien = await getBeast(event.locals.db, actor, event.params.id!);
+	const garder =
+		!behaviorSchema.safeParse(data.behavior).success && data.behavior === ancien.behavior;
+	await updateBeast(event.locals.db, actor, { ...champs(data, garder), ...commande(event, data) });
 	return { at: new Date().toISOString(), geste: 'modifier' };
 });
 export const dupliquer = action(async (event, data) => {

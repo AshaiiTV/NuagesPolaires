@@ -15,6 +15,9 @@ const tailles = option('tailles', '390,768,1440').split(',').map(Number);
 const theme = option('theme', '');
 const sortie = option('sortie', 'test-results/captures');
 const pleine = args.includes('--pleine');
+const feuillet = args.includes('--feuillet');
+const calque = args.includes('--calque');
+const brouillon = args.includes('--brouillon');
 // Comptes fictifs de la base de démonstration (src/lib/server/db/seed.ts) : --compte=alice
 const compte = option('compte', '');
 const COMPTES_DEMO = {
@@ -60,14 +63,29 @@ for (const largeur of tailles) {
 	page.on('console', (m) => m.type() === 'error' && erreurs.push(m.text()));
 	page.on('pageerror', (e) => erreurs.push(String(e)));
 	for (const chemin of chemins) {
-		await page.goto(base + chemin, { waitUntil: 'networkidle' });
+		await page.goto(base + (feuillet ? '/carnet' : chemin), { waitUntil: 'networkidle' });
+		await page.waitForSelector('html[data-app-ready="true"]');
+		if (feuillet) {
+			await page.locator('a.ruban[href="/carnet/scene"]').click();
+			await page.waitForURL('**/carnet/scene');
+			if (largeur >= 761) await page.locator('[data-superpose]').waitFor();
+			await page.locator('[data-feuillet]').waitFor();
+		}
+		if (calque) await page.getByRole('switch', { name: 'Calque' }).check();
+		if (brouillon)
+			await page.locator('#nouvelle-page').fill('Le gué attend notre prochaine marche.');
 		if (theme) {
 			await page.evaluate((t) => {
 				document.documentElement.dataset.theme = t;
 				document.documentElement.dataset.ton = t === 'light' ? 'clair' : 'sombre';
 			}, theme);
 		}
+		await page.addStyleTag({
+			content: '* { transition: none !important; animation: none !important; }'
+		});
 		await page.evaluate(() => document.fonts.ready);
+		// Les instantanés de la transition de navigation doivent aussi être reposés.
+		await page.waitForTimeout(1500);
 		const mesure = await page.evaluate(() => ({
 			scroll: document.documentElement.scrollWidth,
 			client: document.documentElement.clientWidth,
@@ -82,7 +100,7 @@ for (const largeur of tailles) {
 		}));
 		const nom =
 			(chemin === '/' ? 'accueil' : chemin.replace(/^\//, '').replace(/[/?#=&]/g, '-')) +
-			`${compte ? '-' + compte : ''}-${largeur}${theme ? '-' + theme : ''}.png`;
+			`${feuillet ? '-superpose' : calque ? '-calque' : brouillon ? '-brouillon' : ''}${compte ? '-' + compte : ''}-${largeur}${theme ? '-' + theme : ''}.png`;
 		await page.screenshot({ path: path.join(sortie, nom), fullPage: pleine });
 		const deborde = mesure.scroll > mesure.client + 1;
 		if (deborde) debordements++;

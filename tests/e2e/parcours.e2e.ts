@@ -72,6 +72,32 @@ test('P2 — déclarer sans changer le relevé, annuler, copier les trois lignes
 	);
 	await page.getByRole('button', { name: 'Reposer', exact: true }).click();
 	await expect(page.locator('form.reposer')).toBeVisible();
+	await lire(page, '/agenda');
+	await page.setViewportSize({ width: 1440, height: 900 });
+	await page
+		.getByRole('link', { name: /^En scène/ })
+		.first()
+		.click();
+	await expect(page.getByRole('dialog', { name: 'En scène' })).toBeVisible();
+	await expect(
+		page
+			.locator('body > div')
+			.filter({ has: page.locator('main') })
+			.first()
+	).toBeVisible();
+	await expect(page.locator('[inert]')).toHaveCount(1);
+	await page.getByRole('button', { name: 'Déclarer', exact: true }).nth(1).click();
+	await page.selectOption('#choix-ep', 'regle:esquive');
+	await page.locator('form.ligne-carnet button[type="submit"]').click();
+	await expect(
+		page
+			.locator('.decl')
+			.filter({ hasText: /−8\s?EP \(Esquive\)/ })
+			.last()
+	).toBeVisible();
+	await page.getByRole('button', { name: 'Reposer', exact: true }).click();
+	await expect(page).toHaveURL(/\/agenda$/);
+	await expect(page.locator('[inert]')).toHaveCount(0);
 });
 
 test('P3 — suivre trois rounds, une rature, puis le retard réseau et le refus de Bob', async ({
@@ -170,6 +196,10 @@ test('P4 — tamponner +18 XP après réponse, vérifier le motif et le journal 
 	await expect(page.locator('#consequences')).toContainText('Traversée vérifiée ensemble.', {
 		timeout: 10000
 	});
+	await expect(form.locator('[name="beastId"]')).toHaveValue('');
+	await expect(form.locator('[name="participationPct"]')).toHaveValue('100');
+	await expect(form.locator('[name="motif"]')).toHaveValue('');
+	await expect(form.locator('[name="motif"]')).toHaveAttribute('required', '');
 	const correction = page.locator('form[action="?/corriger"]');
 	await page.locator('details').filter({ has: correction }).last().locator('summary').click();
 	await correction.locator('[name="resource"]').selectOption('pv');
@@ -191,8 +221,8 @@ test('P4 — tamponner +18 XP après réponse, vérifier le motif et le journal 
 		const corrigee = alice
 			.locator('#consequences li')
 			.filter({ hasText: 'Valeur revue après la traversée.' });
-		await expect(corrigee.locator('s')).toContainText('51');
-		await expect(corrigee.locator('ins')).toContainText('50');
+		await expect(corrigee).toContainText('PV : 51 → 50.');
+		await expect(corrigee.locator('s, ins')).toHaveCount(0);
 		const admin = await cr.newPage();
 		await connecter(admin, 'admin');
 		await lire(admin, '/registre/journal');
@@ -273,7 +303,7 @@ test('P6 — lire sans compte, s’inscrire et relier en trois gestes', async ({
 		await admin.getByRole('button', { name: 'Lier', exact: true }).click();
 		await expect(admin.locator('.liaison-faite')).toContainText('Seren Vallombre');
 		await lire(page, '/carnet/fiche');
-		await expect(page.getByRole('heading', { level: 1 })).toHaveText('Seren Vallombre');
+		await expect(page.getByRole('heading', { level: 1 })).toHaveText('Seren Vallombre.');
 	} finally {
 		await c.close();
 	}
@@ -367,6 +397,19 @@ test('P9 — trois thèmes, trois largeurs, focus et mouvement réduit', async (
 			expect(contrastRatio(tenue.encre, tenue.page)).toBeGreaterThanOrEqual(4.5);
 			expect(contrastRatio(tenue.secondaire, tenue.page)).toBeGreaterThanOrEqual(4.5);
 		}
+	}
+	await page.setViewportSize({ width: 1440, height: 900 });
+	for (const chemin of ['/univers/systeme', '/univers/site-et-donnees', '/univers/reglement']) {
+		await lire(page, chemin);
+		expect(
+			await page
+				.locator('.tableau')
+				.evaluateAll((tableaux) =>
+					tableaux
+						.filter((t) => t.scrollWidth > t.clientWidth)
+						.map((t) => t.textContent?.slice(0, 100))
+				)
+		).toEqual([]);
 	}
 	await page.emulateMedia({ reducedMotion: 'reduce', contrast: 'more' });
 	await lire(page, '/carnet/scene');

@@ -15,6 +15,7 @@
 	import NoteDeMarge from '$lib/ui/NoteDeMarge.svelte';
 	import Losange from '$lib/ui/Losange.svelte';
 	import Vide from '$lib/ui/Vide.svelte';
+	import Sceau from '$lib/ui/Sceau.svelte';
 	import Portrait from '$lib/ui/Portrait.svelte';
 	import { creerEcriture, PHRASE_REFUS } from '$lib/ui/ecriture.svelte';
 	import { LIBELLES_ROLE } from '$lib/ui/navigation';
@@ -266,10 +267,16 @@
 	<Page repere="NP / 02 — Mon carnet" titre="Dernières" titreVoix="pages." grain>
 		{#snippet marge()}
 			<div class="identite">
-				<Portrait nom={fiche.name} src={fiche.portraitUrl || null} taille={72} />
+				<Portrait
+					serment={fiche.oathName}
+					nom={fiche.name}
+					src={fiche.portraitUrl || null}
+					taille={72}
+				/>
 				<p class="nom">{fiche.name}</p>
 				<p class="serment">
-					{fiche.oathName} · <span class="rang">{fiche.rankLabel}</span> · niveau {fiche.level}
+					<span class="sceau"><Sceau serment={fiche.oathName} taille={24} nu /></span
+					>{fiche.oathName} · <span class="rang">{fiche.rankLabel}</span> · niveau {fiche.level}
 				</p>
 			</div>
 			<LigneEtat
@@ -335,6 +342,7 @@
 				</div>
 				{#if marqueOuvert}
 					<form
+						novalidate
 						id="marque-form"
 						class="marque-form"
 						method="POST"
@@ -638,8 +646,14 @@
 		line-height: var(--ligne);
 		color: var(--encre-2);
 	}
+	.sceau {
+		display: inline-flex;
+		vertical-align: middle;
+		margin-right: 8px;
+		color: var(--tampon);
+	}
 	.rang {
-		color: var(--encre-2);
+		color: var(--tampon);
 	}
 	.declare {
 		font: var(--t-libelle);
@@ -942,7 +956,15 @@
 		.ligne {
 			grid-template-columns: 1fr;
 		}
+		.marque-page {
+			padding: calc(var(--ligne) / 2) 0;
+		}
+		.attend .gestes :global(.bouton) {
+			padding-inline: 12px;
+			gap: 10px;
+		}
 		.attend .gestes {
+			flex-wrap: nowrap;
 			width: 100%;
 		}
 		.rdv {

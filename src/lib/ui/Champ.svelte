@@ -81,6 +81,8 @@
 		transition: border-color 160ms;
 	}
 	textarea {
+		field-sizing: content;
+		min-height: calc(var(--ligne) * 3 + 8px);
 		resize: vertical;
 		line-height: var(--ligne);
 		background-image: repeating-linear-gradient(

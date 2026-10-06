@@ -52,7 +52,7 @@
 	const aVenir = $derived(
 		data.agenda.upcoming.map((ev, i, liste) => {
 			const cle = cleMois(ev.startsAt);
-			const avant = i === 0 ? cleMois(data.lu) : cleMois(liste[i - 1].startsAt);
+			const avant = i === 0 ? null : cleMois(liste[i - 1].startsAt);
 			return { ev, filet: cle !== null && cle !== avant ? mois(ev.startsAt) : null };
 		})
 	);
@@ -87,7 +87,7 @@
 	{/snippet}
 
 	<Chapitre titre="À venir" id="a-venir">
-		{#if !data.relie}
+		{#if data.enAttente}
 			<div class="entete-attente">
 				<p class="attente">Ton compte attend sa liaison pour venir.</p>
 				<Bouton variante="texte" href="/univers/premiers-pas" fleche="→">Premiers pas</Bouton>
@@ -126,7 +126,12 @@
 		<section class="passes" id="passes" aria-labelledby="titre-passes" tabindex="-1">
 			<h2 id="titre-passes">Passés</h2>
 			<ol class="liste">
-				{#each data.agenda.past as ev (ev.id)}
+				{#each data.agenda.past as ev, i (ev.id)}
+					{#if i === 0 || cleMois(ev.startsAt) !== cleMois(data.agenda.past[i - 1].startsAt)}<li
+							class="filet-mois"
+						>
+							<span>{mois(ev.startsAt)}</span>
+						</li>{/if}
 					<Ligne
 						{ev}
 						lu={data.lu}

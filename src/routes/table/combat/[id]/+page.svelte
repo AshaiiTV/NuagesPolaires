@@ -391,7 +391,7 @@
 			{#if combattants.length}
 				<div class="entetes" aria-hidden="true">
 					<span>Nom</span><span class="d">PV</span><span class="d">EP</span><span class="d">EM</span
-					><span>Statuts</span><span>Déclaré</span><span></span>
+					><span>Déclaré</span><span></span>
 				</div>
 				<ul>
 					{#each table.demarre ? etat.order
@@ -511,7 +511,7 @@
 
 <style>
 	.table-mj {
-		--colonnes-combattants: minmax(0, 1.6fr) 52px 52px 52px minmax(0, 1fr) 48px 44px;
+		--colonnes-combattants: minmax(0, 1fr) 52px 52px 52px 64px 44px;
 		width: 100%;
 		max-width: var(--page-max);
 		margin: 0 auto;
@@ -739,9 +739,16 @@
 	}
 
 	@media (min-width: 1100px) {
+		.table-mj {
+			display: flex;
+			flex-direction: column;
+			height: calc(100svh - 96px);
+			padding-bottom: 24px;
+		}
 		.colonnes {
-			height: calc(100svh - 250px);
-			min-height: 420px;
+			flex: 1 1 0;
+			height: auto;
+			min-height: 0;
 		}
 		.centre,
 		.droite {

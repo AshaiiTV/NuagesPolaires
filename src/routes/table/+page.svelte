@@ -157,8 +157,7 @@
 										<span class="qui">
 											<span class="nom-ligne">{p.nom}</span>
 											<span class="detail"
-												>{p.serment} · niv. {p.niveau}{#if !p.relie}
-													· non relié{/if}</span
+												>{p.serment} · niv. {p.niveau}{#if !p.relie}&nbsp;· non relié{/if}</span
 											>
 										</span>
 										<span class="chiffres res"

@@ -187,6 +187,19 @@ test.describe('En scène — le feuillet volant', () => {
 		await page.locator('form.reposer input[name="text"]').fill('Aria guette le gué.');
 		await page.locator('form.reposer button[type="submit"]').click();
 		await page.waitForURL((u) => u.pathname === '/carnet');
+		await page.setViewportSize({ width: 1440, height: 900 });
+		await page
+			.getByRole('link', { name: /^En scène/ })
+			.first()
+			.click();
+		await expect(page.getByRole('dialog', { name: 'En scène' })).toBeVisible();
+		await expect(page.locator('[inert]')).toHaveCount(1);
+		await page.getByRole('button', { name: 'Reposer', exact: true }).click();
+		await expect(page).toHaveURL(/\/carnet$/);
+		await expect(page.locator('[data-superpose]')).toHaveCount(0);
+		await page.goto('/carnet/scene');
+		await expect(page.locator('[data-superpose]')).toHaveCount(0);
+		await expect(page.getByRole('heading', { name: 'Aria Lunval', exact: true })).toBeVisible();
 	});
 
 	test('pas de réseau : la déclaration reste humide avec « Réessayer »', async () => {

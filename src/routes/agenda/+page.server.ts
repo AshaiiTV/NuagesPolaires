@@ -21,6 +21,7 @@ export const load: PageServerLoad = async (event) => {
 		),
 		pagePasses: Math.min(pastPage, agenda.pastPages),
 		relie: !!actor.characterId,
+		enAttente: actor.role === 'joueur' && !actor.characterId,
 		pseudo: actor.pseudo,
 		organiser: can(actor.role, 'events.manage'),
 		/** Instant de la lecture : l'heure à laquelle les rendez-vous affichés ont été relevés. */

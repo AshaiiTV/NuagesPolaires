@@ -319,7 +319,7 @@ export async function seedDemo(
 		const DAY = 86_400_000;
 		const at = (offsetDays: number, hour = 20): Date => {
 			const d = new Date(now + offsetDays * DAY);
-			d.setUTCHours(hour, 0, 0, 0);
+			d.setUTCHours(hour, 13 + ((Math.abs(offsetDays) * 7) % 43), 0, 0);
 			return d;
 		};
 		const A = DEMO_IDS.accounts;
@@ -505,7 +505,7 @@ export async function seedDemo(
 			{
 				id: B.golem,
 				name: 'Golem de racines',
-				behavior: 'Défensif',
+				behavior: 'Neutre',
 				level: 5,
 				pv: 60,
 				ep: 20,
@@ -531,7 +531,7 @@ export async function seedDemo(
 			{
 				id: B.ombre,
 				name: 'Ombre sans nom',
-				behavior: 'Inconnu',
+				behavior: 'Très agressif',
 				level: 9,
 				pv: 120,
 				ep: 80,
@@ -544,7 +544,7 @@ export async function seedDemo(
 			{
 				id: B.sanglier,
 				name: 'Sanglier ancien',
-				behavior: 'Territorial',
+				behavior: 'Agressif',
 				level: 3,
 				pv: 40,
 				ep: 25,
@@ -677,7 +677,18 @@ export async function seedDemo(
 						state = declareAction(state, id, 'frappe', { target: state.fighters.at(-1)!.id });
 					state = declareAction(state, id, 'passer');
 				}
+				const debut = state.log.length;
 				state = resolveRound(state, () => 0.5);
+				const instant = new Intl.DateTimeFormat('fr-FR', {
+					timeZone: 'Europe/Paris',
+					hour: '2-digit',
+					minute: '2-digit'
+				}).format(new Date(startedAt + (n + 1) * 93000));
+				state.log = state.log.map((e, i) =>
+					i >= debut && e.kind === 'round' && /Résolution Round/.test(e.text)
+						? { ...e, text: e.text + ' · résolu à ' + instant }
+						: e
+				);
 			}
 			return {
 				state,

@@ -30,7 +30,17 @@ const texte = (v: FormValues[string]): string => (typeof v === 'string' ? v : ''
 
 /** La carte de règle selon le contexte (table de correspondance de rules.ts, 03-vision §5.3). */
 function carteDuMoment(fiche: SheetView, contexte: SceneContextView): RuleCard {
-	if (contexte.table?.phase === 'declaration') return ruleCardFor({ kind: 'declaration' });
+	if (contexte.table?.phase === 'declaration') {
+		const carte = ruleCardFor({ kind: 'declaration' });
+		if (carte.id === 'actions')
+			return {
+				...carte,
+				actions: carte.actions.filter(
+					(a) => a.pour !== 'creature' && (!a.serment || a.serment === fiche.oath.name)
+				)
+			};
+		return carte;
+	}
 	const statut = fiche.statuses.find((s) => (STATUS_IDS as readonly string[]).includes(s.id));
 	if (statut) return ruleCardFor({ kind: 'status', status: statut.id as StatusId });
 	if (fiche.ep.max > 0 && fiche.ep.cur / fiche.ep.max < 0.2)

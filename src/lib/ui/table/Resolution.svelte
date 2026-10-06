@@ -60,7 +60,7 @@
 		{#if ouverte}<span class="ouvert">ouvert · rature possible</span>{/if}
 	</p>
 	{#if lignes.length}
-		<ol class="recit">
+		<ol class="recit" class:humide={ouverte}>
 			{#each lignes as e (e.n)}
 				{@const raye = rayees.has(e.n)}
 				{@const rayable = ouverte && !raye && correctionDe(e) !== null}
@@ -120,7 +120,11 @@
 		text-transform: uppercase;
 		color: var(--encre-humide);
 	}
+	.recit.humide li {
+		color: var(--encre-humide);
+	}
 	.recit li {
+		transition: color 1200ms;
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
@@ -200,5 +204,10 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.recit li {
+			transition: none;
+		}
 	}
 </style>

@@ -33,7 +33,9 @@ describe('journal staff (04 §3.10, §5 ; audit 05 §3.9)', () => {
 			actor: admin,
 			target: 'Seren'
 		});
+		await appendStaffLog(t.db, { action: 'connexion', detail: 'Entrée', actor: mj });
 		const page = await listStaffLog(t.db, mj);
+		expect(page.rows).toHaveLength(1);
 		expect(page.rows).toEqual([
 			{
 				id: expect.any(Number),
@@ -41,6 +43,7 @@ describe('journal staff (04 §3.10, §5 ; audit 05 §3.9)', () => {
 				action: 'liaison',
 				detail: "Compte 'nova' lié au personnage 'Seren'",
 				actorName: 'admin',
+				actorRole: 'admin',
 				target: 'Seren'
 			}
 		]);

@@ -17,6 +17,7 @@
 	import NoteDeMarge from '$lib/ui/NoteDeMarge.svelte';
 	import Losange from '$lib/ui/Losange.svelte';
 	import Vide from '$lib/ui/Vide.svelte';
+	import { texteConsequence } from '$lib/ui/table/texte';
 	import Portrait from '$lib/ui/Portrait.svelte';
 	import Sceau from '$lib/ui/Sceau.svelte';
 	import Consequence from '$lib/ui/Consequence.svelte';
@@ -24,7 +25,7 @@
 	import { creerEcriture } from '$lib/ui/ecriture.svelte';
 	import { dateCourte, heure, joursCalendaires } from '$lib/ui/dates';
 	import { palierAtteint, palierSuivant } from '$lib/ui/scene/paliers';
-	import { signature as signatureTampon } from '$lib/ui/tampons';
+	import { signaturePersonnelle, signature as signatureTampon } from '$lib/ui/tampons';
 	import {
 		EQUIPMENT_LABELS,
 		EQUIPMENT_SLOTS,
@@ -78,7 +79,15 @@
 			{ rootMargin: '-20% 0px -70% 0px' }
 		);
 		cibles.forEach((c) => observateur.observe(c));
-		return () => observateur.disconnect();
+		const suivreBas = () => {
+			if (innerHeight + scrollY >= document.documentElement.scrollHeight - 4)
+				courant = 'consequences';
+		};
+		window.addEventListener('scroll', suivreBas, { passive: true });
+		return () => {
+			observateur.disconnect();
+			window.removeEventListener('scroll', suivreBas);
+		};
 	});
 
 	function allerA(evenement: MouseEvent, id: IdChapitre) {
@@ -219,13 +228,13 @@
 	}
 	function signature(c: ConsequenceView): string | null {
 		if (c.stamp) return null;
-		if (c.signature === 'toi') return `toi · ${dateCourte(c.at)}, ${heure(c.at)}`;
+		if (c.signature === 'toi') return signaturePersonnelle('toi', c.at);
 		if (c.signature === 'regles') return `règles · ${dateCourte(c.at)}`;
 		return dateCourte(c.at);
 	}
 	/** Une correction (rature d’une conséquence précédente) se lit « ~~120~~ 150 » ; sinon le texte dit déjà le changement. */
 	const avecRature = (c: ConsequenceView) =>
-		c.oldValue !== null && c.newValue !== null && c.oldValue !== c.newValue;
+		!!c.replacesId && c.oldValue !== null && c.newValue !== null && c.oldValue !== c.newValue;
 </script>
 
 <svelte:head><title>{fiche ? `${fiche.name} — Ma fiche` : 'Ma fiche'}</title></svelte:head>
@@ -294,7 +303,12 @@
 		<!-- En-tête : portrait carré, Serment · rang, niveau, une seule ligne d'XP. -->
 		<section class="identite" aria-label="Identité">
 			<div class="cadre-portrait">
-				<Portrait nom={fiche.name} src={fiche.portraitUrl || null} taille={telephone ? 96 : 128} />
+				<Portrait
+					serment={fiche.oath.name}
+					nom={fiche.name}
+					src={fiche.portraitUrl || null}
+					taille={telephone ? 96 : 128}
+				/>
 			</div>
 			<div class="qui">
 				<p class="serment">
@@ -322,6 +336,7 @@
 			</div>
 			{#if portraitOuvert}
 				<form
+					novalidate
 					id="portrait-form"
 					class="portrait-form"
 					method="POST"
@@ -336,7 +351,7 @@
 						inputmode="url"
 						bind:value={portraitLien}
 						placeholder="https://…"
-						aide="Une image carrée en lien http(s). Laisse vide pour revenir à l’initiale."
+						aide="Une image carrée en lien http(s). Laisse vide pour retrouver le sceau du Serment."
 					/>
 					<div class="gestes">
 						<Bouton variante="ruban" type="submit"
@@ -620,7 +635,7 @@
 								motif={c.motif || null}
 								rayee={c.struck}
 							>
-								{c.text}{#if avecRature(c)}<span class="valeurs"
+								{texteConsequence(c.text)}{#if avecRature(c)}<span class="valeurs"
 										>{c.field ? `${CHAMPS[c.field] ?? c.field} ` : ''}<Rature
 											ancien={c.oldValue ?? ''}
 											nouveau={c.newValue}
@@ -1021,6 +1036,11 @@
 	.serment-fiche div {
 		padding: calc(var(--ligne) / 4) 0;
 		border-bottom: 1px solid var(--reglure);
+	}
+	@media (min-width: 761px) {
+		.serment-fiche div:last-child {
+			grid-column: span 2;
+		}
 	}
 	.serment-fiche dt {
 		font: var(--t-repere);

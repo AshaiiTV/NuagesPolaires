@@ -328,7 +328,6 @@
 			>
 		{/if}
 	{:else}
-		<a href={resolve('/carnet/scene')}>En scène</a>
 		<a href={resolve('/carnet')}>Mon carnet</a>
 		{#if data.repliee?.discordUrl}
 			<a href={data.repliee.discordUrl} target="_blank" rel="external noopener noreferrer"

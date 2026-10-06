@@ -29,8 +29,11 @@
 				repere: 'NP / 404 — Hors du carnet',
 				titre: 'Une page',
 				voix: 'blanche.',
-				phrase: 'Cette page n’existe pas dans le carnet.',
-				precis
+				phrase:
+					precis === "Cette Table n'est pas la tienne."
+						? precis
+						: 'Cette page n’existe pas dans le carnet.',
+				precis: precis === "Cette Table n'est pas la tienne." ? null : precis
 			};
 		}
 		if (statut === 401) {

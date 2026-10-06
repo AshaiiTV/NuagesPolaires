@@ -6,6 +6,8 @@ import { logout } from '$lib/server/domain/accounts';
 import { SESSION_COOKIE, clearSessionCookie } from '$lib/server/auth/session';
 import type { RequestHandler } from './$types';
 
+export const GET: RequestHandler = () => redirect(303, '/compte');
+
 export const POST: RequestHandler = async ({ locals, cookies }) => {
 	await logout(locals.db, cookies.get(SESSION_COOKIE));
 	clearSessionCookie(cookies);

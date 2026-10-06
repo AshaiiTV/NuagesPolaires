@@ -99,7 +99,7 @@ export const THEMES: Theme[] = [
 	},
 	{
 		id: 'easter',
-		name: 'Printemps Éveillé',
+		name: 'Printemps éveillé',
 		ton: 'clair',
 		tokens: {
 			'--bureau': '#effbe9',
@@ -115,7 +115,7 @@ export const THEMES: Theme[] = [
 	},
 	{
 		id: 'halloween',
-		name: 'Nuit des Âmes',
+		name: 'Nuit des âmes',
 		ton: 'sombre',
 		tokens: {
 			'--bureau': '#0a0911',
@@ -131,7 +131,7 @@ export const THEMES: Theme[] = [
 	},
 	{
 		id: 'noel',
-		name: 'Veillée Hivernale',
+		name: 'Veillée hivernale',
 		ton: 'sombre',
 		tokens: {
 			'--bureau': '#08140d',
@@ -147,7 +147,7 @@ export const THEMES: Theme[] = [
 	},
 	{
 		id: 'bloodmoon',
-		name: 'Lune de Sang',
+		name: 'Lune de sang',
 		ton: 'sombre',
 		tokens: {
 			'--bureau': '#050102',

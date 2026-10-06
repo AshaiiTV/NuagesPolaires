@@ -77,7 +77,12 @@
 		{/snippet}
 
 		<a class="qui" href={resolve('/compte')}>
-			<Portrait nom={data.personnage?.name ?? compte.pseudo} src={compte.portrait} taille={56} />
+			<Portrait
+				serment={compte.serment}
+				nom={data.personnage?.name ?? compte.pseudo}
+				src={compte.portrait}
+				taille={56}
+			/>
 			<span class="nom">
 				<span class="pseudo">{compte.pseudo}</span>
 				<span class="detail">

@@ -15,7 +15,8 @@ function regles(texte: string): string {
 			// « 9,5 », « × 2,5 » : un nombre décimal isolé s'écrit à la virgule.
 			.replace(/(?<![\d.,])(\d+)\.(\d+)(?![\d.,]*\d)/g, '$1,$2')
 			// « × 2 » : le signe se détache du nombre.
-			.replace(/×\s?(?=\d)/g, '×' + INSECABLE)
+			.replace(/(\S)×\s*(?=\d)/g, '$1 × ')
+			.replace(/(?<!\u202f)×\s?(?=\d)/g, '×' + INSECABLE)
 	);
 }
 

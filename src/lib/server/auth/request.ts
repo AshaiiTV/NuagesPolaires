@@ -10,7 +10,7 @@
 import type { Handle, RequestEvent } from '@sveltejs/kit';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import type { Db } from '$lib/server/db';
-import { combats, settings, type Account } from '$lib/server/db/schema';
+import { combats, oaths, settings, type Account } from '$lib/server/db/schema';
 import { SETTING_KEYS } from '$lib/server/db/referentials';
 import type { Actor } from '$lib/server/permissions';
 import type { CompteNav } from '$lib/ui/navigation';
@@ -262,7 +262,14 @@ export function createHandle(deps: HandleDeps): Handle {
 						sessionVersion: session.sessionVersion
 					});
 					locals.actor = actor;
+					const [serment] = character
+						? await db
+								.select({ name: oaths.name })
+								.from(oaths)
+								.where(eq(oaths.id, character.oathId))
+						: [];
 					const nav: CompteNav = {
+						serment: serment?.name,
 						pseudo: account.pseudo,
 						role: account.role,
 						relie: !!character,

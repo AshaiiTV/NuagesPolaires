@@ -41,7 +41,8 @@
 		<header class="tete">
 			<p class="repere mobile">{repere}</p>
 			<h1>
-				{titre}{#if titreVoix}&nbsp;<em>{titreVoix}</em>{/if}
+				{titre}{#if titreVoix}&nbsp;<em>{titreVoix.endsWith('.') ? titreVoix : titreVoix + '.'}</em
+					>{:else}{titre.endsWith('.') ? '' : '.'}{/if}
 			</h1>
 			{#if bande}<div class="bande">{@render bande()}</div>{/if}
 		</header>
@@ -128,14 +129,6 @@
 	}
 	:global([data-regime='serre']) .corps {
 		max-width: none;
-	}
-	:global([data-regime='serre']) .bande {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 4px 12px;
-		margin-top: 12px;
-		font: var(--t-libelle);
-		color: var(--encre-2);
 	}
 
 	@media (max-width: 1100px) {

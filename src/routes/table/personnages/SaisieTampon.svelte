@@ -1,7 +1,7 @@
 <script lang="ts">
 	// Une ligne d'attribution dépliée : motif obligatoire et tampon après réponse du serveur.
 	import { enhance } from '$app/forms';
-	import { untrack, type Snippet } from 'svelte';
+	import { onMount, untrack, type Snippet } from 'svelte';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import Champ from '$lib/ui/Champ.svelte';
 	import Bouton from '$lib/ui/Bouton.svelte';
@@ -41,11 +41,39 @@
 	);
 	// L'ouverture appartient au lecteur : une réponse ou une encre humide ne replie pas sa ligne.
 	let expanded = $state(untrack(() => ouvert || values.operation === operation));
+	let formulaire: HTMLFormElement | undefined = $state();
+	// Les valeurs liées ne posent pas toutes un defaultValue natif après hydratation.
+	onMount(() => {
+		for (const champ of formulaire?.elements ?? []) {
+			if (champ instanceof HTMLInputElement || champ instanceof HTMLTextAreaElement)
+				champ.defaultValue = champ.value;
+		}
+	});
+	let revisionVue = untrack(() => revision);
+	$effect(() => {
+		if (revision === revisionVue) return;
+		revisionVue = revision;
+		if (etat === 'refusee') return; // Relire un conflit garde la saisie.
+		untrack(() => {
+			for (const champ of formulaire?.elements ?? []) {
+				if (champ instanceof HTMLInputElement && champ.type === 'hidden')
+					champ.defaultValue = champ.value;
+				if (champ instanceof HTMLInputElement && champ.name === 'qty' && !champ.defaultValue)
+					champ.defaultValue = '1';
+				if (champ instanceof HTMLSelectElement)
+					for (const option of champ.options)
+						option.defaultSelected = operation === 'xp' ? option.value === '' : option.selected;
+			}
+			formulaire?.reset();
+			motif = motifInitial;
+		});
+	});
 </script>
 
 <details class="attribution" id={operation} bind:open={expanded}>
 	<summary>{titre}<span class="pli" aria-hidden="true">+</span></summary>
 	<form
+		bind:this={formulaire}
 		method="POST"
 		action="?/{operation.split('-')[0]}"
 		use:enhance={enhancement}

@@ -134,8 +134,8 @@ const dateFilter = z
 export const auditFiltersInput = z.object({
 	/** Pseudo de l'acteur (recherche insensible à la casse). */
 	actor: z.string().trim().max(64).optional(),
-	/** Action exacte (`login_success`, `admin_set_role`…). */
-	action: z.string().trim().max(64).optional(),
+	/** Clés d’action séparées par des virgules, pour un même libellé. */
+	action: z.string().trim().max(512).optional(),
 	/** Bornes : `AAAA-MM-JJ` (jour entier) ou date ISO complète. */
 	from: dateFilter,
 	to: dateFilter,
@@ -244,6 +244,7 @@ export interface AuditPageView {
 }
 
 export interface StaffLogRowView {
+	actorRole?: string | null;
 	id: number;
 	at: string;
 	action: string;

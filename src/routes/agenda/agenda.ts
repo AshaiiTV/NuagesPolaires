@@ -75,10 +75,7 @@ export function cleMois(valeur: DateInput): string | null {
  */
 export function phrasePlaces(count: number, capacity: number): string {
 	const limite = capacity > 0;
-	if (count === 0)
-		return limite
-			? `Personne encore · ${capacity} place${capacity > 1 ? 's' : ''}`
-			: 'Personne encore · sans limite';
+	if (count === 0) return limite ? `aucun inscrit sur ${capacity}` : 'aucun inscrit · sans limite';
 	const inscrits = `${count} inscrit${count > 1 ? 's' : ''}`;
 	return limite ? `${inscrits} sur ${capacity}` : `${inscrits} · sans limite`;
 }

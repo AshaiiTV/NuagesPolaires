@@ -46,6 +46,9 @@ async function nouvelleCreature(page: Page, nom: string) {
 		.fill('Note réservée U7, absente des lectures publiques.');
 	await page.getByRole('button', { name: 'Créer la créature', exact: true }).click();
 	await page.waitForURL((url) => /\/atelier\/bestiaire\/b_/.test(url.pathname));
+	await expect(
+		page.locator('form[action="?/modifier"] input[name="expectedRevision"]')
+	).toHaveValue('1');
 	return new URL(page.url()).pathname.split('/').at(-1)!;
 }
 async function avecCompte(context: BrowserContext, pseudo: keyof typeof passwords) {
@@ -262,6 +265,9 @@ test('administrateur : créer un Serment, écrire ses branches et changer sa vis
 		await page.locator(`input[name="bA.${i}.name"]`).fill(`Capacité ${i + 1}`);
 	await page.getByRole('button', { name: 'Créer le Serment' }).click();
 	await page.waitForURL((url) => !url.pathname.endsWith('/nouveau'));
+	await expect(
+		page.locator('form[action="?/modifier"] input[name="expectedRevision"]')
+	).toHaveValue('1');
 	await page.getByLabel('Arme', { exact: true }).fill('Plume du Serment');
 	await page.getByLabel('Motif des modifications').fill('Recette de la fiche.');
 	await page.getByRole('button', { name: 'Noter les modifications' }).click();

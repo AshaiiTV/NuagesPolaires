@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { chemin } from '$lib/ui/adresse';
-	import { signature, phraseTampon } from '$lib/ui/tampons';
+	import { signature, phraseTampon, signaturePersonnelle } from '$lib/ui/tampons';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount, tick, untrack } from 'svelte';
@@ -14,6 +14,8 @@
 	import Chapitre from '$lib/ui/Chapitre.svelte';
 	import Bouton from '$lib/ui/Bouton.svelte';
 	import Encre from '$lib/ui/Encre.svelte';
+	import Sceau from '$lib/ui/Sceau.svelte';
+	import { texteConsequence } from '$lib/ui/table/texte';
 	import Portrait from '$lib/ui/Portrait.svelte';
 	import Consequence from '$lib/ui/Consequence.svelte';
 	import Tampon from '$lib/ui/Tampon.svelte';
@@ -173,18 +175,7 @@
 
 <svelte:head><title>{sheet.name} · Personnages — Nuages Polaires</title></svelte:head>
 
-{#snippet reperes()}
-	<Bouton variante="texte" href="/table/personnages">Tous les personnages</Bouton>
-	<nav class="sommaire" aria-label="Chapitres de la fiche">
-		<ul>
-			{#each chapters as c (c.id)}<li>
-					<a href="#{c.id}" onclick={() => ouvrir(c.id)}
-						><span class="numero chiffres">{c.numero}</span>{c.titre}</a
-					>
-				</li>{/each}
-		</ul>
-	</nav>
-	<p class="releve chiffres">relevé {heure(sheet.releveAt)} · {dateLongue(sheet.releveAt)}</p>
+{#snippet filtresConsequences()}
 	<div class="filtres-marge">
 		<p class="repere">Conséquences</p>
 		<nav aria-label="Filtrer les conséquences">
@@ -202,6 +193,25 @@
 	</div>
 {/snippet}
 
+{#snippet reperes(support: string)}
+	<Bouton variante="texte" href="/table/personnages">Tous les personnages</Bouton>
+	{#if support === 'telephone'}<details class="chapitres">
+			<summary>Chapitres</summary>{@render sommaireFiche()}
+		</details>{:else}{@render sommaireFiche()}{/if}
+	<p class="releve chiffres">relevé {heure(sheet.releveAt)} · {dateLongue(sheet.releveAt)}</p>
+	{#if support !== 'telephone'}{@render filtresConsequences()}{/if}
+{/snippet}
+{#snippet sommaireFiche()}
+	<nav class="sommaire" aria-label="Chapitres de la fiche">
+		<ul>
+			{#each chapters as c (c.id)}<li>
+					<a href="#{c.id}" onclick={() => ouvrir(c.id)}
+						><span class="numero chiffres">{c.numero}</span>{c.titre}</a
+					>
+				</li>{/each}
+		</ul>
+	</nav>
+{/snippet}
 {#snippet afficherNote(id: string)}
 	{#if active === id && ecriture.note}
 		<div class="retour">
@@ -232,9 +242,12 @@
 
 <PagePersonnages titre={sheet.name} {reperes}>
 	<div class="identite">
-		<Portrait nom={sheet.name} src={sheet.portraitUrl} taille={72} />
+		<Portrait serment={sheet.oath.name} nom={sheet.name} src={sheet.portraitUrl} taille={72} />
 		<div>
-			<p class="serment">{sheet.oath.name} · {sheet.oath.rankLabel}</p>
+			<p class="serment">
+				<span class="sceau"><Sceau serment={sheet.oath.name} taille={40} /></span>{sheet.oath.name} ·
+				<span class="rang">{sheet.oath.rankLabel}</span>
+			</p>
 			<p class="chiffres">niveau {sheet.level} · {sheet.xp} / {sheet.xpMax} XP</p>
 			<div class="trait-xp" aria-hidden="true">
 				<span style:width={`${Math.min(100, (sheet.xp / sheet.xpMax) * 100)}%`}></span>
@@ -352,23 +365,27 @@
 		repliable
 		ouvert={expandedChapters['consequences'] ?? !mobile}
 	>
+		<div class="filtres-telephone">{@render filtresConsequences()}</div>
 		{#if visibleConsequences.length}<ul class="consequences">
 				{#each visibleConsequences as c (c.id)}<Consequence
 						cle={c.id}
 						tampon={c.stamp ? signature(c.stamp.role, c.stamp.name, c.at) : null}
 						signature={c.signature
-							? `${c.signature === 'regles' ? 'règles' : 'toi'} · ${dateHeure(c.at)}`
+							? signaturePersonnelle(c.signature === 'regles' ? 'règles' : 'toi', c.at)
 							: null}
 						motif={c.motif}
 						rayee={c.struck}
-						>{c.text}{#if c.oldValue !== null && c.newValue !== null && c.oldValue !== c.newValue}<span
+						>{texteConsequence(
+							c.text
+						)}{#if c.oldValue !== null && c.newValue !== null && c.oldValue !== c.newValue}<span
 								class="variation"
 								><span class="sr-only">Valeurs du relevé&nbsp;: </span><Rature
 									ancien={c.oldValue}
 									nouveau={c.newValue}
 								/></span
-							>{/if}{#if c.combatId}<a href={chemin(`/table/archives/${c.combatId}`)} class="recit"
-								>Lire le récit →</a
+							>{/if}{#if c.combatId}&nbsp;<a
+								href={chemin(`/table/archives/${c.combatId}`)}
+								class="recit">Lire le récit →</a
 							>{/if}</Consequence
 					>{/each}
 			</ul>{:else}<Vide>Aucune conséquence sur cette page.</Vide>{/if}
@@ -558,6 +575,30 @@
 </PagePersonnages>
 
 <style>
+	.chapitres summary {
+		min-height: var(--cible);
+		display: flex;
+		align-items: center;
+		cursor: pointer;
+	}
+	.filtres-telephone {
+		display: none;
+	}
+	@media (max-width: 760px) {
+		.filtres-telephone {
+			display: block;
+			margin-bottom: var(--ligne);
+		}
+	}
+	.sceau,
+	.rang {
+		color: var(--tampon);
+	}
+	.sceau {
+		display: inline-flex;
+		vertical-align: middle;
+		margin-right: 8px;
+	}
 	.sommaire a {
 		display: flex;
 		align-items: center;

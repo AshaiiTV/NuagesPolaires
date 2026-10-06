@@ -8,9 +8,8 @@
 
 <article class="entree" class:rayee={entry.struck || ancienne}>
 	<p class="date">
-		{entry.label ?? dateLongue(entry.at)} · {heure(entry.at)}{#if entry.inScene}
-			· notée en scène{/if}{#if ancienne}
-			· ancienne version{/if}
+		{entry.label ?? dateLongue(entry.at)} · {heure(entry.at)}{#if entry.inScene}&nbsp;· notée en
+			scène{/if}{#if ancienne}&nbsp;· ancienne version{/if}
 	</p>
 	<p class="texte">{entry.text}</p>
 	{#if entry.previous}<EntreeJournal entry={entry.previous} ancienne />{/if}

@@ -1,3 +1,4 @@
+import { fail } from '@sveltejs/kit';
 import { action } from '$lib/server/actions';
 import { requireCharacter } from '$lib/server/guards';
 import {
@@ -47,6 +48,15 @@ export const actions: Actions = {
 	/** Changer de portrait : un lien d'image, ou rien pour revenir à l'initiale. */
 	portrait: action(async (event, data) => {
 		const { actor } = requireCharacter(event);
+		const url = texte(data.url).trim();
+		if (url && !URL.canParse(url))
+			return fail(400, {
+				message: 'Ce lien ne mène pas à une image http(s). Ton portrait n’a pas changé.'
+			});
+		if (url && !['http:', 'https:'].includes(new URL(url).protocol))
+			return fail(400, {
+				message: 'Ce lien ne mène pas à une image http(s). Ton portrait n’a pas changé.'
+			});
 		const fiche = await setOwnPortrait(event.locals.db, actor, {
 			url: texte(data.url),
 			expectedRevision: data.expectedRevision as number

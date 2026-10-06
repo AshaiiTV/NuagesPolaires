@@ -247,7 +247,7 @@ describe('connexion (audit 05 §4.4 ; audit 06 A3 ; 04 §10.9)', () => {
 			status: 401,
 			message: LOGIN_FAILED_MESSAGE
 		});
-		expect(LOGIN_FAILED_MESSAGE).toBe('Identifiant ou mot de passe incorrect');
+		expect(LOGIN_FAILED_MESSAGE).toBe('Pseudo ou mot de passe inconnu. Le carnet reste fermé.');
 		expect((await auditActions()).filter((a) => a === 'login_failed')).toHaveLength(2);
 		expect(await t.db.select().from(sessions)).toHaveLength(0);
 	});

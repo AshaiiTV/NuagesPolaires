@@ -173,9 +173,14 @@
 	}
 	function regroupe(actions: CombatAction[]) {
 		// « Passer » remplit les actions restantes : une seule mention.
-		const out: CombatAction[] = [];
-		for (const a of actions)
-			if (!(a.action === 'passer' && out.at(-1)?.action === 'passer')) out.push(a);
+		const out: (CombatAction & { repetitions: number })[] = [];
+		for (const a of actions) {
+			const dernier = out.at(-1);
+			if (a.action === 'passer' && dernier?.action === 'passer') continue;
+			if (dernier && JSON.stringify({ ...dernier, repetitions: undefined }) === JSON.stringify(a))
+				dernier.repetitions++;
+			else out.push({ ...a, repetitions: 1 });
+		}
 		return out;
 	}
 </script>
@@ -201,9 +206,16 @@
 				{#if actions.length}
 					<ul class="actions">
 						{#each actions as a, j (j)}
-							{@const l = ligneAction(a)}
+							{@const l = ligneAction({
+								...a,
+								epCost: a.epCost * a.repetitions,
+								emCost: a.emCost * a.repetitions
+							})}
 							<li class:passe={a.action === 'passer'}>
-								<span class="action">{l.libelle}</span>
+								<span class="action"
+									>{l.libelle}{#if a.repetitions > 1}
+										×{a.repetitions}{/if}</span
+								>
 								{#if l.cible}<span class="cible"
 										><span aria-hidden="true">→</span><span class="sr-only">sur</span>
 										{l.cible}</span
@@ -375,8 +387,8 @@
 		min-width: 0;
 	}
 	.actions li {
-		display: flex;
-		flex-wrap: wrap;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
 		gap: 0 8px;
 		align-items: baseline;
 		min-width: 0;
@@ -391,14 +403,16 @@
 		white-space: nowrap;
 	}
 	.cible {
-		flex-basis: 100%;
+		grid-column: 1;
 		min-width: 0;
 		white-space: normal;
 		overflow-wrap: anywhere;
 		color: var(--encre-2);
 	}
 	.cout {
-		margin-left: auto;
+		grid-column: 2;
+		grid-row: 1;
+		margin-left: 0;
 		font: var(--t-libelle);
 		line-height: 20px;
 		color: var(--encre-2);

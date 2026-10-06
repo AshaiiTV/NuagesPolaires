@@ -11,20 +11,14 @@
 </script>
 
 <div class="personnages">
-	<div class="navigation"><Sommaire /></div>
 	<Page repere="NP / 06 — La Table · Personnages" {titre}>
-		{#snippet marge()}{@render reperes('bureau')}{/snippet}
-		{#snippet bande()}{@render reperes('telephone')}{/snippet}
+		{#snippet marge()}<Sommaire />{@render reperes('bureau')}{/snippet}
+		{#snippet bande()}<Sommaire />{@render reperes('telephone')}{/snippet}
 		{@render children()}
 	</Page>
 </div>
 
 <style>
-	.navigation {
-		max-width: var(--page-max);
-		margin: 0 auto;
-		padding: 0 var(--ligne) var(--ligne);
-	}
 	:global([data-regime='serre']) .personnages :global(.page) {
 		grid-template-columns: minmax(12rem, 2fr) minmax(0, 10fr);
 		gap: calc(var(--ligne) * 2);
@@ -41,9 +35,6 @@
 		}
 	}
 	@media (max-width: 760px) {
-		.navigation {
-			padding: 0 var(--gouttiere);
-		}
 		:global([data-regime='serre']) .personnages :global(.page) {
 			display: block;
 			padding: var(--ligne) var(--gouttiere) calc(var(--ligne) * 4);
