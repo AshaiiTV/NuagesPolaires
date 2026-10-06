@@ -510,6 +510,15 @@
 />
 
 <style>
+	/* Vitre sur le ciel, comme Page.svelte. */
+	@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+		.table-mj {
+			background: color-mix(in srgb, var(--page) 84%, transparent);
+			-webkit-backdrop-filter: blur(18px) saturate(1.1);
+			backdrop-filter: blur(18px) saturate(1.1);
+			box-shadow: 0 30px 80px rgb(0 0 0 / 0.45);
+		}
+	}
 	.table-mj {
 		--colonnes-combattants: minmax(0, 1fr) 52px 52px 52px 64px 44px;
 		width: 100%;

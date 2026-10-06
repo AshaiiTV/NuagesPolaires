@@ -11,6 +11,7 @@
 	import { page } from '$app/state';
 	import { chemin } from '$lib/ui/adresse';
 	import type { PageProps as SceneProps } from './carnet/scene/$types';
+	import Ciel from '$lib/ui/Ciel.svelte';
 	import '$lib/ui/styles/fonts.css';
 	import '$lib/ui/styles/tokens.css';
 	import '$lib/ui/styles/themes.css';
@@ -158,6 +159,7 @@
 	</defs>
 </svg>
 
+<Ciel />
 <div inert={!!feuillet}>{@render children()}</div>
 {#if feuillet && Scene}
 	<div

@@ -52,7 +52,6 @@
 <style>
 	.visiteur {
 		min-height: 100svh;
-		background: var(--bureau);
 	}
 	.bureau {
 		padding: calc(var(--ligne) * 2) var(--gouttiere);

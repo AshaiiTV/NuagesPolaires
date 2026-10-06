@@ -111,7 +111,6 @@
 	.bureau {
 		min-height: 100svh;
 		padding: calc(var(--ligne) * 2) var(--gouttiere);
-		background: var(--bureau);
 	}
 	.cahier {
 		display: grid;

@@ -67,6 +67,16 @@
 		border: 1px solid var(--reglure);
 		box-shadow: var(--ombre-page);
 	}
+	/* La page est une vitre posée sur le ciel (Ciel.svelte) ; opaque si le flou n'est pas rendu. */
+	@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+		.page {
+			background: color-mix(in srgb, var(--page) 84%, transparent);
+			-webkit-backdrop-filter: blur(18px) saturate(1.1);
+			backdrop-filter: blur(18px) saturate(1.1);
+			border-color: color-mix(in srgb, var(--encre) 9%, transparent);
+			box-shadow: 0 30px 80px rgb(0 0 0 / 0.45);
+		}
+	}
 	/* Grain statique, 3 % : la seule matière de la page. */
 	.grain {
 		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.03 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");

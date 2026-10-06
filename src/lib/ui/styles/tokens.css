@@ -67,7 +67,7 @@
 [data-regime='serre'] {
 	--ligne: 24px;
 	--gouttiere: 16px;
-	--page-max: 1440px;
+	--page-max: 1280px;
 	--t-corps: 500 14px/24px var(--corps);
 	--t-liste: 500 14px/24px var(--corps);
 }
