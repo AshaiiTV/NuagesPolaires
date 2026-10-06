@@ -104,7 +104,11 @@
 				{#if data.adversaires.length}
 					<ul>
 						{#each data.adversaires as a (a.id)}
-							<li><a class="nom" href={chemin(`/univers/bestiaire/${a.id}`)}>{a.nom}</a></li>
+							<li>
+								<a class="nom" href={chemin(`/univers/bestiaire/${a.id}`)}
+									>{a.nom}{#if a.qty > 1}&#8239;×{a.qty}{/if}</a
+								>
+							</li>
 						{/each}
 					</ul>
 				{:else}
@@ -279,6 +283,7 @@
 	}
 	.sous {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
 		color: var(--encre-2);
@@ -301,6 +306,7 @@
 	}
 	.nom {
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	a.nom {
@@ -313,6 +319,7 @@
 	}
 	.detail {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.detail.refus {
@@ -335,6 +342,7 @@
 	}
 	.reperes dt {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		text-transform: uppercase;
 		color: var(--encre-2);
 	}
@@ -346,6 +354,7 @@
 		position: absolute;
 		left: 0;
 		font: 400 32px/36px var(--voix);
+		font-variant-numeric: oldstyle-nums proportional-nums;
 		color: var(--encre-2);
 	}
 	.tampon-round {
@@ -353,6 +362,7 @@
 	}
 	.round li {
 		font: 400 18px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.round li.damage,
@@ -378,6 +388,7 @@
 		padding-top: 24px;
 		white-space: pre-wrap;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		background-image: repeating-linear-gradient(
 			to bottom,
@@ -395,6 +406,7 @@
 	.texte-extrait {
 		white-space: pre-wrap;
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		max-width: var(--lecture);
 	}
@@ -422,6 +434,7 @@
 	label {
 		display: grid;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.rature label {
@@ -435,6 +448,7 @@
 		border-bottom: 1px solid color-mix(in srgb, var(--encre) 28%, transparent);
 		background: transparent;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	textarea {
@@ -453,6 +467,7 @@
 		border: 0;
 		background: none;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: underline;
 		text-decoration-color: color-mix(in srgb, var(--rouille) 55%, transparent);
@@ -472,6 +487,7 @@
 	legend {
 		padding: 0;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
 		color: var(--encre-2);
@@ -483,6 +499,7 @@
 		gap: 12px;
 		min-height: 44px;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		cursor: pointer;
 	}

@@ -268,6 +268,7 @@
 	h1 {
 		margin-bottom: 28px;
 		font: 400 clamp(76px, 7.8vw, 120px) / 0.83 var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: -0.045em;
 	}
 	h1 em {
@@ -277,11 +278,13 @@
 	.accroche {
 		margin-bottom: 14px;
 		font: 400 clamp(22px, 2.3vw, 31px) / 1.15 var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.description {
 		max-width: 400px;
 		margin-bottom: 28px;
 		font: 400 15px/28px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.actions {
@@ -299,6 +302,7 @@
 		gap: 30px;
 		border-radius: var(--rayon);
 		font: 600 14px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		text-decoration: none;
 		transition:
 			background 200ms,
@@ -306,6 +310,7 @@
 	}
 	.action span {
 		font: 400 20px/1 var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.action.principale {
 		background: var(--ruban);
@@ -328,6 +333,7 @@
 	.plateforme {
 		margin-top: 16px;
 		font: 400 13px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: #a7bdb4;
 	}
 	.plateforme a {
@@ -357,6 +363,7 @@
 		align-items: flex-start;
 		gap: 20px;
 		font: 400 24px/1.2 var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		text-shadow: 0 2px 12px #000;
 	}
 	.legende .filet {
@@ -384,6 +391,7 @@
 	.dernieres header h2 {
 		margin-top: 12px;
 		font: 400 28px/34px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: #d0dad1;
 		max-width: 12em;
 	}
@@ -431,11 +439,13 @@
 		padding-left: 18px;
 		border-left: 1px solid rgb(198 179 139 / 0.38);
 		font: 400 15px/28px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-grise);
 	}
 	.page h2,
 	.invitation h2 {
 		font: 400 clamp(38px, 4vw, 61px) / 1 var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: -0.025em;
 	}
 	.page h2 em {
@@ -448,6 +458,7 @@
 	.recit p {
 		margin-bottom: 28px;
 		font: 400 20px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.recit strong {
@@ -457,6 +468,7 @@
 	.recit .chute {
 		margin-bottom: 0;
 		font: italic 400 25px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--tampon);
 	}
 	.lien-fleche {
@@ -468,6 +480,7 @@
 		padding: 12px 0;
 		border-bottom: 1px solid rgb(149 205 187 / 0.38);
 		font: 500 14px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: #dbe8de;
 		text-decoration: none;
 	}
@@ -514,11 +527,13 @@
 	blockquote {
 		margin: 28px 0;
 		font: italic 400 24px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--tampon);
 	}
 	.texte-serments {
 		max-width: var(--lecture);
 		font: 400 16px/28px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.liste-serments {
@@ -550,11 +565,13 @@
 	.nom-serment {
 		grid-column: 2;
 		font: 500 22px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.arme {
 		grid-column: 2;
 		font: 400 13px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-grise);
 	}
 	.categorie {
@@ -584,6 +601,7 @@
 		max-width: 420px;
 		margin: 18px auto 28px;
 		font: 400 16px/28px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 

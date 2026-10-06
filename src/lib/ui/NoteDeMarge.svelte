@@ -28,6 +28,7 @@
 		gap: 12px;
 		padding: calc(var(--ligne) / 4) 0;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre-2);
 	}

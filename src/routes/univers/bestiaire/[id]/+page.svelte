@@ -144,6 +144,7 @@
 		display: flex;
 		align-items: center;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.interrupteur {
 		gap: 12px;
@@ -159,6 +160,7 @@
 		border-left: 1px solid var(--reglure);
 		color: var(--encre-2);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		overflow-wrap: anywhere;
 	}
@@ -180,10 +182,12 @@
 	}
 	.extrait {
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		white-space: pre-line;
 	}
 	.date {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		margin-bottom: calc(var(--ligne) / 2);
 	}

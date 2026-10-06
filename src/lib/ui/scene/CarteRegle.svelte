@@ -75,6 +75,7 @@
 	h2 {
 		grid-column: 1;
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		outline: none;
 	}
@@ -86,6 +87,7 @@
 		border: 0;
 		background: none;
 		font: 500 13px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: underline;
 		text-decoration-color: color-mix(in srgb, var(--encre-humide) 45%, transparent);
@@ -94,6 +96,7 @@
 	.chapeau {
 		margin-top: 12px;
 		font: 500 13px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.actions {
@@ -108,16 +111,19 @@
 	}
 	.mot {
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.cout {
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		white-space: nowrap;
 	}
 	.effet {
 		grid-column: 1 / -1;
 		font: 400 13px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.effet em {
@@ -130,6 +136,7 @@
 	.texte {
 		margin-top: 12px;
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		max-width: 46ch;
 	}
@@ -142,6 +149,7 @@
 		gap: 12px;
 		min-height: var(--cible);
 		font: 500 14px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 </style>

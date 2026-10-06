@@ -34,6 +34,7 @@
 		padding: calc(var(--ligne) / 2) 28px calc(var(--ligne) / 2) 0;
 		border-bottom: 1px solid var(--reglure);
 		font: var(--t-liste);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: none;
 	}
@@ -43,6 +44,7 @@
 	}
 	.date {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		color: var(--encre-grise);

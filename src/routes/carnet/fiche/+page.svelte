@@ -704,6 +704,7 @@
 		min-height: var(--cible);
 		border-bottom: 1px solid var(--reglure);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		font-size: 14px;
 		color: var(--encre-2);
 		text-decoration: none;
@@ -718,12 +719,14 @@
 	}
 	.num {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.12em;
 		color: var(--encre-grise);
 	}
 	.releve {
 		margin-top: var(--ligne);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre-2);
 	}
@@ -748,6 +751,7 @@
 		align-items: center;
 		min-height: var(--cible);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: none;
 	}
@@ -798,6 +802,7 @@
 		align-items: center;
 		gap: 12px;
 		font: 500 22px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	/* Ton Serment est scellé en laiton, comme son rang. */
@@ -809,6 +814,7 @@
 	}
 	.niveau {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre-2);
 	}
@@ -841,6 +847,7 @@
 	}
 	.xp-texte {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre-2);
 	}
@@ -866,6 +873,7 @@
 		background: none;
 		border: 0;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: underline;
 		text-decoration-color: color-mix(in srgb, var(--encre-humide) 50%, transparent);
@@ -877,6 +885,7 @@
 	}
 	.rien {
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		font-style: italic;
 		color: var(--encre-2);
 	}
@@ -900,10 +909,12 @@
 	}
 	.r-titre {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.r-valeur {
 		font: 500 24px/var(--ligne) var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.max {
@@ -928,6 +939,7 @@
 	}
 	.decl-texte {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-humide);
 	}
 	.note-ligne {
@@ -968,12 +980,14 @@
 	}
 	.emplacement dt {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		color: var(--encre-2);
 	}
 	.emplacement dd {
 		font: 500 20px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.emplacement dd.vide-slot {
@@ -1002,6 +1016,7 @@
 	}
 	.objet-nom {
 		font: var(--t-liste);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		min-width: 0;
 		overflow-wrap: anywhere;
@@ -1014,6 +1029,7 @@
 		margin-top: -8px;
 		padding-bottom: 8px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.consommer {
@@ -1023,6 +1039,7 @@
 	}
 	.question {
 		font: italic 400 19px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-humide);
 	}
 
@@ -1044,12 +1061,14 @@
 	}
 	.serment-fiche dt {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		color: var(--encre-2);
 	}
 	.serment-fiche dd {
 		font: 500 20px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		overflow-wrap: anywhere;
 	}
@@ -1071,15 +1090,18 @@
 	}
 	.palier-nom {
 		font: 500 22px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.cout {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.palier-texte {
 		margin-top: 4px;
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		/* Valeurs de règle (« 10+Niv ») : chiffres alignés, lisibles d'un coup d'œil en plein RP. */
 		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
@@ -1114,6 +1136,7 @@
 	}
 	.folio {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-grise);
 	}
 
@@ -1121,6 +1144,7 @@
 	.indisponible {
 		padding-bottom: var(--ligne);
 		font: italic 400 22px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		max-width: var(--lecture);
 	}

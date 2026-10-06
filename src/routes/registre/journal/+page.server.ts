@@ -6,6 +6,8 @@ import { requireCapability } from '$lib/server/guards';
 import { listAudit } from '$lib/server/domain/audit';
 import { listStaffLog } from '$lib/server/domain/staff-log';
 import { isNpError } from '$lib/server/http';
+import { inArray } from 'drizzle-orm';
+import { characters, themes } from '$lib/server/db/schema';
 import type { PageServerLoad } from './$types';
 
 const JOUR = /^\d{4}-\d{2}-\d{2}$/;
@@ -43,6 +45,35 @@ export const load: PageServerLoad = async (event) => {
 			to: filtres.au || undefined,
 			page
 		});
+		const characterIds = audit.rows.flatMap((r) =>
+			typeof r.details.characterId === 'string' ? [r.details.characterId] : []
+		);
+		const themeIds = audit.rows.flatMap((r) =>
+			typeof r.details.themeId === 'string' ? [r.details.themeId] : []
+		);
+		const [personnages, nomsThemes] = await Promise.all([
+			characterIds.length
+				? event.locals.db
+						.select({ id: characters.id, name: characters.name })
+						.from(characters)
+						.where(inArray(characters.id, characterIds))
+				: [],
+			themeIds.length
+				? event.locals.db
+						.select({ id: themes.id, name: themes.name })
+						.from(themes)
+						.where(inArray(themes.id, themeIds))
+				: []
+		]);
+		for (const r of audit.rows) {
+			const personnage = personnages.find((c) => c.id === r.details.characterId);
+			if (personnage) {
+				r.details.characterName = personnage.name;
+				delete r.details.characterId;
+			}
+			const theme = nomsThemes.find((t) => t.id === r.details.themeId);
+			if (theme) r.details.themeId = theme.name;
+		}
 		return { vue, filtres, audit, staff: null, releve: new Date().toISOString() };
 	} catch (e) {
 		// Un filtre refusé par le serveur (date impossible) : la page reste lisible et dit pourquoi.

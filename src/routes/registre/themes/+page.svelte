@@ -394,6 +394,7 @@
 		max-width: 62ch;
 		padding: 12px 0 var(--ligne);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 
@@ -421,6 +422,7 @@
 	}
 	.nom {
 		font: 500 22px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.etats {
@@ -428,6 +430,7 @@
 		flex-wrap: wrap;
 		gap: 0 6px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.etats span:not(:last-child)::after {
@@ -443,6 +446,7 @@
 	}
 	.description {
 		font: italic 400 16px/24px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.gestes {
@@ -459,6 +463,7 @@
 	}
 	.aide {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-grise);
 	}
 	.don {
@@ -474,6 +479,7 @@
 		cursor: pointer;
 		list-style: none;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.don summary::-webkit-details-marker {
@@ -512,6 +518,7 @@
 		gap: 2px;
 		width: 100%;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	select {
@@ -523,6 +530,7 @@
 		border-bottom: 1px solid color-mix(in srgb, var(--encre) 28%, transparent);
 		border-radius: 0;
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	select option {
@@ -535,6 +543,7 @@
 	}
 	.constat {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 
@@ -603,10 +612,12 @@
 	}
 	.libelle {
 		font: 600 14px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.role {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-grise);
 	}
 	.hex {
@@ -618,6 +629,7 @@
 		border-bottom: 1px solid color-mix(in srgb, var(--encre) 28%, transparent);
 		border-radius: 0;
 		font: 400 14px/24px var(--mono);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		text-transform: lowercase;
 	}
@@ -650,17 +662,20 @@
 	}
 	dt {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	dd {
 		display: grid;
 		justify-items: end;
 		font: 500 16px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		text-align: right;
 	}
 	dd span {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-grise);
 	}
 	.insuffisant dd,
@@ -677,6 +692,7 @@
 		padding-left: 12px;
 		border-left: 2px solid var(--rouille);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.cree {
@@ -685,6 +701,7 @@
 		align-items: center;
 		gap: 12px 20px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 
@@ -721,6 +738,7 @@
 			display: block;
 			padding-top: 12px;
 			font: var(--t-libelle);
+			font-variant-numeric: lining-nums tabular-nums;
 			color: var(--encre-grise);
 		}
 		.couleurs li {

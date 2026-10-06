@@ -118,6 +118,7 @@
 		display: block;
 		color: var(--encre-2);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.observation {
 		padding: var(--ligne) 0;

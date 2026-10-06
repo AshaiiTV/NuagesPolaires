@@ -108,6 +108,7 @@
 		border-bottom: 1px solid color-mix(in srgb, var(--encre) 28%, transparent);
 		background: transparent;
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.recherche input::placeholder {
@@ -123,7 +124,11 @@
 		border-bottom: 1px solid var(--reglure);
 	}
 	.titre {
+		display: flex;
+		align-items: center;
+		min-height: 44px;
 		font: 500 16px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		text-decoration: none;
 		overflow: hidden;
@@ -138,6 +143,7 @@
 	.rounds,
 	.lisible {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -152,6 +158,7 @@
 	}
 	.numero {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	@media (max-width: 1100px) {

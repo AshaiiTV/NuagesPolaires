@@ -74,6 +74,7 @@
 		display: block;
 		margin: 8px 0 10px;
 		font: 500 20px/22px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: -0.02em;
 		color: var(--a-encre);
 		white-space: nowrap;

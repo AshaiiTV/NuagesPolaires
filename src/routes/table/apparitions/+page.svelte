@@ -225,6 +225,7 @@
 		width: 100%;
 		padding: 0;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
 		color: var(--encre-2);
@@ -246,6 +247,7 @@
 		gap: 12px;
 		min-height: 44px;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		cursor: pointer;
 	}
@@ -270,6 +272,7 @@
 	.nombre {
 		display: grid;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	select {
@@ -281,11 +284,13 @@
 		border-radius: 0;
 		background: var(--page);
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.titre-tirage {
 		min-height: 48px;
 		font: 600 14px/48px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		border-bottom: 1px solid var(--reglure);
 	}
@@ -299,6 +304,7 @@
 	}
 	.nom {
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.detail {
@@ -306,10 +312,12 @@
 		align-items: center;
 		gap: 12px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.quantite {
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		text-align: right;
 		color: var(--encre);
 	}
@@ -347,10 +355,12 @@
 	}
 	.quand {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.zone {
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -358,6 +368,7 @@
 	}
 	.groupes-ligne {
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.geste {
@@ -367,6 +378,7 @@
 		border: 0;
 		background: none;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: underline;
 		text-decoration-color: color-mix(in srgb, var(--encre-humide) 45%, transparent);
@@ -390,6 +402,7 @@
 	}
 	.total {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 

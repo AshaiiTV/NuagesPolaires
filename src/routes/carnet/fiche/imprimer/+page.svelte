@@ -74,14 +74,14 @@
 				</p>
 			</div>
 			<div class="sceau-impression"><Sceau serment={fiche.oath.name} taille={76} /></div>
-			<div class="portrait">
-				<Portrait
-					serment={fiche.oath.name}
-					nom={fiche.name}
-					src={fiche.portraitUrl || null}
-					taille={104}
-				/>
-			</div>
+			{#if fiche.portraitUrl}<div class="portrait">
+					<Portrait
+						serment={fiche.oath.name}
+						nom={fiche.name}
+						src={fiche.portraitUrl || null}
+						taille={104}
+					/>
+				</div>{/if}
 		</header>
 
 		<div class="deux">
@@ -307,6 +307,7 @@
 	}
 	.coordonnee {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
 		color: var(--encre-humide);
@@ -314,11 +315,13 @@
 	h1 {
 		margin-top: 6px;
 		font: 500 44px/48px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: -0.01em;
 		overflow-wrap: anywhere;
 	}
 	.serment {
 		font: 500 20px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.rang {
 		color: var(--tampon);
@@ -326,6 +329,7 @@
 	.exporte {
 		margin-top: 6px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.deux {
@@ -351,21 +355,25 @@
 		margin-bottom: 8px;
 		border-bottom: 1px solid var(--encre-2);
 		font: 500 24px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.num {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.12em;
 		color: var(--encre-2);
 	}
 	.libelle {
 		margin-top: 8px;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		color: var(--encre-2);
 	}
 	.rien {
 		font: italic 400 16px/24px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	table {
@@ -376,11 +384,13 @@
 		padding-top: 6px;
 		text-align: left;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.abr {
 		margin-right: 6px;
 		font: 600 13px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.1em;
 		color: var(--encre);
 	}
@@ -388,6 +398,7 @@
 		padding-top: 6px;
 		text-align: right;
 		font: 600 20px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.max {
 		font-size: 14px;
@@ -410,11 +421,13 @@
 	}
 	.declare td {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.xp {
 		margin-top: 8px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.sens {
@@ -437,12 +450,14 @@
 	}
 	dt {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		color: var(--encre-2);
 	}
 	dd {
 		font: 500 18px/24px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		overflow-wrap: anywhere;
 	}
 	.inventaire {
@@ -458,6 +473,7 @@
 		padding: 3px 0;
 		border-bottom: 1px solid var(--reglure);
 		font: 400 14px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.qte {
 		color: var(--encre-2);
@@ -478,9 +494,11 @@
 	}
 	.palier-tete strong {
 		font: 500 19px/24px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.cout {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.palier-texte {
@@ -495,6 +513,7 @@
 		padding: 4px 8px 4px 0;
 		text-align: left;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		color: var(--encre-2);
@@ -504,6 +523,7 @@
 		padding: 5px 8px 5px 0;
 		vertical-align: top;
 		font: 400 13px/18px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		border-bottom: 1px solid var(--reglure);
 	}
 	.consequences tr {
@@ -533,6 +553,7 @@
 		padding: 14px 32px 22px;
 		border-top: 1px solid var(--reglure);
 		font: italic 400 15px/22px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 

@@ -459,6 +459,18 @@ describe('mutations du staff', () => {
 			expectedRevision: r
 		});
 		expect(sheet).toMatchObject({ level: 4, xp: 0, xpMax: 120 });
+		const [auditXp] = await t.db
+			.select()
+			.from(auditLog)
+			.where(eq(auditLog.action, 'character_grant_xp'))
+			.orderBy(desc(auditLog.id))
+			.limit(1);
+		expect(auditXp.details).toMatchObject({
+			motif: 'Combat archivé',
+			old: { xp: 40, level: 3 },
+			new: { xp: 0, level: 4 },
+			xp: 50
+		});
 		expect(sheet.pv).toEqual({ cur: 33, max: 33 });
 		expect(sheet.em).toEqual({ cur: 44, max: 44 });
 		expect(await historyCount(t.db, P.kael)).toBe(before + 2);

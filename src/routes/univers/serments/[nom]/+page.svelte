@@ -205,6 +205,7 @@
 		padding-left: 16px;
 		border-left: 1px solid var(--reglure);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre-2);
 	}
@@ -214,9 +215,15 @@
 		gap: 12px;
 		min-height: var(--cible);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 
+	.interrupteur input {
+		accent-color: var(--encre-humide);
+		width: 18px;
+		height: 18px;
+	}
 	/* ── Cartouche d'identité ─────────────────────────────────────────── */
 	/* Le sceau du Serment ouvre la marge, en encre : le laiton reste au rang. */
 	.sceau-serment {
@@ -246,6 +253,7 @@
 	}
 	.rang {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
@@ -253,10 +261,12 @@
 	}
 	.arme {
 		font: 500 22px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.valeur {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre);
 	}
@@ -301,6 +311,7 @@
 	}
 	h2 {
 		font: 500 28px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: -0.01em;
 		color: var(--encre);
 	}
@@ -308,6 +319,7 @@
 	.numero {
 		flex: none;
 		font: 500 22px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.04em;
 		color: var(--encre-2);
 	}
@@ -328,6 +340,7 @@
 	.lore {
 		max-width: var(--lecture);
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		white-space: pre-line;
 	}
@@ -341,6 +354,7 @@
 		max-width: var(--lecture);
 		margin-top: var(--ligne);
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		white-space: pre-line;
 	}
@@ -351,6 +365,7 @@
 		padding-left: 20px;
 		border-left: 1px solid color-mix(in srgb, var(--encre-2) 40%, transparent);
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		font-style: italic;
 		color: var(--encre-2);
 		white-space: pre-line;
@@ -370,6 +385,7 @@
 	}
 	.niveau {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre-2);
 	}
@@ -380,6 +396,7 @@
 	.etape,
 	.cout {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
@@ -393,6 +410,7 @@
 		align-items: center;
 		gap: 8px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre-humide);
 	}
@@ -411,6 +429,7 @@
 	}
 	h3 {
 		font: 500 22px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.tete h3 {
@@ -429,6 +448,7 @@
 	.effet {
 		max-width: var(--lecture);
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		white-space: pre-line;
 	}
@@ -468,6 +488,7 @@
 		.numero {
 			display: block;
 			font: var(--t-repere);
+			font-variant-numeric: lining-nums tabular-nums;
 			line-height: var(--ligne);
 			letter-spacing: var(--approche-repere);
 			text-transform: uppercase;

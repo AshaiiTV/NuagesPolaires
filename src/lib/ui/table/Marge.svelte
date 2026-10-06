@@ -17,7 +17,10 @@
 
 	const log = $derived(
 		table.etat.log.filter(
-			(e) => sansEmoji(e.text) && !/^Déclaration de\s*:/u.test(sansEmoji(e.text))
+			(e) =>
+				sansEmoji(e.text) &&
+				!/^Déclaration de\s*:/u.test(sansEmoji(e.text)) &&
+				!/^— Round \d+ — Déclarations/u.test(sansEmoji(e.text))
 		)
 	);
 	let fil = $state<HTMLElement | null>(null);
@@ -63,7 +66,11 @@
 				>
 					{#each log as e (e.n)}
 						<li class={e.kind} class:prive={e.private}>
-							{sansEmoji(e.text)}{#if e.private}<span class="sr-only"> (réservé au MJ)</span>{/if}
+							{sansEmoji(e.text).replace(
+								/^— Résolution Round (\d+) —(?: · résolu à (\d\d:\d\d))?$/u,
+								(_tout, round: string, heure?: string) =>
+									`Round ${round}${heure ? ` · résolu à ${heure}` : ' · résolu'}`
+							)}{#if e.private}<span class="sr-only"> (réservé au MJ)</span>{/if}
 						</li>
 					{/each}
 				</ol>
@@ -129,6 +136,7 @@
 		align-items: center;
 		min-height: 24px;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
 		color: var(--encre-2);
@@ -150,6 +158,7 @@
 	.journal li {
 		padding: 0;
 		font: 400 13px/24px var(--mono);
+		font-variant-numeric: lining-nums tabular-nums;
 		scroll-snap-align: end;
 		color: var(--encre-2);
 		border-bottom: 1px solid color-mix(in srgb, var(--reglure) 60%, transparent);
@@ -172,6 +181,7 @@
 	.vide {
 		padding: 12px 0;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.regle summary {
@@ -190,6 +200,7 @@
 		content: '+';
 		margin-left: auto;
 		font: 400 16px/1 var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.regle[open] summary::after {
@@ -199,6 +210,7 @@
 		min-width: 0;
 		white-space: normal;
 		font: 500 13px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.regles li {
@@ -210,21 +222,25 @@
 	}
 	.nom-regle {
 		font: 600 13px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.cout {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: 24px;
 		color: var(--encre-2);
 	}
 	.effet {
 		grid-column: 1 / -1;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.texte-regle {
 		padding: 8px 0;
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.lien {
@@ -232,6 +248,7 @@
 		align-items: center;
 		min-height: 44px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-humide);
 	}
 	textarea {
@@ -247,6 +264,7 @@
 		);
 		background-attachment: local;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		resize: vertical;
 	}

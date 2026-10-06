@@ -51,6 +51,7 @@
 		border-radius: var(--rayon);
 		background: none;
 		font: 600 14px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.01em;
 		text-decoration: none;
 		cursor: pointer;
@@ -64,13 +65,14 @@
 	}
 	.fleche {
 		font: 400 18px/1 var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.ruban {
 		background: var(--ruban);
 		border-color: var(--ruban);
 		color: var(--sur-ruban);
 	}
-	.bouton:is(.ruban, .tampon, .rouille) :global(.encre:not(.refusee)) {
+	.bouton:is(.ruban, .tampon, .rouille) :global(.encre) {
 		color: inherit;
 	}
 	.bouton:is(.ruban, .tampon, .rouille) :global(.encre.humide) {

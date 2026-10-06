@@ -50,6 +50,7 @@
 	}
 	.initiale {
 		font: 500 calc(var(--taille) * 0.5) / 1 var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-humide);
 	}
 </style>

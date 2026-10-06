@@ -89,6 +89,7 @@
 		padding: 0 16px 0 0;
 		margin-right: 12px;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: none;
 		transition: color 160ms;
@@ -111,6 +112,7 @@
 	}
 	.numero {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.12em;
 		color: var(--encre-2);
 	}
@@ -120,6 +122,7 @@
 		gap: 4px 24px;
 		padding-top: 12px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	@media (max-width: 760px) {
@@ -137,6 +140,7 @@
 			margin: 0;
 			padding: 0;
 			font: var(--t-libelle);
+			font-variant-numeric: lining-nums tabular-nums;
 		}
 		.sommaire a.courant::after {
 			right: 0;

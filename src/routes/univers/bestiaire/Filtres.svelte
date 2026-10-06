@@ -60,6 +60,13 @@
 </form>
 
 <style>
+	.repere {
+		font: 400 13px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
+		text-transform: none;
+		letter-spacing: normal;
+		color: var(--encre-2);
+	}
 	.filtres {
 		display: grid;
 		gap: var(--ligne);
@@ -80,6 +87,7 @@
 		gap: 12px;
 		min-height: var(--cible);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	input {
 		accent-color: var(--encre-humide);
@@ -90,6 +98,7 @@
 	.choix {
 		display: grid;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	select {

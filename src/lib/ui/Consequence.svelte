@@ -47,6 +47,7 @@
 		padding: calc(var(--ligne) / 4) 0;
 		border-bottom: 1px solid var(--reglure);
 		font: var(--t-liste);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.qui {
@@ -59,6 +60,7 @@
 	.signature,
 	.motif {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.rayee .quoi {

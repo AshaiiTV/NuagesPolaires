@@ -139,6 +139,7 @@
 		background: var(--ruban);
 		color: var(--sur-ruban);
 		font: 600 12px/16px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
 		text-decoration: none;
@@ -197,6 +198,7 @@
 		border-radius: 0 var(--rayon) var(--rayon) 0;
 		background: color-mix(in srgb, var(--page) 45%, var(--bureau));
 		font: 500 14px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: none;
 		transition:
@@ -238,6 +240,7 @@
 	}
 	.pseudo {
 		font: 500 13px/16px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -246,6 +249,7 @@
 	.compte .role {
 		grid-column: 1 / -1;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		/* Le laiton est réservé aux décisions des MJ : le rôle s'écrit à l'encre secondaire. */
@@ -316,6 +320,7 @@
 			place-items: center;
 			min-height: 56px;
 			font: 500 13px/16px var(--corps);
+			font-variant-numeric: lining-nums tabular-nums;
 			color: var(--encre-2);
 			text-decoration: none;
 		}

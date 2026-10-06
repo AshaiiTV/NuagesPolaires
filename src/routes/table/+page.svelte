@@ -265,7 +265,11 @@
 		border-bottom: 1px solid var(--reglure);
 	}
 	.nom {
+		display: flex;
+		align-items: center;
+		min-height: 44px;
 		font: 500 16px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		text-decoration: none;
 		overflow: hidden;
@@ -277,6 +281,7 @@
 	}
 	.statut {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		color: var(--encre-humide);
@@ -287,6 +292,7 @@
 	.round,
 	.releve {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 
@@ -316,6 +322,7 @@
 		width: 100%;
 		padding: 0;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
 		color: var(--encre-2);
@@ -354,6 +361,7 @@
 	}
 	.nom-ligne {
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.detail {
@@ -361,10 +369,12 @@
 		align-items: center;
 		gap: 12px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.res {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.pris .nom-ligne {
@@ -380,6 +390,7 @@
 		border: 0;
 		background: none;
 		font: 400 18px/1 var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		border-radius: var(--rayon);
 	}
@@ -400,6 +411,7 @@
 		background: transparent;
 		text-align: center;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		-moz-appearance: textfield;
 		appearance: textfield;
 	}
@@ -416,6 +428,7 @@
 		border-bottom: 1px solid color-mix(in srgb, var(--encre) 28%, transparent);
 		background: transparent;
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.filtre input::placeholder {
 		color: var(--encre-grise);
@@ -432,6 +445,7 @@
 	}
 	.resume {
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 

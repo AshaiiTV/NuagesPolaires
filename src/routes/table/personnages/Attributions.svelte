@@ -2,7 +2,7 @@
 	import { tick, untrack, type Snippet } from 'svelte';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import type { EtatEncre } from '$lib/ui/Encre.svelte';
-	import type { SheetView } from '$lib/schemas/characters';
+	import type { SheetView, ConsequenceView } from '$lib/schemas/characters';
 	import {
 		STATUS_CATALOG,
 		ITEM_CATEGORIES,
@@ -19,6 +19,7 @@
 	let {
 		sheet,
 		beasts,
+		consequences = [],
 		revision,
 		enhancer,
 		etat,
@@ -28,6 +29,7 @@
 	}: {
 		sheet: SheetView;
 		beasts: { id: string; name: string; level: number }[];
+		consequences?: ConsequenceView[];
 		revision: number;
 		enhancer: (id: string) => SubmitFunction;
 		etat: EtatEncre;
@@ -76,6 +78,20 @@
 	let resource = $state(initial('corriger', 'resource', 'pv'));
 	const currentResource = $derived(RESOURCES.find((r) => r === resource) ?? 'pv');
 	let corrected = $state<string | number | null>(initial('corriger', 'newValue'));
+	let replacesId = $state(initial('corriger', 'replacesId'));
+	const corrigeables = $derived(
+		consequences.filter(
+			(c) =>
+				!c.struck &&
+				RESOURCES.some((r) => r === c.field) &&
+				c.newValue !== null &&
+				/^\d+$/u.test(c.newValue)
+		)
+	);
+	$effect(() => {
+		const cible = corrigeables.find((c) => c.id === replacesId);
+		if (cible?.field) resource = cible.field;
+	});
 </script>
 
 <SaisieTampon
@@ -319,6 +335,15 @@
 	{humide}
 	{values}
 >
+	<Choix
+		libelle="Corriger cette conséquence"
+		name="replacesId"
+		bind:value={replacesId}
+		required={false}
+	>
+		<option value="">Variation ordinaire, sans rature</option>
+		{#each corrigeables as c (c.id)}<option value={c.id}>{c.text} · {c.motif}</option>{/each}
+	</Choix>
 	<div class="deux">
 		<Choix libelle="Ressource à corriger" name="resource" bind:value={resource}
 			>{#each RESOURCES as r (r)}<option value={r}>{r.toUpperCase()}</option>{/each}</Choix
@@ -379,6 +404,7 @@
 	}
 	.proposition {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.proposition strong {

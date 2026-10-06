@@ -410,6 +410,7 @@
 		padding: 0;
 		margin-bottom: 4px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.options {
@@ -456,6 +457,7 @@
 	.option.large {
 		display: flex;
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.option.large::before {
@@ -479,6 +481,7 @@
 	.erreur {
 		margin-top: 4px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--rouille);
 	}
 	.cocher {
@@ -488,6 +491,7 @@
 		min-height: var(--cible);
 		cursor: pointer;
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.cocher input {
@@ -500,6 +504,7 @@
 	.cocher small {
 		display: block;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.envoi {
@@ -529,6 +534,7 @@
 		padding: 6px 0;
 		border-bottom: 1px solid var(--reglure);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 	}
 	.champ-nom {
@@ -551,6 +557,7 @@
 	}
 	.aide-version {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 
@@ -572,6 +579,7 @@
 	.explique {
 		flex: 1 1 260px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.confirmer {
@@ -581,6 +589,7 @@
 	}
 	.question {
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--rouille);
 	}
 	.oui-non {

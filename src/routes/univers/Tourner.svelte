@@ -91,12 +91,14 @@
 	}
 	.fleche {
 		font: 400 16px/1 var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0;
 		color: var(--encre-humide);
 		transition: translate 200ms;
 	}
 	.voisine {
 		font: 500 22px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		text-wrap: balance;
 		transition: color 160ms;

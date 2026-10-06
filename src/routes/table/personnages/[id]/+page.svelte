@@ -245,7 +245,9 @@
 		<Portrait serment={sheet.oath.name} nom={sheet.name} src={sheet.portraitUrl} taille={72} />
 		<div>
 			<p class="serment">
-				<span class="sceau"><Sceau serment={sheet.oath.name} taille={40} /></span>{sheet.oath.name} ·
+				{#if sheet.portraitUrl}<span class="sceau"
+						><Sceau serment={sheet.oath.name} taille={40} /></span
+					>{/if}{sheet.oath.name} ·
 				<span class="rang">{sheet.oath.rankLabel}</span>
 			</p>
 			<p class="chiffres">niveau {sheet.level} · {sheet.xp} / {sheet.xpMax} XP</p>
@@ -377,7 +379,7 @@
 						rayee={c.struck}
 						>{texteConsequence(
 							c.text
-						)}{#if c.oldValue !== null && c.newValue !== null && c.oldValue !== c.newValue}<span
+						)}{#if c.replacesId && c.oldValue !== null && c.newValue !== null && c.oldValue !== c.newValue && !c.oldValue.startsWith('{') && !c.newValue.startsWith('{')}<span
 								class="variation"
 								><span class="sr-only">Valeurs du relevé&nbsp;: </span><Rature
 									ancien={c.oldValue}
@@ -417,6 +419,7 @@
 			<Attributions
 				{sheet}
 				beasts={data.beasts}
+				consequences={data.consequences.rows}
 				revision={approvedRevision}
 				{enhancer}
 				etat={ecriture.etat}
@@ -605,6 +608,7 @@
 		gap: 12px;
 		min-height: var(--cible);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: none;
 	}
@@ -614,6 +618,7 @@
 	}
 	.releve {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.filtres-marge {
@@ -627,10 +632,12 @@
 		gap: 0 12px;
 	}
 	.filtres-marge a {
+		min-width: 44px;
 		display: inline-flex;
 		align-items: center;
 		min-height: var(--cible);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.filtres-marge .courant {
@@ -649,9 +656,11 @@
 	}
 	.serment {
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.liaison {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-grise);
 	}
 	.trait-xp {
@@ -675,14 +684,17 @@
 	}
 	.ressource strong {
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.ressource > span:last-child,
 	.max {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.en-attente {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-humide);
 		padding: var(--ligne) 0;
 	}
@@ -710,6 +722,7 @@
 	dt {
 		color: var(--encre-2);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	dd {
 		overflow-wrap: anywhere;
@@ -735,6 +748,7 @@
 	.description {
 		display: block;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.palier {
@@ -749,6 +763,7 @@
 	}
 	.palier h3 {
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		margin: calc(var(--ligne) / 2) 0;
 	}
 	.palier p {
@@ -760,12 +775,14 @@
 	.variation {
 		display: block;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.recit {
 		display: inline-flex;
 		align-items: center;
 		min-height: var(--cible);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-humide);
 	}
 	.consequences :global(.consequence) {
@@ -793,6 +810,7 @@
 		padding: var(--ligne) 0;
 		color: var(--encre-2);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.faits > li {
 		padding: var(--ligne) 0;
@@ -816,6 +834,7 @@
 	}
 	.aide {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		overflow-wrap: anywhere;
 	}
@@ -840,6 +859,7 @@
 		flex-wrap: wrap;
 		gap: calc(var(--ligne) / 2) var(--gouttiere);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.dernier-tampon > span {
 		width: 100%;

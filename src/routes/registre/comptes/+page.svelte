@@ -289,6 +289,7 @@
 		gap: 10px;
 		min-height: var(--cible);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: none;
 	}
@@ -316,6 +317,7 @@
 		padding: 0 8px;
 		min-height: var(--ligne);
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
 		color: var(--encre-grise);
@@ -340,6 +342,7 @@
 	}
 	.pseudo {
 		font: 600 15px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		overflow-wrap: anywhere;
 	}
@@ -349,6 +352,7 @@
 	}
 	.role {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
 		color: var(--encre-2);
@@ -356,6 +360,7 @@
 	.liaison,
 	.venue {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.liaison strong {
@@ -403,6 +408,7 @@
 	}
 	.etat {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.etat strong {
@@ -414,6 +420,7 @@
 		gap: 2px;
 		width: 100%;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	select {
@@ -425,6 +432,7 @@
 		border-bottom: 1px solid color-mix(in srgb, var(--encre) 28%, transparent);
 		border-radius: 0;
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	select option {
@@ -468,6 +476,7 @@
 	.secret {
 		padding: 8px 0;
 		font: 500 20px/28px var(--mono);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.04em;
 		color: var(--encre);
 		overflow-wrap: anywhere;
@@ -475,10 +484,12 @@
 	}
 	.echeance {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.consigne {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.grise {
@@ -534,6 +545,7 @@
 		.sur-ordinateur {
 			display: block;
 			font: var(--t-libelle);
+			font-variant-numeric: lining-nums tabular-nums;
 			color: var(--encre-grise);
 		}
 	}

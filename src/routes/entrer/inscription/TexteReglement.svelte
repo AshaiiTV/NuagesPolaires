@@ -16,6 +16,7 @@
 		min-width: 0;
 		overflow-wrap: break-word;
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.lecture > :global(:not(.tableau)) {
@@ -55,6 +56,7 @@
 		padding: calc(var(--ligne) / 2) 0 calc(var(--ligne) / 2 - 1px);
 		border-bottom: 1px solid var(--reglure);
 		font: 500 28px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: -0.01em;
 		color: var(--encre);
 		scroll-margin-top: calc(var(--ligne) * 3);
@@ -63,14 +65,16 @@
 	.lecture :global(h2 .numero) {
 		flex: none;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
-		font-variant-numeric: tabular-nums;
+		font-variant-numeric: lining-nums tabular-nums;
 		white-space: nowrap;
 		color: var(--encre-2);
 	}
 	.lecture :global(h2 .romain) {
 		font: 500 22px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.04em;
 	}
 	.lecture :global(h3),
@@ -85,10 +89,12 @@
 	}
 	.lecture :global(h3) {
 		font: 500 22px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.lecture :global(h4) {
 		margin: var(--ligne) 0 0;
 		font: 600 16px / var(--ligne) var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.lecture :global(h2 + h3) {
 		margin-top: 0;
@@ -101,8 +107,9 @@
 	.lecture :global(h4 .numero) {
 		flex: none;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.12em;
-		font-variant-numeric: tabular-nums;
+		font-variant-numeric: lining-nums tabular-nums;
 		white-space: nowrap;
 		color: var(--encre-2);
 	}
@@ -110,12 +117,14 @@
 		flex: none;
 		width: var(--ligne);
 		font: 400 16px / var(--ligne) var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		text-align: center;
 	}
 	.lecture :global(li) {
 		position: relative;
 		padding-left: 20px;
 		font: var(--t-liste);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.lecture :global(li + li) {
 		margin-top: calc(var(--ligne) / 2);
@@ -134,6 +143,7 @@
 		padding-left: 20px;
 		border-left: 1px solid color-mix(in srgb, var(--encre-2) 40%, transparent);
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		font-style: italic;
 		color: var(--encre-2);
 	}
@@ -152,6 +162,7 @@
 		width: 100%;
 		border-collapse: collapse;
 		font: var(--t-liste);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.lecture :global(th),
 	.lecture :global(td) {
@@ -166,6 +177,7 @@
 	}
 	.lecture :global(th) {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		letter-spacing: 0.1em;
 		text-transform: uppercase;

@@ -58,6 +58,7 @@
 		min-height: calc(var(--ligne) * 2);
 		padding-right: 16px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		text-decoration: none;
 		color: var(--encre-2);
 	}
@@ -73,6 +74,7 @@
 	}
 	.numero {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 </style>

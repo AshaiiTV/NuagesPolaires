@@ -68,6 +68,7 @@
 		min-height: var(--cible);
 		padding: 0 12px;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: none;
 	}

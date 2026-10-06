@@ -38,8 +38,8 @@ export function texteConsequence(t: string): string {
 	return sansEmoji(t)
 		.replace(
 			/^(.+) — (\d+)R · PV:(\d+)\/(\d+) EP:(\d+)\/(\d+)$/,
-			(_t, titre: string, rounds: string, pv: string, pvMax: string, ep: string, epMax: string) =>
-				`${titre} · ${rounds} round${Number(rounds) > 1 ? 's' : ''} · PV ${pv}/${pvMax} · EP ${ep}/${epMax}`
+			(_t, titre: string, _rounds: string, pv: string, pvMax: string, ep: string, epMax: string) =>
+				`${titre} · PV ${pv}/${pvMax} · EP ${ep}/${epMax}`
 		)
 		.replace(
 			/^Niveau (\d+) PV:(\d+) EP:(\d+) EM:(\d+)(?: — (.+) débloqué)?$/,
@@ -47,6 +47,13 @@ export function texteConsequence(t: string): string {
 				`Niveau ${niveau} atteint · PV ${pv} · EP ${ep} · EM ${em}${palier ? ` · ${palier} atteint` : ''}`
 		)
 		.replace(/(\d)%/g, '$1 %');
+}
+
+/** Voix du récit, sans modifier la projection ni les valeurs du moteur. */
+export function voixRecit(texte: string): string {
+	return sansEmoji(texte)
+		.replace(/^(.+) → (.+) : impact$/u, '$1 frappe $2.')
+		.replace(/^(.+) : déclaration$/u, '$1 déclare.');
 }
 
 /** Nom de salon Discord d'une zone : « [🌳]-forêt-aux-lianes » → « #forêt-aux-lianes ». */

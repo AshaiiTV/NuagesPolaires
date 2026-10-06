@@ -9,7 +9,7 @@
 	import Consequence from '$lib/ui/Consequence.svelte';
 	import Rature from '$lib/ui/Rature.svelte';
 	import Tampon from '$lib/ui/Tampon.svelte';
-	import { texteConsequence } from '$lib/ui/table/texte';
+	import { texteConsequence, voixRecit } from '$lib/ui/table/texte';
 	import Vide from '$lib/ui/Vide.svelte';
 	import { dateCourte, dateHeure, dateLongue, heure } from '$lib/ui/dates';
 	import type { ConsequenceView } from '$lib/schemas/characters';
@@ -87,14 +87,13 @@
 				<section class="round" aria-label="Round {r.round}">
 					<span class="numero-round" aria-hidden="true">{r.round}</span>
 					<p class="round-titre">
-						<Tampon cle={`${recit.id}:${r.round}`}
-							>Round {r.round}{r.resolution ? ` · résolu à ${r.resolution}` : ''}</Tampon
-						>
+						{#if r.resolution}<Tampon cle={`${recit.id}:${r.round}`}>Résolu à {r.resolution}</Tampon
+							>{/if}
 					</p>
 					<ol class="log">
 						{#each r.lignes as l (l.n)}
 							<li class="ligne {l.kind}">
-								<span class="texte">{l.text}</span>
+								<span class="texte">{voixRecit(l.text)}</span>
 								{#if l.field && l.oldValue !== undefined && l.newValue !== undefined && l.oldValue !== l.newValue}
 									<span class="valeur"
 										>{CHAMPS[l.field] ?? l.field}
@@ -151,10 +150,12 @@
 <style>
 	.quand {
 		font: italic 400 22px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.details {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre-2);
 	}
@@ -173,6 +174,7 @@
 		align-items: center;
 		min-height: var(--cible);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: underline;
 		text-decoration-color: color-mix(in srgb, var(--encre-humide) 50%, transparent);
@@ -186,6 +188,7 @@
 	}
 	.chapeau {
 		font: italic 400 20px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 
@@ -197,6 +200,7 @@
 		position: absolute;
 		left: 0;
 		font: 400 32px/36px var(--voix);
+		font-variant-numeric: oldstyle-nums proportional-nums;
 		color: var(--encre-2);
 	}
 	.round {
@@ -218,6 +222,7 @@
 		border-bottom: 1px solid var(--reglure);
 		border-left: 1px solid transparent;
 		font: 400 18px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		overflow-wrap: anywhere;
 	}
@@ -237,6 +242,7 @@
 	.valeur {
 		margin-left: 10px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.gestes {

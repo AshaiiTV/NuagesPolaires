@@ -6,6 +6,7 @@
 	// jamais d'ici. Les décisions des MJ et des administrateurs se lisent sur la même réglure.
 	import Bouton from '$lib/ui/Bouton.svelte';
 	import Tampon from '$lib/ui/Tampon.svelte';
+	import Depliant from '../../univers/Depliant.svelte';
 	import { signature } from '$lib/ui/tampons';
 	import Champ from '$lib/ui/Champ.svelte';
 	import NoteDeMarge from '$lib/ui/NoteDeMarge.svelte';
@@ -55,7 +56,7 @@
 			role: r.actorRole ?? 'mj',
 			action: actionDecision(r.action),
 			detail: [
-				DETAILS[r.detail] ?? r.detail.replace(/^\[[^\]]*\]-/, '').replace(/-/g, ' '),
+				detailDecision(r.detail),
 				r.target && !TECHNIQUE.test(r.target) && !r.detail.includes(r.target)
 					? `cible\u00a0: ${r.target}`
 					: ''
@@ -74,6 +75,18 @@
 		true: 'oui',
 		false: 'non'
 	};
+	function detailDecision(detail: string): string {
+		let propre = DETAILS[detail] ?? detail.replace(/^\[[^\]]*\]-/, '');
+		if (/^[a-zà-ÿ0-9]+(-[a-zà-ÿ0-9]+)+$/u.test(propre)) {
+			propre = propre.replace(/-/g, ' ');
+			propre = propre.charAt(0).toLocaleUpperCase('fr') + propre.slice(1);
+		}
+		return propre
+			.replace(/^\[([^\]]+)\]\s*/u, '$1 · ')
+			.replace(/(\d)%/gu, '$1 %')
+			.replace(/\s*·?\s*\b\d{2}:\d{2}\b/gu, '')
+			.trim();
+	}
 
 	/** Les lignes regroupées par jour (heure de Paris) : le jour s'écrit une fois, en titre courant. */
 	const jours = $derived.by(() => {
@@ -151,47 +164,55 @@
 	</nav>
 
 	{#if data.vue === 'audit'}
-		<form
-			class="filtres"
-			method="GET"
-			action="/registre/journal"
-			role="search"
-			aria-label="Filtrer le journal"
-		>
-			<Champ
-				libelle="Acteur"
-				name="acteur"
-				value={data.filtres.acteur}
-				type="search"
-				autocomplete="off"
-				placeholder="pseudo"
-			/>
-			<label class="choix">
-				<span>Action</span>
-				<select name="action">
-					<option value="" selected={!data.filtres.action}>Toutes les actions</option>
-					{#each actionsConnues as [cle, libelle] (cle)}
-						<option value={cle} selected={data.filtres.action === cle}>{libelle}</option>
-					{/each}
-					{#if data.filtres.action && !actionsConnues.some(([cle]) => cle === data.filtres.action)}
-						<option value={data.filtres.action} selected>{data.filtres.action}</option>
-					{/if}
-				</select>
-			</label>
-			<Champ libelle="Du" name="du" type="date" value={data.filtres.du} />
-			<Champ libelle="Au" name="au" type="date" value={data.filtres.au} />
-			<div class="boutons">
-				<Bouton variante="trait" type="submit">Filtrer</Bouton>
-				{#if filtre}<Bouton variante="texte" href="/registre/journal">Tout revoir</Bouton>{/if}
-			</div>
-		</form>
-		<div class="exporter">
-			<p class="gris">
-				{filtre ? 'L’export reprend ces filtres.' : 'L’export reprend tout le journal.'} Les dates y sont
-				en temps universel.
-			</p>
-			<Bouton variante="trait" href={export_} download data-sveltekit-reload>Exporter (.txt)</Bouton
+		{#snippet filtrerExporter(support: string)}
+			<form
+				class="filtres"
+				method="GET"
+				action="/registre/journal"
+				role="search"
+				aria-label="Filtrer le journal"
 			>
+				<Champ
+					id="audit-{support}-acteur"
+					libelle="Acteur"
+					name="acteur"
+					value={data.filtres.acteur}
+					type="search"
+					autocomplete="off"
+					placeholder="pseudo"
+				/>
+				<label class="choix">
+					<span>Action</span>
+					<select name="action">
+						<option value="" selected={!data.filtres.action}>Toutes les actions</option>
+						{#each actionsConnues as [cle, libelle] (cle)}
+							<option value={cle} selected={data.filtres.action === cle}>{libelle}</option>
+						{/each}
+						{#if data.filtres.action && !actionsConnues.some(([cle]) => cle === data.filtres.action)}
+							<option value={data.filtres.action} selected>{data.filtres.action}</option>
+						{/if}
+					</select>
+				</label>
+				<Champ id="audit-{support}-du" libelle="Du" name="du" type="date" value={data.filtres.du} />
+				<Champ id="audit-{support}-au" libelle="Au" name="au" type="date" value={data.filtres.au} />
+				<div class="boutons">
+					<Bouton variante="trait" type="submit">Filtrer</Bouton>
+					{#if filtre}<Bouton variante="texte" href="/registre/journal">Tout revoir</Bouton>{/if}
+				</div>
+			</form>
+			<div class="exporter">
+				<p class="gris">
+					{filtre ? 'L’export reprend ces filtres.' : 'L’export reprend tout le journal.'} Les dates y
+					sont en temps universel.
+				</p>
+				<Bouton variante="trait" href={export_} download data-sveltekit-reload
+					>Exporter (.txt)</Bouton
+				>
+			</div>
+		{/snippet}
+		<div class="filtres-ordinateur">{@render filtrerExporter('ordinateur')}</div>
+		<div class="filtres-telephone">
+			<Depliant libelle="Filtrer, exporter">{@render filtrerExporter('telephone')}</Depliant>
 		</div>
 	{:else}
 		<p class="chapeau">
@@ -218,14 +239,16 @@
 			<Vide>Le journal est blanc. Chaque écriture du carnet s’y inscrira.</Vide>
 		{/if}
 	{:else}
-		<div class="registre-lignes">
+		<div class="registre-lignes" class:decisions={data.vue === 'staff'}>
 			{#each jours as g (g.jour + g.lignes[0].id)}
 				<section class="jour" aria-label={g.jour}>
 					<h2>{g.jour}</h2>
 					<ol>
 						{#each g.lignes as l (l.id)}
 							<li class:decision={data.vue === 'staff'}>
-								<time class="heure chiffres" datetime={l.at}>{heure(l.at)}</time>
+								{#if data.vue === 'audit'}<time class="heure chiffres" datetime={l.at}
+										>{heure(l.at)}</time
+									>{/if}
 								<span class="qui"
 									>{#if data.vue === 'staff'}<Tampon cle={String(l.id)}
 											>{signature(l.role, l.acteur, l.at)}</Tampon
@@ -282,6 +305,7 @@
 		align-items: center;
 		min-height: var(--cible);
 		font: 400 20px/24px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: none;
 	}
@@ -303,6 +327,7 @@
 	}
 	.chapeau {
 		font: italic 400 18px/24px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		padding-bottom: var(--ligne);
 	}
@@ -322,6 +347,7 @@
 		display: grid;
 		gap: 2px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	select {
@@ -333,6 +359,7 @@
 		border-bottom: 1px solid color-mix(in srgb, var(--encre) 28%, transparent);
 		border-radius: 0;
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	select option {
@@ -351,6 +378,7 @@
 		gap: 8px 24px;
 		padding: 12px 0 var(--ligne);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 
 	/* ── La réglure du journal : chaque ligne d'écriture tombe sur un trait (24 px). ── */
@@ -374,6 +402,7 @@
 	.jour h2 {
 		padding-left: calc(var(--marge-heure) + 16px);
 		font: italic 400 22px/48px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		border-bottom: 1px solid var(--reglure);
 	}
@@ -389,6 +418,7 @@
 		grid-template-columns: var(--marge-heure) 7.5rem minmax(8rem, 11rem) minmax(0, 1fr);
 		gap: 0 16px;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	li:hover {
@@ -405,6 +435,7 @@
 	.source {
 		padding-left: 4px;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: 24px;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
@@ -415,11 +446,21 @@
 		display: none;
 	}
 	.decision {
-		grid-template-columns: var(--marge-heure) minmax(12rem, auto) minmax(0, 1fr);
+		grid-template-columns: minmax(12rem, auto) minmax(0, 1fr);
 		padding-block: 12px;
 	}
 	.decision .detail {
 		font: italic 400 18px/24px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
+	}
+	.decisions::before {
+		display: none;
+	}
+	.decisions .jour h2 {
+		padding-left: 0;
+	}
+	.filtres-telephone {
+		display: none;
 	}
 	.acteur {
 		white-space: nowrap;
@@ -456,6 +497,7 @@
 	}
 	.ou {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-grise);
 	}
 
@@ -468,8 +510,19 @@
 		}
 	}
 	@media (max-width: 760px) {
+		.filtres-ordinateur {
+			display: none;
+		}
+		.filtres-telephone {
+			display: block;
+			margin-bottom: var(--ligne);
+		}
 		.decision {
-			grid-template-columns: var(--marge-heure) minmax(0, 1fr);
+			grid-template-columns: minmax(0, 1fr);
+		}
+		.decision .qui,
+		.decision .quoi {
+			grid-column: 1;
 		}
 		.registre-lignes {
 			--marge-heure: 3.25rem;

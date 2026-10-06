@@ -35,6 +35,7 @@
 		border-radius: 1px;
 		color: var(--tampon);
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		max-width: 100%;

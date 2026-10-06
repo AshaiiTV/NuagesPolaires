@@ -189,11 +189,6 @@
 					>Lire le règlement et m’inscrire</Bouton
 				>
 			{/snippet}
-			{#snippet liens3()}
-				<Bouton variante="texte" href="/univers/premiers-pas" data-sveltekit-reload
-					>Recharger cette page</Bouton
-				>
-			{/snippet}
 			{#snippet liens4()}
 				<Bouton variante="texte" href="/agenda" fleche="→">L’agenda</Bouton>
 			{/snippet}
@@ -213,7 +208,7 @@
 				3,
 				'Faire relier ton personnage',
 				'Échange avec un administrateur sur le serveur Discord et transmets ton pseudo de compte. L’administrateur relie ton compte à ta fiche. Une fois la liaison faite, recharge le compagnon.',
-				data.etat === 'attente' || data.etat === 'indisponible' ? liens3 : null
+				null
 			)}
 			{@render etape(
 				4,
@@ -306,6 +301,7 @@
 	.arrivee h2 {
 		margin-top: calc(var(--ligne) / 2);
 		font: 500 34px / 38px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: -0.02em;
 		color: var(--encre);
 		text-wrap: balance;
@@ -318,6 +314,7 @@
 		max-width: var(--lecture);
 		margin-top: calc(var(--ligne) / 2);
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		font-size: 20px;
 		color: var(--encre);
 	}
@@ -325,6 +322,7 @@
 		max-width: var(--lecture);
 		margin-top: calc(var(--ligne) / 2);
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.gestes {
@@ -345,11 +343,13 @@
 	.pseudo {
 		margin-top: 8px;
 		font: 400 30px / 40px var(--mono);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		overflow-wrap: anywhere;
 	}
 	.copie {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 
@@ -367,8 +367,8 @@
 		border-bottom: 0;
 	}
 	.rang {
-		font-variant-numeric: lining-nums tabular-nums;
 		font: 400 32px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		padding-top: 4px;
 	}
@@ -380,11 +380,13 @@
 	}
 	.etape h3 {
 		font: 500 22px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.etape p:not(.tu-es-ici) {
 		max-width: var(--lecture);
 		font: var(--t-liste);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.tu-es-ici {
@@ -392,6 +394,7 @@
 		align-items: center;
 		gap: 10px;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
@@ -426,12 +429,14 @@
 	}
 	dt {
 		font: 500 20px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		text-wrap: balance;
 	}
 	dd {
 		margin-top: calc(var(--ligne) / 2);
 		font: var(--t-liste);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 
@@ -442,11 +447,13 @@
 	.questions h3 {
 		margin-top: var(--ligne);
 		font: 500 22px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.questions p {
 		margin-top: calc(var(--ligne) / 2);
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.chute {
@@ -454,6 +461,7 @@
 		padding-top: var(--ligne);
 		border-top: 1px solid var(--reglure);
 		font: italic 400 22px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 

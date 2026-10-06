@@ -195,6 +195,8 @@ test.describe('En scène — le feuillet volant', () => {
 		await expect(page.getByRole('dialog', { name: 'En scène' })).toBeVisible();
 		await expect(page.locator('[inert]')).toHaveCount(1);
 		await page.getByRole('button', { name: 'Reposer', exact: true }).click();
+		await expect(page.locator('form.reposer')).toBeVisible();
+		await page.locator('form.reposer button[type="submit"]').click();
 		await expect(page).toHaveURL(/\/carnet$/);
 		await expect(page.locator('[data-superpose]')).toHaveCount(0);
 		await page.goto('/carnet/scene');

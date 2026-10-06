@@ -198,11 +198,13 @@
 		padding: 12px 0;
 		border-block: 1px solid var(--reglure);
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.consigne {
 		padding: 12px 0;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.colonnes {
@@ -270,6 +272,7 @@
 	}
 	.nom {
 		font: 600 15px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		overflow-wrap: anywhere;
 	}
@@ -277,6 +280,7 @@
 		justify-self: end;
 		text-align: right;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.geste {
@@ -289,6 +293,7 @@
 	}
 	.phrase {
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.phrase strong,
@@ -309,6 +314,7 @@
 	}
 	.echeance {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.echu {

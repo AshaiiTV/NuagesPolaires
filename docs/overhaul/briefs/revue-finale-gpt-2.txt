@@ -1,0 +1,17 @@
+CONFIRMATION DE LA RELECTURE FINALE (P10) — SECONDE PASSE.
+Tu es le même relecteur indépendant que pour docs/overhaul/revues/gpt-revue-finale.md (lis-la d'abord : c'est TA relecture précédente). Depuis, l'intégrateur a appliqué le paquet corrections-3 (docs/overhaul/revues/gpt-corrections-critique-3.md et corrections-3-rapport.md) : ta réserve importante (P1 à 390 px après 40 jours d'absence), tes six réserves mineures, les critères P1/P2/P4/P8/P9 que tu jugeais partiels, plus les réserves des relecteurs Claude (docs/overhaul/revues/claude-critique-*-3.md). Dépôt : C:\Users\sacha\NuagesPolaires ; serveur de développement http://localhost:5173 avec une base de démonstration neuve. Tu ne modifies aucun fichier du dépôt hors ton rapport et tes captures/scripts jetables dans .claude/captures/revue-finale-2/ (jamais test-results/).
+
+CE QUE TU FAIS
+1. Rejoue précisément chacune de tes réserves (importante et mineures) et chaque critère que tu avais noté partiel, avec la même méthode qu'avant (absence de 40 jours simulée dans la réponse réseau, retard de 3 s, refus réseau, dix combattants + conflit, « Reposer » du feuillet superposé, contraste après refus, audit XP avec motif et valeurs). Regarde tes captures.
+2. Lance et rapporte exactement : npx svelte-check --tsconfig ./tsconfig.json ; npx vitest run --project server ; npx playwright test ; npm run lint ; npm run build ; npx tsx scripts/check-bundle.ts.
+3. Balaye encore une fois, rapidement, ce qui casserait la confiance (fuites de données dans les réponses joueur/visiteur, écriture annoncée avant confirmation, libellé technique, faute de français) sur une dizaine d'écrans pris au hasard à 390 px.
+
+RAPPORT (ta réponse, markdown, français)
+# Revue finale — GPT, seconde passe
+## Verdict — une ligne exactement : « SANS RÉSERVE IMPORTANTE » ou « RÉSERVES IMPORTANTES : n ».
+## Résultats des commandes (exacts).
+## Mes réserves précédentes — tableau : réserve | levée / partiellement levée / non levée | preuve.
+## Parcours P1–P9 — une ligne par parcours : tenu / partiel / non tenu, preuve.
+## Réserves importantes restantes — tableau (ou « Aucune »).
+## Réserves mineures restantes — liste courte (ou « Aucune »).
+## Ce que le propriétaire doit savoir — cinq lignes au plus.

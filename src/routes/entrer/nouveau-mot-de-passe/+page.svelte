@@ -128,6 +128,7 @@
 	.echeance {
 		margin-top: var(--ligne);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.echeance .repere {
@@ -142,6 +143,7 @@
 	}
 	.pseudo {
 		font: 500 22px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.formulaire {
@@ -165,6 +167,7 @@
 	}
 	.aide {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-grise);
 	}
 </style>

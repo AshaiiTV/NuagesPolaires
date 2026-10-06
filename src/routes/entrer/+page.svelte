@@ -132,6 +132,7 @@
 	.reperes dt + dd {
 		margin: 4px 0 var(--ligne);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.reperes dd:last-child {
@@ -165,6 +166,7 @@
 		gap: 14px;
 		width: 100%;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
 		color: var(--encre-grise);
@@ -184,6 +186,7 @@
 	.aide {
 		margin-top: calc(var(--ligne) / 2);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.aide a {

@@ -676,12 +676,13 @@ export async function closeTable(
 				});
 			};
 			for (const key of ['pv', 'ep', 'em'] as const)
-				await stamp(
-					key,
-					sheet[`${key}Cur`],
-					next[`${key}Cur`],
-					`${key.toUpperCase()} : ${sheet[`${key}Cur`]} → ${next[`${key}Cur`]}`
-				);
+				if (sheet[`${key}Cur`] !== next[`${key}Cur`])
+					await stamp(
+						key,
+						sheet[`${key}Cur`],
+						next[`${key}Cur`],
+						`${key.toUpperCase()} : ${sheet[`${key}Cur`]} → ${next[`${key}Cur`]}`
+					);
 			for (const key of ['pv', 'ep', 'em'] as const)
 				if (sheet[`${key}Max`] !== next[`${key}Max`])
 					await stamp(
@@ -690,8 +691,10 @@ export async function closeTable(
 						{ max: next[`${key}Max`] },
 						`${key.toUpperCase()} maximum : ${sheet[`${key}Max`]} → ${next[`${key}Max`]}`
 					);
-			await stamp('status', sheet.statuses, statuses, 'Statuts reportés depuis la Table.');
-			await stamp('xp', sheet.xp, next.xp, `+${consequence.xp} XP · ${data.recit.title}`, 'xp');
+			if (JSON.stringify(sheet.statuses) !== JSON.stringify(statuses))
+				await stamp('status', sheet.statuses, statuses, 'Statuts reportés depuis la Table.');
+			if (consequence.xp > 0)
+				await stamp('xp', sheet.xp, next.xp, `+${consequence.xp} XP · ${data.recit.title}`, 'xp');
 			if (next.level !== sheet.level)
 				await stamp(
 					'level',
@@ -738,7 +741,6 @@ export async function closeTable(
 					drop.category === 'Gemme' ? 'gemme' : 'item'
 				);
 			}
-			await stamp('note', '', data.recit.title, outcome.historyText);
 			await tx
 				.insert(combatParticipants)
 				.values({

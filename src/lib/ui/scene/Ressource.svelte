@@ -44,6 +44,7 @@
 		flex: none;
 		width: 24px;
 		font: 500 12px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.14em;
 		text-decoration: none;
 		color: var(--encre-2);
@@ -53,6 +54,7 @@
 	}
 	.chiffre {
 		font: 500 24px/28px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: -0.01em;
 		color: var(--encre);
 		white-space: nowrap;

@@ -17,6 +17,7 @@ body {
 	margin: 0;
 	min-height: 100svh;
 	font: var(--t-corps);
+	font-variant-numeric: lining-nums tabular-nums;
 	font-feature-settings: 'kern', 'liga';
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
@@ -91,12 +92,13 @@ a:hover {
 .chiffres,
 [data-regime='serre'],
 [data-regime='scene'] {
-	font-variant-numeric: tabular-nums;
+	font-variant-numeric: lining-nums tabular-nums;
 }
 
 /* Repère en capitales espacées : « NP / 02 — MON CARNET ». Jamais moins de 12 px. */
 .repere {
 	font: var(--t-repere);
+	font-variant-numeric: lining-nums tabular-nums;
 	letter-spacing: var(--approche-repere);
 	text-transform: uppercase;
 	color: var(--encre-2);
@@ -105,6 +107,7 @@ a:hover {
 /* Voix du carnet : Cormorant, italique réservé à la voix et au dernier mot d'un titre. */
 .voix {
 	font: var(--t-recit);
+	font-variant-numeric: lining-nums tabular-nums;
 	font-style: italic;
 	color: var(--encre-2);
 }
@@ -166,9 +169,8 @@ a:hover {
 	*,
 	*::before,
 	*::after {
-		animation-duration: 0.01ms !important;
-		animation-iteration-count: 1 !important;
-		transition-duration: 0.01ms !important;
+		animation: none !important;
+		transition: none !important;
 		scroll-behavior: auto !important;
 	}
 }

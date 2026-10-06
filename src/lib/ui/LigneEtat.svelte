@@ -54,6 +54,7 @@
 	.etat {
 		overflow: hidden;
 		font: 500 14px/28px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.grande {

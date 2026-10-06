@@ -56,6 +56,7 @@
 	}
 	.sous-titre {
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		margin-bottom: calc(var(--ligne) / 2);
 	}
 	.reperes {
@@ -63,6 +64,7 @@
 		flex-wrap: wrap;
 		gap: 0 16px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre-2);
 	}
@@ -80,6 +82,7 @@
 		padding: calc(var(--ligne) / 2) 0;
 		margin-top: var(--ligne);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 	}
 	.ligne {
@@ -91,6 +94,7 @@
 	}
 	dt {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	dd {
@@ -99,6 +103,7 @@
 	.blanc {
 		color: var(--encre-2);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	@media (max-width: 760px) {
 		.ligne {

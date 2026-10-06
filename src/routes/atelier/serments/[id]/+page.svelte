@@ -105,7 +105,7 @@
 			<h2>{draft.name || 'Nouveau Serment'}</h2>
 			<p class="rang">{OATH_RANK_LABELS[draft.rank as OathRank]}</p>
 			<p class="chiffres">
-				+{draft.pvN} PV · +{draft.epN} EP · +{draft.emN} EM par niveau · frappe {draft.baseDamage}
+				+{draft.pvN} PV · +{draft.epN} EP · +{draft.emN} EM par niveau<br />frappe {draft.baseDamage}
 			</p>
 		</aside>
 		<form
@@ -299,6 +299,7 @@
 
 <style>
 	.edition {
+		margin-top: var(--ligne);
 		display: grid;
 		grid-template-columns: minmax(12rem, 1fr) minmax(0, 3fr);
 		gap: var(--gouttiere);
@@ -311,6 +312,7 @@
 	}
 	.apercu h2 {
 		font: 500 28px/var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		margin-top: var(--ligne);
 	}
 	.apercu .rang {
@@ -345,6 +347,7 @@
 		padding-top: 12px;
 		border-top: 1px solid var(--reglure);
 		font: 500 20px/var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.niveau {
 		color: var(--encre-2);

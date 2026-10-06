@@ -542,6 +542,7 @@
 	}
 	.repere {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
 		color: var(--encre-2);
@@ -566,6 +567,7 @@
 		border-bottom: 1px solid transparent;
 		background: transparent;
 		font: 500 32px/48px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.nom:hover,
@@ -578,6 +580,7 @@
 		align-items: center;
 		gap: 0 16px;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.releve {
@@ -592,6 +595,7 @@
 		border: 0;
 		background: none;
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--rouille);
 		text-decoration: underline;
 		text-underline-offset: 4px;
@@ -604,6 +608,7 @@
 	}
 	.initiative {
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.interrupteur {
@@ -618,6 +623,7 @@
 		border: 0;
 		background: none;
 		font: 500 13px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.piste {
@@ -656,11 +662,13 @@
 	}
 	.phrase {
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.conflit table {
 		border-collapse: collapse;
 		font: 500 13px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.conflit th,
 	.conflit td {
@@ -670,6 +678,7 @@
 	}
 	.conflit thead th {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		color: var(--encre-2);
@@ -681,6 +690,7 @@
 	}
 	.detail {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.note :global(*) {
@@ -698,6 +708,7 @@
 		align-items: baseline;
 		gap: 10px;
 		font: 600 13px/48px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		color: var(--encre);
@@ -705,6 +716,7 @@
 	}
 	.num {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.entetes {
@@ -713,6 +725,7 @@
 		gap: 0 12px;
 		padding-left: 12px;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		line-height: 24px;
@@ -731,6 +744,7 @@
 	.attente {
 		padding: 12px 0;
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.archivee .colonnes {
@@ -750,6 +764,7 @@
 			height: auto;
 			min-height: 0;
 		}
+		.combattants,
 		.centre,
 		.droite {
 			overflow-y: auto;
@@ -831,6 +846,7 @@
 			border-bottom: 2px solid transparent;
 			background: none;
 			font: 600 14px/24px var(--corps);
+			font-variant-numeric: lining-nums tabular-nums;
 			color: var(--encre-2);
 		}
 		.vues button[aria-selected='true'] {

@@ -141,11 +141,13 @@
 	}
 	.pseudo {
 		font: 500 26px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		overflow-wrap: anywhere;
 	}
 	.detail {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 
@@ -173,6 +175,7 @@
 	}
 	.numero {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		color: var(--encre-2);
 	}
@@ -181,6 +184,7 @@
 		justify-self: start;
 		padding-right: 18px;
 		font: 500 26px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: -0.01em;
 		color: var(--encre);
 		transition: color 160ms;
@@ -188,6 +192,7 @@
 	.fleche {
 		justify-self: end;
 		font: 400 16px / var(--ligne) var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-humide);
 		transition: translate 200ms;
 	}
@@ -195,6 +200,7 @@
 		grid-column: 2 / -1;
 		margin-top: 4px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	a:hover .titre,

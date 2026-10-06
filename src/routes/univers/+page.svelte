@@ -51,10 +51,12 @@
 	}
 	.numero {
 		font: 400 32px/var(--ligne) var(--voix);
+		font-variant-numeric: oldstyle-nums proportional-nums;
 		color: var(--encre-2);
 	}
 	.titre {
 		font: 500 28px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: -0.01em;
 		color: var(--encre);
 		transition: color 160ms;
@@ -63,8 +65,8 @@
 	.resume {
 		grid-column: 1;
 		max-width: 46ch;
-		font: var(--t-corps);
-		font-style: italic;
+		font: italic 400 18px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.entree {
@@ -74,7 +76,7 @@
 	}
 	.conduite {
 		flex: 1;
-		border-bottom: 1px dotted var(--reglure);
+		border-bottom: 1px dotted var(--encre-grise);
 		margin: 0 12px 7px;
 	}
 	a:hover .titre {

@@ -827,7 +827,14 @@ export async function correctResource(
 			source: 'characters',
 			action: 'character_correct_resource',
 			actor: who,
-			details: { characterId: c.id, resource: data.resource, old, new: data.newValue }
+			details: {
+				characterId: c.id,
+				resource: data.resource,
+				old,
+				new: data.newValue,
+				motif: data.motif,
+				replacesId
+			}
 		});
 		return buildSheet(tx, await loadCharacter(tx, c.id));
 	});
@@ -916,7 +923,14 @@ export async function grantCombatXp(
 			source: 'characters',
 			action: 'character_grant_xp',
 			actor: who,
-			details: { characterId: c.id, xp: gain, levelsGained: applied.levelsGained }
+			details: {
+				characterId: c.id,
+				xp: gain,
+				levelsGained: applied.levelsGained,
+				motif: data.motif,
+				old: { xp: c.xp, level: c.level },
+				new: { xp: next.xp, level: next.level }
+			}
 		});
 		return buildSheet(tx, await loadCharacter(tx, c.id));
 	});

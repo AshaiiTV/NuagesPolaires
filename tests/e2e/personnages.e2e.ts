@@ -246,8 +246,18 @@ test.describe('Personnages — tampons', () => {
 		editor = await ouvrir(page, 'corriger');
 		await editor.locator('[name="newValue"]').fill('24');
 		await tamponner(page, 'corriger', 'Correction du report au gué.');
-		await expect(page.locator('#consequences s').filter({ hasText: '30' })).toBeVisible();
-		await expect(page.locator('#consequences ins').filter({ hasText: '24' })).toBeVisible();
+		await expect(page.locator('#consequences')).toContainText('PV : 30 → 24.');
+		await expect(page.locator('#consequences s, #consequences ins')).toHaveCount(0);
+		await editor.locator('[name="replacesId"]').selectOption({
+			label: 'PV : 30 → 24. · Correction du report au gué.'
+		});
+		await editor.locator('[name="newValue"]').fill('23');
+		await tamponner(page, 'corriger', 'Erreur de report rectifiée.');
+		const rectification = page
+			.locator('#consequences li')
+			.filter({ hasText: 'Erreur de report rectifiée.' });
+		await expect(rectification.locator('s')).toHaveText(/24$/);
+		await expect(rectification.locator('ins')).toHaveText(/23$/);
 	});
 
 	test('P4 — XP proposée, attente du serveur, même tampon lu par Alice', async ({

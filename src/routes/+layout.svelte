@@ -1,6 +1,13 @@
 <script lang="ts">
 	import { onMount, tick, type Component } from 'svelte';
-	import { onNavigate, preloadData, pushState, replaceState, invalidateAll } from '$app/navigation';
+	import {
+		goto,
+		onNavigate,
+		preloadData,
+		pushState,
+		replaceState,
+		invalidateAll
+	} from '$app/navigation';
 	import { page } from '$app/state';
 	import { chemin } from '$lib/ui/adresse';
 	import type { PageProps as SceneProps } from './carnet/scene/$types';
@@ -16,15 +23,42 @@
 	const feuillet = $derived(page.state.feuillet);
 	let origine: HTMLAnchorElement | null = null;
 	async function relireFeuillet() {
-		await invalidateAll();
-		const resultat = await preloadData(chemin('/carnet/scene'));
-		if (resultat.type === 'loaded' && resultat.status === 200)
+		const resultat = await preloadData(`${chemin('/carnet/scene')}?releve=${Date.now()}`);
+		if (page.state.feuillet && resultat.type === 'loaded' && resultat.status === 200)
 			replaceState('', { feuillet: resultat.data as SceneProps['data'] });
 	}
 	function reposer() {
 		history.back();
+		window.addEventListener(
+			'popstate',
+			() => {
+				void invalidateAll();
+			},
+			{ once: true }
+		);
 	}
 	onMount(() => {
+		if (page.state.feuillet)
+			void import('./carnet/scene/+page.svelte').then((module) => {
+				Scene = module.default;
+			});
+		if (
+			page.url.pathname === chemin('/carnet/scene') &&
+			innerWidth >= 761 &&
+			!page.state.feuillet
+		) {
+			void (async () => {
+				await goto(chemin('/carnet'), { replaceState: true });
+				const [module, resultat] = await Promise.all([
+					import('./carnet/scene/+page.svelte'),
+					preloadData(chemin('/carnet/scene'))
+				]);
+				if (resultat.type === 'loaded' && resultat.status === 200) {
+					Scene = module.default;
+					pushState(chemin('/carnet/scene'), { feuillet: resultat.data as SceneProps['data'] });
+				}
+			})();
+		}
 		function ouvrir(event: MouseEvent) {
 			const lien =
 				event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a.ruban') : null;
@@ -159,7 +193,7 @@
 		outline: none;
 	}
 	.superposition :global(.feuille.volant) {
-		margin-right: 32px;
+		margin-right: 0;
 	}
 	.encres {
 		position: absolute;

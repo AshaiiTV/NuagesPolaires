@@ -34,6 +34,7 @@
 			place-items: center;
 			min-height: 56px;
 			font: 500 13px/16px var(--corps);
+			font-variant-numeric: lining-nums tabular-nums;
 			color: var(--encre-2);
 			text-decoration: none;
 		}

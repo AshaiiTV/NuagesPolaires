@@ -37,6 +37,7 @@
 	}
 	.signature {
 		font: 500 12px/16px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.1em;
 		color: var(--encre-2);
 	}
@@ -44,6 +45,7 @@
 		display: block;
 		margin-top: 8px;
 		font: 400 13px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0;
 		color: var(--encre-grise);
 	}
@@ -57,6 +59,7 @@
 		align-items: center;
 		min-height: var(--cible);
 		font: 500 13px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: none;
 	}

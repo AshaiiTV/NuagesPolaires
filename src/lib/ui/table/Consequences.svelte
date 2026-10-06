@@ -361,8 +361,9 @@
 									</span>
 								</label>
 								<p class="xp-propose chiffres">
-									<span class="valeur">+{o.xpGain} XP</span>
-									{#if fi}<span class="detail">{fi.xp} → {fi.xp + o.xpGain}</span>{/if}
+									{#if o.xpGain > 0}<span class="valeur">+{o.xpGain} XP</span>
+										{#if fi}<span class="detail">{fi.xp} → {fi.xp + o.xpGain}</span>{/if}
+									{:else}<span class="detail">Aucune XP à reporter.</span>{/if}
 								</p>
 							</div>
 							<p class="drops-ligne">
@@ -581,12 +582,14 @@
 	.repere {
 		grid-column: 1 / -1;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
 		color: var(--encre-2);
 	}
 	h2 {
 		font: 500 32px/48px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.archive {
@@ -604,6 +607,7 @@
 		border-radius: var(--rayon);
 		background: none;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.chapitre {
@@ -613,6 +617,7 @@
 		margin-top: 24px;
 		padding-bottom: 0;
 		font: 600 14px/48px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
 		color: var(--encre);
@@ -620,6 +625,7 @@
 	}
 	.num {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.drops li {
@@ -633,10 +639,12 @@
 	.qui,
 	.nom {
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.detail {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.detail.refus {
@@ -675,6 +683,7 @@
 	}
 	.ko {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.1em;
 		color: var(--rouille);
 	}
@@ -684,6 +693,7 @@
 		flex-wrap: wrap;
 		gap: 0 20px;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.res {
 		white-space: nowrap;
@@ -691,6 +701,7 @@
 	.k {
 		margin-right: 6px;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.1em;
 		color: var(--encre-2);
 	}
@@ -716,6 +727,7 @@
 		display: grid;
 		justify-items: end;
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.drops-ligne {
 		grid-area: drops;
@@ -723,6 +735,7 @@
 		flex-wrap: wrap;
 		gap: 0 16px;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.signer {
 		grid-area: signer;
@@ -735,6 +748,7 @@
 	label {
 		display: grid;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.motif {
@@ -750,6 +764,7 @@
 		border-radius: 0;
 		background: transparent;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	select {
@@ -770,10 +785,12 @@
 	}
 	.unite {
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.en-attente {
 		font: 500 14px/44px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.geste {
 		min-width: 44px;
@@ -782,6 +799,7 @@
 		border: 0;
 		background: none;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: underline;
 		text-decoration-color: color-mix(in srgb, var(--encre-humide) 45%, transparent);
@@ -798,6 +816,7 @@
 		gap: 8px 16px;
 		padding: 16px 0 0;
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.vide {
@@ -816,6 +835,7 @@
 		gap: 12px;
 		min-height: 44px;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		cursor: pointer;
 	}
@@ -848,6 +868,7 @@
 	legend {
 		padding: 0;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
 		color: var(--encre-2);

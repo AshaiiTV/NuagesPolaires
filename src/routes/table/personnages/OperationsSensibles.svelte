@@ -146,6 +146,7 @@
 	p,
 	.choix {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.choix {
@@ -159,6 +160,7 @@
 		border: 0;
 		border-bottom: 1px solid var(--encre-grise);
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	option {

@@ -360,11 +360,13 @@
 	.pseudo {
 		margin-top: 14px;
 		font: 500 34px/42px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		overflow-wrap: anywhere;
 	}
 	.role {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
@@ -373,6 +375,7 @@
 	.depuis {
 		margin-top: calc(var(--ligne) / 2);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-grise);
 	}
 	.sommaire {
@@ -393,6 +396,7 @@
 	}
 	dt {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
@@ -408,15 +412,18 @@
 	}
 	.valeur {
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		overflow-wrap: anywhere;
 	}
 	.nom {
 		font: 500 22px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.serment {
 		flex-basis: 100%;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre-2);
 	}
@@ -447,6 +454,7 @@
 		max-width: var(--lecture);
 		padding: calc(var(--ligne) / 2) 0;
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.texte strong {
@@ -461,6 +469,7 @@
 	}
 	.avertissement {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.reponse {

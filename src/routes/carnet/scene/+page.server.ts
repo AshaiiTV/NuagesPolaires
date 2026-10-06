@@ -35,9 +35,9 @@ function carteDuMoment(fiche: SheetView, contexte: SceneContextView): RuleCard {
 		if (carte.id === 'actions')
 			return {
 				...carte,
-				actions: carte.actions.filter(
-					(a) => a.pour !== 'creature' && (!a.serment || a.serment === fiche.oath.name)
-				)
+				actions: carte.actions
+					.filter((a) => a.pour !== 'creature' && (!a.serment || a.serment === fiche.oath.name))
+					.map((a) => (a.pour === 'joueur' ? { ...a, conditions: '' } : a))
 			};
 		return carte;
 	}

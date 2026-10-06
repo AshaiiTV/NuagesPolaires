@@ -203,6 +203,7 @@
 		width: 100%;
 		padding: 0;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
 		color: var(--encre-2);
@@ -241,6 +242,7 @@
 	}
 	.nom {
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.pris .nom {
@@ -251,6 +253,7 @@
 		align-items: center;
 		gap: 10px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.quantite {
@@ -263,6 +266,7 @@
 		border: 0;
 		background: none;
 		font: 400 18px/1 var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		border-radius: var(--rayon);
 	}
@@ -278,6 +282,7 @@
 		background: transparent;
 		text-align: center;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		appearance: textfield;
 		-moz-appearance: textfield;
@@ -294,6 +299,7 @@
 		border-bottom: 1px solid color-mix(in srgb, var(--encre) 28%, transparent);
 		background: transparent;
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.valider {

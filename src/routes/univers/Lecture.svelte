@@ -88,6 +88,9 @@
 	{/snippet}
 	{#snippet bande()}
 		{#if enMarge}<p class="voix chapeau">{resume}</p>{/if}
+		{#if slug === 'systeme-de-jeu'}<NoteDeMarge
+				>Valeurs appliquées à la Table : voir la règle sous le pouce</NoteDeMarge
+			>{/if}
 		{#if lecture.entrees.length}
 			<Depliant libelle="Sommaire"><Sommaire sections={lecture.entrees} /></Depliant>
 		{/if}
@@ -97,9 +100,7 @@
 		{@html lecture.html}
 	</div>
 	{#snippet pied()}
-		{#if slug === 'systeme-de-jeu'}<div class="annotation-systeme">
-				<NoteDeMarge>Valeurs appliquées à la Table : voir la règle sous le pouce</NoteDeMarge>
-			</div>{/if}<Tourner {previous} {next} />{/snippet}
+		<Tourner {previous} {next} />{/snippet}
 </Page>
 
 <style>
@@ -113,14 +114,6 @@
 		position: absolute;
 		left: 2px;
 		top: 12px;
-	}
-	.annotation-systeme {
-		display: none;
-	}
-	@media (max-width: 760px) {
-		.annotation-systeme {
-			display: block;
-		}
 	}
 	.lecture :global(td.valeur) {
 		white-space: nowrap;
@@ -145,10 +138,12 @@
 		min-width: 0;
 		overflow-wrap: break-word;
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.lecture.recit {
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.lecture > :global(:not(.tableau)) {
 		max-width: var(--lecture);
@@ -196,6 +191,7 @@
 		overflow-x: auto;
 		margin-bottom: var(--ligne);
 		font: var(--t-mono);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.lecture :global(hr) {
 		height: 1px;
@@ -213,6 +209,7 @@
 		padding: calc(var(--ligne) / 2) 0 calc(var(--ligne) / 2 - 1px);
 		border-bottom: 1px solid var(--reglure);
 		font: 500 28px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: -0.01em;
 		color: var(--encre);
 		scroll-margin-top: calc(var(--ligne) * 3);
@@ -221,15 +218,17 @@
 	.lecture :global(h2 .numero) {
 		flex: none;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
-		font-variant-numeric: tabular-nums;
+		font-variant-numeric: lining-nums tabular-nums;
 		white-space: nowrap;
 		color: var(--encre-2);
 	}
 	/* Un chiffre romain seul s'écrit en Cormorant : à 12 px, « I » ne serait qu'un trait. */
 	.lecture :global(h2 .romain) {
 		font: 500 22px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.04em;
 	}
 	/* Phrase de chute : un dernier titre sans texte, en voix du carnet. */
@@ -242,6 +241,7 @@
 		border: 0;
 		border-top: 1px solid var(--reglure);
 		font: italic 400 22px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0;
 	}
 
@@ -258,10 +258,12 @@
 	}
 	.lecture :global(h3) {
 		font: 500 22px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.lecture :global(h4) {
 		margin: var(--ligne) 0 0;
 		font: 600 16px / var(--ligne) var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.lecture :global(h2 + h3) {
 		margin-top: 0;
@@ -274,8 +276,9 @@
 	.lecture :global(h4 .numero) {
 		flex: none;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.12em;
-		font-variant-numeric: tabular-nums;
+		font-variant-numeric: lining-nums tabular-nums;
 		white-space: nowrap;
 		color: var(--encre-2);
 	}
@@ -303,9 +306,11 @@
 		position: relative;
 		padding-left: 20px;
 		font: var(--t-liste);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.lecture.recit :global(li) {
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.lecture :global(li + li) {
 		margin-top: calc(var(--ligne) / 2);
@@ -326,6 +331,7 @@
 		padding-left: 20px;
 		border-left: 1px solid color-mix(in srgb, var(--encre-2) 40%, transparent);
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		font-style: italic;
 		color: var(--encre-2);
 	}
@@ -362,7 +368,7 @@
 		width: 100%;
 		border-collapse: collapse;
 		font: var(--t-liste);
-		font-variant-numeric: tabular-nums;
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.lecture :global(th),
 	.lecture :global(td) {
@@ -385,6 +391,7 @@
 	}
 	.lecture :global(th) {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
@@ -407,6 +414,11 @@
 	}
 
 	@media (max-width: 760px) {
+		.lecture :global(td),
+		.lecture :global(th) {
+			overflow-wrap: anywhere;
+			hyphens: auto;
+		}
 		/* Numéro au-dessus du titre. */
 		.lecture :global(h2) {
 			display: block;
@@ -487,6 +499,7 @@
 		.lecture :global([data-pile='liste'] td)::before {
 			content: attr(data-label);
 			font: var(--t-repere);
+			font-variant-numeric: lining-nums tabular-nums;
 			line-height: var(--ligne);
 			letter-spacing: 0.1em;
 			text-transform: uppercase;

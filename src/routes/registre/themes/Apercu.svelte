@@ -93,6 +93,7 @@
 	/* Textes de l'aperçu : ce sont des échantillons de couleur, à la taille minimale du carnet. */
 	.repere-a {
 		font: 500 12px/16px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
 		color: var(--encre-2);
@@ -104,6 +105,7 @@
 	.titre {
 		margin: 2px 0 6px;
 		font: 500 24px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		white-space: nowrap;
 	}
@@ -112,6 +114,7 @@
 	}
 	.ligne {
 		font: 500 12px/18px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;

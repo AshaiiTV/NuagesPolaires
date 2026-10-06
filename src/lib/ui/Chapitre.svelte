@@ -70,11 +70,13 @@
 	}
 	.numero {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		color: var(--encre-2);
 	}
 	h2 {
 		font: 500 28px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		padding-block: calc(var(--ligne) / 2);
 		text-wrap: balance;
 		letter-spacing: -0.01em;
@@ -100,6 +102,7 @@
 	.chapeau {
 		padding-top: calc(var(--ligne) / 2);
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		font-style: italic;
 		color: var(--encre-2);
 	}
@@ -111,6 +114,7 @@
 	:global([data-regime='serre']) h2,
 	:global([data-regime='scene']) h2 {
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
 	}

@@ -48,6 +48,7 @@
 	}
 	.nom {
 		font: 500 19px/0.95 var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.11em;
 		text-transform: uppercase;
 	}
@@ -55,6 +56,7 @@
 		display: block;
 		margin-top: 8px;
 		font: 500 12px/1 var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.16em;
 		color: var(--encre-grise);
 	}
@@ -68,6 +70,7 @@
 		align-items: center;
 		min-height: var(--cible);
 		font: 500 14px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: none;
 	}
@@ -84,6 +87,7 @@
 		border: 1px solid color-mix(in srgb, var(--encre-humide) 32%, transparent);
 		border-radius: var(--rayon);
 		font: 500 14px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		text-decoration: none;
 		transition: background 200ms;

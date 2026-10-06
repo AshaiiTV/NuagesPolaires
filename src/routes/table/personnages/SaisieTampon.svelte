@@ -116,6 +116,7 @@
 		cursor: pointer;
 		list-style: none;
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	summary::-webkit-details-marker {
 		display: none;

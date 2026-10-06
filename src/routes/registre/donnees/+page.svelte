@@ -290,6 +290,7 @@
 		max-width: 62ch;
 		padding: 12px 0;
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.export {
@@ -303,6 +304,7 @@
 		padding-left: 14px;
 		border-left: 2px solid var(--encre-2);
 		font: italic 400 20px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.exclus summary {
@@ -311,6 +313,7 @@
 		min-height: var(--cible);
 		cursor: pointer;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-humide);
 	}
 	.exclus ul {
@@ -321,6 +324,7 @@
 		position: relative;
 		padding-left: 18px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: 24px;
 		color: var(--encre-2);
 	}
@@ -342,6 +346,7 @@
 	}
 	.retelecharger {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-humide);
 		overflow-wrap: anywhere;
 	}
@@ -356,9 +361,11 @@
 		gap: 4px 16px;
 		padding-top: 12px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.voix-carnet {
 		font: italic 400 24px/36px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.lignes {
@@ -373,6 +380,7 @@
 		min-height: calc(var(--ligne) * 1.5);
 		border-bottom: 1px solid var(--reglure);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.lignes .nom {
@@ -385,6 +393,7 @@
 	.petit {
 		padding-top: 12px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 
 	.diag {
@@ -401,10 +410,12 @@
 	}
 	dt {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	dd {
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.absent dd {
@@ -434,6 +445,7 @@
 		align-items: center;
 		gap: 8px 20px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 
 	@media (max-width: 760px) {
@@ -446,6 +458,7 @@
 		.sur-ordinateur {
 			display: block;
 			font: var(--t-libelle);
+			font-variant-numeric: lining-nums tabular-nums;
 			color: var(--encre-grise);
 		}
 		.lignes li {

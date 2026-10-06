@@ -48,7 +48,8 @@ export const load: PageServerLoad = async (event) => {
 	}
 	const adversaires = [...groupes.values()].map((g) => ({
 		id: g.id,
-		nom: g.nom + (g.qty > 1 ? ' ×' + g.qty : '')
+		nom: g.nom,
+		qty: g.qty
 	}));
 	return {
 		recit: {

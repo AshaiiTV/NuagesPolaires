@@ -193,6 +193,7 @@
 		gap: 0 24px;
 		margin-top: -12px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.fil a {
@@ -223,6 +224,7 @@
 		align-items: center;
 		min-height: var(--cible);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 
@@ -254,6 +256,7 @@
 	.quand {
 		grid-area: quand;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre-2);
 	}
@@ -263,6 +266,7 @@
 	.titre {
 		grid-area: titre;
 		font: 600 14px / var(--ligne) var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		overflow-wrap: anywhere;
 	}
@@ -276,6 +280,7 @@
 	}
 	.places {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.masque {
@@ -283,6 +288,7 @@
 		border: 1px dashed var(--encre-2);
 		border-radius: var(--rayon);
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		color: var(--encre-2);
@@ -296,6 +302,7 @@
 	.annonce {
 		padding: 0 0 12px 148px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--rouille);
 	}
 	.passe .titre,
@@ -311,6 +318,7 @@
 		border-top: 3px double var(--reglure);
 		border-bottom: 1px solid var(--reglure);
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
 		color: var(--encre-grise);
@@ -326,6 +334,7 @@
 		align-items: center;
 		min-height: var(--cible);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.pages a[rel='next'] {
@@ -333,6 +342,7 @@
 	}
 	.folio {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-grise);
 	}
 
@@ -340,6 +350,7 @@
 	.ouvert-titre {
 		padding-top: 12px;
 		font: 500 28px/36px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		overflow-wrap: anywhere;
 	}
@@ -348,12 +359,14 @@
 		flex-wrap: wrap;
 		gap: 0 20px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre-2);
 	}
 	.rappel {
 		margin-top: var(--ligne);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 

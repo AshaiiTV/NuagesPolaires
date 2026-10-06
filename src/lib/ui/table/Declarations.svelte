@@ -214,7 +214,7 @@
 							<li class:passe={a.action === 'passer'}>
 								<span class="action"
 									>{l.libelle}{#if a.repetitions > 1}
-										×{a.repetitions}{/if}</span
+										&#8239;×{a.repetitions}{/if}</span
 								>
 								{#if l.cible}<span class="cible"
 										><span aria-hidden="true">→</span><span class="sr-only">sur</span>
@@ -338,7 +338,7 @@
 		grid-template-columns: 20px minmax(0, 1fr) auto;
 		align-items: start;
 		gap: 0 10px;
-		min-height: 44px;
+		min-height: 22px;
 		padding: 2px 0;
 	}
 	.qui {
@@ -347,6 +347,7 @@
 	}
 	.rang {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-grise);
 	}
 	.nom {
@@ -354,6 +355,7 @@
 		white-space: normal;
 		overflow-wrap: anywhere;
 		font: 600 14px/22px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.adversaire .nom {
@@ -369,6 +371,7 @@
 	}
 	.etat {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		color: var(--encre-grise);
@@ -393,6 +396,7 @@
 		align-items: baseline;
 		min-width: 0;
 		font: 500 13px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.actions li.passe {
@@ -414,6 +418,7 @@
 		grid-row: 1;
 		margin-left: 0;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: 20px;
 		color: var(--encre-2);
 		white-space: nowrap;
@@ -430,10 +435,12 @@
 	}
 	.joueur {
 		font: italic 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-humide);
 	}
 	.quand {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		font-style: normal;
 		color: var(--encre-2);
 	}
@@ -448,10 +455,21 @@
 		border: 0;
 		background: none;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: underline;
 		text-decoration-color: color-mix(in srgb, var(--encre-humide) 45%, transparent);
 		text-underline-offset: 4px;
+	}
+	.tete > .geste {
+		min-height: 22px;
+		line-height: 22px;
+		position: relative;
+	}
+	.tete > .geste::after {
+		content: '';
+		position: absolute;
+		inset: -11px 0;
 	}
 	.geste:hover:not(:disabled) {
 		color: var(--encre);
@@ -470,6 +488,7 @@
 		flex: 1 1 140px;
 		min-width: 0;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.action-champ {
@@ -484,6 +503,7 @@
 		border-radius: 0;
 		background: var(--page-2);
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.gestes {
@@ -495,6 +515,7 @@
 	.aide {
 		flex-basis: 100%;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	@media (max-width: 760px) {

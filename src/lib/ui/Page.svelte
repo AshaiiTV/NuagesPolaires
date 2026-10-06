@@ -88,6 +88,7 @@
 	.annotations {
 		margin-top: var(--ligne);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.corps {
@@ -102,6 +103,7 @@
 	}
 	h1 {
 		font: var(--t-titre);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: -0.02em;
 		color: var(--encre);
 	}
@@ -138,6 +140,9 @@
 		}
 	}
 	@media (max-width: 760px) {
+		.repere.mobile {
+			padding-right: 106px;
+		}
 		.page {
 			display: block;
 			min-height: 100svh;
@@ -158,6 +163,7 @@
 			gap: 4px 12px;
 			margin-top: 12px;
 			font: var(--t-libelle);
+			font-variant-numeric: lining-nums tabular-nums;
 			color: var(--encre-2);
 		}
 	}

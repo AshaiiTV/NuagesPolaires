@@ -26,8 +26,8 @@
 							>{oath.weapon}</span
 						><span>{oath.rankLabel}</span><span aria-hidden="true">→</span>
 						<span class="meta"
-							><span>{oath.reserved?.isBuiltin ? '' : 'écrit dans l’Atelier'}</span
-							>{#if oath.reserved?.hidden}<span class="marque">masqué</span
+							>{#if !oath.reserved?.isBuiltin}<span>écrit dans l’Atelier</span
+								>{/if}{#if oath.reserved?.hidden}<span class="marque">masqué</span
 								>{/if}{#if !PUBLIC_RANKS.includes(oath.rank)}<span class="marque">hors vitrine</span
 								>{/if}</span
 						>

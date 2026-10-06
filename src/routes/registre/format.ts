@@ -1,6 +1,7 @@
 // Écritures propres au Registre : dates en voix du carnet, rôles, lecture humaine du journal d'audit.
 import { dateLongue, heure } from '$lib/ui/dates';
 import type { RoleView } from '$lib/schemas/accounts';
+import { nomZone } from '../univers/bestiaire/affichage';
 
 /** « 1er octobre », « 26 septembre » (le premier du mois s'écrit en ordinal). */
 export function le(iso: string | null | undefined, now?: number): string {
@@ -216,6 +217,11 @@ const CLES: Record<string, string> = {
 	characterId: 'personnage n°',
 	previousCharacterId: 'ancien personnage n°',
 	characterName: 'personnage',
+	resource: 'ressource',
+	old: 'avant',
+	new: 'après',
+	xp: 'XP',
+	levelsGained: 'niveaux gagnés',
 	name: 'nom',
 	from: 'avant',
 	to: 'après',
@@ -281,6 +287,8 @@ function valeur(v: unknown): string {
 		const o = v as Record<string, unknown>;
 		const nom = o.title ?? o.name;
 		if (typeof nom === 'string' && nom) return nom;
+		if (typeof o.xp === 'number' && typeof o.level === 'number')
+			return `niveau ${o.level} · ${o.xp} XP`;
 	}
 	return 'détaillé';
 }
@@ -290,9 +298,12 @@ export function detailsLisibles(details: Record<string, unknown>): string {
 	const lignes: string[] = [];
 	for (const [k, v] of Object.entries(details)) {
 		if (k === 'accountId' && 'pseudo' in details) continue;
+		if (k === 'detail' && v === details.recit) continue;
 		if (CLES_TUES.has(k)) continue;
 		if (!CLES[k]) continue;
-		lignes.push(`${CLES[k]}\u00a0: ${valeur(v)}`);
+		lignes.push(
+			`${k === 'zoneId' ? 'zone' : CLES[k]}\u00a0: ${k === 'zoneId' && typeof v === 'string' ? nomZone(v) : valeur(v)}`
+		);
 	}
 	return lignes.join(' · ');
 }

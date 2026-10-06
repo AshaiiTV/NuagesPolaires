@@ -112,19 +112,20 @@
 		min-height: 24px;
 		margin-bottom: 8px;
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.ouvert {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		color: var(--encre-humide);
 	}
-	.recit.humide li {
+	.recit.humide li:not(.raye):not(.titre) .texte {
 		color: var(--encre-humide);
 	}
 	.recit li {
-		transition: color 1200ms;
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
@@ -134,10 +135,12 @@
 		border-bottom: 1px solid var(--reglure);
 	}
 	.texte {
+		transition: color 1200ms;
 		flex: 1 1 200px;
 		min-width: 0;
 		padding: 6px 0;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.titre .texte {
@@ -150,6 +153,7 @@
 	}
 	.mention {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		color: var(--encre-grise);
@@ -161,6 +165,7 @@
 		border: 0;
 		background: none;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: underline;
 		text-decoration-color: color-mix(in srgb, var(--rouille) 55%, transparent);
@@ -184,6 +189,7 @@
 		display: grid;
 		flex: 1 1 220px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	input {
@@ -193,10 +199,12 @@
 		border-bottom: 1px solid color-mix(in srgb, var(--encre) 28%, transparent);
 		background: transparent;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.apercu {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: 44px;
 		color: var(--encre-2);
 	}
@@ -206,8 +214,9 @@
 		gap: 8px;
 	}
 	@media (prefers-reduced-motion: reduce) {
-		.recit li {
+		.texte {
 			transition: none;
+			transition-duration: 0s !important;
 		}
 	}
 </style>

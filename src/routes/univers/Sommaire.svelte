@@ -166,6 +166,7 @@
 		min-height: var(--cible);
 		padding: 12px 4px 12px 0;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: none;
 		transition: color 160ms;
@@ -189,6 +190,7 @@
 	.numero {
 		grid-column: 2;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: 20px;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;

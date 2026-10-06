@@ -16,6 +16,8 @@
 	const GENERIQUES = new Set([
 		'Not Found',
 		'Page introuvable.',
+		'Cette page n’existe pas dans le carnet.',
+		"Cette page n'existe pas dans le carnet.",
 		'Ressource introuvable.',
 		'Internal Error',
 		'Error'
@@ -29,11 +31,10 @@
 				repere: 'NP / 404 — Hors du carnet',
 				titre: 'Une page',
 				voix: 'blanche.',
-				phrase:
-					precis === "Cette Table n'est pas la tienne."
-						? precis
-						: 'Cette page n’existe pas dans le carnet.',
-				precis: precis === "Cette Table n'est pas la tienne." ? null : precis
+				phrase: /^Cette Table n['’]est pas la tienne\.$/.test(precis ?? '')
+					? precis
+					: 'Cette page n’existe pas dans le carnet.',
+				precis: /^Cette Table n['’]est pas la tienne\.$/.test(precis ?? '') ? null : precis
 			};
 		}
 		if (statut === 401) {
@@ -101,18 +102,21 @@
 	}
 	.chemin {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-grise);
 		overflow-wrap: anywhere;
 	}
 	.phrase {
 		max-width: var(--lecture);
 		font: italic 400 24px / calc(var(--ligne) * 1.25) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.precis {
 		max-width: var(--lecture);
 		margin-top: calc(var(--ligne) / 2);
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.gestes {

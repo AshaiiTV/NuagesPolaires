@@ -127,6 +127,7 @@
 		gap: 12px;
 		min-height: var(--cible);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: none;
 		transition: color 160ms;
@@ -138,6 +139,7 @@
 	.numero {
 		min-width: 22px;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.12em;
 		color: var(--encre-2);
 	}
@@ -172,15 +174,18 @@
 	}
 	.nom {
 		font: 500 22px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		transition: color 160ms;
 	}
 	.arme {
 		font: var(--t-liste);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.rang-serment {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
@@ -190,6 +195,7 @@
 	.fleche {
 		justify-self: end;
 		font: 400 18px / var(--ligne) var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		transition:
 			translate 200ms,

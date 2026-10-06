@@ -223,6 +223,7 @@
 		align-items: baseline;
 		padding: 4px 0;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre-grise);
 	}
@@ -237,6 +238,7 @@
 	}
 	.numero {
 		font: 500 18px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.ici .titre {
@@ -323,10 +325,12 @@
 		grid-template-columns: 36px 1fr;
 		padding: calc(var(--ligne) / 4) 0;
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.ensuite li .numero {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		letter-spacing: var(--approche-repere);
 		color: var(--encre-2);
@@ -334,6 +338,7 @@
 	.aide {
 		margin-top: var(--ligne);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-grise);
 	}
 	.aide a {

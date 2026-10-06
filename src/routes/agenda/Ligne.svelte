@@ -222,6 +222,7 @@
 	}
 	.jour {
 		font: var(--t-chiffre);
+		font-variant-numeric: oldstyle-nums proportional-nums;
 		line-height: 56px;
 		color: var(--encre);
 	}
@@ -229,6 +230,7 @@
 	.semaine,
 	.a-fixer {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
 	}
@@ -254,6 +256,7 @@
 	.titre {
 		padding-top: 10px;
 		font: 500 22px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: -0.005em;
 		color: var(--encre);
 		overflow-wrap: break-word;
@@ -268,15 +271,18 @@
 	}
 	.quand {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.masque {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		font-style: italic;
 		color: var(--encre-2);
 	}
 	.places {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre-2);
 	}
@@ -301,6 +307,7 @@
 	.courte,
 	.description p {
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		font-style: italic;
 		color: var(--encre-2);
 		white-space: pre-line;
@@ -311,6 +318,7 @@
 		gap: 12px;
 		min-height: var(--cible);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		cursor: pointer;
 		list-style: none;
@@ -354,6 +362,7 @@
 	}
 	.par {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.geste {
@@ -374,6 +383,7 @@
 	}
 	.tu-viens {
 		font: italic 500 20px / var(--cible) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.point {
 		color: var(--encre-2);
@@ -384,11 +394,13 @@
 		display: flex;
 		align-items: center;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-align: right;
 	}
 	.complet {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
 		color: var(--encre);

@@ -154,6 +154,7 @@
 		background: var(--ruban);
 		color: var(--sur-ruban);
 		font: 600 12px/16px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
 		text-decoration: none;
@@ -197,6 +198,7 @@
 		background: var(--page-2);
 		border-bottom: 1px solid var(--filet);
 		font: 500 12px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.contenu {
@@ -226,6 +228,7 @@
 		border-left: 1px solid var(--filet);
 		background: none;
 		font: 600 13px/16px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		text-align: center;
 		text-decoration: none;

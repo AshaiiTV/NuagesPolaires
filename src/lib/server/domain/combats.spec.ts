@@ -21,7 +21,9 @@ import {
 } from '../db/schema';
 import type { Actor, Role } from '../permissions';
 import { bindRequestContext } from '../auth/context';
+import { listConsequences, sheetForExport } from './characters';
 import { addSummon, emptyAction } from '../../game/combat';
+import { STATUS_IDS } from '../../game/combat/statuses';
 import type { CloseTableInput } from '../../schemas/combats';
 import {
 	closeTable,
@@ -127,6 +129,50 @@ async function counts() {
 }
 
 describe('La Table — audit 03 §8 et 04 §10.6', () => {
+	it('archive sans changement et sans écrire de conséquence vide sur les fiches ou leur export', async () => {
+		await testDb.db
+			.update(characters)
+			.set({
+				statuses: [{ id: 'inspire', desc: 'Promesse tenue.', posedBy: 'mj', posedAt: 42 }]
+			})
+			.where(eq(characters.id, 'p_a'));
+		await testDb.db.insert(characterItems).values({
+			id: 'i_garde',
+			characterId: 'p_a',
+			name: 'Lettre gardée',
+			category: 'Divers',
+			qty: 2
+		});
+		const objetsAvant = await testDb.db.select().from(characterItems);
+		const table = await open();
+		const sheets = await testDb.db
+			.select()
+			.from(characters)
+			.where(sql`${characters.id} in ('p_a', 'p_b')`);
+		await closeTable(testDb.db, mj, {
+			id: table.row.id,
+			expectedRevision: 1,
+			consequences: sheets.map((s) => ({
+				characterId: s.id,
+				pv: s.pvCur,
+				ep: s.epCur,
+				em: s.emCur,
+				xp: 0,
+				statuses: STATUS_IDS.filter((id) => s.statuses.some((status) => status.id === id)),
+				drops: [],
+				motif: 'Combat sans changement.'
+			})),
+			recit: { title: 'Le calme au col', visibleToParticipants: true }
+		});
+		expect(await testDb.db.select().from(characterHistory)).toEqual([]);
+		expect(await testDb.db.select().from(characterItems)).toEqual(objetsAvant);
+		expect((await listConsequences(testDb.db, player, {})).rows).toEqual([]);
+		expect((await sheetForExport(testDb.db, player)).consequences).toEqual([]);
+		expect((await getRecit(testDb.db, player, table.row.id)).title).toBe('Le calme au col');
+		expect(
+			(await testDb.db.select().from(combatParticipants)).every((p) => p.outcome?.xpGain === 0)
+		).toBe(true);
+	});
 	it('ouvre une scène et clôt deux fiches en excluant une invocation', async () => {
 		const table = await open();
 		const state = addSummon(table.state, table.state.fighters[0]!.id, {
@@ -168,7 +214,7 @@ describe('La Table — audit 03 §8 et 04 §10.6', () => {
 		]);
 		expect(sheets.every((s) => s.statuses[0]?.id === 'saignement')).toBe(true);
 		const history = await testDb.db.select().from(characterHistory);
-		expect(history).toHaveLength(14);
+		expect(history).toHaveLength(12);
 		expect(
 			history.every(
 				(h) =>
@@ -253,7 +299,7 @@ describe('La Table — audit 03 §8 et 04 §10.6', () => {
 			code: 'VERSION_CONFLICT',
 			status: 409
 		});
-		expect(await testDb.db.select().from(characterHistory)).toHaveLength(14);
+		expect(await testDb.db.select().from(characterHistory)).toHaveLength(12);
 		expect(await testDb.db.select().from(publications)).toHaveLength(1);
 	});
 	it('applique applyXp et tamponne les niveaux et maxima obtenus', async () => {

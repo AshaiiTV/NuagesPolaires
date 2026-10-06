@@ -471,6 +471,7 @@
 	/* ---- Marge ---- */
 	.compte {
 		font: italic 400 20px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.voix.en-marge {
@@ -497,9 +498,11 @@
 	}
 	.voix-titre {
 		font: 500 20px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.voix-phrase {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.voix.en-bande {
@@ -518,6 +521,7 @@
 		margin-bottom: -1px;
 		border-bottom: 2px solid transparent;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		font-size: 14px;
 		color: var(--encre-2);
 		text-decoration: none;
@@ -530,6 +534,7 @@
 	/* ---- Corps ---- */
 	.visibilite {
 		font: italic 400 18px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 
@@ -568,6 +573,7 @@
 		display: flex;
 		flex-direction: column;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
@@ -581,11 +587,13 @@
 	}
 	.en-scene {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 	}
 	.texte,
 	.ancienne {
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		white-space: pre-wrap;
 		overflow-wrap: anywhere;
@@ -601,6 +609,7 @@
 	}
 	.mention {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre-grise);
 	}
@@ -613,14 +622,17 @@
 	}
 	.question {
 		font: italic 400 17px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.lien-discret {
+		min-width: 44px;
 		min-height: var(--cible);
 		padding: 0;
 		background: none;
 		border: 0;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: underline;
 		text-decoration-color: color-mix(in srgb, var(--encre-humide) 50%, transparent);
@@ -648,6 +660,7 @@
 		resize: none;
 		field-sizing: content;
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		caret-color: var(--encre-humide);
 		transition: color var(--secher);
@@ -698,10 +711,12 @@
 	}
 	.recit-titre {
 		font: 500 22px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.recit-details {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre-2);
 	}
@@ -725,16 +740,19 @@
 	}
 	.fait-type {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		color: var(--encre);
 	}
 	.envers {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.fait-texte {
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.fait-texte s {
@@ -751,6 +769,7 @@
 	.fait-etat,
 	.temoin {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.fait-etat.attend {
@@ -774,6 +793,7 @@
 	}
 	.etiquette {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.petit-champ select,
@@ -786,6 +806,7 @@
 		border-bottom: 1px solid color-mix(in srgb, var(--encre) 28%, transparent);
 		border-radius: 0;
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		caret-color: var(--encre-humide);
 	}

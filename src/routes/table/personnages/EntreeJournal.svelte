@@ -22,11 +22,13 @@
 	}
 	.date {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre-2);
 	}
 	.texte {
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		white-space: pre-wrap;
 		overflow-wrap: anywhere;
 	}

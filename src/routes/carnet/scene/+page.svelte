@@ -301,7 +301,6 @@
 	let phraseReprise = $state(untrack(() => data.marquePage?.text ?? ''));
 	let lienReprise = $state(untrack(() => data.marquePage?.url ?? ''));
 	async function basculer(p: 'regle' | 'reposer') {
-		if (superpose && p === 'reposer') return onreposer?.();
 		panneau = panneau === p ? null : p;
 		if (!panneau) return (p === 'regle' ? boutonRegle : boutonReposer)?.focus();
 		await tick();
@@ -846,11 +845,13 @@
 	}
 	.nom {
 		font: 500 24px/36px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: -0.01em;
 		color: var(--encre);
 	}
 	.identite {
 		font: 500 13px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.rang {
@@ -861,6 +862,7 @@
 	}
 	.alerte {
 		font: 500 13px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--rouille);
 	}
 	.table {
@@ -880,10 +882,12 @@
 	}
 	.table-etat {
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.table .fleche {
 		margin-left: auto;
 		font: 400 18px/1 var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.repliee {
 		color: var(--encre-2);
@@ -905,6 +909,7 @@
 		justify-content: space-between;
 		column-gap: 12px;
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.scene-titre a,
@@ -917,6 +922,7 @@
 		border: 0;
 		background: none;
 		font: 500 13px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		text-decoration: underline;
 		text-decoration-color: color-mix(in srgb, var(--encre-humide) 55%, transparent);
@@ -936,6 +942,7 @@
 	}
 	.reprise {
 		font: italic 400 13px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.sceau {
@@ -975,6 +982,7 @@
 		border: 0;
 		background: none;
 		font: 500 13px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-humide);
 		text-decoration: underline;
 		text-decoration-color: color-mix(in srgb, var(--encre-humide) 45%, transparent);
@@ -995,12 +1003,14 @@
 		align-items: center;
 		column-gap: 12px;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.decl-texte {
 		color: var(--encre-humide);
 	}
 	.decl .meta {
 		font: 500 12px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.decl form {
@@ -1028,6 +1038,7 @@
 		align-items: baseline;
 		column-gap: 8px;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.qui {
@@ -1061,6 +1072,7 @@
 		border-radius: 0;
 		background: transparent;
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-humide);
 		cursor: pointer;
 	}
@@ -1081,6 +1093,7 @@
 		align-items: baseline;
 		gap: 8px;
 		font: 500 12px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.mot-saisie {
@@ -1094,13 +1107,14 @@
 		border-radius: 0;
 		background: transparent;
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		caret-color: var(--encre-humide);
 	}
 	.chiffre-saisie input {
 		width: 56px;
 		text-align: right;
-		font-variant-numeric: tabular-nums;
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.mot-saisie input {
 		flex: 1;
@@ -1119,10 +1133,12 @@
 	}
 	.aide {
 		font: 500 12px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.apercu {
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.manque {
@@ -1151,6 +1167,7 @@
 	.branche {
 		padding-top: 12px;
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.paliers {
@@ -1167,10 +1184,12 @@
 	}
 	.niveau {
 		font: 500 12px/16px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.palier-nom {
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.cout {
@@ -1180,6 +1199,7 @@
 	}
 	.palier-texte {
 		font: 400 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.suivant .repere {
@@ -1197,6 +1217,7 @@
 		min-height: var(--cible);
 		border-bottom: 1px solid var(--filet);
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.objet-nom {
 		flex: 1;
@@ -1217,6 +1238,7 @@
 	}
 	.question {
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 
 	/* ── Bloc à coller ── */
@@ -1231,6 +1253,7 @@
 		border: 1px solid var(--reglure);
 		border-radius: var(--rayon);
 		font: var(--t-mono);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		white-space: pre-wrap;
 		overflow-wrap: anywhere;
@@ -1270,6 +1293,7 @@
 	.reposer h2 {
 		grid-column: 1;
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		outline: none;
 	}
 	.reposer .refermer {
@@ -1279,6 +1303,7 @@
 		border: 0;
 		background: none;
 		font: 500 13px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: underline;
 		text-decoration-color: color-mix(in srgb, var(--encre-humide) 45%, transparent);

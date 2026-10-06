@@ -111,10 +111,47 @@
 	let marqueTexte = $state('');
 	let marqueLien = $state('');
 	let marqueOuvert = $state(false);
+	let brouillonLu = $state(false);
+	let marqueConfirmeeTexte = $state('');
+	const cleMarque = $derived(`np:marque-page:${vue.pseudo}`);
 	$effect.pre(() => {
+		if (brouillonLu) return;
 		marqueTexte = vue.bookmark?.text ?? '';
 		marqueLien = vue.bookmark?.url ?? '';
 	});
+	$effect(() => {
+		if (!brouillonLu) {
+			marqueConfirmeeTexte = JSON.stringify({ texte: marqueTexte, lien: marqueLien });
+			try {
+				const garde = localStorage.getItem(cleMarque);
+				if (garde) {
+					const brouillon = JSON.parse(garde) as { texte: string; lien: string };
+					marqueTexte = brouillon.texte;
+					marqueLien = brouillon.lien;
+					marqueOuvert = true;
+				}
+			} catch {
+				/* Le stockage local peut être indisponible. */
+			}
+			brouillonLu = true;
+			return;
+		}
+		try {
+			const texte = JSON.stringify({ texte: marqueTexte, lien: marqueLien });
+			if (texte !== marqueConfirmeeTexte) localStorage.setItem(cleMarque, texte);
+		} catch {
+			/* Le texte reste dans le formulaire. */
+		}
+	});
+	function marqueConfirmee() {
+		marqueOuvert = false;
+		marqueConfirmeeTexte = JSON.stringify({ texte: marqueTexte, lien: marqueLien });
+		try {
+			localStorage.removeItem(cleMarque);
+		} catch {
+			/* Rien à retirer. */
+		}
+	}
 
 	// ---- Pages groupées par mois après une longue absence ------------------------------------------
 	const groupes = $derived.by(() => {
@@ -347,7 +384,7 @@
 						class="marque-form"
 						method="POST"
 						action="?/marquePage"
-						use:enhance={ecrire('marque', 'Noté', () => (marqueOuvert = false))}
+						use:enhance={ecrire('marque', 'Noté', marqueConfirmee)}
 					>
 						<Champ
 							libelle="Où j’en suis"
@@ -375,7 +412,7 @@
 						class="retirer"
 						method="POST"
 						action="?/marquePage"
-						use:enhance={ecrire('marque', 'Retiré', () => (marqueOuvert = false))}
+						use:enhance={ecrire('marque', 'Retiré', marqueConfirmee)}
 					>
 						<input type="hidden" name="text" value="" />
 						<input type="hidden" name="url" value="" />
@@ -637,12 +674,14 @@
 	.nom {
 		margin-top: 14px;
 		font: 500 34px/42px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: -0.01em;
 		color: var(--encre);
 		overflow-wrap: anywhere;
 	}
 	.serment {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre-2);
 	}
@@ -657,11 +696,13 @@
 	}
 	.declare {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre-humide);
 	}
 	.retard {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--rouille);
 	}
@@ -679,6 +720,7 @@
 	.attente-lead {
 		padding-bottom: var(--ligne);
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		font-size: 22px;
 		font-style: italic;
 		color: var(--encre);
@@ -690,10 +732,12 @@
 	}
 	.marque-page h2 {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.phrase {
 		margin: calc(var(--ligne) / 2) 0;
 		font: italic 400 22px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		max-width: var(--lecture);
 	}
@@ -715,6 +759,7 @@
 		background: none;
 		border: 0;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: underline;
 		text-decoration-color: color-mix(in srgb, var(--encre-humide) 50%, transparent);
@@ -728,6 +773,7 @@
 		padding: calc(var(--ligne) / 2) 0;
 		border-bottom: 1px solid var(--reglure);
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		font-style: italic;
 		color: var(--encre-2);
 	}
@@ -749,6 +795,7 @@
 	}
 	.quoi {
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		min-width: 0;
 		overflow-wrap: anywhere;
@@ -780,6 +827,7 @@
 		border: 0;
 		border-bottom: 1px solid var(--reglure);
 		font: var(--t-liste);
+		font-variant-numeric: lining-nums tabular-nums;
 		text-align: left;
 		color: var(--encre-2);
 	}
@@ -794,6 +842,7 @@
 	}
 	.ligne .date {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		color: var(--encre-grise);
@@ -844,16 +893,19 @@
 	}
 	.jour-num {
 		font: var(--t-chiffre);
+		font-variant-numeric: oldstyle-nums proportional-nums;
 		color: var(--encre);
 	}
 	.mois-court {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		color: var(--encre-2);
 	}
 	.rdv-titre {
 		font: 500 22px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.rdv-details {
@@ -862,6 +914,7 @@
 		align-items: center;
 		gap: 0 14px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: var(--ligne);
 		color: var(--encre-2);
 	}
@@ -883,6 +936,7 @@
 		align-items: center;
 		gap: 10px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.tu-viens {
 		font-weight: 600;
@@ -896,6 +950,7 @@
 		background: none;
 		border: 0;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: underline;
 		text-decoration-color: color-mix(in srgb, var(--encre-humide) 50%, transparent);
@@ -906,6 +961,7 @@
 	}
 	.ferme {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-grise);
 		text-align: right;
 		max-width: 22ch;
@@ -919,11 +975,13 @@
 	.pseudo {
 		margin: 8px 0 12px;
 		font: 400 32px/42px var(--mono);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		overflow-wrap: anywhere;
 	}
 	.copie {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.liens li {
@@ -935,6 +993,7 @@
 	}
 	.liens span {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.recharger {
@@ -957,7 +1016,31 @@
 			grid-template-columns: 1fr;
 		}
 		.marque-page {
-			padding: calc(var(--ligne) / 2) 0;
+			padding: 6px 0;
+		}
+		.absence {
+			padding-bottom: 0;
+			font-size: 18px;
+			line-height: 22px;
+			margin-bottom: 6px;
+		}
+		.phrase {
+			margin: 4px 0;
+			font-size: 20px;
+			line-height: 24px;
+		}
+		.marque-page .gestes {
+			gap: 0 12px;
+		}
+		.attend li {
+			padding: 4px 0;
+			gap: 0 12px;
+		}
+		.attente:not(.scene) .quoi {
+			flex: 1;
+		}
+		.attente:not(.scene) .gestes {
+			width: auto;
 		}
 		.attend .gestes :global(.bouton) {
 			padding-inline: 12px;

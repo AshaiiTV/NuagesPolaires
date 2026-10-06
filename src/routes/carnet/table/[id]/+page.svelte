@@ -206,7 +206,8 @@
 				lignes.push({ genre: 'round', cle: `t${e.n}`, round: e.round });
 			}
 			const texte = sansEmoji(e.text);
-			if (texte) lignes.push({ genre: 'texte', cle: `n${e.n}`, n: e.n, texte, kind: e.kind });
+			if (texte && !/^Déclaration de\s*:/u.test(texte))
+				lignes.push({ genre: 'texte', cle: `n${e.n}`, n: e.n, texte, kind: e.kind });
 		}
 		for (const m of marques)
 			lignes.push({ genre: 'resolu', cle: `r${m.round}-${m.t}`, round: m.round, a: m.a, t: m.t });
@@ -576,12 +577,13 @@
 	}
 	.titre {
 		font: 500 20px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: -0.01em;
 		color: var(--encre);
 		text-wrap: balance;
 	}
 	.round {
-		font-variant-numeric: tabular-nums;
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	/* Téléphone : le round et la phase passent à la ligne d'un bloc, sans point en tête de ligne. */
 	@media (max-width: 520px) {
@@ -603,6 +605,7 @@
 		min-height: 24px;
 		margin-top: 6px;
 		font: 500 13px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.reception.retard {
@@ -617,6 +620,7 @@
 		border: 0;
 		background: none;
 		font: 500 13px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		text-decoration: underline;
 		text-decoration-color: color-mix(in srgb, var(--encre-humide) 55%, transparent);
@@ -642,6 +646,7 @@
 	}
 	.nom-moi {
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.trois {
@@ -664,6 +669,7 @@
 	.consigne {
 		padding-top: 6px;
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-humide);
 	}
 
@@ -693,14 +699,17 @@
 		column-gap: 8px;
 		min-width: 0;
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.c-meta {
 		font: 500 12px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.c-tour {
 		font: 500 12px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-humide);
 	}
 	.a-son-tour .c-nom {
@@ -715,12 +724,14 @@
 		justify-content: flex-end;
 		gap: 0 12px;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		white-space: nowrap;
 	}
 	.c-res abbr {
 		margin-right: 4px;
 		font: 500 12px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.08em;
 		text-decoration: none;
 		color: var(--encre-2);
@@ -733,6 +744,7 @@
 	}
 	.c-etat {
 		font: 600 12px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
 		color: var(--encre-2);
@@ -751,6 +763,7 @@
 	.seul {
 		margin-top: 6px;
 		font: italic 400 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 
@@ -767,6 +780,7 @@
 	.l-round {
 		padding-top: 12px;
 		font: 500 12px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
 		color: var(--encre-2);
@@ -776,6 +790,7 @@
 	}
 	.l-texte {
 		font: 400 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.l-texte.k-turn,
@@ -785,6 +800,7 @@
 	.l-resolu {
 		padding: 6px 0 0;
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 
 	/* ── Table repliée ── */
@@ -799,6 +815,7 @@
 	}
 	.quand {
 		font: 500 12px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 </style>

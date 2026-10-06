@@ -56,12 +56,14 @@
 	}
 	.marge {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
 		color: var(--papier-encre-2);
 	}
 	h3 {
 		font: 500 28px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: -0.01em;
 	}
 	h3 a {
@@ -74,6 +76,7 @@
 	}
 	.texte {
 		font: 400 18px/28px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--papier-encre-2);
 		display: -webkit-box;
 		-webkit-line-clamp: 3;
@@ -82,9 +85,9 @@
 		overflow: hidden;
 	}
 	footer {
-		translate: 0 50%;
+		translate: 0 9px;
 		margin-top: auto;
-		margin-bottom: -24px;
+		margin-bottom: -16px;
 		padding-top: 6px;
 		display: flex;
 		align-items: center;
@@ -110,7 +113,7 @@
 	}
 	@media (max-width: 760px) {
 		footer {
-			margin-bottom: -20px;
+			margin-bottom: -12px;
 		}
 		.feuillet {
 			min-height: 0;

@@ -19,6 +19,7 @@
 	}
 	p {
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		font-style: italic;
 		color: var(--encre-2);
 	}
@@ -28,6 +29,7 @@
 	:global([data-regime='serre']) p,
 	:global([data-regime='scene']) p {
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		font-style: normal;
 	}
 </style>

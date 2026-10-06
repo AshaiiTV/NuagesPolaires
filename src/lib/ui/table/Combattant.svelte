@@ -463,6 +463,7 @@
 		white-space: normal;
 		overflow-wrap: anywhere;
 		font: 600 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.adversaire .texte {
@@ -474,6 +475,7 @@
 	.marque {
 		flex: none;
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		line-height: 16px;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
@@ -489,6 +491,7 @@
 	}
 	.res {
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		text-align: right;
 		white-space: nowrap;
@@ -535,6 +538,7 @@
 	}
 	.declare-points {
 		font: 400 12px/14px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: 0;
 		color: var(--encre-humide);
 		white-space: nowrap;
@@ -548,6 +552,7 @@
 		border-radius: var(--rayon);
 		background: none;
 		font: 600 18px/1 var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.menu:hover,
@@ -578,6 +583,7 @@
 		border-radius: var(--rayon);
 		background: none;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.modes button.actif,
@@ -595,6 +601,7 @@
 		display: grid;
 		gap: 0;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	label input,
@@ -606,6 +613,7 @@
 		border-radius: 0;
 		background: transparent;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	label select {
@@ -640,6 +648,7 @@
 		border: 0;
 		background: none;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 		text-decoration: underline;
 		text-decoration-color: color-mix(in srgb, var(--encre-humide) 45%, transparent);
@@ -655,6 +664,7 @@
 	.apercu {
 		flex-basis: 100%;
 		font: 500 14px/24px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 	}
 	.apercu .max,
@@ -664,6 +674,7 @@
 	.aide {
 		flex-basis: 100%;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.gestes {

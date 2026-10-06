@@ -191,6 +191,7 @@
 	}
 	.ouverture p {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.tete-liste,
@@ -204,6 +205,7 @@
 		min-height: calc(var(--ligne) * 2);
 		border-bottom: 1px solid var(--reglure);
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		text-transform: uppercase;
 		letter-spacing: var(--approche-repere);
 		color: var(--encre-grise);
@@ -214,6 +216,7 @@
 		border-bottom: 1px solid var(--reglure);
 		text-decoration: none;
 		font: var(--t-liste);
+		font-variant-numeric: lining-nums tabular-nums;
 	}
 	.ligne:hover {
 		background: color-mix(in srgb, var(--encre) 4%, transparent);
@@ -221,6 +224,7 @@
 	.identite,
 	.tampon {
 		display: grid;
+		justify-items: start;
 		min-width: 0;
 		overflow-wrap: anywhere;
 	}
@@ -230,6 +234,7 @@
 	.identite > span,
 	.tampon {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	.identite .liaison {
@@ -326,6 +331,7 @@
 			width: 100%;
 			white-space: normal;
 			font: var(--t-libelle);
+			font-variant-numeric: lining-nums tabular-nums;
 			color: var(--encre-2);
 		}
 		.ressources {

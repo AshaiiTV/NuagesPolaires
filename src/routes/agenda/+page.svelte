@@ -166,6 +166,7 @@
 	.mois-courant {
 		margin-top: calc(var(--ligne) / 2);
 		font: 500 34px/42px var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: -0.01em;
 		color: var(--encre);
 	}
@@ -195,6 +196,7 @@
 		min-height: var(--cible);
 		border-bottom: 1px solid var(--reglure);
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		text-decoration: none;
 	}
@@ -224,6 +226,7 @@
 	/* ── Lecture seule ────────────────────────────────────────────────── */
 	.attente {
 		font: var(--t-recit);
+		font-variant-numeric: lining-nums tabular-nums;
 		font-style: italic;
 		color: var(--encre);
 	}
@@ -250,6 +253,7 @@
 	}
 	.filet-mois span {
 		font: var(--t-repere);
+		font-variant-numeric: lining-nums tabular-nums;
 		letter-spacing: var(--approche-repere);
 		text-transform: uppercase;
 		color: var(--encre-2);
@@ -268,6 +272,7 @@
 		border-top: 3px double var(--reglure);
 		border-bottom: 1px solid var(--reglure);
 		font: 500 24px / var(--ligne) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		font-style: italic;
 		color: var(--encre-2);
 	}
@@ -284,6 +289,7 @@
 		gap: 10px;
 		min-height: var(--cible);
 		font: 500 14px/20px var(--corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		text-decoration: underline;
 		text-decoration-color: color-mix(in srgb, var(--encre-humide) 45%, transparent);
@@ -293,6 +299,7 @@
 	}
 	.folio {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-grise);
 	}
 </style>

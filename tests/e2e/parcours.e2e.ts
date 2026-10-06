@@ -9,13 +9,43 @@ test('P1 — retrouver ses ressources, ses attentes et le même marque-page sur 
 }) => {
 	await page.setViewportSize({ width: 390, height: 844 });
 	await connecter(page, 'alice');
-	await lire(page, '/carnet');
+	await page.route('**/carnet/__data.json*', async (route) => {
+		const response = await route.fetch();
+		const payload = await response.json();
+		for (const node of payload.nodes ?? []) {
+			const values = node?.data;
+			if (!Array.isArray(values)) continue;
+			for (const value of values) {
+				if (value && typeof value === 'object' && 'daysAway' in value) {
+					value.daysAway = values.push(40) - 1;
+					value.lastReadAt = values.push(new Date(Date.now() - 40 * 86400000).toISOString()) - 1;
+				}
+				if (value && typeof value === 'object' && 'kind' in value && values[value.kind] === 'table')
+					value.text =
+						values.push(
+							'La Table est ouverte : Aux racines de la lisière, là où les brumes gardent les récits du passage'
+						) - 1;
+			}
+		}
+		await route.fulfill({ response, json: payload });
+	});
+	await lire(page, '/agenda');
+	await page.getByRole('link', { name: 'Carnet', exact: true }).click();
+	await expect(page.locator('.absence')).toContainText('40 jours');
 	await expect(page.locator('body')).toContainText('Aria Lunval');
 	await expect(page.locator('body')).toContainText('Reprendre au gué.');
 	await expect(page.locator('body')).toContainText('Ce qui attend ta main');
 	await expect(page.locator('progress, meter, [role="progressbar"]')).toHaveCount(0);
 	const attentes = page.locator('#attend li');
-	expect(await attentes.count()).toBeLessThanOrEqual(3);
+	await expect(attentes).toHaveCount(3);
+	const navigation = await page
+		.locator('nav')
+		.filter({ has: page.getByRole('link', { name: 'Plus', exact: true }) })
+		.last()
+		.boundingBox();
+	const derniereAction = await attentes.last().locator('a').last().boundingBox();
+	expect(derniereAction!.y + derniereAction!.height).toBeLessThanOrEqual(navigation!.y);
+	expect(derniereAction!.height).toBeGreaterThanOrEqual(44);
 	const context = await browser.newContext();
 	try {
 		const autre = await context.newPage();
@@ -96,6 +126,8 @@ test('P2 — déclarer sans changer le relevé, annuler, copier les trois lignes
 			.last()
 	).toBeVisible();
 	await page.getByRole('button', { name: 'Reposer', exact: true }).click();
+	await expect(page.locator('form.reposer')).toBeVisible();
+	await page.locator('form.reposer').getByRole('button', { name: 'Reposer', exact: true }).click();
 	await expect(page).toHaveURL(/\/agenda$/);
 	await expect(page.locator('[inert]')).toHaveCount(0);
 });
@@ -164,6 +196,10 @@ test('P3 — suivre trois rounds, une rature, puis le retard réseau et le refus
 		await connecter(bob, 'bob');
 		expect((await lire(bob, `/table/combat/${id}`))?.status()).toBe(404);
 		await expect(bob.getByText('Cette Table n’est pas la tienne.')).toBeVisible();
+		await expect(bob.locator('.precis')).toHaveCount(0);
+		await expect(
+			bob.getByText('Cette page n’existe pas dans le carnet.', { exact: true })
+		).toHaveCount(0);
 	} finally {
 		await Promise.all([cm.close(), cj.close(), cb.close()]);
 	}
@@ -207,6 +243,27 @@ test('P4 — tamponner +18 XP après réponse, vérifier le motif et le journal 
 	await correction.locator('[name="motif"]').fill('Valeur revue après la traversée.');
 	await correction.locator('[name="motif"]').press('Enter');
 	await expect(page.locator('#consequences')).toContainText('Valeur revue après la traversée.');
+	await expect(
+		page
+			.locator('#consequences li')
+			.filter({ hasText: 'Valeur revue après la traversée.' })
+			.locator('s, ins')
+	).toHaveCount(0);
+	await correction
+		.locator('[name="replacesId"]')
+		.selectOption({ label: 'PV : 51 → 50. · Valeur revue après la traversée.' });
+	await correction.locator('[name="newValue"]').fill('49');
+	await correction.locator('[name="motif"]').fill('Erreur de report corrigée.');
+	await correction.locator('[name="motif"]').press('Enter');
+	await expect(
+		page.locator('#consequences li').filter({ hasText: 'Erreur de report corrigée.' }).locator('s')
+	).toHaveText(/50$/);
+	await expect(
+		page
+			.locator('#consequences li')
+			.filter({ hasText: 'Erreur de report corrigée.' })
+			.locator('ins')
+	).toHaveText(/49$/);
 	const ca = await browser.newContext();
 	const cr = await browser.newContext();
 	try {
@@ -220,13 +277,17 @@ test('P4 — tamponner +18 XP après réponse, vérifier le motif et le journal 
 		await expect(alice.locator('#consequences .tampon').first()).toContainText(/MJ ·/);
 		const corrigee = alice
 			.locator('#consequences li')
-			.filter({ hasText: 'Valeur revue après la traversée.' });
-		await expect(corrigee).toContainText('PV : 51 → 50.');
-		await expect(corrigee.locator('s, ins')).toHaveCount(0);
+			.filter({ hasText: 'Erreur de report corrigée.' });
+		await expect(corrigee).toContainText('PV : 50 → 49.');
+		await expect(corrigee.locator('s')).toHaveText(/50$/);
+		await expect(corrigee.locator('ins')).toHaveText(/49$/);
 		const admin = await cr.newPage();
 		await connecter(admin, 'admin');
 		await lire(admin, '/registre/journal');
 		await expect(admin.locator('body')).toContainText('XP tamponnée');
+		await expect(admin.locator('body')).toContainText('Traversée vérifiée ensemble.');
+		await expect(admin.locator('body')).toContainText(/avant\s*: niveau 7 · 140 XP/);
+		await expect(admin.locator('body')).toContainText(/après\s*: niveau 7 · 158 XP/);
 	} finally {
 		await Promise.all([ca.close(), cr.close()]);
 	}

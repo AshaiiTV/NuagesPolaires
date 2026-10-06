@@ -64,6 +64,7 @@
 	}
 	label {
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-2);
 	}
 	input,
@@ -76,6 +77,7 @@
 		border-bottom: 1px solid color-mix(in srgb, var(--encre) 28%, transparent);
 		border-radius: 0;
 		font: var(--t-corps);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre);
 		caret-color: var(--encre-humide);
 		transition: border-color 160ms;
@@ -112,6 +114,7 @@
 	.erreur {
 		margin-top: 4px;
 		font: var(--t-libelle);
+		font-variant-numeric: lining-nums tabular-nums;
 		color: var(--encre-grise);
 	}
 	.refuse input,

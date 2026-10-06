@@ -348,6 +348,7 @@
 	}
 	.apercu h2 {
 		font: 500 28px / calc(var(--ligne) * 2) var(--voix);
+		font-variant-numeric: lining-nums tabular-nums;
 		overflow-wrap: anywhere;
 	}
 	.apercu > .rappel {
